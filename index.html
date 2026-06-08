@@ -1265,7 +1265,7 @@ var venFiltro = 'todas';
 
 function initPartidas(){
   return VARIEDADES.map(function(v){
-    return {variedad:v, sector:'', hectareas:'', pesoBruto:'', pesoNeto:'', toneladas:'', precio:''};
+    return {variedad:v, sector:'', hectareas:'', pesoNeto:'', toneladas:'', precio:''};
   });
 }
 var partidasTemp = initPartidas();
@@ -1305,11 +1305,11 @@ function editarEnvio(e){
     var saved = e.partidas.filter(function(p){return p.variedad===v;})[0];
     if(saved) return {
       variedad:v, sector:saved.sector||'',
-      hectareas:saved.hectareas||'', pesoBruto:saved.pesoBruto||'',
+      hectareas:saved.hectareas||'',
       pesoNeto:saved.pesoNeto||'', toneladas:saved.toneladas||'',
       precio:saved.precio||''
     };
-    return {variedad:v, sector:'', hectareas:'', pesoBruto:'', pesoNeto:'', toneladas:'', precio:''};
+    return {variedad:v, sector:'', hectareas:'', pesoNeto:'', toneladas:'', precio:''};
   });
   // cambiar label del botón y título
   document.getElementById('btn-ven-guardar').innerHTML=
@@ -1349,11 +1349,10 @@ function renderPartidas(){
 
     d.innerHTML=
       '<div style="font-size:13px;font-weight:600;color:'+varColor+';margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">'+p.variedad+'</div>'+
-      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px">'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">'+
         '<div><label>Sector</label><select onchange="partidasTemp['+idx+'].sector=this.value">'+secOpts+'</select></div>'+
         '<div><label>Hectáreas</label><input type="number" placeholder="0.00" min="0" step="0.01" value="'+p.hectareas+'" onchange="partidasTemp['+idx+'].hectareas=this.value"></div>'+
-        '<div><label>Peso Bruto (kg)</label><input type="number" placeholder="0" min="0" value="'+p.pesoBruto+'" onchange="partidasTemp['+idx+'].pesoBruto=this.value;autoCalc('+idx+')"></div>'+
-        '<div><label>Peso Neto (kg)</label><input type="number" id="ppn-'+idx+'" placeholder="0" min="0" value="'+p.pesoNeto+'" readonly style="background:var(--surface2);color:var(--text3)"></div>'+
+        '<div><label>Peso Neto (kg)</label><input type="number" id="ppn-'+idx+'" placeholder="0" min="0" value="'+p.pesoNeto+'" onchange="partidasTemp['+idx+'].pesoNeto=this.value;autoCalc('+idx+')"></div>'+
       '</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">'+
         '<div><label>Toneladas</label><input type="number" id="ptn-'+idx+'" placeholder="0.000" min="0" step="0.001" value="'+p.toneladas+'" readonly style="background:var(--surface2);color:var(--text3)"></div>'+
@@ -1367,10 +1366,7 @@ function renderPartidas(){
 
 function autoCalc(idx){
   var p=partidasTemp[idx];
-  // peso neto = peso bruto
-  var pb=parseFloat(p.pesoBruto)||0;
-  p.pesoNeto=pb;
-  var pn=document.getElementById('ppn-'+idx); if(pn) pn.value=pb||'';
+  var pb=parseFloat(p.pesoNeto)||0;
   // toneladas = peso neto / 1000
   p.toneladas=pb>0?(pb/1000).toFixed(3):'';
   var pt=document.getElementById('ptn-'+idx); if(pt) pt.value=p.toneladas;
@@ -1404,7 +1400,6 @@ function guardarEnvio(){
       variedad:p.variedad,
       sector: p.sector || '',
       hectareas:parseFloat(p.hectareas)||0,
-      pesoBruto:parseFloat(p.pesoBruto)||0,
       pesoNeto:parseFloat(p.pesoNeto)||0,
       toneladas:parseFloat(p.toneladas)||0,
       precio:parseFloat(p.precio)||0,
@@ -1536,7 +1531,7 @@ function verEnvio(e){
       '<td>'+p.variedad+'</td>'+
       '<td style="text-align:right">'+secTxt+'</td>'+
       '<td style="text-align:right">'+p.hectareas+'</td>'+
-      '<td style="text-align:right">'+(p.pesoBruto?p.pesoBruto.toLocaleString('es-MX'):'-')+'</td>'+
+
       '<td style="text-align:right">'+(p.pesoNeto?p.pesoNeto.toLocaleString('es-MX'):'-')+'</td>'+
       '<td style="text-align:right">'+p.toneladas+'</td>'+
       '<td style="text-align:right">'+tha+'</td>'+
@@ -1559,7 +1554,7 @@ function verEnvio(e){
     '<div style="overflow-x:auto;margin-top:10px">'+
     '<table class="ven-modal-table">'+
       '<thead><tr>'+
-        '<th>Variedad</th><th style="text-align:right">Sec.</th><th style="text-align:right">Ha</th><th style="text-align:right">P.Bruto</th>'+
+        '<th>Variedad</th><th style="text-align:right">Sec.</th><th style="text-align:right">Ha</th>'+
         '<th style="text-align:right">P.Neto</th><th style="text-align:right">Ton</th>'+
         '<th style="text-align:right">Ton/Ha</th><th style="text-align:right">Precio</th><th style="text-align:right">Total</th>'+
       '</tr></thead>'+
