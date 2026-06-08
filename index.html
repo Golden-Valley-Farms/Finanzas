@@ -270,6 +270,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="header-date" id="hdr-date"></div>
       </div>
     </div>
+    <button onclick="guardarHTML()" style="padding:7px 13px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:5px;transition:all .15s" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px;height:14px;stroke-width:2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Guardar
+    </button>
   </div>
 
   <!-- REGISTRAR -->
@@ -8934,6 +8938,22 @@ function importarGastos(){
   renderHis();
 }
 
+
+function guardarHTML(){
+  var currentGastos = gastos;
+  try { var sv=localStorage.getItem('cc_gastos3'); if(sv) currentGastos=JSON.parse(sv); } catch(e){}
+  var h = document.documentElement.outerHTML;
+  var newData = 'var DATOS_IMPORTADOS = ' + JSON.stringify(currentGastos) + ';';
+  h = h.replace(/var DATOS_IMPORTADOS\s*=\s*\[[\s\S]*?\];/, newData);
+  var blob = new Blob([h], {type:'text/html;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  var fecha = new Date().toISOString().slice(0,10);
+  a.download = 'cosecha-y-cuentas-' + fecha + '.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('✅ Archivo guardado con todos los datos');
+}
 </script>
 </body>
 </html>
