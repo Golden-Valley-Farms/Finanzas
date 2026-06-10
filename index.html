@@ -708,6 +708,59 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
   <!-- REPORTES -->
   <div id="sc-rep" class="screen">
+
+    <button onclick="exportarExcel()" style="width:100%;margin-bottom:14px;padding:12px;border-radius:var(--radius);border:1.5px solid var(--green-border);background:var(--green-bg);color:var(--green);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:17px;height:17px;stroke-width:2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      Exportar a CSV (Excel)
+    </button>
+
+    <!-- RESUMEN INGRESO / GASTO / UTILIDAD -->
+    <div class="section-hd">Resumen general</div>
+    <div class="stats-grid" style="margin-bottom:8px">
+      <div class="stat-card" style="grid-column:span 2;background:var(--green-bg);border-color:var(--green-border)">
+        <div class="stat-lbl">💰 Total ingresos</div>
+        <div class="stat-val green" id="r-ing-tot">$0</div>
+      </div>
+      <div class="stat-card" style="grid-column:span 2;background:var(--fram-bg);border-color:var(--fram-border)">
+        <div class="stat-lbl">📤 Total gastos</div>
+        <div class="stat-val" style="color:var(--fram)" id="r-gas-tot">$0</div>
+      </div>
+      <div class="stat-card" style="grid-column:span 2" id="r-util-card">
+        <div class="stat-lbl">📊 Utilidad</div>
+        <div class="stat-val" id="r-util">$0</div>
+      </div>
+    </div>
+
+    <!-- INGRESOS POR NEGOCIO -->
+    <div class="section-hd" style="margin-top:14px">Ingresos por negocio</div>
+    <div class="stats-grid" style="margin-bottom:8px">
+      <div class="stat-card">
+        <div class="stat-lbl">🌿 Jalisco</div>
+        <div class="stat-val jal" id="r-ing-jal">$0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl">🍀 Nayarit</div>
+        <div class="stat-val nay" id="r-ing-nay">$0</div>
+      </div>
+      <div class="stat-card" style="grid-column:span 2">
+        <div class="stat-lbl">🛒 Comercializadora</div>
+        <div class="stat-val com" id="r-ing-com">$0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl">Envíos totales</div>
+        <div class="stat-val" id="r-ing-cnt">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl">Esta semana</div>
+        <div class="stat-val green" id="r-ing-sw">$0</div>
+      </div>
+    </div>
+
+    <!-- INGRESOS POR MES -->
+    <div class="section-hd" style="margin-top:14px">Ingresos por mes</div>
+    <div class="report-block" id="rb-ing-mes"></div>
+
+    <div class="section-hd" style="margin-top:20px">── Gastos ──</div>
     <div class="stats-grid">
       <div class="stat-card" style="grid-column:span 2">
         <div class="stat-lbl">Total general</div>
@@ -754,6 +807,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
     <div class="section-hd" style="margin-top:14px">Por categoria</div>
     <div class="report-block" id="rb-cat"><div class="bar-row"><div class="bar-lbl">Compra Mercancia</div><div class="bar-track"><div class="bar-fill c2" style="width:100%"></div></div><div class="bar-val">$1,519,262</div></div><div class="bar-row"><div class="bar-lbl">Nóminas Operativas</div><div class="bar-track"><div class="bar-fill c3" style="width:0%"></div></div><div class="bar-val">$1,240</div></div><div class="bar-row"><div class="bar-lbl">Inocuidad</div><div class="bar-track"><div class="bar-fill c1" style="width:0%"></div></div><div class="bar-val">$2,486</div></div><div class="bar-row"><div class="bar-lbl">Intereses Operativos</div><div class="bar-track"><div class="bar-fill c2" style="width:5%"></div></div><div class="bar-val">$82,100</div></div><div class="bar-row"><div class="bar-lbl">Pago Prestamo</div><div class="bar-track"><div class="bar-fill c4" style="width:20%"></div></div><div class="bar-val">$300,000</div></div><div class="bar-row"><div class="bar-lbl">Adquisición de Maquinaria</div><div class="bar-track"><div class="bar-fill c1" style="width:0%"></div></div><div class="bar-val">$100</div></div><div class="bar-row"><div class="bar-lbl">Combustible</div><div class="bar-track"><div class="bar-fill c1" style="width:7%"></div></div><div class="bar-val">$110,205</div></div><div class="bar-row"><div class="bar-lbl">Fletes</div><div class="bar-track"><div class="bar-fill c1" style="width:13%"></div></div><div class="bar-val">$196,440</div></div><div class="bar-row"><div class="bar-lbl">Mantenimiento Equipo</div><div class="bar-track"><div class="bar-fill c1" style="width:0%"></div></div><div class="bar-val">$1,437</div></div><div class="bar-row"><div class="bar-lbl">Otros Gastos</div><div class="bar-track"><div class="bar-fill c1" style="width:10%"></div></div><div class="bar-val">$148,269</div></div><div class="bar-row"><div class="bar-lbl">Servicios</div><div class="bar-track"><div class="bar-fill c1" style="width:2%"></div></div><div class="bar-val">$26,871</div></div><div class="bar-row"><div class="bar-lbl">Viáticos</div><div class="bar-track"><div class="bar-fill c1" style="width:3%"></div></div><div class="bar-val">$40,588</div></div><div class="bar-row"><div class="bar-lbl">Contabilidad</div><div class="bar-track"><div class="bar-fill c1" style="width:4%"></div></div><div class="bar-val">$57,884</div></div><div class="bar-row"><div class="bar-lbl">Impuestos</div><div class="bar-track"><div class="bar-fill c1" style="width:1%"></div></div><div class="bar-val">$19,272</div></div><div class="bar-row"><div class="bar-lbl">IMSS</div><div class="bar-track"><div class="bar-fill c1" style="width:8%"></div></div><div class="bar-val">$115,402</div></div><div class="bar-row"><div class="bar-lbl">Manejo de Cuenta</div><div class="bar-track"><div class="bar-fill c1" style="width:1%"></div></div><div class="bar-val">$10,019</div></div><div class="bar-row"><div class="bar-lbl">Nóminas Administrativas</div><div class="bar-track"><div class="bar-fill c1" style="width:13%"></div></div><div class="bar-val">$191,303</div></div><div class="bar-row"><div class="bar-lbl">Seguros</div><div class="bar-track"><div class="bar-fill c1" style="width:2%"></div></div><div class="bar-val">$26,989</div></div></div>
+
+    <div class="section-hd" style="margin-top:20px">Costo por sector — Jalisco Camote</div>
+    <div class="report-block" id="rb-sec-jal"></div>
+
+    <div class="section-hd" style="margin-top:14px">Costo por sector — Nayarit Camote</div>
+    <div class="report-block" id="rb-sec-nay"></div>
 
     <div class="section-hd" style="margin-top:14px">Por mes</div>
     <div class="report-block" id="rb-sem"><div class="bar-row"><div class="bar-lbl">jun 2026</div><div class="bar-track"><div class="bar-fill c6" style="width:0%"></div></div><div class="bar-val">$880</div></div><div class="bar-row"><div class="bar-lbl">may 2026</div><div class="bar-track"><div class="bar-fill c6" style="width:41%"></div></div><div class="bar-val">$226,635</div></div><div class="bar-row"><div class="bar-lbl">abr 2026</div><div class="bar-track"><div class="bar-fill c6" style="width:9%"></div></div><div class="bar-val">$47,775</div></div><div class="bar-row"><div class="bar-lbl">mar 2026</div><div class="bar-track"><div class="bar-fill c6" style="width:57%"></div></div><div class="bar-val">$317,721</div></div><div class="bar-row"><div class="bar-lbl">feb 2026</div><div class="bar-track"><div class="bar-fill c6" style="width:8%"></div></div><div class="bar-val">$43,727</div></div><div class="bar-row"><div class="bar-lbl">ene 2026</div><div class="bar-track"><div class="bar-fill c6" style="width:47%"></div></div><div class="bar-val">$258,215</div></div><div class="bar-row"><div class="bar-lbl">dic 2025</div><div class="bar-track"><div class="bar-fill c6" style="width:41%"></div></div><div class="bar-val">$226,985</div></div><div class="bar-row"><div class="bar-lbl">nov 2025</div><div class="bar-track"><div class="bar-fill c6" style="width:51%"></div></div><div class="bar-val">$283,451</div></div><div class="bar-row"><div class="bar-lbl">oct 2025</div><div class="bar-track"><div class="bar-fill c6" style="width:9%"></div></div><div class="bar-val">$51,134</div></div><div class="bar-row"><div class="bar-lbl">sep 2025</div><div class="bar-track"><div class="bar-fill c6" style="width:6%"></div></div><div class="bar-val">$30,626</div></div><div class="bar-row"><div class="bar-lbl">ago 2025</div><div class="bar-track"><div class="bar-fill c6" style="width:9%"></div></div><div class="bar-val">$50,079</div></div><div class="bar-row"><div class="bar-lbl">jul 2025</div><div class="bar-track"><div class="bar-fill c6" style="width:56%"></div></div><div class="bar-val">$309,425</div></div><div class="bar-row"><div class="bar-lbl">jun 2025</div><div class="bar-track"><div class="bar-fill c6" style="width:100%"></div></div><div class="bar-val">$555,087</div></div><div class="bar-row"><div class="bar-lbl">may 2025</div><div class="bar-track"><div class="bar-fill c6" style="width:37%"></div></div><div class="bar-val">$205,938</div></div><div class="bar-row"><div class="bar-lbl">abr 2025</div><div class="bar-track"><div class="bar-fill c6" style="width:38%"></div></div><div class="bar-val">$210,870</div></div><div class="bar-row"><div class="bar-lbl">mar 2025</div><div class="bar-track"><div class="bar-fill c6" style="width:7%"></div></div><div class="bar-val">$39,652</div></div><div class="bar-row"><div class="bar-lbl">feb 2025</div><div class="bar-track"><div class="bar-fill c6" style="width:5%"></div></div><div class="bar-val">$25,842</div></div><div class="bar-row"><div class="bar-lbl">ene 2025</div><div class="bar-track"><div class="bar-fill c6" style="width:3%"></div></div><div class="bar-val">$15,783</div></div></div>
@@ -822,12 +881,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="field-row">
           <div class="field">
             <label>Cliente</label>
-            <div style="display:flex;gap:6px;align-items:center">
-              <div style="position:relative;flex:1">
-                <input type="text" id="vf-cliente" placeholder="Nombre del cliente" list="clientes-list" autocomplete="off" style="width:100%" oninput="onClienteInput()">
-                <datalist id="clientes-list"><option value="B&amp;M"></option><option value="Sabritas"></option></datalist>
-              </div>
-              <button type="button" onclick="mostrarBorrarCliente()" title="Administrar clientes" style="padding:9px 10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer;font-size:14px;white-space:nowrap;flex-shrink:0">⚙️</button>
+            <div style="position:relative">
+              <input type="text" id="vf-cliente" placeholder="Nombre del cliente" autocomplete="off" style="width:100%" oninput="onClienteInput()" onfocus="showClienteDropdown()" onblur="setTimeout(hideClienteDropdown,150)">
+              <div id="cliente-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:200px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
             </div>
           </div>
           <div class="field">
@@ -1475,7 +1531,58 @@ function bar(cont,rows,maxV){
   });
 }
 
+function envioTotal(e){
+  return (e.partidas||[]).reduce(function(a,p){
+    return a+(parseFloat(p.pesoNeto||0)*parseFloat(p.precio||0));
+  },0) + parseFloat(e.flete||0);
+}
+
 function renderRep(){
+  // ---- INGRESOS ----
+  var ingTot = envios.reduce(function(a,e){ return a+envioTotal(e); },0);
+  var ingJal = envios.filter(function(e){return e.loc==='jal';}).reduce(function(a,e){return a+envioTotal(e);},0);
+  var ingNay = envios.filter(function(e){return e.loc==='nay';}).reduce(function(a,e){return a+envioTotal(e);},0);
+  var ingCom = envios.filter(function(e){return e.loc==='com';}).reduce(function(a,e){return a+envioTotal(e);},0);
+  var oneWeekAgo2 = new Date(hoy); oneWeekAgo2.setDate(hoy.getDate()-7);
+  var ingSw = envios.filter(function(e){
+    if(!e.fecha) return false;
+    var fd=new Date(e.fecha+'T12:00:00'); return fd>=oneWeekAgo2 && fd<=hoy;
+  }).reduce(function(a,e){return a+envioTotal(e);},0);
+
+  document.getElementById('r-ing-tot').textContent = fmt(ingTot);
+  document.getElementById('r-ing-jal').textContent = fmt(ingJal);
+  document.getElementById('r-ing-nay').textContent = fmt(ingNay);
+  document.getElementById('r-ing-com').textContent = fmt(ingCom);
+  document.getElementById('r-ing-cnt').textContent = envios.length;
+  document.getElementById('r-ing-sw').textContent  = fmt(ingSw);
+
+  // Ingresos por mes
+  var ingByMonth={}, ingMonthOrder=[];
+  envios.forEach(function(e){
+    var mk = e.fecha ? e.fecha.substring(0,7) : 'sin-fecha';
+    if(!ingByMonth[mk]){ingByMonth[mk]=0; ingMonthOrder.push(mk);}
+    ingByMonth[mk] += envioTotal(e);
+  });
+  ingMonthOrder = ingMonthOrder.filter(function(v,i){return ingMonthOrder.indexOf(v)===i;});
+  var ingMesRows = ingMonthOrder.map(function(mk){
+    var lbl = mk==='sin-fecha'?'Sin fecha':(function(){
+      var p=mk.split('-'); var d=new Date(parseInt(p[0]),parseInt(p[1])-1,1);
+      return d.toLocaleDateString('es-MX',{month:'short',year:'numeric'});
+    })();
+    return [lbl, ingByMonth[mk], 'c5'];
+  });
+  var maxIng = ingMesRows.length ? Math.max.apply(null,ingMesRows.map(function(r){return r[1];})) : 1;
+  bar(document.getElementById('rb-ing-mes'), ingMesRows, maxIng);
+
+  // ---- UTILIDAD ----
+  var tot=gastos.reduce(function(a,g){return a+g.monto;},0);
+  var utilidad = ingTot - tot;
+  document.getElementById('r-gas-tot').textContent = fmt(tot);
+  var utilEl = document.getElementById('r-util');
+  utilEl.textContent = fmt(utilidad);
+  utilEl.style.color = utilidad >= 0 ? 'var(--green)' : 'var(--fram)';
+  document.getElementById('r-util-card').style.borderColor = utilidad >= 0 ? 'var(--green-border)' : 'var(--fram-border)';
+
   var tot=gastos.reduce(function(a,g){return a+g.monto;},0);
   var tjal=gastos.filter(function(g){return g.loc==='jal';}).reduce(function(a,g){return a+g.monto;},0);
   var tnay=gastos.filter(function(g){return g.loc==='nay';}).reduce(function(a,g){return a+g.monto;},0);
@@ -1542,6 +1649,59 @@ function renderRep(){
   });
   var maxCat=catRows.length?Math.max.apply(null,catRows.map(function(r){return r[1];})):1;
   bar(document.getElementById('rb-cat'),catRows,maxCat);
+
+  // ---- COSTO POR SECTOR ----
+  var CONFIG_SECTOR = {
+    jal: { sectores: 2, actividades: 2 },
+    nay: { sectores: 10, actividades: 1 }
+  };
+  var CATS_COSECHA = ['Arado','Cosecha','Desvarada','Flete Cosecha','Plantacion','Plantación'];
+
+  ['jal','nay'].forEach(function(loc){
+    var cfg = CONFIG_SECTOR[loc];
+    var lbl = loc==='jal'?'Jalisco':'Nayarit';
+
+    // (B) Camote General de esta ubicación ÷ sectores
+    var camoteGeneral = gastos.filter(function(g){
+      return g.loc===loc && g.cultivo==='camote' && CATS_COSECHA.indexOf(g.cat)<0;
+    }).reduce(function(a,g){return a+g.monto;},0);
+    var bProrrateado = camoteGeneral / cfg.sectores;
+
+    // (C) Gastos Generales ÷ actividades ÷ sectores
+    var gastoGeneral = gastos.filter(function(g){
+      return g.loc===loc && g.cultivo==='general';
+    }).reduce(function(a,g){return a+g.monto;},0);
+    var cProrrateado = gastoGeneral / cfg.actividades / cfg.sectores;
+
+    // Build rows per sector
+    var secRows = [];
+    for(var s=1; s<=cfg.sectores; s++){
+      // (A) Cosecha directa de este sector
+      var aCosecha = gastos.filter(function(g){
+        return g.loc===loc && g.cultivo==='camote' && CATS_COSECHA.indexOf(g.cat)>=0 && String(g.sector)===String(s);
+      }).reduce(function(a,g){return a+g.monto;},0);
+
+      var total = aCosecha + bProrrateado + cProrrateado;
+      if(total > 0){
+        secRows.push(['Sector '+s, total, loc==='jal'?'jal':'nay']);
+      }
+    }
+
+    var maxSec = secRows.length ? Math.max.apply(null,secRows.map(function(r){return r[1];})) : 1;
+    var cont = document.getElementById('rb-sec-'+loc);
+    if(secRows.length){
+      bar(cont, secRows, maxSec);
+      // Add breakdown note
+      var note = document.createElement('div');
+      note.style.cssText = 'font-size:11px;color:var(--text3);margin-top:6px;padding:8px 4px;border-top:1px solid var(--border)';
+      note.innerHTML =
+        '📌 Cosecha General prorrateada: <b>'+fmt(bProrrateado)+'</b>/sector &nbsp;·&nbsp; ' +
+        'Gastos Generales prorrateados: <b>'+fmt(cProrrateado)+'</b>/sector';
+      cont.appendChild(note);
+    } else {
+      cont.innerHTML = '<div style="font-size:13px;color:var(--text3);text-align:center;padding:8px 0">Sin gastos de camote registrados para '+lbl+'</div>';
+    }
+  });
 
   // Por mes
   var byMonthRep={};var monthRepOrder=[];
@@ -2116,18 +2276,57 @@ try{if(!clientes.length && typeof CLIENTES_IMPORTADOS!=='undefined' && CLIENTES_
 function saveClientes(){try{localStorage.setItem('cc_clientes',JSON.stringify(clientes));}catch(e){}}
 
 function updateClientesDatalist(){
-  var dl = document.getElementById('clientes-list');
-  if(!dl) return;
-  dl.innerHTML = '';
-  clientes.forEach(function(c){
-    var o = document.createElement('option');
-    o.value = c;
-    dl.appendChild(o);
+  // kept for compatibility — actual UI uses renderClienteDropdown
+  renderClienteDropdown();
+}
+
+function renderClienteDropdown(){
+  var dd = document.getElementById('cliente-dropdown');
+  if(!dd) return;
+  var q = (document.getElementById('vf-cliente').value||'').toLowerCase();
+  var filtered = clientes.filter(function(c){ return c.toLowerCase().indexOf(q) >= 0; });
+  dd.innerHTML = '';
+  if(!filtered.length){
+    dd.style.display = 'none';
+    return;
+  }
+  filtered.forEach(function(c){
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px';
+    row.onmouseenter = function(){ this.style.background='var(--surface3,var(--green-bg))'; };
+    row.onmouseleave = function(){ this.style.background=''; };
+    var name = document.createElement('span');
+    name.textContent = c;
+    name.style.flex = '1';
+    name.onmousedown = function(e){ e.preventDefault(); document.getElementById('vf-cliente').value = c; hideClienteDropdown(); };
+    var btn = document.createElement('button');
+    btn.textContent = '×';
+    btn.title = 'Eliminar cliente';
+    btn.style.cssText = 'background:none;border:none;color:var(--text3);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0';
+    btn.onmousedown = function(e){
+      e.preventDefault(); e.stopPropagation();
+      confirmarBorrarCliente(c);
+    };
+    row.appendChild(name);
+    row.appendChild(btn);
+    dd.appendChild(row);
   });
+  dd.style.display = 'block';
+}
+
+function showClienteDropdown(){
+  renderClienteDropdown();
+}
+
+function hideClienteDropdown(){
+  var dd = document.getElementById('cliente-dropdown');
+  if(dd) dd.style.display = 'none';
 }
 
 function onClienteInput(){
-  // noop - datalist handles suggestions natively
+  renderClienteDropdown();
+  var dd = document.getElementById('cliente-dropdown');
+  if(dd) dd.style.display = 'block';
 }
 
 function agregarClienteSiNuevo(nombre){
@@ -2164,12 +2363,10 @@ function mostrarBorrarCliente(){
 function confirmarBorrarCliente(nombre){
   clientes = clientes.filter(function(c){return c !== nombre;});
   saveClientes();
-  updateClientesDatalist();
-  // If current field had this client, clear it
+  renderClienteDropdown();
   var field = document.getElementById('vf-cliente');
   if(field && field.value.trim() === nombre) field.value = '';
   showToast('Cliente eliminado');
-  mostrarBorrarCliente(); // refresh modal
 }
 
 // Init datalist on load
@@ -2212,6 +2409,76 @@ function guardarHTML(){
     }
   } catch(e){
     fallbackDescarga(h, nombre);
+  }
+}
+
+function csvEscape(v){
+  if(v===null||v===undefined) return '';
+  var s = String(v);
+  if(s.indexOf(',')>=0||s.indexOf('"')>=0||s.indexOf('\n')>=0){
+    return '"'+s.replace(/"/g,'""')+'"';
+  }
+  return s;
+}
+
+function csvRow(arr){ return arr.map(csvEscape).join(','); }
+
+function descargarCSV(rows, nombre){
+  var csv = '\uFEFF' + rows.map(csvRow).join('\r\n');
+  var uri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  var a = document.createElement('a');
+  a.setAttribute('href', uri);
+  a.setAttribute('download', nombre);
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function exportarExcel(){
+  var fecha = new Date().toISOString().slice(0,10);
+  var locLbl = {jal:'Jalisco', nay:'Nayarit', ofic:'Oficina', com:'Comercializadora'};
+  var cultLbl = {camote:'Camote', fram:'Frambuesa', general:'General', ofic:'', com:''};
+
+  try {
+    // ── CSV 1: Gastos ──
+    var gastosRows = [['Fecha','Negocio','Actividad','Categoría','Sector','Descripción','Monto','Ciclo']];
+    gastos.forEach(function(g){
+      gastosRows.push([
+        g.fechaVal||'', locLbl[g.loc]||g.loc||'', cultLbl[g.cultivo]||g.cultivo||'',
+        g.cat||'', g.sector||'', g.desc||'', g.monto||0, g.ciclo||''
+      ]);
+    });
+    descargarCSV(gastosRows, 'gastos-'+fecha+'.csv');
+
+    // ── CSV 2: Envíos (con delay para no chocar) ──
+    setTimeout(function(){
+      var enviosRows = [['N° Envío','Folio','Fecha','Negocio','Cliente','Ciclo','Variedad','Sector','Hectáreas','Peso Neto kg','Toneladas','Precio x kg','Total Variedad','Flete','Total Envío']];
+      envios.forEach(function(e){
+        var totalEnvio = (e.partidas||[]).reduce(function(a,p){
+          return a+parseFloat(p.pesoNeto||0)*parseFloat(p.precio||0);
+        },0)+parseFloat(e.flete||0);
+        if(!e.partidas||!e.partidas.length){
+          enviosRows.push([e.num||'',e.folio||'',e.fecha||'',locLbl[e.loc]||'',e.cliente||'',e.ciclo||'','','','','','','','',e.flete||0,totalEnvio]);
+        } else {
+          e.partidas.forEach(function(p,pi){
+            var totP = parseFloat(p.pesoNeto||0)*parseFloat(p.precio||0);
+            enviosRows.push([
+              pi===0?e.num||'':'', pi===0?e.folio||'':'', pi===0?e.fecha||'':'',
+              pi===0?locLbl[e.loc]||'':'', pi===0?e.cliente||'':'', pi===0?e.ciclo||'':'',
+              p.variedad||'', p.sector||'', p.hectareas||'', p.pesoNeto||'',
+              p.toneladas||'', p.precio||'', totP,
+              pi===0?e.flete||0:'', pi===0?totalEnvio:''
+            ]);
+          });
+        }
+      });
+      descargarCSV(enviosRows, 'envios-'+fecha+'.csv');
+    }, 800);
+
+    showToast('✅ Descargando Gastos y Envíos en CSV...');
+  } catch(e){
+    showToast('❌ Error: '+e.message);
   }
 }
 
