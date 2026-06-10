@@ -707,7 +707,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
   <!-- REPORTES -->
-  <div id="sc-rep" class="screen active">
+  <div id="sc-rep" class="screen">
     <div class="stats-grid">
       <div class="stat-card" style="grid-column:span 2">
         <div class="stat-lbl">Total general</div>
@@ -760,7 +760,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
   <!-- VENTAS -->
-  <div id="sc-ven" class="screen">
+  <div id="sc-ven" class="screen active">
     <!-- Sub-nav: lista / nuevo -->
     <div class="ven-subnav" id="ven-subnav">
       <button class="ven-tab active" id="vt-lista" onclick="venTab('lista')">Envios</button>
@@ -769,9 +769,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
     <!-- Lista de envios -->
     <div id="ven-lista-sec" style="display: block;">
-      <div class="week-filter" id="ven-wf-ciclo"></div>
+      <div class="week-filter" id="ven-wf-ciclo"><button class="wf-btn">2025-2026</button></div>
       <div class="week-filter" id="ven-wf-neg" style="margin-top:4px"><button class="wf-btn active">Todos</button><button class="wf-btn">Jalisco</button><button class="wf-btn">Nayarit</button><button class="wf-btn">Comercial.</button></div>
-      <div id="ven-lista"><div class="empty"><div class="empty-icon">🍀</div><div class="empty-text">Sin envios registrados aun.</div></div></div>
+      <div id="ven-lista"><div class="envio-item"><div class="envio-header"><div><div class="envio-num">ProdJal/2025/005</div><div class="envio-meta">10 nov 2025 · B&amp;M</div></div><div class="envio-total">$152,797</div></div><div class="envio-tags" style="margin-bottom:8px"><span class="tag jal">Jalisco</span><span class="tag general">2025-2026</span></div><table class="ven-modal-table" style="margin-top:0"><thead><tr><th>Variedad</th><th style="text-align:right">Sec.</th><th style="text-align:right">Ha</th><th style="text-align:right">P.Neto</th><th style="text-align:right">$/kg</th><th style="text-align:right">Total</th></tr></thead><tbody><tr><td>Amarillo Nylon</td><td style="text-align:right">2</td><td style="text-align:right">0.3</td><td style="text-align:right">5,157</td><td style="text-align:right">$11</td><td style="text-align:right;color:var(--green);font-weight:600">$56,727</td></tr><tr><td>Blanco Criollo</td><td style="text-align:right">4</td><td style="text-align:right">0.55</td><td style="text-align:right">9,607</td><td style="text-align:right">$10</td><td style="text-align:right;color:var(--green);font-weight:600">$96,070</td></tr></tbody></table></div><div class="envio-item"><div class="envio-header"><div><div class="envio-num">ProdJal/2025/004</div><div class="envio-meta">03 nov 2025 · Sabritas</div></div><div class="envio-total">$9,750</div></div><div class="envio-tags" style="margin-bottom:8px"><span class="tag jal">Jalisco</span><span class="tag general">2025-2026</span></div><table class="ven-modal-table" style="margin-top:0"><thead><tr><th>Variedad</th><th style="text-align:right">Sec.</th><th style="text-align:right">Ha</th><th style="text-align:right">P.Neto</th><th style="text-align:right">$/kg</th><th style="text-align:right">Total</th></tr></thead><tbody><tr><td>Amarillo Nylon</td><td style="text-align:right">2</td><td style="text-align:right">0.03</td><td style="text-align:right">650</td><td style="text-align:right">$15</td><td style="text-align:right;color:var(--green);font-weight:600">$9,750</td></tr></tbody></table></div><div class="envio-item"><div class="envio-header"><div><div class="envio-num">ProdJal/2025/003</div><div class="envio-meta">27 oct 2025 · B&amp;M</div></div><div class="envio-total">$181,593</div></div><div class="envio-tags" style="margin-bottom:8px"><span class="tag jal">Jalisco</span><span class="tag general">2025-2026</span></div><table class="ven-modal-table" style="margin-top:0"><thead><tr><th>Variedad</th><th style="text-align:right">Sec.</th><th style="text-align:right">Ha</th><th style="text-align:right">P.Neto</th><th style="text-align:right">$/kg</th><th style="text-align:right">Total</th></tr></thead><tbody><tr><td>Amarillo Nylon</td><td style="text-align:right">2</td><td style="text-align:right">0.26</td><td style="text-align:right">6,317.5</td><td style="text-align:right">$11</td><td style="text-align:right;color:var(--green);font-weight:600">$69,493</td></tr><tr><td>Blanco Criollo</td><td style="text-align:right">4</td><td style="text-align:right">0.44</td><td style="text-align:right">11,210</td><td style="text-align:right">$10</td><td style="text-align:right;color:var(--green);font-weight:600">$112,100</td></tr></tbody></table></div><div class="envio-item"><div class="envio-header"><div><div class="envio-num">ProdJal/2025/002</div><div class="envio-meta">14 sep 2025 · Sabritas</div></div><div class="envio-total">$67,500</div></div><div class="envio-tags" style="margin-bottom:8px"><span class="tag jal">Jalisco</span><span class="tag general">2025-2026</span></div><table class="ven-modal-table" style="margin-top:0"><thead><tr><th>Variedad</th><th style="text-align:right">Sec.</th><th style="text-align:right">Ha</th><th style="text-align:right">P.Neto</th><th style="text-align:right">$/kg</th><th style="text-align:right">Total</th></tr></thead><tbody><tr><td>Morado Criollo</td><td style="text-align:right">1</td><td style="text-align:right">0.22</td><td style="text-align:right">4,500</td><td style="text-align:right">$15</td><td style="text-align:right;color:var(--green);font-weight:600">$67,500</td></tr></tbody></table></div><div class="envio-item"><div class="envio-header"><div><div class="envio-num">ProdJal/2025/001</div><div class="envio-meta">07 jul 2025 · Sabritas</div></div><div class="envio-total">$15,000</div></div><div class="envio-tags" style="margin-bottom:8px"><span class="tag jal">Jalisco</span><span class="tag general">2025-2026</span></div><table class="ven-modal-table" style="margin-top:0"><thead><tr><th>Variedad</th><th style="text-align:right">Sec.</th><th style="text-align:right">Ha</th><th style="text-align:right">P.Neto</th><th style="text-align:right">$/kg</th><th style="text-align:right">Total</th></tr></thead><tbody><tr><td>Morado Criollo</td><td style="text-align:right">1</td><td style="text-align:right">0.1</td><td style="text-align:right">1,000</td><td style="text-align:right">$15</td><td style="text-align:right;color:var(--green);font-weight:600">$15,000</td></tr></tbody></table></div></div>
     </div>
 
     <!-- Formulario nuevo envio -->
@@ -874,11 +874,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"></path></svg>
     Historial
   </button>
-  <button class="nav-item active" id="nav-rep" onclick="goSc('rep')">
+  <button class="nav-item" id="nav-rep" onclick="goSc('rep')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3v18h18"></path><path d="m7 16 4-4 4 4 4-4"></path></svg>
     Reportes
   </button>
-  <button class="nav-item" id="nav-ven" onclick="goSc('ven')">
+  <button class="nav-item active" id="nav-ven" onclick="goSc('ven')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
     Ventas
   </button>
