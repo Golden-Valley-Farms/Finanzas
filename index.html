@@ -2441,15 +2441,14 @@ function exportarExcel(){
   var cultLbl = {camote:'Camote', fram:'Frambuesa', general:'General', ofic:'', com:''};
   var rows = [];
 
-  rows.push(['=== GASTOS ===','','','','','','','']);
+  rows.push(['GASTOS','','','','','','','']);
   rows.push(['Fecha','Negocio','Actividad','Categoria','Sector','Descripcion','Monto','Ciclo']);
   gastos.forEach(function(g){
     rows.push([g.fechaVal||'', locLbl[g.loc]||g.loc||'', cultLbl[g.cultivo]||g.cultivo||'',
       g.cat||'', g.sector||'', g.desc||'', g.monto||0, g.ciclo||'']);
   });
-
   rows.push(['','','','','','','','']);
-  rows.push(['=== ENVIOS ===','','','','','','','','','','','','','','']);
+  rows.push(['ENVIOS','','','','','','','','','','','','','','']);
   rows.push(['N Envio','Folio','Fecha','Negocio','Cliente','Ciclo','Variedad','Sector','Hectareas','Peso Neto kg','Toneladas','Precio x kg','Total Variedad','Flete','Total Envio']);
   envios.forEach(function(e){
     var totalEnvio=(e.partidas||[]).reduce(function(a,p){return a+parseFloat(p.pesoNeto||0)*parseFloat(p.precio||0);},0)+parseFloat(e.flete||0);
@@ -2467,16 +2466,15 @@ function exportarExcel(){
   });
 
   var csv = rows.map(csvRow).join('\r\n');
-  var blob = new Blob([csv], {type:'text/csv'});
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url;
-  a.download = 'cosecha-y-cuentas-'+fecha+'.csv';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast('CSV descargado');
+  // Mostrar modal con link de descarga directo
+  var enc = encodeURIComponent(csv);
+  document.getElementById('mo-title').textContent = 'Descargar CSV';
+  document.getElementById('mo-body').innerHTML =
+    '<p style="font-size:13px;color:var(--text2);margin-bottom:16px">Haz clic en el botón para descargar el archivo CSV.</p>' +
+    '<a href="data:text/csv;charset=utf-8,' + enc + '" download="cosecha-y-cuentas-'+fecha+'.csv" ' +
+    'style="display:block;width:100%;text-align:center;padding:14px;background:var(--green);color:#fff;border-radius:var(--radius);font-weight:600;font-size:14px;text-decoration:none;box-sizing:border-box">' +
+    'Descargar cosecha-y-cuentas-'+fecha+'.csv</a>';
+  document.getElementById('overlay').classList.add('open');
 }
 </script>
 </body>
