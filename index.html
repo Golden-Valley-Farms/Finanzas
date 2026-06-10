@@ -2489,18 +2489,16 @@ function exportarExcel(){
   wsR['!cols'] = [{wch:20},{wch:16},{wch:16},{wch:16}];
   XLSX.utils.book_append_sheet(wb, wsR, 'Resumen');
 
-  // Descargar
-  var wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
-  var blob = new Blob([wbout], {type:'application/octet-stream'});
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url;
-  a.download = 'cosecha-y-cuentas-'+fecha+'.xlsx';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast('Excel descargado');
+  // Descargar via modal (evita bloqueo de Chrome)
+  var wbout = XLSX.write(wb, {bookType:'xlsx', type:'base64'});
+  var dataUri = 'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,' + wbout;
+  document.getElementById('mo-title').textContent = 'Descargar Excel';
+  document.getElementById('mo-body').innerHTML =
+    '<p style="font-size:13px;color:var(--text2);margin-bottom:16px">Haz clic para descargar el archivo Excel con 3 pestañas: Gastos, Envios y Resumen.</p>' +
+    '<a href="' + dataUri + '" download="cosecha-y-cuentas-' + fecha + '.xlsx" ' +
+    'style="display:block;text-align:center;padding:14px;background:var(--green);color:#fff;border-radius:var(--radius);font-weight:600;font-size:14px;text-decoration:none">' +
+    '⬇️ Descargar cosecha-y-cuentas-' + fecha + '.xlsx</a>';
+  document.getElementById('overlay').classList.add('open');
 }
 </script>
 </body>
