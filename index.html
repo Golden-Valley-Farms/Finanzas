@@ -2436,48 +2436,64 @@ function descargarCSV(rows, nombre){
 }
 
 function exportarExcel(){
+  console.log('exportar iniciado, gastos:'+gastos.length+' envios:'+envios.length);
   var fecha = new Date().toISOString().slice(0,10);
   var locLbl = {jal:'Jalisco', nay:'Nayarit', ofic:'Oficina', com:'Comercializadora'};
   var cultLbl = {camote:'Camote', fram:'Frambuesa', general:'General', ofic:'', com:''};
 
   try {
-    // ── CSV 1: Gastos ──
-    var gastosRows = [['Fecha','Negocio','Actividad','Categoría','Sector','Descripción','Monto','Ciclo']];
+    var rows = [];
+
+    // ── SECCIÓN GASTOS ──
+    rows.push(['=== GASTOS ===','','','','','','','']);
+    rows.push(['Fecha','Negocio','Actividad','Categoría','Sector','Descripción','Monto','Ciclo']);
     gastos.forEach(function(g){
-      gastosRows.push([
+      rows.push([
         g.fechaVal||'', locLbl[g.loc]||g.loc||'', cultLbl[g.cultivo]||g.cultivo||'',
         g.cat||'', g.sector||'', g.desc||'', g.monto||0, g.ciclo||''
       ]);
     });
-    descargarCSV(gastosRows, 'gastos-'+fecha+'.csv');
 
-    // ── CSV 2: Envíos (con delay para no chocar) ──
-    setTimeout(function(){
-      var enviosRows = [['N° Envío','Folio','Fecha','Negocio','Cliente','Ciclo','Variedad','Sector','Hectáreas','Peso Neto kg','Toneladas','Precio x kg','Total Variedad','Flete','Total Envío']];
-      envios.forEach(function(e){
-        var totalEnvio = (e.partidas||[]).reduce(function(a,p){
-          return a+parseFloat(p.pesoNeto||0)*parseFloat(p.precio||0);
-        },0)+parseFloat(e.flete||0);
-        if(!e.partidas||!e.partidas.length){
-          enviosRows.push([e.num||'',e.folio||'',e.fecha||'',locLbl[e.loc]||'',e.cliente||'',e.ciclo||'','','','','','','','',e.flete||0,totalEnvio]);
-        } else {
-          e.partidas.forEach(function(p,pi){
-            var totP = parseFloat(p.pesoNeto||0)*parseFloat(p.precio||0);
-            enviosRows.push([
-              pi===0?e.num||'':'', pi===0?e.folio||'':'', pi===0?e.fecha||'':'',
-              pi===0?locLbl[e.loc]||'':'', pi===0?e.cliente||'':'', pi===0?e.ciclo||'':'',
-              p.variedad||'', p.sector||'', p.hectareas||'', p.pesoNeto||'',
-              p.toneladas||'', p.precio||'', totP,
-              pi===0?e.flete||0:'', pi===0?totalEnvio:''
-            ]);
-          });
-        }
-      });
-      descargarCSV(enviosRows, 'envios-'+fecha+'.csv');
-    }, 800);
+    // Separador
+    rows.push(['','','','','','','','']);
+    rows.push(['','','','','','','','']);
 
-    showToast('✅ Descargando Gastos y Envíos en CSV...');
+    // ── SECCIÓN ENVÍOS ──
+    rows.push(['=== ENVÍOS ===','','','','','','','','','','','','','','']);
+    rows.push(['N° Envío','Folio','Fecha','Negocio','Cliente','Ciclo','Variedad','Sector','Hectáreas','Peso Neto kg','Toneladas','Precio x kg','Total Variedad','Flete','Total Envío']);
+    envios.forEach(function(e){
+      var totalEnvio = (e.partidas||[]).reduce(function(a,p){
+        return a+parseFloat(p.pesoNeto||0)*parseFloat(p.precio||0);
+      },0)+parseFloat(e.flete||0);
+      if(!e.partidas||!e.partidas.length){
+        rows.push([e.num||'',e.folio||'',e.fecha||'',locLbl[e.loc]||'',e.cliente||'',e.ciclo||'','','','','','','','',e.flete||0,totalEnvio]);
+      } else {
+        e.partidas.forEach(function(p,pi){
+          var totP = parseFloat(p.pesoNeto||0)*parseFloat(p.precio||0);
+          rows.push([
+            pi===0?e.num||'':'', pi===0?e.folio||'':'', pi===0?e.fecha||'':'',
+            pi===0?locLbl[e.loc]||'':'', pi===0?e.cliente||'':'', pi===0?e.ciclo||'':'',
+            p.variedad||'', p.sector||'', p.hectareas||'', p.pesoNeto||'',
+            p.toneladas||'', p.precio||'', totP,
+            pi===0?e.flete||0:'', pi===0?totalEnvio:''
+          ]);
+        });
+      }
+    });
+
+    var csv = '\uFEFF' + rows.map(csvRow).join('\r\n');
+    var uri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    var a = document.createElement('a');
+    a.setAttribute('href', uri);
+    a.setAttribute('download', 'cosecha-y-cuentas-'+fecha+'.csv');
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    console.log('descargando:', 'cosecha-y-cuentas-'+fecha+'.csv', 'uri length:', uri.length);
+    a.click();
+    document.body.removeChild(a);
+    showToast('✅ CSV descargado — ábrelo en Excel');
   } catch(e){
+    console.error('exportar error:', e);
     showToast('❌ Error: '+e.message);
   }
 }
