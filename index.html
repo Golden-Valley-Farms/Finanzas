@@ -2493,8 +2493,8 @@ function exportarExcel(){
     setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 2000);
     showToast('✅ CSV descargado — ábrelo en Excel');
   } catch(e){
-    console.error('exportar error:', e);
-    showToast('❌ Error: '+e.message);
+    console.error('exportar error completo:', e, e.stack);
+    alert('Error: '+e.message+'\n'+e.stack);
   }
 }
 
