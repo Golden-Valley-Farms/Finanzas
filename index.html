@@ -2443,76 +2443,42 @@ function exportarExcel(){
 
   try {
     var rows = [];
-
-    // ── SECCIÓN GASTOS ──
     rows.push(['=== GASTOS ===','','','','','','','']);
     rows.push(['Fecha','Negocio','Actividad','Categoría','Sector','Descripción','Monto','Ciclo']);
     gastos.forEach(function(g){
-      rows.push([
-        g.fechaVal||'', locLbl[g.loc]||g.loc||'', cultLbl[g.cultivo]||g.cultivo||'',
-        g.cat||'', g.sector||'', g.desc||'', g.monto||0, g.ciclo||''
-      ]);
+      rows.push([g.fechaVal||'', locLbl[g.loc]||g.loc||'', cultLbl[g.cultivo]||g.cultivo||'',
+        g.cat||'', g.sector||'', g.desc||'', g.monto||0, g.ciclo||'']);
     });
-
-    // Separador
     rows.push(['','','','','','','','']);
-    rows.push(['','','','','','','','']);
-
-    // ── SECCIÓN ENVÍOS ──
     rows.push(['=== ENVÍOS ===','','','','','','','','','','','','','','']);
     rows.push(['N° Envío','Folio','Fecha','Negocio','Cliente','Ciclo','Variedad','Sector','Hectáreas','Peso Neto kg','Toneladas','Precio x kg','Total Variedad','Flete','Total Envío']);
     envios.forEach(function(e){
-      var totalEnvio = (e.partidas||[]).reduce(function(a,p){
-        return a+parseFloat(p.pesoNeto||0)*parseFloat(p.precio||0);
-      },0)+parseFloat(e.flete||0);
+      var totalEnvio=(e.partidas||[]).reduce(function(a,p){return a+parseFloat(p.pesoNeto||0)*parseFloat(p.precio||0);},0)+parseFloat(e.flete||0);
       if(!e.partidas||!e.partidas.length){
         rows.push([e.num||'',e.folio||'',e.fecha||'',locLbl[e.loc]||'',e.cliente||'',e.ciclo||'','','','','','','','',e.flete||0,totalEnvio]);
       } else {
         e.partidas.forEach(function(p,pi){
-          var totP = parseFloat(p.pesoNeto||0)*parseFloat(p.precio||0);
-          rows.push([
-            pi===0?e.num||'':'', pi===0?e.folio||'':'', pi===0?e.fecha||'':'',
-            pi===0?locLbl[e.loc]||'':'', pi===0?e.cliente||'':'', pi===0?e.ciclo||'':'',
-            p.variedad||'', p.sector||'', p.hectareas||'', p.pesoNeto||'',
-            p.toneladas||'', p.precio||'', totP,
-            pi===0?e.flete||0:'', pi===0?totalEnvio:''
-          ]);
+          var totP=parseFloat(p.pesoNeto||0)*parseFloat(p.precio||0);
+          rows.push([pi===0?e.num||'':'',pi===0?e.folio||'':'',pi===0?e.fecha||'':'',
+            pi===0?locLbl[e.loc]||'':'',pi===0?e.cliente||'':'',pi===0?e.ciclo||'':'',
+            p.variedad||'',p.sector||'',p.hectareas||'',p.pesoNeto||'',
+            p.toneladas||'',p.precio||'',totP,pi===0?e.flete||0:'',pi===0?totalEnvio:'']);
         });
       }
     });
 
-    var csv = '\uFEFF' + rows.map(csvRow).join('\r\n');
-    var blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = 'cosecha-y-cuentas-'+fecha+'.csv';
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 2000);
-    showToast('✅ CSV descargado — ábrelo en Excel');
+    var csv = rows.map(csvRow).join('\n');
+    // Abrir en ventana nueva para que el usuario guarde con Ctrl+S
+    var w = window.open('', '_blank');
+    w.document.write('<html><head><meta charset="UTF-8"><title>cosecha-y-cuentas-'+fecha+'.csv</title></head><body>');
+    w.document.write('<p style="font-family:sans-serif;font-size:13px;color:#666">Presiona <b>Ctrl+S</b> para guardar el archivo CSV. Nómbralo con extensión <b>.csv</b></p>');
+    w.document.write('<pre style="font-size:11px;white-space:pre-wrap;word-break:break-all">'+csv.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</pre>');
+    w.document.write('</body></html>');
+    w.document.close();
+    showToast('✅ Abre la ventana nueva y guarda con Ctrl+S');
   } catch(e){
-    console.error('exportar error completo:', e, e.stack);
-    alert('Error: '+e.message+'\n'+e.stack);
+    console.error('exportar error:', e);
+    alert('Error: '+e.message);
   }
 }
-
-function fallbackDescarga(h, nombre){
-  try {
-    var blob = new Blob([h], {type:'text/html;charset=utf-8'});
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = nombre;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 1000);
-    showToast('✅ Archivo guardado con todos los datos');
-  } catch(e){
-    showToast('❌ Error al guardar: ' + e.message);
-  }
-}
-</script>
-
-
-</body></html>
+>
