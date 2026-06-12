@@ -1,10 +1,11 @@
 <html lang="es"><head>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.13/html-to-image.min.js" integrity="sha512-iZ2ORl595Wx6miw+GuadDet4WQbdSWS3JLMoNfY8cRGoEFy6oT3G9IbcrBeL6AfkgpA51ETt/faX6yLV+/gFJg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
 // ---- SUPABASE ----
 const SUPABASE_URL = 'https://jlfendrdwptwmttrahre.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_RNnR7jV42dGEGLFWdRVfvQ_cP1xSwuO';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Sync flag
 var sbOnline = false;
@@ -675,7 +676,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body id="artifacts-component-root-html">
 <div class="app">
