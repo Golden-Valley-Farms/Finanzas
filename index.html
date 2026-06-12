@@ -352,7 +352,7 @@ input,select,textarea,button{font-family:var(--font)}
 .step-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px}
 
 /* Ubicacion */
-.loc-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.loc-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
 .loc-btn{padding:12px 8px;border-radius:var(--radius-lg);border:1.5px solid var(--border);background:var(--surface);cursor:pointer;text-align:center;transition:all .15s;-webkit-tap-highlight-color:transparent;width:100%}
 .loc-btn.jal.sel{background:var(--jal-bg);border-color:var(--jal)}
 .loc-btn.nay.sel{background:var(--nay-bg);border-color:var(--nay)}
@@ -589,10 +589,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="loc-emoji">💼</div>
         <div class="loc-label">Oficina</div>
       </button>
-      <button class="loc-btn com" id="lb-com" onclick="selLoc('com')">
-        <div class="loc-emoji">🛒</div>
-        <div class="loc-label">Comercial.</div>
-      </button>
     </div>
 
     <!-- Actividad (solo campo) -->
@@ -686,7 +682,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <option value="jal">Jalisco</option>
           <option value="nay">Nayarit</option>
           <option value="ofic">Oficina</option>
-          <option value="com">Comercial.</option>
         </select>
       </div>
       <div>
@@ -825,6 +820,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div class="ven-subnav" id="ven-subnav">
       <button class="ven-tab active" id="vt-lista" onclick="venTab('lista')">Envios</button>
       <button class="ven-tab" id="vt-nuevo" onclick="venTab('nuevo')">+ Nuevo envio</button>
+      <button class="ven-tab" id="vt-comer" onclick="venTab('comer')">Comercializadora</button>
     </div>
 
     <!-- Lista de envios -->
@@ -844,7 +840,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <select id="vf-tipo-envio" onchange="onTipoEnvioChange()" style="font-weight:600">
               <option value="jal">🌾 Jalisco</option>
               <option value="nay">🌿 Nayarit</option>
-              <option value="com">📦 Comercializadora</option>
+
             </select>
           </div>
           <div class="field">
@@ -883,7 +879,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <div class="field">
             <label>Cliente</label>
             <div style="position:relative">
-              <input type="text" id="vf-cliente" placeholder="Nombre del cliente" autocomplete="off" style="width:100%" oninput="onClienteInput()" onfocus="showClienteDropdown()" onblur="setTimeout(hideClienteDropdown,150)">
+              <input type="text" id="vf-cliente" placeholder="Nombre del cliente" autocomplete="off" style="width:100%" oninput="onClienteInput()" onclick="showClienteDropdown()" onblur="setTimeout(hideClienteDropdown,150)">
               <div id="cliente-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:200px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
             </div>
           </div>
@@ -892,11 +888,20 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <select id="vf-ciclo"><option value="2025-2026">2025-2026</option><option value="2026-2027">2026-2027</option><option value="2025-2026">2025-2026</option><option value="2026-2027">2026-2027</option></select>
           </div>
         </div>
-        <div class="field">
-          <label>Flete ($MXN)</label>
-          <div class="monto-wrap">
-            <span class="monto-prefix">$</span>
-            <input type="number" id="vf-flete" placeholder="0" min="0" step="0.01">
+        <div class="field-row">
+          <div class="field">
+            <label>Flete de compra ($)</label>
+            <div class="monto-wrap">
+              <span class="monto-prefix">$</span>
+              <input type="number" id="vf-flete-compra" placeholder="0" min="0" step="0.01">
+            </div>
+          </div>
+          <div class="field">
+            <label>Flete de venta ($)</label>
+            <div class="monto-wrap">
+              <span class="monto-prefix">$</span>
+              <input type="number" id="vf-flete" placeholder="0" min="0" step="0.01">
+            </div>
           </div>
         </div>
         <div class="field">
@@ -919,6 +924,91 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
       <button class="btn-main" style="margin-top:12px" id="btn-ven-guardar" onclick="guardarEnvio()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"></path></svg> Guardar envio</button>
     </div>
+
+    <!-- OPERACION COMERCIALIZADORA -->
+    <div id="comer-form-sec" style="display:none;padding:0 16px 100px">
+
+      <div class="step-label">Encabezado</div>
+      <div class="card" style="margin-bottom:12px">
+        <div class="field-row">
+          <div class="field">
+            <label>N° de operación</label>
+            <input type="text" id="cf-num" readonly style="background:var(--surface2);color:var(--text2);font-family:var(--mono);font-size:13px">
+          </div>
+          <div class="field">
+            <label>Fecha</label>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="text" id="cf-fecha" placeholder="DD/MM/AAAA" maxlength="10" oninput="onComerFechaInput()" onblur="normalizarComerFecha()" style="flex:1;font-family:var(--mono);font-weight:600">
+              <input type="date" id="cf-fecha-picker" onchange="onComerPickerChange()" style="padding:8px 6px;border-radius:var(--radius);border:1.5px solid var(--green-border);background:var(--green-bg);cursor:pointer;flex-shrink:0;width:36px;color:transparent;color-scheme:dark light">
+            </div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Proveedor</label>
+            <div style="position:relative">
+              <input type="text" id="cf-proveedor" placeholder="Nombre del proveedor" autocomplete="off" style="width:100%" oninput="onProveedorInput()" onfocus="showProveedorDropdown()" onblur="setTimeout(hideProveedorDropdown,150)">
+              <div id="proveedor-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:200px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Cliente</label>
+            <div style="position:relative">
+              <input type="text" id="cf-cliente" placeholder="Nombre del cliente" autocomplete="off" style="width:100%" oninput="onComerClienteInput()" onfocus="showComerClienteDropdown()" onblur="setTimeout(hideComerClienteDropdown,150)">
+              <div id="comer-cliente-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:200px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-label">Compra — por variedad</div>
+      <div id="cf-partidas-compra"></div>
+      <div id="cf-add-var-wrap" style="margin-bottom:12px">
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="cf-var-select" style="flex:1;padding:10px 12px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:13px">
+            <option value="">— Selecciona variedad —</option>
+          </select>
+          <button onclick="addComerVariedad()" style="padding:10px 16px;border-radius:var(--radius);border:1.5px solid var(--green-border);background:var(--green-bg);color:var(--green);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">+ Agregar</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:12px">
+        <div class="field-row">
+          <div class="field">
+            <label>Flete de compra ($)</label>
+            <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="cf-flete-compra" placeholder="0" min="0" style="padding-left:24px" oninput="recalcComer()"></div>
+          </div>
+          <div class="field">
+            <label>Flete de venta ($)</label>
+            <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="cf-flete-venta" placeholder="0" min="0" style="padding-left:24px" oninput="recalcComer()"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-label">Resumen de operación</div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="padding:10px;background:var(--fram-bg);border-radius:var(--radius);border:1px solid var(--fram-border)">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:4px">TOTAL GASTO</div>
+            <div id="cf-resumen-gasto" style="font-size:15px;font-weight:600;color:var(--fram);font-family:var(--mono)">$0</div>
+          </div>
+          <div style="padding:10px;background:var(--green-bg);border-radius:var(--radius);border:1px solid var(--green-border)">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:4px">TOTAL INGRESO</div>
+            <div id="cf-resumen-ingreso" style="font-size:15px;font-weight:600;color:var(--green);font-family:var(--mono)">$0</div>
+          </div>
+          <div id="cf-utilidad-card" style="grid-column:span 2;padding:10px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border)">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:4px">UTILIDAD</div>
+            <div id="cf-resumen-util" style="font-size:17px;font-weight:700;font-family:var(--mono)">$0</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-main" style="margin-top:12px" onclick="guardarOperacionComer()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"></path></svg>
+        Guardar operación
+      </button>
+    </div>
+
   </div>
 </div>
 
@@ -1534,6 +1624,10 @@ function bar(cont,rows,maxV){
 
 function envioTotal(e){
   return (e.partidas||[]).reduce(function(a,p){
+    if(e.esComer){
+      // Comer: ingreso = kgRecibidos * precioVenta
+      return a+(parseFloat(p.kgRecibidos||0)*parseFloat(p.precioVenta||0));
+    }
     return a+(parseFloat(p.pesoNeto||0)*parseFloat(p.precio||0));
   },0) + parseFloat(e.flete||0);
 }
@@ -1747,6 +1841,22 @@ var envios = [];
 try{var sve=localStorage.getItem('cc_envios');if(sve)envios=JSON.parse(sve);}catch(e){}
 // Cargar envíos embebidos si no hay datos en localStorage
 try{if(!envios.length && typeof ENVIOS_IMPORTADOS!=='undefined' && ENVIOS_IMPORTADOS.length){envios=ENVIOS_IMPORTADOS.slice();localStorage.setItem('cc_envios',JSON.stringify(envios));}}catch(e){}
+// Fix NaN totals in comer envios
+try{
+  var fixed=false;
+  envios.forEach(function(e){
+    if(e.loc==='com' && e.partidas){
+      e.esComer=true;
+      e.partidas.forEach(function(p){
+        if(!p.kgRecibidos && p.pesoNeto) p.kgRecibidos=p.pesoNeto;
+        if(!p.precioVenta && p.precio) p.precioVenta=p.precio;
+      });
+      fixed=true;
+    }
+  });
+  if(fixed) localStorage.setItem('cc_envios',JSON.stringify(envios));
+}catch(e){}
+function saveGastos(){try{localStorage.setItem('cc_gastos3',JSON.stringify(gastos));}catch(e){}}
 function saveEnvios(){try{localStorage.setItem('cc_envios',JSON.stringify(envios));}catch(e){}}
 
 var VARIEDADES = ['Blanco Criollo','Amarillo Covington','Morado Criollo','Amarillo Nylon'];
@@ -1820,6 +1930,7 @@ function editarEnvio(e){
   document.getElementById('vf-cliente').value = e.cliente||'';
   document.getElementById('vf-ciclo').value = e.ciclo||'';
   document.getElementById('vf-flete').value = e.flete||'';
+  document.getElementById('vf-flete-compra').value = e.fleteCompra||'';
   document.getElementById('vf-factura').value = e.factura||'';
   // poblar partidas: solo las que venían en el envío guardado
   partidasTemp = e.partidas.filter(function(p){ return p.pesoNeto||p.precio||p.hectareas||p.sector; }).map(function(p){
@@ -1841,10 +1952,11 @@ function editarEnvio(e){
 function venTab(t){
   document.getElementById('vt-lista').classList.toggle('active',t==='lista');
   document.getElementById('vt-nuevo').classList.toggle('active',t==='nuevo');
+  document.getElementById('vt-comer').classList.toggle('active',t==='comer');
   document.getElementById('ven-lista-sec').style.display = t==='lista'?'block':'none';
   document.getElementById('ven-form-sec').style.display = t==='nuevo'?'block':'none';
+  document.getElementById('comer-form-sec').style.display = t==='comer'?'block':'none';
   if(t==='lista'){
-    // reset edit state
     editandoEnvioId=null;
     document.getElementById('btn-ven-guardar').innerHTML=
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"/></svg> Guardar envio';
@@ -1852,6 +1964,7 @@ function venTab(t){
     renderEnvios();
   }
   if(t==='nuevo'){ renderPartidas(); updateVarSelect(); if(!editandoEnvioId) initNuevoEnvioForm(); else onTipoEnvioChange(); }
+  if(t==='comer'){ initComerForm(); }
 }
 
 function renderPartidas(){
@@ -1922,6 +2035,7 @@ function guardarEnvio(){
   var loc=tipoSel;
   var cicloV=document.getElementById('vf-ciclo').value;
   var flete=parseFloat(document.getElementById('vf-flete').value)||0;
+  var fleteCompraEnvio=parseFloat(document.getElementById('vf-flete-compra').value)||0;
   var factura=document.getElementById('vf-factura').value.trim();
 
   if(!fecha){showToast('Selecciona una fecha');return;}
@@ -1948,7 +2062,7 @@ function guardarEnvio(){
   var envioObj={
     num:num, folio:folio, fecha:fecha, fechaLbl:fechaLbl,
     cliente:cliente, loc:loc, ciclo:cicloV,
-    flete:flete, factura:factura, partidas:partidas, totalVenta:totalVenta, total:totalConFlete
+    flete:flete, fleteCompra:fleteCompraEnvio, factura:factura, partidas:partidas, totalVenta:totalVenta, total:totalConFlete
   };
 
   if(editandoEnvioId){
@@ -1961,6 +2075,18 @@ function guardarEnvio(){
     envios.unshift(envioObj);
     showToast('Envio guardado: '+fmt(totalVenta));
   }
+  // Registrar flete de compra como gasto si aplica
+  if(fleteCompraEnvio > 0){
+    var gastoFleteComp = {
+      id: Date.now()+10,
+      fechaVal: fecha, fechaLbl: fechaLbl,
+      loc: loc, cultivo: 'general', cat: 'Fletes',
+      desc: 'Flete compra envío '+num,
+      monto: fleteCompraEnvio, ciclo: cicloV, sector: '', autoGen: true
+    };
+    gastos.unshift(gastoFleteComp);
+    saveGastos();
+  }
   saveEnvios();
 
   // reset form
@@ -1968,6 +2094,7 @@ function guardarEnvio(){
   document.getElementById('vf-folio').value='';
   document.getElementById('vf-cliente').value='';
   document.getElementById('vf-flete').value='';
+  document.getElementById('vf-flete-compra').value='';
   document.getElementById('vf-factura').value='';
   partidasTemp=initPartidas();
   renderPartidas();
@@ -2008,6 +2135,18 @@ function renderEnvios(){
   data.forEach(function(e){
     var item=document.createElement('div'); item.className='envio-item';
     var miniRows = e.partidas.map(function(p){
+      if(e.esComer){
+        var kg = parseFloat(p.kgRecibidos||0);
+        var pv = parseFloat(p.precioVenta||0);
+        return '<tr>'+
+          '<td>'+p.variedad+'</td>'+
+          '<td style="text-align:right">-</td>'+
+          '<td style="text-align:right">-</td>'+
+          '<td style="text-align:right">'+(kg?kg.toLocaleString('es-MX'):'-')+'</td>'+
+          '<td style="text-align:right">'+(pv?'$'+pv:'-')+'</td>'+
+          '<td style="text-align:right;color:var(--green);font-weight:600">'+fmt(kg*pv)+'</td>'+
+        '</tr>';
+      }
       if(!p.pesoNeto && !p.hectareas && !p.precio) return '';
       return '<tr>'+
         '<td>'+p.variedad+'</td>'+
@@ -2031,7 +2170,7 @@ function renderEnvios(){
           '<div class="envio-num">'+(e.num||'Sin folio')+'</div>'+
           '<div class="envio-meta">'+e.fechaLbl+' · '+e.cliente+'</div>'+
         '</div>'+
-        '<div class="envio-total">'+fmt(e.total)+'</div>'+
+        '<div class="envio-total">'+fmt(isNaN(e.total)||e.esComer?envioTotal(e):e.total)+'</div>'+
       '</div>'+
       '<div class="envio-tags" style="margin-bottom:8px">'+
         '<span class="tag '+(e.loc||'jal')+'">'+(locNames[e.loc]||e.loc)+'</span>'+
@@ -2133,6 +2272,307 @@ function importarGastos(){
   renderHis();
 }
 
+
+// ---- OPERACION COMERCIALIZADORA ----
+var proveedores = [];
+try{var svp=localStorage.getItem('cc_proveedores');if(svp)proveedores=JSON.parse(svp);}catch(e){}
+try{if(!proveedores.length && typeof PROVEEDORES_IMPORTADOS!=='undefined' && PROVEEDORES_IMPORTADOS.length){proveedores=PROVEEDORES_IMPORTADOS.slice();localStorage.setItem('cc_proveedores',JSON.stringify(proveedores));}}catch(e){}
+
+function saveProveedores(){try{localStorage.setItem('cc_proveedores',JSON.stringify(proveedores));}catch(e){}}
+
+var comerPartidasTemp = [];
+
+function initComerForm(){
+  comerPartidasTemp = [];
+  // Generar folio Comer
+  var hoyStr = new Date();
+  var tz = hoyStr.getTimezoneOffset()*60000;
+  var isoStr = new Date(hoyStr-tz).toISOString().slice(0,10);
+  document.getElementById('cf-fecha').value = isoToDisplay(isoStr);
+  document.getElementById('cf-fecha-picker').value = isoStr;
+  var anio = new Date().getFullYear();
+  var seq = getNextNumEnvio('com', anio, null);
+  document.getElementById('cf-num').value = buildNumEnvio('com', anio, seq);
+  document.getElementById('cf-proveedor').value = '';
+  document.getElementById('cf-cliente').value = '';
+  document.getElementById('cf-flete-compra').value = '';
+  document.getElementById('cf-flete-venta').value = '';
+  renderComerPartidas();
+  updateComerVarSelect();
+  recalcComer();
+  hideProveedorDropdown();
+  hideComerClienteDropdown();
+}
+
+function onComerFechaInput(){
+  var val = document.getElementById('cf-fecha').value;
+  val = val.replace(/[^0-9\/]/g,'');
+  document.getElementById('cf-fecha').value = val;
+  if(parseFechaEnvio(val)){
+    var iso = fechaEnvioToISO(val);
+    document.getElementById('cf-fecha-picker').value = iso;
+    // Recalc folio with new year
+    var anio = getAnioFromFecha(val);
+    var seq = getNextNumEnvio('com', anio, null);
+    document.getElementById('cf-num').value = buildNumEnvio('com', anio, seq);
+  }
+}
+
+function normalizarComerFecha(){
+  var field = document.getElementById('cf-fecha');
+  var d = parseFechaEnvio(field.value);
+  if(d && !isNaN(d)){
+    var dd=String(d.getDate()).padStart(2,'0');
+    var mm=String(d.getMonth()+1).padStart(2,'0');
+    field.value = dd+'/'+mm+'/'+d.getFullYear();
+  }
+}
+
+function onComerPickerChange(){
+  var picker = document.getElementById('cf-fecha-picker');
+  if(picker && picker.value){
+    document.getElementById('cf-fecha').value = isoToDisplay(picker.value);
+    var anio = getAnioFromFecha(isoToDisplay(picker.value));
+    var seq = getNextNumEnvio('com', anio, null);
+    document.getElementById('cf-num').value = buildNumEnvio('com', anio, seq);
+  }
+}
+
+function updateComerVarSelect(){
+  var sel = document.getElementById('cf-var-select');
+  if(!sel) return;
+  var usadas = comerPartidasTemp.map(function(p){return p.variedad;});
+  sel.innerHTML = '<option value="">— Selecciona variedad —</option>';
+  VARIEDADES.forEach(function(v){
+    if(usadas.indexOf(v)<0){
+      var o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o);
+    }
+  });
+  var wrap = document.getElementById('cf-add-var-wrap');
+  if(wrap) wrap.style.display = usadas.length>=VARIEDADES.length?'none':'block';
+}
+
+function addComerVariedad(){
+  var sel = document.getElementById('cf-var-select');
+  var v = sel?sel.value:'';
+  if(!v){showToast('Selecciona una variedad');return;}
+  comerPartidasTemp.push({variedad:v, kgRecibidos:'', descPct:'', kgPagar:0, precioCompra:'', precioVenta:''});
+  renderComerPartidas();
+}
+
+function removeComerPartida(idx){
+  comerPartidasTemp.splice(idx,1);
+  renderComerPartidas();
+}
+
+function renderComerPartidas(){
+  var cont = document.getElementById('cf-partidas-compra'); cont.innerHTML='';
+  comerPartidasTemp.forEach(function(p,idx){
+    var varColor = p.variedad==='Blanco Criollo'?'var(--jal)':p.variedad==='Amarillo Covington'?'var(--camote)':p.variedad==='Morado Criollo'?'var(--nay)':'var(--fram)';
+    var kgPagar = p.kgRecibidos&&p.descPct!=='' ? p.kgRecibidos*(1-parseFloat(p.descPct)/100) : p.kgRecibidos||0;
+    var costoVar = kgPagar * parseFloat(p.precioCompra||0);
+    var ingresoVar = parseFloat(p.kgRecibidos||0) * parseFloat(p.precioVenta||0);
+    var d = document.createElement('div'); d.className='partida-card'; d.style.marginBottom='10px';
+    d.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">' +
+        '<span style="font-size:13px;font-weight:600;color:'+varColor+'">'+p.variedad+'</span>' +
+        '<button onclick="removeComerPartida('+idx+')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;padding:2px 6px;border-radius:6px">×</button>' +
+      '</div>' +
+      '<div style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">Compra</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">' +
+        '<div><label>Kg recibidos</label><input type="number" placeholder="0" min="0" value="'+(p.kgRecibidos||'')+'" oninput="comerPartidasTemp['+idx+'].kgRecibidos=parseFloat(this.value)||0;recalcComer()"></div>' +
+        '<div><label>% descuento</label><input type="number" placeholder="0" min="0" max="100" step="0.1" value="'+(p.descPct!==''?p.descPct:'')+'" oninput="comerPartidasTemp['+idx+'].descPct=this.value;recalcComer()"></div>' +
+        '<div><label>Kg a pagar</label><input type="number" id="ckp-'+idx+'" value="'+kgPagar.toFixed(2)+'" readonly style="background:var(--surface2);color:var(--text3)"></div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
+        '<div><label>Precio compra $/kg</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" placeholder="0" min="0" value="'+(p.precioCompra||'')+'" style="padding-left:24px" oninput="comerPartidasTemp['+idx+'].precioCompra=this.value;recalcComer()"></div></div>' +
+        '<div><label>Subtotal compra</label><div id="csc-'+idx+'" style="padding:10px 12px;background:var(--fram-bg);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--fram);font-family:var(--mono)">'+fmt(costoVar)+'</div></div>' +
+      '</div>' +
+      '<div style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">Venta ('+p.variedad+')</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+        '<div><label>Precio venta $/kg</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" placeholder="0" min="0" value="'+(p.precioVenta||'')+'" style="padding-left:24px" oninput="comerPartidasTemp['+idx+'].precioVenta=this.value;recalcComer()"></div></div>' +
+        '<div><label>Subtotal venta</label><div id="csv-'+idx+'" style="padding:10px 12px;background:var(--green-bg);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--green);font-family:var(--mono)">'+fmt(ingresoVar)+'</div></div>' +
+      '</div>';
+    cont.appendChild(d);
+  });
+  updateComerVarSelect();
+  recalcComer();
+}
+
+function recalcComer(){
+  var totalGasto = 0;
+  comerPartidasTemp.forEach(function(p){
+    var kgPagar = p.kgRecibidos&&p.descPct!=='' ? p.kgRecibidos*(1-parseFloat(p.descPct)/100) : parseFloat(p.kgRecibidos||0);
+    totalGasto += kgPagar * parseFloat(p.precioCompra||0);
+  });
+  totalGasto += parseFloat(document.getElementById('cf-flete-compra').value||0);
+  var totalIngreso = 0;
+  comerPartidasTemp.forEach(function(p){
+    totalIngreso += parseFloat(p.kgRecibidos||0) * parseFloat(p.precioVenta||0);
+  });
+  totalIngreso += parseFloat(document.getElementById('cf-flete-venta').value||0);
+  var util = totalIngreso - totalGasto;
+  document.getElementById('cf-resumen-gasto').textContent = fmt(totalGasto);
+  document.getElementById('cf-resumen-ingreso').textContent = fmt(totalIngreso);
+  var utilEl = document.getElementById('cf-resumen-util');
+  utilEl.textContent = fmt(util);
+  utilEl.style.color = util>=0?'var(--green)':'var(--fram)';
+  document.getElementById('cf-utilidad-card').style.borderColor = util>=0?'var(--green-border)':'var(--fram-border)';
+  // Update inline subtotals and kg-a-pagar without re-rendering
+  comerPartidasTemp.forEach(function(p,i){
+    var kgPagar = p.kgRecibidos&&p.descPct!=='' ? p.kgRecibidos*(1-parseFloat(p.descPct)/100) : parseFloat(p.kgRecibidos||0);
+    var costoVar = kgPagar * parseFloat(p.precioCompra||0);
+    var ingresoVar = parseFloat(p.kgRecibidos||0) * parseFloat(p.precioVenta||0);
+    var elKg = document.getElementById('ckp-'+i);
+    var elSC = document.getElementById('csc-'+i);
+    var elSV = document.getElementById('csv-'+i);
+    if(elKg) elKg.value = kgPagar.toFixed(2);
+    if(elSC) elSC.textContent = fmt(costoVar);
+    if(elSV) elSV.textContent = fmt(ingresoVar);
+  });
+}
+
+// Proveedor dropdown (mismo patrón que clientes)
+function renderProveedorDropdown(){
+  var dd = document.getElementById('proveedor-dropdown'); if(!dd) return;
+  var q = (document.getElementById('cf-proveedor').value||'').toLowerCase();
+  var filtered = proveedores.filter(function(p){return p.toLowerCase().indexOf(q)>=0;});
+  dd.innerHTML='';
+  if(!filtered.length){dd.style.display='none';return;}
+  filtered.forEach(function(p){
+    var row=document.createElement('div');
+    row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px';
+    row.onmouseenter=function(){this.style.background='var(--green-bg)';};
+    row.onmouseleave=function(){this.style.background='';};
+    var name=document.createElement('span'); name.textContent=p; name.style.flex='1';
+    name.onmousedown=function(e){e.preventDefault();document.getElementById('cf-proveedor').value=p;hideProveedorDropdown();};
+    var btn=document.createElement('button');
+    btn.textContent='×'; btn.title='Eliminar proveedor';
+    btn.style.cssText='background:none;border:none;color:var(--text3);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0';
+    btn.onmousedown=function(e){e.preventDefault();e.stopPropagation();
+      proveedores=proveedores.filter(function(x){return x!==p;}); saveProveedores(); renderProveedorDropdown();
+      if(document.getElementById('cf-proveedor').value===p) document.getElementById('cf-proveedor').value='';
+      showToast('Proveedor eliminado');};
+    row.appendChild(name); row.appendChild(btn); dd.appendChild(row);
+  });
+  dd.style.display='block';
+}
+function showProveedorDropdown(){renderProveedorDropdown();}
+function hideProveedorDropdown(){var dd=document.getElementById('proveedor-dropdown');if(dd)dd.style.display='none';}
+function onProveedorInput(){renderProveedorDropdown();var dd=document.getElementById('proveedor-dropdown');if(dd)dd.style.display='block';}
+
+function agregarProveedorSiNuevo(nombre){
+  if(!nombre) return;
+  var nom=nombre.trim(); if(!nom) return;
+  if(proveedores.indexOf(nom)<0){proveedores.push(nom);proveedores.sort(function(a,b){return a.localeCompare(b,'es');});saveProveedores();}
+}
+
+// Cliente dropdown para comer form (reutiliza lista de clientes)
+function renderComerClienteDropdown(){
+  var dd=document.getElementById('comer-cliente-dropdown'); if(!dd) return;
+  var q=(document.getElementById('cf-cliente').value||'').toLowerCase();
+  var filtered=clientes.filter(function(c){return c.toLowerCase().indexOf(q)>=0;});
+  dd.innerHTML='';
+  if(!filtered.length){dd.style.display='none';return;}
+  filtered.forEach(function(c){
+    var row=document.createElement('div');
+    row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px';
+    row.onmouseenter=function(){this.style.background='var(--green-bg)';};
+    row.onmouseleave=function(){this.style.background='';};
+    var name=document.createElement('span'); name.textContent=c; name.style.flex='1';
+    name.onmousedown=function(e){e.preventDefault();document.getElementById('cf-cliente').value=c;hideComerClienteDropdown();};
+    row.appendChild(name); dd.appendChild(row);
+  });
+  dd.style.display='block';
+}
+function showComerClienteDropdown(){renderComerClienteDropdown();}
+function hideComerClienteDropdown(){var dd=document.getElementById('comer-cliente-dropdown');if(dd)dd.style.display='none';}
+function onComerClienteInput(){renderComerClienteDropdown();var dd=document.getElementById('comer-cliente-dropdown');if(dd)dd.style.display='block';}
+
+function guardarOperacionComer(){
+  var num = document.getElementById('cf-num').value.trim();
+  var fechaDisplay = document.getElementById('cf-fecha').value;
+  var fecha = fechaEnvioToISO(fechaDisplay);
+  var proveedor = document.getElementById('cf-proveedor').value.trim();
+  var cliente = document.getElementById('cf-cliente').value.trim();
+  var fleteCompra = parseFloat(document.getElementById('cf-flete-compra').value||0);
+  var fleteVenta = parseFloat(document.getElementById('cf-flete-venta').value||0);
+
+  if(!fecha){showToast('Selecciona una fecha');return;}
+  if(!proveedor){showToast('Ingresa el proveedor');return;}
+  if(!cliente){showToast('Ingresa el cliente');return;}
+  if(!comerPartidasTemp.length){showToast('Agrega al menos una variedad');return;}
+
+  // Calcular totales
+  var totalCompra = 0;
+  comerPartidasTemp.forEach(function(p){
+    var kgPagar = p.kgRecibidos&&p.descPct!=='' ? p.kgRecibidos*(1-parseFloat(p.descPct)/100) : parseFloat(p.kgRecibidos||0);
+    totalCompra += kgPagar * parseFloat(p.precioCompra||0);
+  });
+  var totalVenta = comerPartidasTemp.reduce(function(a,p){
+    return a + parseFloat(p.kgRecibidos||0)*parseFloat(p.precioVenta||0);
+  },0) + fleteVenta;
+
+  // Fecha label
+  var fechaLbl = fechaDisplay || fecha;
+  var cicloV = cicloFromFecha(fecha);
+
+  // Guardar como envío con loc=com
+  var envioObj = {
+    id: Date.now(),
+    num: num, folio: '', fecha: fecha, fechaLbl: fechaLbl, total: totalVenta,
+    loc: 'com', ciclo: cicloV, cliente: cliente,
+    proveedor: proveedor,
+    partidas: comerPartidasTemp.map(function(p){
+      var kgPagar = p.kgRecibidos&&p.descPct!=='' ? p.kgRecibidos*(1-parseFloat(p.descPct)/100) : parseFloat(p.kgRecibidos||0);
+      return {
+        variedad: p.variedad,
+        kgRecibidos: p.kgRecibidos, descPct: p.descPct, kgPagar: kgPagar,
+        precioCompra: p.precioCompra, precioVenta: p.precioVenta,
+        pesoNeto: p.kgRecibidos, precio: p.precioVenta, sector: ''
+      };
+    }),
+    flete: fleteVenta, fleteCompra: fleteCompra,
+    esComer: true
+  };
+  envios.unshift(envioObj);
+  saveEnvios();
+
+  // Registrar gasto Compra Mercancia automático
+  var gastoCompra = {
+    id: Date.now()+1,
+    fechaVal: fecha, fechaLbl: fechaLbl,
+    loc: 'com', cultivo: 'com', cat: 'Compra Mercancia',
+    desc: 'Compra mercancia op. '+num,
+    monto: totalCompra, ciclo: cicloV, sector: '', autoGen: true,
+    negocio: 'com', actividad: 'com'
+  };
+  gastos.unshift(gastoCompra);
+
+  // Registrar gasto Flete de compra si aplica
+  if(fleteCompra > 0){
+    setTimeout(function(){
+      var gastoFlete = {
+        id: Date.now()+3,
+        fechaVal: fecha, fechaLbl: fechaLbl,
+        loc: 'com', cultivo: 'com', cat: 'Fletes',
+        desc: 'Flete compra op. '+num,
+        monto: fleteCompra, ciclo: cicloV, sector: '', autoGen: true,
+        negocio: 'com', actividad: 'com'
+      };
+      gastos.unshift(gastoFlete);
+      saveGastos();
+    }, 10);
+  }
+  saveGastos();
+
+  // Guardar proveedor y cliente
+  agregarProveedorSiNuevo(proveedor);
+  agregarClienteSiNuevo(cliente);
+
+  showToast('Operación guardada: '+fmt(totalVenta));
+  venTab('lista');
+}
 
 // ---- FOLIO AUTO ----
 var PREFIJOS = { jal: 'ProdJal', nay: 'ProdNay', com: 'Comer' };
@@ -2277,8 +2717,7 @@ try{if(!clientes.length && typeof CLIENTES_IMPORTADOS!=='undefined' && CLIENTES_
 function saveClientes(){try{localStorage.setItem('cc_clientes',JSON.stringify(clientes));}catch(e){}}
 
 function updateClientesDatalist(){
-  // kept for compatibility — actual UI uses renderClienteDropdown
-  renderClienteDropdown();
+  // kept for compatibility — do not auto-show dropdown
 }
 
 function renderClienteDropdown(){
