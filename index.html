@@ -1,6 +1,126 @@
 <html lang="es"><head>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.13/html-to-image.min.js" integrity="sha512-iZ2ORl595Wx6miw+GuadDet4WQbdSWS3JLMoNfY8cRGoEFy6oT3G9IbcrBeL6AfkgpA51ETt/faX6yLV+/gFJg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
+// ---- SUPABASE ----
+const SUPABASE_URL = 'https://jlfendrdwptwmttrahre.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_RNnR7jV42dGEGLFWdRVfvQ_cP1xSwuO';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Sync flag
+var sbOnline = false;
+sb.from('gastos').select('id', {count:'exact',head:true}).then(function(res){
+  sbOnline = !res.error;
+  if(sbOnline) console.log('Supabase conectado ✅');
+  else console.warn('Supabase sin conexión, usando localStorage');
+});
+
+// ---- SUPABASE SAVE FUNCTIONS ----
+async function sbSaveGasto(g){
+  if(!sbOnline) return;
+  await sb.from('gastos').upsert({
+    id: g.id, fecha_val: g.fechaVal||'', fecha_lbl: g.fechaLbl||'',
+    loc: g.loc||'', cultivo: g.cultivo||'', cat: g.cat||'',
+    descripcion: g.desc||'', monto: g.monto||0, ciclo: g.ciclo||'',
+    sector: g.sector||'', banco: g.banco||'', auto_gen: g.autoGen||false
+  });
+}
+
+async function sbDeleteGasto(id){
+  if(!sbOnline) return;
+  await sb.from('gastos').delete().eq('id', id);
+}
+
+async function sbSaveEnvio(e){
+  if(!sbOnline) return;
+  await sb.from('envios').upsert({
+    id: e.id, num: e.num||'', folio: e.folio||'', fecha: e.fecha||'',
+    fecha_lbl: e.fechaLbl||'', loc: e.loc||'', ciclo: e.ciclo||'',
+    cliente: e.cliente||'', proveedor: e.proveedor||'',
+    flete: e.flete||0, flete_compra: e.fleteCompra||0,
+    factura: e.factura||'', es_comer: e.esComer||false,
+    total: e.total||0, partidas: e.partidas||[]
+  });
+}
+
+async function sbDeleteEnvio(id){
+  if(!sbOnline) return;
+  await sb.from('envios').delete().eq('id', id);
+}
+
+async function sbSaveCliente(nombre){
+  if(!sbOnline) return;
+  await sb.from('clientes').upsert({nombre: nombre}, {onConflict:'nombre'});
+}
+
+async function sbDeleteCliente(nombre){
+  if(!sbOnline) return;
+  await sb.from('clientes').delete().eq('nombre', nombre);
+}
+
+async function sbSaveProveedor(nombre){
+  if(!sbOnline) return;
+  await sb.from('proveedores').upsert({nombre: nombre}, {onConflict:'nombre'});
+}
+
+async function sbDeleteProveedor(nombre){
+  if(!sbOnline) return;
+  await sb.from('proveedores').delete().eq('nombre', nombre);
+}
+
+async function sbSaveBanco(nombre){
+  if(!sbOnline) return;
+  await sb.from('bancos').upsert({nombre: nombre}, {onConflict:'nombre'});
+}
+
+async function sbDeleteBanco(nombre){
+  if(!sbOnline) return;
+  await sb.from('bancos').delete().eq('nombre', nombre);
+}
+
+// ---- CARGAR DATOS DESDE SUPABASE AL INICIAR ----
+async function cargarDesdeSB(){
+  if(!sbOnline) return;
+  showToast('Sincronizando con base de datos...');
+
+  var [rG, rE, rC, rP, rB] = await Promise.all([
+    sb.from('gastos').select('*').order('created_at', {ascending:false}),
+    sb.from('envios').select('*').order('created_at', {ascending:false}),
+    sb.from('clientes').select('nombre').order('nombre'),
+    sb.from('proveedores').select('nombre').order('nombre'),
+    sb.from('bancos').select('nombre').order('nombre')
+  ]);
+
+  if(rG.data && rG.data.length){
+    gastos = rG.data.map(function(g){
+      return { id:g.id, fechaVal:g.fecha_val, fechaLbl:g.fecha_lbl,
+        loc:g.loc, cultivo:g.cultivo, cat:g.cat, desc:g.descripcion,
+        monto:parseFloat(g.monto||0), ciclo:g.ciclo, sector:g.sector,
+        banco:g.banco, autoGen:g.auto_gen };
+    });
+    localStorage.setItem('cc_gastos3', JSON.stringify(gastos));
+  }
+
+  if(rE.data && rE.data.length){
+    envios = rE.data.map(function(e){
+      return { id:e.id, num:e.num, folio:e.folio, fecha:e.fecha,
+        fechaLbl:e.fecha_lbl, loc:e.loc, ciclo:e.ciclo,
+        cliente:e.cliente, proveedor:e.proveedor,
+        flete:parseFloat(e.flete||0), fleteCompra:parseFloat(e.flete_compra||0),
+        factura:e.factura, esComer:e.es_comer,
+        total:parseFloat(e.total||0), partidas:e.partidas||[] };
+    });
+    localStorage.setItem('cc_envios', JSON.stringify(envios));
+  }
+
+  if(rC.data) clientes = rC.data.map(function(c){return c.nombre;});
+  if(rP.data) proveedores = rP.data.map(function(p){return p.nombre;});
+  if(rB.data) bancos = rB.data.map(function(b){return b.nombre;});
+
+  showToast('✅ Datos sincronizados');
+  renderEnvios();
+}
+
+
       (function() {
         const originalConsole = window.console;
         window.console = {
@@ -555,6 +675,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body id="artifacts-component-root-html">
 <div class="app">
@@ -656,7 +777,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
       <div class="field">
         <label>Banco <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(opcional)</span></label>
-        <input type="text" id="f-banco" placeholder="Ej: BBVA, Banorte...">
+        <div style="position:relative">
+          <input type="text" id="f-banco" placeholder="Ej: BBVA, Banorte..." autocomplete="off" oninput="onBancoInput()" onclick="showBancoDropdown()" onblur="setTimeout(hideBancoDropdown,150)">
+          <div id="banco-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:200px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
+        </div>
       </div>
     </div>
 
@@ -1311,6 +1435,7 @@ function registrar(){
     showToast('✅ Gasto actualizado');
     document.getElementById('f-monto').value='';
     document.getElementById('f-desc').value='';
+    agregarBancoSiNuevo(document.getElementById('f-banco').value);
     document.getElementById('f-banco').value='';
     document.getElementById('f-proveedor').value='';
     sectoresSel=[];
@@ -2088,6 +2213,7 @@ function guardarEnvio(){
     saveGastos();
   }
   saveEnvios();
+  sbSaveEnvio(envioObj);
 
   // reset form
   editandoEnvioId = null;
@@ -2464,7 +2590,7 @@ function onProveedorInput(){renderProveedorDropdown();var dd=document.getElement
 function agregarProveedorSiNuevo(nombre){
   if(!nombre) return;
   var nom=nombre.trim(); if(!nom) return;
-  if(proveedores.indexOf(nom)<0){proveedores.push(nom);proveedores.sort(function(a,b){return a.localeCompare(b,'es');});saveProveedores();}
+  if(proveedores.indexOf(nom)<0){proveedores.push(nom);proveedores.sort(function(a,b){return a.localeCompare(b,'es');});saveProveedores();sbSaveProveedor(nom);}
 }
 
 // Cliente dropdown para comer form (reutiliza lista de clientes)
@@ -2537,6 +2663,7 @@ function guardarOperacionComer(){
   };
   envios.unshift(envioObj);
   saveEnvios();
+  sbSaveEnvio(envioObj);
 
   // Registrar gasto Compra Mercancia automático
   var gastoCompra = {
@@ -2714,6 +2841,55 @@ try{var svc=localStorage.getItem('cc_clientes');if(svc)clientes=JSON.parse(svc);
 // Cargar clientes embebidos si localStorage vacío
 try{if(!clientes.length && typeof CLIENTES_IMPORTADOS!=='undefined' && CLIENTES_IMPORTADOS.length){clientes=CLIENTES_IMPORTADOS.slice();localStorage.setItem('cc_clientes',JSON.stringify(clientes));}}catch(e){}
 
+// ---- Bancos ----
+var bancos = [];
+(function(){
+  // Seed from existing gastos data
+  var seen = {};
+  gastos.forEach(function(g){ if(g.banco && g.banco.trim()) seen[g.banco.trim()]=1; });
+  bancos = Object.keys(seen).sort(function(a,b){return a.localeCompare(b,'es');});
+  try{ var sv=localStorage.getItem('cc_bancos'); if(sv){ var parsed=JSON.parse(sv); if(parsed.length) bancos=parsed; } }catch(e){}
+})();
+
+function saveBancos(){ try{ localStorage.setItem('cc_bancos', JSON.stringify(bancos)); }catch(e){} }
+
+function agregarBancoSiNuevo(nombre){
+  if(!nombre) return;
+  var n = nombre.trim(); if(!n) return;
+  if(bancos.indexOf(n)<0){ bancos.push(n); bancos.sort(function(a,b){return a.localeCompare(b,'es');}); saveBancos(); }
+}
+
+function renderBancoDropdown(){
+  var dd = document.getElementById('banco-dropdown'); if(!dd) return;
+  var q = (document.getElementById('f-banco').value||'').toLowerCase();
+  var filtered = bancos.filter(function(b){ return b.toLowerCase().indexOf(q)>=0; });
+  dd.innerHTML='';
+  if(!filtered.length){ dd.style.display='none'; return; }
+  filtered.forEach(function(b){
+    var row = document.createElement('div');
+    row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px';
+    row.onmouseenter=function(){this.style.background='var(--green-bg)';};
+    row.onmouseleave=function(){this.style.background='';};
+    var name=document.createElement('span'); name.textContent=b; name.style.flex='1';
+    name.onmousedown=function(e){ e.preventDefault(); document.getElementById('f-banco').value=b; hideBancoDropdown(); };
+    var btn=document.createElement('button');
+    btn.textContent='×'; btn.title='Eliminar banco';
+    btn.style.cssText='background:none;border:none;color:var(--text3);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0';
+    btn.onmousedown=function(e){
+      e.preventDefault(); e.stopPropagation();
+      bancos=bancos.filter(function(x){return x!==b;}); saveBancos(); renderBancoDropdown();
+      if(document.getElementById('f-banco').value===b) document.getElementById('f-banco').value='';
+      showToast('Banco eliminado');
+    };
+    row.appendChild(name); row.appendChild(btn); dd.appendChild(row);
+  });
+  dd.style.display='block';
+}
+
+function showBancoDropdown(){ renderBancoDropdown(); }
+function hideBancoDropdown(){ var dd=document.getElementById('banco-dropdown'); if(dd) dd.style.display='none'; }
+function onBancoInput(){ renderBancoDropdown(); var dd=document.getElementById('banco-dropdown'); if(dd) dd.style.display='block'; }
+
 function saveClientes(){try{localStorage.setItem('cc_clientes',JSON.stringify(clientes));}catch(e){}}
 
 function updateClientesDatalist(){
@@ -2803,6 +2979,7 @@ function mostrarBorrarCliente(){
 function confirmarBorrarCliente(nombre){
   clientes = clientes.filter(function(c){return c !== nombre;});
   saveClientes();
+  sbDeleteCliente(nombre);
   renderClienteDropdown();
   var field = document.getElementById('vf-cliente');
   if(field && field.value.trim() === nombre) field.value = '';
