@@ -2713,7 +2713,8 @@ function initSupabase(){
     var client = window.supabase || (window['supabase'] );
     if(!client){ console.warn('Supabase CDN no cargó, tipo:', typeof window.supabase); return; }
     sb = client.createClient(SUPABASE_URL, SUPABASE_KEY);
-    sb.from('gastos').select('id', {count:'exact',head:true}).then(function(res){
+    sb.from('gastos').select('id').limit(1).then(function(res){
+      console.log('Supabase test res:', res.error ? res.error.message : 'OK');
       sbOnline = !res.error;
       if(sbOnline){ console.log('Supabase conectado ✅'); cargarDesdeSB(); }
       else console.warn('Supabase sin conexión, usando localStorage');
