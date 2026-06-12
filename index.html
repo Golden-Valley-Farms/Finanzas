@@ -1,19 +1,25 @@
 <html lang="es"><head>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.13/html-to-image.min.js" integrity="sha512-iZ2ORl595Wx6miw+GuadDet4WQbdSWS3JLMoNfY8cRGoEFy6oT3G9IbcrBeL6AfkgpA51ETt/faX6yLV+/gFJg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
 // ---- SUPABASE ----
 const SUPABASE_URL = 'https://jlfendrdwptwmttrahre.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_RNnR7jV42dGEGLFWdRVfvQ_cP1xSwuO';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// Sync flag
+var sb = null;
 var sbOnline = false;
-sb.from('gastos').select('id', {count:'exact',head:true}).then(function(res){
-  sbOnline = !res.error;
-  if(sbOnline) console.log('Supabase conectado ✅');
-  else console.warn('Supabase sin conexión, usando localStorage');
-});
+
+function initSupabase(){
+  try {
+    var client = window.supabase || (window['supabase'] );
+    if(!client){ console.warn('Supabase CDN no cargó'); return; }
+    sb = client.createClient(SUPABASE_URL, SUPABASE_KEY);
+    sb.from('gastos').select('id', {count:'exact',head:true}).then(function(res){
+      sbOnline = !res.error;
+      if(sbOnline){ console.log('Supabase conectado ✅'); cargarDesdeSB(); }
+      else console.warn('Supabase sin conexión, usando localStorage');
+    });
+  } catch(e){ console.error('Error init Supabase:', e); }
+}
 
 // ---- SUPABASE SAVE FUNCTIONS ----
 async function sbSaveGasto(g){
