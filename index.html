@@ -748,7 +748,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <input type="text" id="fr-trab-input" placeholder="Nombre del trabajador" autocomplete="off"
               oninput="onTrabajadorInput()" onclick="showTrabajadorDropdown()"
               onkeydown="onTrabKeydown(event)"
-              onblur="setTimeout(hideTrabajadorDropdown,150)"
+              onblur="setTimeout(function(){ hideTrabajadorDropdown(); var v=document.getElementById('fr-trab-input').value.trim(); if(v) agregarTrabajadorRow(); },150)"
               style="width:100%">
             <div id="trab-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:180px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
           </div>
@@ -3008,6 +3008,7 @@ function removeTrab(idx){
 
 // Dropdown trabajadores
 var trabDDIndex = -1; // currently highlighted dropdown item
+var trabAggregandose = false; // flag to prevent double-add on Tab+blur
 
 function renderTrabajadorDropdown(){
   var dd = document.getElementById('trab-dropdown'); if(!dd) return;
@@ -3092,10 +3093,22 @@ function onTrabKeydown(e){
     hideTrabajadorDropdown();
     trabDDIndex = -1;
   } else if(e.key === 'Tab'){
-    // Tab also selects highlighted item if any
+    // Tab selects highlighted item if any, then jumps to cubetas of last row
     if(ddVisible && trabDDIndex >= 0 && rows[trabDDIndex]){
       e.preventDefault();
       selectTrabFromDD(rows[trabDDIndex].dataset.nombre);
+    } else {
+      var nom = document.getElementById('fr-trab-input').value.trim();
+      if(nom){
+        e.preventDefault();
+        trabAggregandose = true;
+        agregarTrabajadorRow();
+        setTimeout(function(){
+          trabAggregandose = false;
+          var cubInputs = document.querySelectorAll('#fr-trabajadores-list input[type="number"]');
+          if(cubInputs.length){ cubInputs[cubInputs.length-1].focus(); cubInputs[cubInputs.length-1].select(); }
+        }, 50);
+      }
     }
   }
 }
