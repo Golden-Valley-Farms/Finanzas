@@ -2885,8 +2885,9 @@ async function sbSaveFramRegistro(r){
   });
 }
 async function sbDeleteFramRegistro(id){
-  if(!sbOnline||!sb) return;
-  await sb.from('fram_registros').delete().eq('id',id);
+  if(!sbOnline||!sb){ showToast('Sin conexión a Supabase'); return; }
+  var res = await sb.from('fram_registros').delete().eq('id', id);
+  if(res.error) showToast('Error al borrar en Supabase: '+res.error.message);
 }
 
 // ---- Trabajadores list (stored separately) ----
