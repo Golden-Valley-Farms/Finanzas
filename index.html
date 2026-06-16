@@ -500,11 +500,19 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </div>
       </div>
 
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-        <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Semana</span>
-        <select id="fin-sem-select" onchange="onFinSemanaChange()" style="flex:1;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center;padding-right:30px">
-          <option value="todas">Todas las semanas</option>
-        </select>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:120px">
+          <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Año</span>
+          <select id="fin-anio-select" onchange="onFinAnioChange()" style="flex:1;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
+            <option value="todos">Todos</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:140px">
+          <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Semana</span>
+          <select id="fin-sem-select" onchange="onFinSemanaChange()" style="flex:1;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
+            <option value="todas">Todas</option>
+          </select>
+        </div>
       </div>
 
       <div class="kpi-grid">
@@ -1838,7 +1846,8 @@ function repTab(t){
 // ============================================================
 
 var finNegSel = 'todos'; // todos | jal | nay | ofic | fram | com
-var finSemSel = 'todas'; // 'todas' o número de semana del ciclo
+var finSemSel = 'todas'; // 'todas' o número de semana ISO
+var finAnioSel = 'todos'; // 'todos' o año específico
 
 var FIN_NEG_MAP = {
   jal:  {locs:['jal'], cultivo:'camote', label:'Camote Jalisco', color:'#5BA3E0'},
@@ -1848,27 +1857,24 @@ var FIN_NEG_MAP = {
   com:  {locs:['com'], cultivo:null, label:'Comercializadora', color:'#3CB87A'}
 };
 
-function cicloStartDate(ciclo){
-  var yr = parseInt(ciclo.split('-')[0]);
-  return new Date(yr, 6, 1); // 1 de julio
-}
-
-function semanaDelCiclo(fechaStr, ciclo){
-  var start = cicloStartDate(ciclo);
+// Semana ISO del año calendario real (1-53)
+function semanaISO(fechaStr){
   var d = new Date(fechaStr+'T12:00:00');
-  var diffDays = Math.floor((d-start)/(24*60*60*1000));
-  return Math.max(1, Math.floor(diffDays/7)+1);
+  var date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  var dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  var yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+  return Math.ceil((((date-yearStart)/86400000)+1)/7);
 }
 
-function finCicloActual(){
-  return cicloFromFecha(hoy.toISOString().slice(0,10));
+function anioDeFecha(fechaStr){
+  var d = new Date(fechaStr+'T12:00:00');
+  return d.getFullYear();
 }
 
-// Filtra gastos según negocio seleccionado y ciclo actual
+// Filtra gastos según negocio seleccionado (sin restricción de ciclo; el año se filtra aparte)
 function finGastosFiltrados(negKey, soloEsteNeg){
-  var ciclo = finCicloActual();
   return gastos.filter(function(g){
-    if(g.ciclo && g.ciclo!==ciclo) return false;
     if(!soloEsteNeg || negKey==='todos') return true;
     var def = FIN_NEG_MAP[negKey];
     if(!def) return true;
@@ -1890,6 +1896,14 @@ function finNegTab(neg){
   document.getElementById('fin-card-acumulado').style.display = neg==='todos' ? 'none' : 'block';
   document.getElementById('fin-card-negocio').style.display = neg==='todos' ? 'block' : 'none';
   document.getElementById('fin-cat-title').textContent = neg==='todos' ? 'Gastos x Sub-Concepto' : 'Gastos x Sub-Concepto — '+FIN_NEG_MAP[neg].label;
+  populateFinAnioSelect();
+  populateFinSemanaSelect();
+  renderFinanciero();
+}
+
+function onFinAnioChange(){
+  finAnioSel = document.getElementById('fin-anio-select').value;
+  finSemSel = 'todas';
   populateFinSemanaSelect();
   renderFinanciero();
 }
@@ -1899,15 +1913,44 @@ function onFinSemanaChange(){
   renderFinanciero();
 }
 
+function populateFinAnioSelect(){
+  var sel = document.getElementById('fin-anio-select');
+  var data = finGastosFiltrados(finNegSel, finNegSel!=='todos');
+  var anioSet = {};
+  data.forEach(function(g){
+    if(!g.fechaVal) return;
+    anioSet[anioDeFecha(g.fechaVal)] = true;
+  });
+  var anios = Object.keys(anioSet).map(Number).sort(function(a,b){return b-a;});
+  var prevVal = finAnioSel;
+  sel.innerHTML = '<option value="todos">Todos los años</option>';
+  anios.forEach(function(a){
+    var o = document.createElement('option');
+    o.value = a; o.textContent = a;
+    sel.appendChild(o);
+  });
+  if(anios.indexOf(Number(prevVal))>=0 || prevVal==='todos'){
+    sel.value = prevVal;
+    finAnioSel = prevVal;
+  } else if(anios.length){
+    sel.value = anios[0];
+    finAnioSel = String(anios[0]);
+  } else {
+    sel.value = 'todos';
+    finAnioSel = 'todos';
+  }
+}
+
 function populateFinSemanaSelect(){
   var sel = document.getElementById('fin-sem-select');
   var data = finGastosFiltrados(finNegSel, finNegSel!=='todos');
-  var ciclo = finCicloActual();
+  if(finAnioSel!=='todos'){
+    data = data.filter(function(g){return g.fechaVal && anioDeFecha(g.fechaVal)===Number(finAnioSel);});
+  }
   var semSet = {};
   data.forEach(function(g){
     if(!g.fechaVal) return;
-    var s = semanaDelCiclo(g.fechaVal, ciclo);
-    semSet[s] = true;
+    semSet[semanaISO(g.fechaVal)] = true;
   });
   var semanas = Object.keys(semSet).map(Number).sort(function(a,b){return a-b;});
   var prevVal = finSemSel;
@@ -1928,10 +1971,15 @@ function populateFinSemanaSelect(){
 
 function finDataConSemana(){
   var data = finGastosFiltrados(finNegSel, finNegSel!=='todos');
-  var ciclo = finCicloActual();
   data = data.map(function(g){
-    return Object.assign({}, g, {_semana: g.fechaVal ? semanaDelCiclo(g.fechaVal, ciclo) : null});
+    return Object.assign({}, g, {
+      _anio: g.fechaVal ? anioDeFecha(g.fechaVal) : null,
+      _semana: g.fechaVal ? semanaISO(g.fechaVal) : null
+    });
   });
+  if(finAnioSel!=='todos'){
+    data = data.filter(function(g){return g._anio===Number(finAnioSel);});
+  }
   if(finSemSel!=='todas'){
     data = data.filter(function(g){return g._semana===Number(finSemSel);});
   }
@@ -1989,12 +2037,12 @@ function renderFinBarrasCategoria(){
 function renderFinBarrasTodosNegocios(){
   var cont = document.getElementById('fin-barras-todos-negocios');
   if(!cont || finNegSel!=='todos') return;
-  var ciclo = finCicloActual();
   var keys = Object.keys(FIN_NEG_MAP);
   var rows = keys.map(function(k){
     var def = FIN_NEG_MAP[k];
     var total = gastos.filter(function(g){
-      if(g.ciclo && g.ciclo!==ciclo) return false;
+      if(finAnioSel!=='todos' && (!g.fechaVal || anioDeFecha(g.fechaVal)!==Number(finAnioSel))) return false;
+      if(finSemSel!=='todas' && (!g.fechaVal || semanaISO(g.fechaVal)!==Number(finSemSel))) return false;
       if(def.locs.indexOf(g.loc)<0) return false;
       if(def.cultivo===null) return true;
       return g.cultivo===def.cultivo;
@@ -2036,25 +2084,39 @@ function renderFinBarrasTodosNegocios(){
   attachDashTooltips(cont, 'dash-tt-finneg');
 }
 
+// Construye serie de puntos por semana, respetando si hay un año filtrado o todos
+function finSerieSemanal(data){
+  var bySemKey = {};
+  data.forEach(function(g){
+    if(!g.fechaVal) return;
+    var anio = anioDeFecha(g.fechaVal);
+    var sem = semanaISO(g.fechaVal);
+    var key = anio+'-'+(sem<10?'0'+sem:sem);
+    if(!bySemKey[key]) bySemKey[key] = {anio:anio, sem:sem, total:0};
+    bySemKey[key].total += (parseFloat(g.monto)||0);
+  });
+  var keys = Object.keys(bySemKey).sort();
+  return keys.map(function(k){
+    var v = bySemKey[k];
+    var lbl = finAnioSel==='todos' ? v.anio+' S'+(v.sem<10?'0'+v.sem:v.sem) : 'S'+(v.sem<10?'0'+v.sem:v.sem);
+    return {label:lbl, total:v.total};
+  });
+}
+
 // ---- Área: Gasto Acumulado (solo vista de negocio específico) ----
 function renderFinAreaAcumulado(){
   var cont = document.getElementById('fin-area-acumulado');
   if(!cont || finNegSel==='todos') return;
   var data = finGastosFiltrados(finNegSel, true);
-  var ciclo = finCicloActual();
-  var bySemana = {};
-  data.forEach(function(g){
-    if(!g.fechaVal) return;
-    var s = semanaDelCiclo(g.fechaVal, ciclo);
-    bySemana[s] = (bySemana[s]||0) + (parseFloat(g.monto)||0);
-  });
-  var maxSem = Math.max.apply(null, Object.keys(bySemana).map(Number).concat([1]));
-  var puntos = [];
-  var acumulado = 0;
-  for(var s=1; s<=maxSem; s++){
-    acumulado += (bySemana[s]||0);
-    puntos.push({sem:s, label:'S'+(s<10?'0'+s:s), total:acumulado});
+  if(finAnioSel!=='todos'){
+    data = data.filter(function(g){return g.fechaVal && anioDeFecha(g.fechaVal)===Number(finAnioSel);});
   }
+  var serie = finSerieSemanal(data);
+  var acumulado = 0;
+  var puntos = serie.map(function(p){
+    acumulado += p.total;
+    return {label:p.label, total:acumulado};
+  });
 
   if(!puntos.length){
     cont.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:20px 0">Sin datos aún</div>';
@@ -2104,18 +2166,10 @@ function renderFinLineaSemana(){
   var cont = document.getElementById('fin-linea-semana');
   if(!cont) return;
   var data = finGastosFiltrados(finNegSel, finNegSel!=='todos');
-  var ciclo = finCicloActual();
-  var bySemana = {};
-  data.forEach(function(g){
-    if(!g.fechaVal) return;
-    var s = semanaDelCiclo(g.fechaVal, ciclo);
-    bySemana[s] = (bySemana[s]||0) + (parseFloat(g.monto)||0);
-  });
-  var maxSem = Math.max.apply(null, Object.keys(bySemana).map(Number).concat([1]));
-  var puntos = [];
-  for(var s=1; s<=maxSem; s++){
-    puntos.push({sem:s, label:'S'+(s<10?'0'+s:s), total:(bySemana[s]||0)});
+  if(finAnioSel!=='todos'){
+    data = data.filter(function(g){return g.fechaVal && anioDeFecha(g.fechaVal)===Number(finAnioSel);});
   }
+  var puntos = finSerieSemanal(data);
 
   if(!puntos.length){
     cont.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:20px 0">Sin datos aún</div>';
@@ -2159,7 +2213,8 @@ function renderFinLineaSemana(){
 }
 
 function renderFinanciero(){
-  if(!document.getElementById('fin-sem-select').options.length || document.getElementById('fin-sem-select').options.length<=1){
+  if(document.getElementById('fin-anio-select').options.length<=1){
+    populateFinAnioSelect();
     populateFinSemanaSelect();
   }
   renderFinKPIs();
