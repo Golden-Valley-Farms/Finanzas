@@ -962,7 +962,7 @@ async function cargarDesdeSB(){
       return {id:g.id, fechaVal:g.fecha_val, fechaLbl:g.fecha_lbl,
         loc:g.loc, cultivo:g.cultivo, cat:g.cat, desc:g.descripcion,
         monto:parseFloat(g.monto||0), ciclo:g.ciclo, sector:g.sector,
-        banco:g.banco, autoGen:g.auto_gen};
+        banco:g.banco, proveedor:g.proveedor||'', autoGen:g.auto_gen};
     });
     localStorage.setItem('cc_gastos3', JSON.stringify(gastos));
   }
@@ -991,7 +991,7 @@ async function sbSaveGasto(g){
     id:g.id, fecha_val:g.fechaVal||'', fecha_lbl:g.fechaLbl||'',
     loc:g.loc||'', cultivo:g.cultivo||'', cat:g.cat||'',
     descripcion:g.desc||'', monto:g.monto||0, ciclo:g.ciclo||'',
-    sector:g.sector||'', banco:g.banco||'', auto_gen:g.autoGen||false
+    sector:g.sector||'', banco:g.banco||'', proveedor:g.proveedor||'', auto_gen:g.autoGen||false
   });
 }
 
