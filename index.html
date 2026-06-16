@@ -298,6 +298,28 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .kpi-lbl{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px}
 .kpi-val{font-size:22px;font-weight:700;color:var(--text);font-family:var(--mono);letter-spacing:-0.02em}
 .kpi-sub{font-size:11px;color:var(--text3);margin-top:3px}
+/* ---- Financiero: full-width breakout en pantallas grandes ---- */
+@media (min-width: 700px){
+  #rep-fin-sec{
+    width:100vw;
+    position:relative;
+    left:50%;
+    margin-left:-50vw;
+    padding:0 24px;
+    box-sizing:border-box;
+  }
+  #rep-fin-sec .kpi-grid{
+    max-width:1400px;margin:0 auto 14px;
+    grid-template-columns:repeat(5,1fr);
+  }
+  #rep-fin-sec .kpi-card.span2{grid-column:span 1}
+  #rep-fin-sec .fin-charts-grid{
+    max-width:1400px;margin:0 auto;
+    display:grid;grid-template-columns:repeat(2,1fr);gap:12px;
+  }
+  #rep-fin-sec .fin-charts-grid .dash-card{margin-bottom:0}
+  #rep-fin-sec .fin-chart-full{grid-column:1/-1}
+}
 </style>
 </head>
 <body id="artifacts-component-root-html">
@@ -467,93 +489,59 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <!-- ============ SUB-TAB: FINANCIERO (Power BI style) ============ -->
     <div id="rep-fin-sec">
 
+      <div class="rep-subnav-wrap">
+        <div class="rep-subnav" id="fin-neg-subnav">
+          <button class="rep-tab active" data-neg="todos" onclick="finNegTab('todos')">General</button>
+          <button class="rep-tab" data-neg="jal" onclick="finNegTab('jal')">Camote Jalisco</button>
+          <button class="rep-tab" data-neg="nay" onclick="finNegTab('nay')">Camote Nayarit</button>
+          <button class="rep-tab" data-neg="ofic" onclick="finNegTab('ofic')">Oficina</button>
+          <button class="rep-tab" data-neg="fram" onclick="finNegTab('fram')">Frambuesa</button>
+          <button class="rep-tab" data-neg="com" onclick="finNegTab('com')">Comercial.</button>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Semana</span>
+        <select id="fin-sem-select" onchange="onFinSemanaChange()" style="flex:1;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center;padding-right:30px">
+          <option value="todas">Todas las semanas</option>
+        </select>
+      </div>
+
       <div class="kpi-grid">
-        <div class="kpi-card span2" style="background:linear-gradient(135deg,var(--green-bg),var(--surface))">
+        <div class="kpi-card" style="background:linear-gradient(135deg,var(--green-bg),var(--surface))">
           <div class="kpi-accent" style="background:var(--green)"></div>
-          <div class="kpi-icon-row">
-            <div class="kpi-icon" style="background:var(--green-bg);color:var(--green)">📊</div>
-            <span class="kpi-trend flat" id="fin-util-trend">—</span>
-          </div>
-          <div class="kpi-lbl">Utilidad neta</div>
-          <div class="kpi-val" id="fin-util" style="color:var(--green)">$0</div>
-          <div class="kpi-sub" id="fin-util-sub">Ciclo actual</div>
+          <div class="kpi-lbl" id="fin-kpi1-lbl">Suma de Monto</div>
+          <div class="kpi-val" id="fin-kpi1" style="color:var(--green)">$0</div>
         </div>
-
-        <div class="kpi-card">
-          <div class="kpi-accent" style="background:var(--green)"></div>
-          <div class="kpi-icon-row">
-            <div class="kpi-icon" style="background:var(--green-bg);color:var(--green)">💰</div>
-            <span class="kpi-trend flat" id="fin-ing-trend">—</span>
-          </div>
-          <div class="kpi-lbl">Ingresos</div>
-          <div class="kpi-val" id="fin-ing" style="color:var(--green)">$0</div>
-        </div>
-
         <div class="kpi-card">
           <div class="kpi-accent" style="background:var(--fram)"></div>
-          <div class="kpi-icon-row">
-            <div class="kpi-icon" style="background:var(--fram-bg);color:var(--fram)">📤</div>
-            <span class="kpi-trend flat" id="fin-gas-trend">—</span>
-          </div>
-          <div class="kpi-lbl">Gastos</div>
-          <div class="kpi-val" id="fin-gas" style="color:var(--fram)">$0</div>
-        </div>
-
-        <div class="kpi-card">
-          <div class="kpi-icon-row">
-            <div class="kpi-icon" style="background:var(--camote-bg);color:var(--camote)">📈</div>
-          </div>
-          <div class="kpi-lbl">Margen</div>
-          <div class="kpi-val" id="fin-margen" style="color:var(--camote)">0%</div>
-        </div>
-
-        <div class="kpi-card">
-          <div class="kpi-icon-row">
-            <div class="kpi-icon" style="background:var(--surface2);color:var(--text2)">🧾</div>
-          </div>
-          <div class="kpi-lbl">Gasto promedio/día</div>
-          <div class="kpi-val" style="font-size:18px" id="fin-gasto-prom">$0</div>
+          <div class="kpi-lbl" id="fin-kpi2-lbl">Gasto Promedio</div>
+          <div class="kpi-val" id="fin-kpi2" style="color:var(--fram)">$0</div>
         </div>
       </div>
 
-      <div class="dash-card">
-        <div class="dash-card-title">Ingresos vs Gastos</div>
-        <div class="dash-card-sub">Tendencia semanal, últimas 12 semanas</div>
-        <div id="fin-linea-ing-gas" style="position:relative"></div>
-        <div class="dash-legend">
-          <div class="dash-legend-item"><span class="dash-legend-dot" style="background:var(--green)"></span>Ingresos</div>
-          <div class="dash-legend-item"><span class="dash-legend-dot" style="background:var(--fram)"></span>Gastos</div>
+      <div class="fin-charts-grid">
+
+        <div class="dash-card">
+          <div class="dash-card-title" id="fin-cat-title">Gastos x Sub-Concepto</div>
+          <div id="fin-barras-categoria" style="position:relative"></div>
         </div>
-      </div>
 
-      <div class="dash-card">
-        <div class="dash-card-title">Utilidad por negocio</div>
-        <div class="dash-card-sub">Ciclo actual</div>
-        <div id="fin-barras-utilidad-negocio" style="position:relative"></div>
-      </div>
-
-      <div class="dash-card">
-        <div class="dash-card-title">Gastos por semana</div>
-        <div class="dash-card-sub">Tendencia general, últimas 12 semanas</div>
-        <div id="dash-linea-semana" style="position:relative"></div>
-      </div>
-
-      <div class="dash-card">
-        <div class="dash-card-title">Gastos por negocio</div>
-        <div class="dash-card-sub">Últimas 8 semanas, por ubicación</div>
-        <div class="dash-toggle-row" id="dash-neg-toggle">
-          <button class="dash-toggle-btn active" data-loc="jal" onclick="toggleDashNegocio('jal')">Jalisco</button>
-          <button class="dash-toggle-btn active" data-loc="nay" onclick="toggleDashNegocio('nay')">Nayarit</button>
-          <button class="dash-toggle-btn active" data-loc="ofic" onclick="toggleDashNegocio('ofic')">Oficina</button>
-          <button class="dash-toggle-btn active" data-loc="com" onclick="toggleDashNegocio('com')">Comercial.</button>
+        <div class="dash-card" id="fin-card-negocio">
+          <div class="dash-card-title">Gastos x Negocio</div>
+          <div id="fin-barras-todos-negocios" style="position:relative"></div>
         </div>
-        <div id="dash-barras-negocio" style="position:relative"></div>
-      </div>
 
-      <div class="dash-card">
-        <div class="dash-card-title">Gastos por categoría</div>
-        <div class="dash-card-sub">Top categorías, ciclo actual</div>
-        <div id="dash-barras-categoria" style="position:relative"></div>
+        <div class="dash-card fin-chart-full" id="fin-card-acumulado" style="display:none">
+          <div class="dash-card-title">Gasto Acumulado</div>
+          <div id="fin-area-acumulado" style="position:relative"></div>
+        </div>
+
+        <div class="dash-card fin-chart-full">
+          <div class="dash-card-title">Gastos x Semana</div>
+          <div id="fin-linea-semana" style="position:relative"></div>
+        </div>
+
       </div>
 
     </div>
@@ -1799,94 +1787,6 @@ function dashTextColor(){ return isDark() ? '#9E9890' : '#8a8378'; }
 function dashTextColor2(){ return isDark() ? '#D8D2C8' : '#3a352e'; }
 
 // Devuelve el lunes de la semana de una fecha dada
-function mondayOf(d){
-  var dt = new Date(d);
-  var day = dt.getDay(); // 0=domingo
-  var diff = (day===0 ? -6 : 1-day);
-  dt.setDate(dt.getDate()+diff);
-  dt.setHours(0,0,0,0);
-  return dt;
-}
-
-function fmtSemanaLbl(mondayDate){
-  return mondayDate.toLocaleDateString('es-MX',{day:'2-digit',month:'short'});
-}
-
-// Agrupa gastos por semana (lunes) de las últimas N semanas, opcionalmente filtrados por loc
-function gastosPorSemana(n, locFiltro){
-  var hoyMonday = mondayOf(hoy);
-  var semanas = [];
-  for(var i=n-1;i>=0;i--){
-    var d = new Date(hoyMonday);
-    d.setDate(d.getDate()-i*7);
-    semanas.push({key:d.toISOString().slice(0,10), monday:d, label:fmtSemanaLbl(d), total:0});
-  }
-  var idxByKey = {};
-  semanas.forEach(function(s,i){ idxByKey[s.key]=i; });
-
-  gastos.forEach(function(g){
-    if(!g.fechaVal) return;
-    if(locFiltro && g.loc!==locFiltro) return;
-    var fd = new Date(g.fechaVal+'T12:00:00');
-    var mon = mondayOf(fd);
-    var key = mon.toISOString().slice(0,10);
-    if(idxByKey.hasOwnProperty(key)){
-      semanas[idxByKey[key]].total += (parseFloat(g.monto)||0);
-    }
-  });
-  return semanas;
-}
-
-// ---- Línea: Gastos por semana (general) ----
-function renderDashLineaSemana(){
-  var cont = document.getElementById('dash-linea-semana');
-  if(!cont) return;
-  var data = gastosPorSemana(12, null);
-  var maxV = Math.max.apply(null, data.map(function(d){return d.total;}).concat([1]));
-
-  var W = 320, H = 160, padL = 38, padR = 10, padT = 12, padB = 24;
-  var plotW = W-padL-padR, plotH = H-padT-padB;
-  var n = data.length;
-  var stepX = n>1 ? plotW/(n-1) : 0;
-
-  function xAt(i){ return padL + i*stepX; }
-  function yAt(v){ return padT + plotH - (maxV>0 ? (v/maxV*plotH) : 0); }
-
-  var gridLines = '';
-  var nGrid = 4;
-  for(var g=0; g<=nGrid; g++){
-    var gy = padT + plotH - (g/nGrid*plotH);
-    var gv = Math.round(maxV*g/nGrid);
-    gridLines += '<line x1="'+padL+'" y1="'+gy+'" x2="'+(padL+plotW)+'" y2="'+gy+'" stroke="'+dashGridColor()+'" stroke-width="1"/>';
-    gridLines += '<text x="'+(padL-6)+'" y="'+(gy+3)+'" font-size="8" fill="'+dashTextColor()+'" text-anchor="end" font-family="var(--mono)">'+fmtCompact(gv)+'</text>';
-  }
-
-  var pathD = '';
-  var points = '';
-  var labels = '';
-  data.forEach(function(d,i){
-    var x = xAt(i), y = yAt(d.total);
-    pathD += (i===0?'M':'L')+x.toFixed(1)+','+y.toFixed(1)+' ';
-    points += '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="3" fill="var(--green)" stroke="var(--surface)" stroke-width="1.5" class="dash-pt" data-val="'+d.total+'" data-lbl="'+d.label+'"/>';
-    if(i%2===0 || n<=6){
-      labels += '<text x="'+x.toFixed(1)+'" y="'+(H-6)+'" font-size="8" fill="'+dashTextColor()+'" text-anchor="middle">'+d.label+'</text>';
-    }
-  });
-
-  var areaD = pathD + 'L'+xAt(n-1).toFixed(1)+','+(padT+plotH)+' L'+xAt(0).toFixed(1)+','+(padT+plotH)+' Z';
-
-  var svg = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">'+
-    gridLines+
-    '<path d="'+areaD+'" fill="var(--green)" opacity="0.08"/>'+
-    '<path d="'+pathD+'" fill="none" stroke="var(--green)" stroke-width="2"/>'+
-    points+
-    labels+
-    '</svg>';
-
-  cont.innerHTML = svg + '<div class="dash-tooltip" id="dash-tt-linea"></div>';
-  attachDashTooltips(cont, 'dash-tt-linea');
-}
-
 function fmtCompact(n){
   n = Number(n)||0;
   if(Math.abs(n)>=1000000) return '$'+(n/1000000).toFixed(1)+'M';
@@ -1919,122 +1819,6 @@ function attachDashTooltips(cont, ttId){
   });
 }
 
-// ---- Barras agrupadas: Gastos por negocio (últimas 12 semanas) ----
-function toggleDashNegocio(loc){
-  dashNegociosActivos[loc] = !dashNegociosActivos[loc];
-  var btn = document.querySelector('#dash-neg-toggle button[data-loc="'+loc+'"]');
-  if(btn) btn.classList.toggle('active', dashNegociosActivos[loc]);
-  renderDashBarrasNegocio();
-}
-
-function renderDashBarrasNegocio(){
-  var cont = document.getElementById('dash-barras-negocio');
-  if(!cont) return;
-  var locsActivos = Object.keys(dashNegociosActivos).filter(function(l){return dashNegociosActivos[l];});
-  if(!locsActivos.length){
-    cont.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:20px 0">Selecciona al menos un negocio</div>';
-    return;
-  }
-
-  var nWeeks = 8;
-  var porLoc = {};
-  locsActivos.forEach(function(l){ porLoc[l] = gastosPorSemana(nWeeks, l); });
-
-  var maxV = 1;
-  locsActivos.forEach(function(l){
-    porLoc[l].forEach(function(d){ if(d.total>maxV) maxV=d.total; });
-  });
-
-  var W = 320, H = 170, padL = 38, padR = 10, padT = 12, padB = 24;
-  var plotW = W-padL-padR, plotH = H-padT-padB;
-  var groupW = plotW/nWeeks;
-  var barGap = 2;
-  var barW = Math.max(2, (groupW-barGap*2)/locsActivos.length - 1);
-
-  var gridLines = '';
-  var nGrid = 4;
-  for(var g=0; g<=nGrid; g++){
-    var gy = padT + plotH - (g/nGrid*plotH);
-    var gv = Math.round(maxV*g/nGrid);
-    gridLines += '<line x1="'+padL+'" y1="'+gy+'" x2="'+(padL+plotW)+'" y2="'+gy+'" stroke="'+dashGridColor()+'" stroke-width="1"/>';
-    gridLines += '<text x="'+(padL-6)+'" y="'+(gy+3)+'" font-size="8" fill="'+dashTextColor()+'" text-anchor="end" font-family="var(--mono)">'+fmtCompact(gv)+'</text>';
-  }
-
-  var bars = '';
-  var labels = '';
-  var weekLabels = porLoc[locsActivos[0]].map(function(d){return d.label;});
-
-  for(var w=0; w<nWeeks; w++){
-    var groupX = padL + w*groupW;
-    locsActivos.forEach(function(l, li){
-      var d = porLoc[l][w];
-      var bx = groupX + barGap + li*(barW+1);
-      var bh = maxV>0 ? (d.total/maxV*plotH) : 0;
-      var by = padT+plotH-bh;
-      bars += '<rect class="dash-bar-rect" x="'+bx.toFixed(1)+'" y="'+by.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+Math.max(bh,0.5).toFixed(1)+'" fill="'+DASH_COLORS[l]+'" rx="1.5" data-val="'+d.total+'" data-lbl="'+DASH_LABELS[l]+' · '+d.label+'"/>';
-    });
-    if(w%2===0 || nWeeks<=6){
-      labels += '<text x="'+(groupX+groupW/2).toFixed(1)+'" y="'+(H-6)+'" font-size="8" fill="'+dashTextColor()+'" text-anchor="middle">'+weekLabels[w]+'</text>';
-    }
-  }
-
-  var svg = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">'+
-    gridLines+bars+labels+
-    '</svg>';
-
-  var legend = '<div class="dash-legend">'+locsActivos.map(function(l){
-    return '<div class="dash-legend-item"><span class="dash-legend-dot" style="background:'+DASH_COLORS[l]+'"></span>'+DASH_LABELS[l]+'</div>';
-  }).join('')+'</div>';
-
-  cont.innerHTML = svg + legend + '<div class="dash-tooltip" id="dash-tt-negocio"></div>';
-  attachDashTooltips(cont, 'dash-tt-negocio');
-}
-
-// ---- Barras: Gastos por categoría (ciclo actual, top 8) ----
-function renderDashBarrasCategoria(){
-  var cont = document.getElementById('dash-barras-categoria');
-  if(!cont) return;
-  var cicloActual = cicloFromFecha(hoy.toISOString().slice(0,10));
-  var porCat = {};
-  gastos.forEach(function(g){
-    if(g.ciclo && g.ciclo!==cicloActual) return;
-    var c = g.cat || 'Sin categoría';
-    porCat[c] = (porCat[c]||0) + (parseFloat(g.monto)||0);
-  });
-  var rows = Object.keys(porCat).map(function(c){return [c, porCat[c]];});
-  rows.sort(function(a,b){return b[1]-a[1];});
-  rows = rows.slice(0,8);
-
-  if(!rows.length){
-    cont.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:20px 0">Sin datos aún</div>';
-    return;
-  }
-
-  var maxV = Math.max.apply(null, rows.map(function(r){return r[1];}));
-  var W = 320, barH = 22, gap = 8, padL = 4, padR = 56, padT=4;
-  var H = rows.length*(barH+gap)-gap + padT*2;
-  var plotW = W-padL-padR;
-
-  var bars = '';
-  rows.forEach(function(r, i){
-    var y = padT + i*(barH+gap);
-    var w = maxV>0 ? (r[1]/maxV*plotW) : 0;
-    var labelTxt = r[0].length>16 ? r[0].slice(0,15)+'…' : r[0];
-    bars += '<text x="'+padL+'" y="'+(y+barH/2-5)+'" font-size="9" fill="'+dashTextColor2()+'" font-weight="600">'+labelTxt+'</text>';
-    bars += '<rect class="dash-bar-rect" x="'+padL+'" y="'+(y+barH/2-1)+'" width="'+Math.max(w,2).toFixed(1)+'" height="9" rx="3" fill="var(--fram)" data-val="'+r[1]+'" data-lbl="'+r[0]+'"/>';
-    bars += '<text x="'+(padL+w+6)+'" y="'+(y+barH/2+6)+'" font-size="9" fill="'+dashTextColor()+'" font-family="var(--mono)">'+fmtCompact(r[1])+'</text>';
-  });
-
-  var svg = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">'+bars+'</svg>';
-  cont.innerHTML = svg + '<div class="dash-tooltip" id="dash-tt-cat"></div>';
-  attachDashTooltips(cont, 'dash-tt-cat');
-}
-
-function renderDashboard(){
-  renderDashLineaSemana();
-  renderDashBarrasNegocio();
-  renderDashBarrasCategoria();
-}
 
 // ============================================================
 // ---- FINANCIERO: Dashboard estilo Power BI ----
@@ -2049,106 +1833,238 @@ function repTab(t){
   if(t==='gen') renderRep();
 }
 
-// Ingresos por semana (igual estructura que gastosPorSemana pero con envios)
-function ingresosPorSemana(n, locFiltro){
-  var hoyMonday = mondayOf(hoy);
-  var semanas = [];
-  for(var i=n-1;i>=0;i--){
-    var d = new Date(hoyMonday);
-    d.setDate(d.getDate()-i*7);
-    semanas.push({key:d.toISOString().slice(0,10), monday:d, label:fmtSemanaLbl(d), total:0});
-  }
-  var idxByKey = {};
-  semanas.forEach(function(s,i){ idxByKey[s.key]=i; });
+// ============================================================
+// ---- FINANCIERO: dashboard estilo Power BI con negocios y semanas ----
+// ============================================================
 
-  envios.forEach(function(e){
-    if(!e.fecha) return;
-    if(locFiltro && e.loc!==locFiltro) return;
-    var fd = new Date(e.fecha+'T12:00:00');
-    var mon = mondayOf(fd);
-    var key = mon.toISOString().slice(0,10);
-    if(idxByKey.hasOwnProperty(key)){
-      semanas[idxByKey[key]].total += envioTotal(e);
-    }
-  });
-  return semanas;
+var finNegSel = 'todos'; // todos | jal | nay | ofic | fram | com
+var finSemSel = 'todas'; // 'todas' o número de semana del ciclo
+
+var FIN_NEG_MAP = {
+  jal:  {locs:['jal'], cultivo:'camote', label:'Camote Jalisco', color:'#5BA3E0'},
+  nay:  {locs:['nay'], cultivo:'camote', label:'Camote Nayarit', color:'#D98A4A'},
+  ofic: {locs:['ofic'], cultivo:null, label:'Oficina', color:'#9E9E9E'},
+  fram: {locs:['jal','nay'], cultivo:'fram', label:'Frambuesa', color:'#D6336C'},
+  com:  {locs:['com'], cultivo:null, label:'Comercializadora', color:'#3CB87A'}
+};
+
+function cicloStartDate(ciclo){
+  var yr = parseInt(ciclo.split('-')[0]);
+  return new Date(yr, 6, 1); // 1 de julio
 }
 
-function rangoFechas(dias){
-  var fin = new Date(hoy);
-  var inicio = new Date(hoy); inicio.setDate(inicio.getDate()-dias);
-  return {inicio:inicio, fin:fin};
+function semanaDelCiclo(fechaStr, ciclo){
+  var start = cicloStartDate(ciclo);
+  var d = new Date(fechaStr+'T12:00:00');
+  var diffDays = Math.floor((d-start)/(24*60*60*1000));
+  return Math.max(1, Math.floor(diffDays/7)+1);
 }
 
-function sumaGastosEnRango(inicio, fin, locFiltro){
+function finCicloActual(){
+  return cicloFromFecha(hoy.toISOString().slice(0,10));
+}
+
+// Filtra gastos según negocio seleccionado y ciclo actual
+function finGastosFiltrados(negKey, soloEsteNeg){
+  var ciclo = finCicloActual();
   return gastos.filter(function(g){
-    if(!g.fechaVal) return false;
-    if(locFiltro && g.loc!==locFiltro) return false;
-    var fd = new Date(g.fechaVal+'T12:00:00');
-    return fd>=inicio && fd<=fin;
-  }).reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0);
+    if(g.ciclo && g.ciclo!==ciclo) return false;
+    if(!soloEsteNeg || negKey==='todos') return true;
+    var def = FIN_NEG_MAP[negKey];
+    if(!def) return true;
+    if(def.locs.indexOf(g.loc)<0) return false;
+    if(def.cultivo===null){
+      // ofic/com: cultivo debe ser igual al loc (ofic) o com
+      return true;
+    }
+    return g.cultivo===def.cultivo;
+  });
 }
 
-function sumaIngresosEnRango(inicio, fin, locFiltro){
-  return envios.filter(function(e){
-    if(!e.fecha) return false;
-    if(locFiltro && e.loc!==locFiltro) return false;
-    var fd = new Date(e.fecha+'T12:00:00');
-    return fd>=inicio && fd<=fin;
-  }).reduce(function(a,e){return a+envioTotal(e);},0);
+function finNegTab(neg){
+  finNegSel = neg;
+  finSemSel = 'todas';
+  document.querySelectorAll('#fin-neg-subnav .rep-tab').forEach(function(btn){
+    btn.classList.toggle('active', btn.dataset.neg===neg);
+  });
+  document.getElementById('fin-card-acumulado').style.display = neg==='todos' ? 'none' : 'block';
+  document.getElementById('fin-card-negocio').style.display = neg==='todos' ? 'block' : 'none';
+  document.getElementById('fin-cat-title').textContent = neg==='todos' ? 'Gastos x Sub-Concepto' : 'Gastos x Sub-Concepto — '+FIN_NEG_MAP[neg].label;
+  populateFinSemanaSelect();
+  renderFinanciero();
 }
 
-function trendBadge(curr, prev){
-  if(prev===0 && curr===0) return {cls:'flat', txt:'—'};
-  if(prev===0) return {cls:'up', txt:'▲ nuevo'};
-  var pct = ((curr-prev)/Math.abs(prev))*100;
-  if(Math.abs(pct)<1) return {cls:'flat', txt:'0%'};
-  return pct>0 ? {cls:'up', txt:'▲ '+pct.toFixed(0)+'%'} : {cls:'down', txt:'▼ '+Math.abs(pct).toFixed(0)+'%'};
+function onFinSemanaChange(){
+  finSemSel = document.getElementById('fin-sem-select').value;
+  renderFinanciero();
+}
+
+function populateFinSemanaSelect(){
+  var sel = document.getElementById('fin-sem-select');
+  var data = finGastosFiltrados(finNegSel, finNegSel!=='todos');
+  var ciclo = finCicloActual();
+  var semSet = {};
+  data.forEach(function(g){
+    if(!g.fechaVal) return;
+    var s = semanaDelCiclo(g.fechaVal, ciclo);
+    semSet[s] = true;
+  });
+  var semanas = Object.keys(semSet).map(Number).sort(function(a,b){return a-b;});
+  var prevVal = finSemSel;
+  sel.innerHTML = '<option value="todas">Todas las semanas</option>';
+  semanas.forEach(function(s){
+    var o = document.createElement('option');
+    o.value = s; o.textContent = 'Semana '+(s<10?'0'+s:s);
+    sel.appendChild(o);
+  });
+  if(semanas.indexOf(Number(prevVal))>=0 || prevVal==='todas'){
+    sel.value = prevVal;
+    finSemSel = prevVal;
+  } else {
+    sel.value = 'todas';
+    finSemSel = 'todas';
+  }
+}
+
+function finDataConSemana(){
+  var data = finGastosFiltrados(finNegSel, finNegSel!=='todos');
+  var ciclo = finCicloActual();
+  data = data.map(function(g){
+    return Object.assign({}, g, {_semana: g.fechaVal ? semanaDelCiclo(g.fechaVal, ciclo) : null});
+  });
+  if(finSemSel!=='todas'){
+    data = data.filter(function(g){return g._semana===Number(finSemSel);});
+  }
+  return data;
 }
 
 function renderFinKPIs(){
-  var r30 = rangoFechas(30);
-  var rPrev30 = {inicio:(function(){var d=new Date(r30.inicio);d.setDate(d.getDate()-30);return d;})(), fin:r30.inicio};
-
-  var ing30 = sumaIngresosEnRango(r30.inicio, r30.fin);
-  var ingPrev30 = sumaIngresosEnRango(rPrev30.inicio, rPrev30.fin);
-  var gas30 = sumaGastosEnRango(r30.inicio, r30.fin);
-  var gasPrev30 = sumaGastosEnRango(rPrev30.inicio, rPrev30.fin);
-  var util30 = ing30-gas30;
-  var utilPrev30 = ingPrev30-gasPrev30;
-  var margen = ing30>0 ? (util30/ing30*100) : 0;
-
-  document.getElementById('fin-ing').textContent = fmt(ing30);
-  document.getElementById('fin-gas').textContent = fmt(gas30);
-  document.getElementById('fin-util').textContent = fmt(util30);
-  document.getElementById('fin-util').style.color = util30>=0 ? 'var(--green)' : 'var(--fram)';
-  document.getElementById('fin-margen').textContent = margen.toFixed(1)+'%';
-  document.getElementById('fin-gasto-prom').textContent = fmt(gas30/30);
-  document.getElementById('fin-util-sub').textContent = 'Últimos 30 días';
-
-  var tIng = trendBadge(ing30, ingPrev30);
-  var tGas = trendBadge(gas30, gasPrev30);
-  var tUtil = trendBadge(util30, utilPrev30);
-
-  var elIng = document.getElementById('fin-ing-trend');
-  elIng.textContent = tIng.txt; elIng.className = 'kpi-trend '+tIng.cls;
-  var elGas = document.getElementById('fin-gas-trend');
-  elGas.textContent = tGas.txt; elGas.className = 'kpi-trend '+(tGas.cls==='up'?'down':(tGas.cls==='down'?'up':'flat')); // gasto subir es malo, se invierte color
-  var elUtil = document.getElementById('fin-util-trend');
-  elUtil.textContent = tUtil.txt; elUtil.className = 'kpi-trend '+tUtil.cls;
+  var data = finDataConSemana();
+  var suma = data.reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0);
+  var prom = data.length ? suma/data.length : 0;
+  document.getElementById('fin-kpi1').textContent = fmt(suma);
+  document.getElementById('fin-kpi2').textContent = fmt(prom);
 }
 
-// ---- Línea: Ingresos vs Gastos (semanal) ----
-function renderFinLineaIngGas(){
-  var cont = document.getElementById('fin-linea-ing-gas');
+// ---- Barras horizontales: Gastos x Sub-Concepto (categoría) ----
+function renderFinBarrasCategoria(){
+  var cont = document.getElementById('fin-barras-categoria');
   if(!cont) return;
-  var ing = ingresosPorSemana(12, null);
-  var gas = gastosPorSemana(12, null);
-  var maxV = Math.max.apply(null, ing.map(function(d){return d.total;}).concat(gas.map(function(d){return d.total;})).concat([1]));
+  var data = finDataConSemana();
+  var porCat = {};
+  data.forEach(function(g){
+    var c = g.cat || 'Sin categoría';
+    porCat[c] = (porCat[c]||0) + (parseFloat(g.monto)||0);
+  });
+  var rows = Object.keys(porCat).map(function(c){return [c, porCat[c]];});
+  rows.sort(function(a,b){return b[1]-a[1];});
+  rows = rows.slice(0,10);
 
-  var W = 320, H = 170, padL = 38, padR = 10, padT = 12, padB = 24;
+  if(!rows.length){
+    cont.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:20px 0">Sin datos para este filtro</div>';
+    return;
+  }
+
+  var maxV = Math.max.apply(null, rows.map(function(r){return r[1];}));
+  var W = 320, barH = 22, gap = 8, padL = 4, padR = 56, padT=4;
+  var H = rows.length*(barH+gap)-gap + padT*2;
+  var plotW = W-padL-padR;
+
+  var bars = '';
+  rows.forEach(function(r, i){
+    var y = padT + i*(barH+gap);
+    var w = maxV>0 ? (r[1]/maxV*plotW) : 0;
+    var labelTxt = r[0].length>18 ? r[0].slice(0,17)+'…' : r[0];
+    bars += '<text x="'+padL+'" y="'+(y+barH/2-5)+'" font-size="9" fill="'+dashTextColor2()+'" font-weight="600">'+labelTxt+'</text>';
+    bars += '<rect class="dash-bar-rect" x="'+padL+'" y="'+(y+barH/2-1)+'" width="'+Math.max(w,2).toFixed(1)+'" height="9" rx="3" fill="var(--green)" data-val="'+r[1]+'" data-lbl="'+r[0]+'"/>';
+    bars += '<text x="'+(padL+w+6)+'" y="'+(y+barH/2+6)+'" font-size="9" fill="'+dashTextColor()+'" font-family="var(--mono)">'+fmtCompact(r[1])+'</text>';
+  });
+
+  var svg = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">'+bars+'</svg>';
+  cont.innerHTML = svg + '<div class="dash-tooltip" id="dash-tt-fincat"></div>';
+  attachDashTooltips(cont, 'dash-tt-fincat');
+}
+
+// ---- Barras verticales: Gastos x Negocio (solo vista "todos") ----
+function renderFinBarrasTodosNegocios(){
+  var cont = document.getElementById('fin-barras-todos-negocios');
+  if(!cont || finNegSel!=='todos') return;
+  var ciclo = finCicloActual();
+  var keys = Object.keys(FIN_NEG_MAP);
+  var rows = keys.map(function(k){
+    var def = FIN_NEG_MAP[k];
+    var total = gastos.filter(function(g){
+      if(g.ciclo && g.ciclo!==ciclo) return false;
+      if(def.locs.indexOf(g.loc)<0) return false;
+      if(def.cultivo===null) return true;
+      return g.cultivo===def.cultivo;
+    }).reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0);
+    return {key:k, label:def.label, total:total, color:def.color};
+  });
+  rows.sort(function(a,b){return b.total-a.total;});
+
+  var maxV = Math.max.apply(null, rows.map(function(r){return r.total;}).concat([1]));
+  var W = 320, H = 170, padL = 38, padR = 10, padT = 16, padB = 38;
   var plotW = W-padL-padR, plotH = H-padT-padB;
-  var n = ing.length;
+  var n = rows.length;
+  var slot = plotW/n;
+  var barW = Math.min(46, slot*0.6);
+
+  var gridLines = '';
+  var nGrid = 4;
+  for(var g=0; g<=nGrid; g++){
+    var gy = padT + plotH - (g/nGrid*plotH);
+    var gv = Math.round(maxV*g/nGrid);
+    gridLines += '<line x1="'+padL+'" y1="'+gy+'" x2="'+(padL+plotW)+'" y2="'+gy+'" stroke="'+dashGridColor()+'" stroke-width="1"/>';
+    gridLines += '<text x="'+(padL-6)+'" y="'+(gy+3)+'" font-size="8" fill="'+dashTextColor()+'" text-anchor="end" font-family="var(--mono)">'+fmtCompact(gv)+'</text>';
+  }
+
+  var bars = '', labels = '';
+  rows.forEach(function(r,i){
+    var cx = padL + slot*i + slot/2;
+    var bx = cx-barW/2;
+    var bh = maxV>0 ? (r.total/maxV*plotH) : 0;
+    var by = padT+plotH-bh;
+    bars += '<rect class="dash-bar-rect" x="'+bx.toFixed(1)+'" y="'+by.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+Math.max(bh,0.5).toFixed(1)+'" fill="'+r.color+'" rx="2" data-val="'+r.total+'" data-lbl="'+r.label+'"/>';
+    bars += '<text x="'+cx.toFixed(1)+'" y="'+(by-5).toFixed(1)+'" font-size="8" fill="'+dashTextColor2()+'" text-anchor="middle" font-family="var(--mono)">'+fmtCompact(r.total)+'</text>';
+    var lbl = r.label.length>12 ? r.label.slice(0,11)+'…' : r.label;
+    labels += '<text x="'+cx.toFixed(1)+'" y="'+(H-22)+'" font-size="7.5" fill="'+dashTextColor()+'" text-anchor="middle">'+lbl+'</text>';
+  });
+
+  var svg = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">'+gridLines+bars+labels+'</svg>';
+  cont.innerHTML = svg + '<div class="dash-tooltip" id="dash-tt-finneg"></div>';
+  attachDashTooltips(cont, 'dash-tt-finneg');
+}
+
+// ---- Área: Gasto Acumulado (solo vista de negocio específico) ----
+function renderFinAreaAcumulado(){
+  var cont = document.getElementById('fin-area-acumulado');
+  if(!cont || finNegSel==='todos') return;
+  var data = finGastosFiltrados(finNegSel, true);
+  var ciclo = finCicloActual();
+  var bySemana = {};
+  data.forEach(function(g){
+    if(!g.fechaVal) return;
+    var s = semanaDelCiclo(g.fechaVal, ciclo);
+    bySemana[s] = (bySemana[s]||0) + (parseFloat(g.monto)||0);
+  });
+  var maxSem = Math.max.apply(null, Object.keys(bySemana).map(Number).concat([1]));
+  var puntos = [];
+  var acumulado = 0;
+  for(var s=1; s<=maxSem; s++){
+    acumulado += (bySemana[s]||0);
+    puntos.push({sem:s, label:'S'+(s<10?'0'+s:s), total:acumulado});
+  }
+
+  if(!puntos.length){
+    cont.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:20px 0">Sin datos aún</div>';
+    return;
+  }
+
+  var maxV = Math.max.apply(null, puntos.map(function(p){return p.total;}).concat([1]));
+  var W = 680, H = 180, padL = 50, padR = 14, padT = 16, padB = 28;
+  var plotW = W-padL-padR, plotH = H-padT-padB;
+  var n = puntos.length;
   var stepX = n>1 ? plotW/(n-1) : 0;
 
   function xAt(i){ return padL + i*stepX; }
@@ -2163,75 +2079,94 @@ function renderFinLineaIngGas(){
     gridLines += '<text x="'+(padL-6)+'" y="'+(gy+3)+'" font-size="8" fill="'+dashTextColor()+'" text-anchor="end" font-family="var(--mono)">'+fmtCompact(gv)+'</text>';
   }
 
-  function buildPath(data, color){
-    var pathD = '', points = '';
-    data.forEach(function(d,i){
-      var x = xAt(i), y = yAt(d.total);
-      pathD += (i===0?'M':'L')+x.toFixed(1)+','+y.toFixed(1)+' ';
-      points += '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="2.8" fill="'+color+'" stroke="var(--surface)" stroke-width="1.3" class="dash-pt" data-val="'+d.total+'" data-lbl="'+d.label+'"/>';
-    });
-    return {path:'<path d="'+pathD+'" fill="none" stroke="'+color+'" stroke-width="2"/>', points:points};
+  var pathD = '', points = '', labels = '';
+  puntos.forEach(function(p,i){
+    var x = xAt(i), y = yAt(p.total);
+    pathD += (i===0?'M':'L')+x.toFixed(1)+','+y.toFixed(1)+' ';
+    points += '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="2.5" fill="var(--green)" stroke="var(--surface)" stroke-width="1.2" class="dash-pt" data-val="'+p.total+'" data-lbl="'+p.label+'"/>';
+    if(i%3===0 || n<=10) labels += '<text x="'+x.toFixed(1)+'" y="'+(H-8)+'" font-size="7.5" fill="'+dashTextColor()+'" text-anchor="middle">'+p.label+'</text>';
+  });
+  var areaD = pathD + 'L'+xAt(n-1).toFixed(1)+','+(padT+plotH)+' L'+xAt(0).toFixed(1)+','+(padT+plotH)+' Z';
+
+  var svg = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">'+
+    gridLines+
+    '<path d="'+areaD+'" fill="var(--green)" opacity="0.15"/>'+
+    '<path d="'+pathD+'" fill="none" stroke="var(--green)" stroke-width="2"/>'+
+    points+labels+
+    '</svg>';
+
+  cont.innerHTML = svg + '<div class="dash-tooltip" id="dash-tt-acum"></div>';
+  attachDashTooltips(cont, 'dash-tt-acum');
+}
+
+// ---- Línea: Gastos x Semana (del negocio/filtro activo) ----
+function renderFinLineaSemana(){
+  var cont = document.getElementById('fin-linea-semana');
+  if(!cont) return;
+  var data = finGastosFiltrados(finNegSel, finNegSel!=='todos');
+  var ciclo = finCicloActual();
+  var bySemana = {};
+  data.forEach(function(g){
+    if(!g.fechaVal) return;
+    var s = semanaDelCiclo(g.fechaVal, ciclo);
+    bySemana[s] = (bySemana[s]||0) + (parseFloat(g.monto)||0);
+  });
+  var maxSem = Math.max.apply(null, Object.keys(bySemana).map(Number).concat([1]));
+  var puntos = [];
+  for(var s=1; s<=maxSem; s++){
+    puntos.push({sem:s, label:'S'+(s<10?'0'+s:s), total:(bySemana[s]||0)});
   }
 
-  var ingLine = buildPath(ing, 'var(--green)');
-  var gasLine = buildPath(gas, 'var(--fram)');
+  if(!puntos.length){
+    cont.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:20px 0">Sin datos aún</div>';
+    return;
+  }
 
-  var labels = '';
-  ing.forEach(function(d,i){
-    if(i%2===0 || n<=6) labels += '<text x="'+xAt(i).toFixed(1)+'" y="'+(H-6)+'" font-size="8" fill="'+dashTextColor()+'" text-anchor="middle">'+d.label+'</text>';
+  var maxV = Math.max.apply(null, puntos.map(function(p){return p.total;}).concat([1]));
+  var W = 680, H = 190, padL = 50, padR = 14, padT = 16, padB = 30;
+  var plotW = W-padL-padR, plotH = H-padT-padB;
+  var n = puntos.length;
+  var stepX = n>1 ? plotW/(n-1) : 0;
+
+  function xAt(i){ return padL + i*stepX; }
+  function yAt(v){ return padT + plotH - (maxV>0 ? (v/maxV*plotH) : 0); }
+
+  var gridLines = '';
+  var nGrid = 4;
+  for(var g=0; g<=nGrid; g++){
+    var gy = padT + plotH - (g/nGrid*plotH);
+    var gv = Math.round(maxV*g/nGrid);
+    gridLines += '<line x1="'+padL+'" y1="'+gy+'" x2="'+(padL+plotW)+'" y2="'+gy+'" stroke="'+dashGridColor()+'" stroke-width="1"/>';
+    gridLines += '<text x="'+(padL-6)+'" y="'+(gy+3)+'" font-size="8" fill="'+dashTextColor()+'" text-anchor="end" font-family="var(--mono)">'+fmtCompact(gv)+'</text>';
+  }
+
+  var pathD = '', points = '', labels = '';
+  puntos.forEach(function(p,i){
+    var x = xAt(i), y = yAt(p.total);
+    pathD += (i===0?'M':'L')+x.toFixed(1)+','+y.toFixed(1)+' ';
+    points += '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="2.8" fill="var(--fram)" stroke="var(--surface)" stroke-width="1.3" class="dash-pt" data-val="'+p.total+'" data-lbl="'+p.label+'"/>';
+    if(i%2===0 || n<=10) labels += '<text x="'+x.toFixed(1)+'" y="'+(H-10)+'" font-size="7.5" fill="'+dashTextColor()+'" text-anchor="middle">'+p.label+'</text>';
   });
 
   var svg = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">'+
-    gridLines + ingLine.path + gasLine.path + ingLine.points + gasLine.points + labels +
+    gridLines+
+    '<path d="'+pathD+'" fill="none" stroke="var(--fram)" stroke-width="2"/>'+
+    points+labels+
     '</svg>';
 
-  cont.innerHTML = svg + '<div class="dash-tooltip" id="dash-tt-ingvgas"></div>';
-  attachDashTooltips(cont, 'dash-tt-ingvgas');
-}
-
-// ---- Barras: Utilidad por negocio (ciclo actual) ----
-function renderFinBarrasUtilidad(){
-  var cont = document.getElementById('fin-barras-utilidad-negocio');
-  if(!cont) return;
-  var cicloActual = cicloFromFecha(hoy.toISOString().slice(0,10));
-
-  var locs = ['jal','nay','ofic','com'];
-  var rows = locs.map(function(l){
-    var ing = envios.filter(function(e){return e.loc===l && (!e.ciclo || e.ciclo===cicloActual);}).reduce(function(a,e){return a+envioTotal(e);},0);
-    var gas = gastos.filter(function(g){return g.loc===l && (!g.ciclo || g.ciclo===cicloActual);}).reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0);
-    return {loc:l, util: ing-gas};
-  });
-
-  var maxAbs = Math.max.apply(null, rows.map(function(r){return Math.abs(r.util);}).concat([1]));
-  var W = 320, barH = 26, gap = 10, padL = 70, padR = 50, padT = 4;
-  var H = rows.length*(barH+gap)-gap + padT*2;
-  var plotW = W-padL-padR;
-  var midX = padL + plotW/2;
-
-  var bars = '';
-  rows.forEach(function(r,i){
-    var y = padT + i*(barH+gap);
-    var w = (Math.abs(r.util)/maxAbs) * (plotW/2);
-    var color = r.util>=0 ? 'var(--green)' : 'var(--fram)';
-    var x = r.util>=0 ? midX : midX-w;
-    bars += '<text x="'+(padL-8)+'" y="'+(y+barH/2+3)+'" font-size="10" fill="'+dashTextColor2()+'" font-weight="600" text-anchor="end">'+DASH_LABELS[r.loc]+'</text>';
-    bars += '<rect class="dash-bar-rect" x="'+x.toFixed(1)+'" y="'+(y+barH/2-7)+'" width="'+Math.max(w,1).toFixed(1)+'" height="14" rx="3" fill="'+color+'" data-val="'+r.util+'" data-lbl="'+DASH_LABELS[r.loc]+'"/>';
-    var txtX = r.util>=0 ? (x+w+6) : (x-6);
-    var anchor = r.util>=0 ? 'start' : 'end';
-    bars += '<text x="'+txtX.toFixed(1)+'" y="'+(y+barH/2+3)+'" font-size="9" fill="'+dashTextColor()+'" font-family="var(--mono)" text-anchor="'+anchor+'">'+fmtCompact(r.util)+'</text>';
-  });
-  bars += '<line x1="'+midX+'" y1="0" x2="'+midX+'" y2="'+H+'" stroke="'+dashGridColor()+'" stroke-width="1"/>';
-
-  var svg = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">'+bars+'</svg>';
-  cont.innerHTML = svg + '<div class="dash-tooltip" id="dash-tt-utilneg"></div>';
-  attachDashTooltips(cont, 'dash-tt-utilneg');
+  cont.innerHTML = svg + '<div class="dash-tooltip" id="dash-tt-finsem"></div>';
+  attachDashTooltips(cont, 'dash-tt-finsem');
 }
 
 function renderFinanciero(){
+  if(!document.getElementById('fin-sem-select').options.length || document.getElementById('fin-sem-select').options.length<=1){
+    populateFinSemanaSelect();
+  }
   renderFinKPIs();
-  renderFinLineaIngGas();
-  renderFinBarrasUtilidad();
-  renderDashboard();
+  renderFinBarrasCategoria();
+  renderFinBarrasTodosNegocios();
+  renderFinAreaAcumulado();
+  renderFinLineaSemana();
 }
 
 function renderRep(){
