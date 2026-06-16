@@ -948,17 +948,34 @@ function initSupabase(){
   } catch(e){ console.error('initSupabase error:', e.message); }
 }
 
+async function fetchAllRows(table, orderCol, asc){
+  var all = [];
+  var pageSize = 1000;
+  var from = 0;
+  while(true){
+    var q = sb.from(table).select('*');
+    if(orderCol) q = q.order(orderCol, {ascending: !!asc});
+    q = q.range(from, from+pageSize-1);
+    var res = await q;
+    if(res.error || !res.data || !res.data.length) break;
+    all = all.concat(res.data);
+    if(res.data.length < pageSize) break;
+    from += pageSize;
+  }
+  return all;
+}
+
 async function cargarDesdeSB(){
   if(!sbOnline) return;
   showToast('Sincronizando...');
-  var rG = await sb.from('gastos').select('*').order('created_at', {ascending:false});
-  var rE = await sb.from('envios').select('*').order('created_at', {ascending:false});
+  var gData = await fetchAllRows('gastos', 'created_at', false);
+  var eData = await fetchAllRows('envios', 'created_at', false);
   var rC = await sb.from('clientes').select('nombre').order('nombre');
   var rP = await sb.from('proveedores').select('nombre').order('nombre');
   var rB = await sb.from('bancos').select('nombre').order('nombre');
 
-  if(rG.data && rG.data.length){
-    gastos = rG.data.map(function(g){
+  if(gData && gData.length){
+    gastos = gData.map(function(g){
       return {id:g.id, fechaVal:g.fecha_val, fechaLbl:g.fecha_lbl,
         loc:g.loc, cultivo:g.cultivo, cat:g.cat, desc:g.descripcion,
         monto:parseFloat(g.monto||0), ciclo:g.ciclo, sector:g.sector,
@@ -966,8 +983,8 @@ async function cargarDesdeSB(){
     });
     localStorage.setItem('cc_gastos3', JSON.stringify(gastos));
   }
-  if(rE.data && rE.data.length){
-    envios = rE.data.map(function(e){
+  if(eData && eData.length){
+    envios = eData.map(function(e){
       return {id:e.id, num:e.num, folio:e.folio, fecha:e.fecha,
         fechaLbl:e.fecha_lbl, loc:e.loc, ciclo:e.ciclo,
         cliente:e.cliente, proveedor:e.proveedor,
