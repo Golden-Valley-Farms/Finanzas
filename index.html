@@ -502,7 +502,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
         <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:120px">
-          <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Año</span>
+          <span id="fin-periodo-lbl" style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Año</span>
           <select id="fin-anio-select" onchange="onFinAnioChange()" style="flex:1;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
             <option value="todos">Todos</option>
           </select>
@@ -559,12 +559,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="dash-card" id="fin-card-negocio">
           <div class="dash-card-title">Gastos x Negocio</div>
           <div id="fin-barras-todos-negocios" style="position:relative"></div>
-        </div>
-
-        <div class="dash-card fin-chart-full">
-          <div class="dash-card-title">Ingreso vs Gasto — por Semana</div>
-          <div class="dash-card-sub">Ventas registradas contra gasto operativo, semana a semana</div>
-          <div id="fin-ing-gasto-semana" style="position:relative"></div>
         </div>
 
         <div class="dash-card fin-chart-full">
@@ -1916,21 +1910,24 @@ function finGastosFiltrados(negKey, soloEsteNeg){
 
 function finNegTab(neg){
   finNegSel = neg;
-  finSemSel = 'todas';
   document.querySelectorAll('#fin-neg-subnav .rep-tab').forEach(function(btn){
     btn.classList.toggle('active', btn.dataset.neg===neg);
   });
   document.getElementById('fin-card-negocio').style.display = neg==='todos' ? 'block' : 'none';
   document.getElementById('fin-cat-title').textContent = neg==='todos' ? 'Gastos x Sub-Concepto' : 'Gastos x Sub-Concepto — '+FIN_NEG_MAP[neg].label;
-  populateFinAnioSelect();
-  populateFinSemanaSelect();
+  populateFinAnioSelect(true);
+  populateFinSemanaSelect(true);
   renderFinanciero();
 }
 
 function onFinAnioChange(){
   finAnioSel = document.getElementById('fin-anio-select').value;
-  finSemSel = 'todas';
-  populateFinSemanaSelect();
+  if(finAnioSel==='todos'){
+    finSemSel = 'todas';
+    populateFinSemanaSelect();
+  } else {
+    populateFinSemanaSelect(true);
+  }
   renderFinanciero();
 }
 
@@ -1939,44 +1936,68 @@ function onFinSemanaChange(){
   renderFinanciero();
 }
 
-function populateFinAnioSelect(){
-  var sel = document.getElementById('fin-anio-select');
+// Valores de periodo (ciclos o años, según el negocio activo) presentes en los datos, más reciente primero
+function finValoresPeriodo(){
+  var usaCiclo = finUsaCiclo(finNegSel);
   var data = finGastosFiltrados(finNegSel, finNegSel!=='todos');
-  var anioSet = {};
+  var set = {};
   data.forEach(function(g){
-    if(!g.fechaVal) return;
-    anioSet[anioDeFecha(g.fechaVal)] = true;
+    if(usaCiclo){
+      var c = g.ciclo || cicloFromFecha(g.fechaVal);
+      if(c) set[c] = true;
+    } else {
+      if(g.fechaVal) set[String(anioDeFecha(g.fechaVal))] = true;
+    }
   });
-  var anios = Object.keys(anioSet).map(Number).sort(function(a,b){return b-a;});
+  var arr = Object.keys(set);
+  arr.sort();
+  arr.reverse();
+  return arr;
+}
+
+function populateFinAnioSelect(forceReciente){
+  var sel = document.getElementById('fin-anio-select');
+  var lblEl = document.getElementById('fin-periodo-lbl');
+  var usaCiclo = finUsaCiclo(finNegSel);
+  if(lblEl) lblEl.textContent = usaCiclo ? 'Ciclo' : 'Año';
+
+  var valores = finValoresPeriodo();
   var prevVal = finAnioSel;
-  sel.innerHTML = '<option value="todos">Todos los años</option>';
-  anios.forEach(function(a){
+  sel.innerHTML = '<option value="todos">'+(usaCiclo ? 'Todos los ciclos' : 'Todos los años')+'</option>';
+  valores.forEach(function(v){
     var o = document.createElement('option');
-    o.value = a; o.textContent = a;
+    o.value = v; o.textContent = v;
     sel.appendChild(o);
   });
-  if(anios.indexOf(Number(prevVal))>=0 || prevVal==='todos'){
+  if(!forceReciente && (valores.indexOf(String(prevVal))>=0 || prevVal==='todos')){
     sel.value = prevVal;
     finAnioSel = prevVal;
-  } else if(anios.length){
-    sel.value = anios[0];
-    finAnioSel = String(anios[0]);
+  } else if(valores.length){
+    sel.value = valores[0];
+    finAnioSel = valores[0];
   } else {
     sel.value = 'todos';
     finAnioSel = 'todos';
   }
 }
 
-function populateFinSemanaSelect(){
+function populateFinSemanaSelect(forceReciente){
   var sel = document.getElementById('fin-sem-select');
+  var usaCiclo = finUsaCiclo(finNegSel);
   var data = finGastosFiltrados(finNegSel, finNegSel!=='todos');
   if(finAnioSel!=='todos'){
-    data = data.filter(function(g){return g.fechaVal && anioDeFecha(g.fechaVal)===Number(finAnioSel);});
+    data = data.filter(function(g){
+      if(usaCiclo) return (g.ciclo||cicloFromFecha(g.fechaVal))===finAnioSel;
+      return g.fechaVal && String(anioDeFecha(g.fechaVal))===String(finAnioSel);
+    });
   }
   var semSet = {};
+  var fechaMax = null, semMax = null;
   data.forEach(function(g){
     if(!g.fechaVal) return;
-    semSet[semanaISO(g.fechaVal)] = true;
+    var s = semanaISO(g.fechaVal);
+    semSet[s] = true;
+    if(fechaMax===null || g.fechaVal>fechaMax){ fechaMax = g.fechaVal; semMax = s; }
   });
   var semanas = Object.keys(semSet).map(Number).sort(function(a,b){return a-b;});
   var prevVal = finSemSel;
@@ -1986,9 +2007,12 @@ function populateFinSemanaSelect(){
     o.value = s; o.textContent = 'Semana '+(s<10?'0'+s:s);
     sel.appendChild(o);
   });
-  if(semanas.indexOf(Number(prevVal))>=0 || prevVal==='todas'){
+  if(!forceReciente && (semanas.indexOf(Number(prevVal))>=0 || prevVal==='todas')){
     sel.value = prevVal;
     finSemSel = prevVal;
+  } else if(semMax!==null){
+    sel.value = semMax;
+    finSemSel = semMax;
   } else {
     sel.value = 'todas';
     finSemSel = 'todas';
@@ -1999,12 +2023,12 @@ function finDataConSemana(){
   var data = finGastosFiltrados(finNegSel, finNegSel!=='todos');
   data = data.map(function(g){
     return Object.assign({}, g, {
-      _anio: g.fechaVal ? anioDeFecha(g.fechaVal) : null,
+      _periodo: finUsaCiclo(finNegSel) ? (g.ciclo || cicloFromFecha(g.fechaVal)) : (g.fechaVal ? String(anioDeFecha(g.fechaVal)) : null),
       _semana: g.fechaVal ? semanaISO(g.fechaVal) : null
     });
   });
   if(finAnioSel!=='todos'){
-    data = data.filter(function(g){return g._anio===Number(finAnioSel);});
+    data = data.filter(function(g){return g._periodo===String(finAnioSel);});
   }
   if(finSemSel!=='todas'){
     data = data.filter(function(g){return g._semana===Number(finSemSel);});
@@ -2049,13 +2073,15 @@ function renderFinKPIs(){
   if(margAccentEl) margAccentEl.style.background = margen>=0 ? 'var(--green)' : 'var(--fram)';
 
   if(finAnioSel!=='todos'){
-    var anioPrev = Number(finAnioSel)-1;
+    var usaCicloKpi = finUsaCiclo(finNegSel);
+    var periodoPrevKpi = finPeriodoPrevio(finAnioSel, usaCicloKpi);
     var gastoPrev = finGastosFiltrados(finNegSel, finNegSel!=='todos').filter(function(g){
-      if(!g.fechaVal || anioDeFecha(g.fechaVal)!==anioPrev) return false;
+      var per = usaCicloKpi ? (g.ciclo||cicloFromFecha(g.fechaVal)) : (g.fechaVal?String(anioDeFecha(g.fechaVal)):null);
+      if(per!==periodoPrevKpi) return false;
       if(finSemSel!=='todas' && semanaISO(g.fechaVal)!==Number(finSemSel)) return false;
       return true;
     }).reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0);
-    var ingPrev = finIngresoTotal(finNegSel, String(anioPrev), finSemSel);
+    var ingPrev = finIngresoTotal(finNegSel, periodoPrevKpi, finSemSel);
     var utilPrev = ingPrev - gastoPrev;
     var margPrev = ingPrev>0 ? (utilPrev/ingPrev*100) : null;
     if(utilTrendEl) utilTrendEl.innerHTML = trendBadge(utilidad, utilPrev);
@@ -2180,14 +2206,18 @@ function finIngresoAplica(neg){
   return neg==='todos' || neg==='jal' || neg==='nay' || neg==='com';
 }
 
-// Suma de ingresos (envios) para un negocio + filtro de año/semana dados
-function finIngresoTotal(negKey, anioSel, semSel){
+// Suma de ingresos (envios) para un negocio + filtro de periodo (ciclo o año) / semana dados
+function finIngresoTotal(negKey, periodoSel, semSel){
   if(!finIngresoAplica(negKey)) return 0;
   var locsMap = {todos:['jal','nay','com'], jal:['jal'], nay:['nay'], com:['com']};
   var locs = locsMap[negKey];
+  var usaCiclo = finUsaCiclo(negKey);
   var data = envios.filter(function(e){ return locs.indexOf(e.loc)>=0; });
-  if(anioSel!=='todos'){
-    data = data.filter(function(e){ return e.fecha && anioDeFecha(e.fecha)===Number(anioSel); });
+  if(periodoSel!=='todos'){
+    data = data.filter(function(e){
+      if(usaCiclo) return (e.ciclo||cicloFromFecha(e.fecha))===periodoSel;
+      return e.fecha && String(anioDeFecha(e.fecha))===String(periodoSel);
+    });
   }
   if(semSel!=='todas'){
     data = data.filter(function(e){ return e.fecha && semanaISO(e.fecha)===Number(semSel); });
@@ -2195,18 +2225,25 @@ function finIngresoTotal(negKey, anioSel, semSel){
   return data.reduce(function(a,e){ return a+envioTotal(e); }, 0);
 }
 
-// Serie semanal combinada Ingreso/Gasto (respeta negocio + año seleccionados; ignora el filtro de semana puntual, igual que las demás gráficas "x semana")
+// Serie semanal combinada Ingreso/Gasto (respeta negocio + periodo seleccionados; ignora el filtro de semana puntual, igual que las demás gráficas "x semana"; se usa para los Puntos clave)
 function finComboSerieSemanal(){
   if(!finIngresoAplica(finNegSel)) return null;
+  var usaCiclo = finUsaCiclo(finNegSel);
   var gastoData = finGastosFiltrados(finNegSel, finNegSel!=='todos');
   if(finAnioSel!=='todos'){
-    gastoData = gastoData.filter(function(g){ return g.fechaVal && anioDeFecha(g.fechaVal)===Number(finAnioSel); });
+    gastoData = gastoData.filter(function(g){
+      if(usaCiclo) return (g.ciclo||cicloFromFecha(g.fechaVal))===finAnioSel;
+      return g.fechaVal && String(anioDeFecha(g.fechaVal))===String(finAnioSel);
+    });
   }
   var locsMap = {todos:['jal','nay','com'], jal:['jal'], nay:['nay'], com:['com']};
   var locs = locsMap[finNegSel];
   var ingresoData = envios.filter(function(e){ return locs.indexOf(e.loc)>=0; });
   if(finAnioSel!=='todos'){
-    ingresoData = ingresoData.filter(function(e){ return e.fecha && anioDeFecha(e.fecha)===Number(finAnioSel); });
+    ingresoData = ingresoData.filter(function(e){
+      if(usaCiclo) return (e.ciclo||cicloFromFecha(e.fecha))===finAnioSel;
+      return e.fecha && String(anioDeFecha(e.fecha))===String(finAnioSel);
+    });
   }
   var map = {};
   function ensure(key,anio,sem){ if(!map[key]) map[key]={anio:anio,sem:sem,gasto:0,ingreso:0}; return map[key]; }
@@ -2228,61 +2265,24 @@ function finComboSerieSemanal(){
   });
 }
 
-// ---- Línea doble: Ingreso vs Gasto x Semana (sustituye al Gasto Acumulado) ----
-function renderFinIngresoGastoSemana(){
-  var cont = document.getElementById('fin-ing-gasto-semana');
-  if(!cont) return;
+// ---- Periodo: ciclo agrícola para jal/nay/fram, año calendario para ofic/com/todos ----
+function finUsaCiclo(neg){
+  return neg==='jal' || neg==='nay' || neg==='fram';
+}
 
-  if(!finIngresoAplica(finNegSel)){
-    cont.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:20px 0">Este negocio no tiene ventas registradas en la app — aquí solo se rastrea el gasto.</div>';
-    return;
+// Periodo anterior (ciclo previo o año previo) a partir de un valor de periodo dado
+function finPeriodoPrevio(periodoVal, usaCiclo){
+  if(usaCiclo){
+    var idx = CICLOS.indexOf(periodoVal);
+    if(idx>0) return CICLOS[idx-1];
+    var parts = String(periodoVal).split('-');
+    if(parts.length===2){
+      var startY = parseInt(parts[0],10)-1;
+      return startY+'-'+(startY+1);
+    }
+    return null;
   }
-
-  var puntos = finComboSerieSemanal();
-  if(!puntos || !puntos.length){
-    cont.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:20px 0">Sin datos aún</div>';
-    return;
-  }
-
-  var maxV = Math.max.apply(null, puntos.map(function(p){return Math.max(p.ingreso,p.gasto);}).concat([1]));
-  var W = 680, H = 190, padL = 50, padR = 14, padT = 16, padB = 30;
-  var plotW = W-padL-padR, plotH = H-padT-padB;
-  var n = puntos.length;
-  var stepX = n>1 ? plotW/(n-1) : 0;
-
-  function xAt(i){ return padL + i*stepX; }
-  function yAt(v){ return padT + plotH - (maxV>0 ? (v/maxV*plotH) : 0); }
-
-  var gridLines = '';
-  var nGrid = 4;
-  for(var g=0; g<=nGrid; g++){
-    var gy = padT + plotH - (g/nGrid*plotH);
-    var gv = Math.round(maxV*g/nGrid);
-    gridLines += '<line x1="'+padL+'" y1="'+gy+'" x2="'+(padL+plotW)+'" y2="'+gy+'" stroke="'+dashGridColor()+'" stroke-width="1"/>';
-    gridLines += '<text x="'+(padL-6)+'" y="'+(gy+3)+'" font-size="8" fill="'+dashTextColor()+'" text-anchor="end" font-family="var(--mono)">'+fmtCompact(gv)+'</text>';
-  }
-
-  var ingPath='', gasPath='', ptsIng='', ptsGas='', labels='';
-  puntos.forEach(function(p,i){
-    var x = xAt(i), yI = yAt(p.ingreso), yG = yAt(p.gasto);
-    ingPath += (i===0?'M':'L')+x.toFixed(1)+','+yI.toFixed(1)+' ';
-    gasPath += (i===0?'M':'L')+x.toFixed(1)+','+yG.toFixed(1)+' ';
-    ptsIng += '<circle cx="'+x.toFixed(1)+'" cy="'+yI.toFixed(1)+'" r="2.6" fill="var(--green)" stroke="var(--surface)" stroke-width="1.2" class="dash-pt" data-val="'+p.ingreso+'" data-lbl="Ingreso '+p.label+'"/>';
-    ptsGas += '<circle cx="'+x.toFixed(1)+'" cy="'+yG.toFixed(1)+'" r="2.6" fill="var(--fram)" stroke="var(--surface)" stroke-width="1.2" class="dash-pt" data-val="'+p.gasto+'" data-lbl="Gasto '+p.label+'"/>';
-    if(i%2===0 || n<=10) labels += '<text x="'+x.toFixed(1)+'" y="'+(H-10)+'" font-size="7.5" fill="'+dashTextColor()+'" text-anchor="middle">'+p.label+'</text>';
-  });
-
-  var svg = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">'+
-    gridLines+
-    '<path d="'+gasPath+'" fill="none" stroke="var(--fram)" stroke-width="2"/>'+
-    '<path d="'+ingPath+'" fill="none" stroke="var(--green)" stroke-width="2"/>'+
-    ptsGas+ptsIng+labels+
-    '</svg>';
-
-  cont.innerHTML = svg +
-    '<div class="dash-legend"><div class="dash-legend-item"><span class="dash-legend-dot" style="background:var(--green)"></span>Ingreso</div><div class="dash-legend-item"><span class="dash-legend-dot" style="background:var(--fram)"></span>Gasto</div></div>'+
-    '<div class="dash-tooltip" id="dash-tt-ingasto"></div>';
-  attachDashTooltips(cont, 'dash-tt-ingasto');
+  return String(Number(periodoVal)-1);
 }
 
 // Etiqueta de tendencia (▲/▼/▬) comparando un valor actual contra uno previo
@@ -2329,18 +2329,21 @@ function renderFinInsights(){
     }
   }
 
-  // 3) Comparativo vs el mismo periodo del año anterior (solo si hay un año específico seleccionado)
+  // 3) Comparativo vs el mismo periodo anterior (ciclo previo o año previo, según el negocio)
   if(finAnioSel!=='todos'){
-    var anioPrev = Number(finAnioSel)-1;
+    var usaCicloIns = finUsaCiclo(finNegSel);
+    var periodoPrevIns = finPeriodoPrevio(finAnioSel, usaCicloIns);
     var gastoPrev = finGastosFiltrados(finNegSel, finNegSel!=='todos').filter(function(g){
-      if(!g.fechaVal || anioDeFecha(g.fechaVal)!==anioPrev) return false;
+      var per = usaCicloIns ? (g.ciclo||cicloFromFecha(g.fechaVal)) : (g.fechaVal?String(anioDeFecha(g.fechaVal)):null);
+      if(per!==periodoPrevIns) return false;
       if(finSemSel!=='todas' && semanaISO(g.fechaVal)!==Number(finSemSel)) return false;
       return true;
     }).reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0);
     if(gastoPrev>0){
       var gastoActual = data.reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0);
       var delta = (gastoActual-gastoPrev)/gastoPrev*100;
-      insights.push({icon: delta>0?'🔺':'🔻', text:'El gasto '+(delta>0?'subió':'bajó')+' '+Math.abs(delta).toFixed(0)+'% vs el mismo periodo de '+anioPrev+'.'});
+      var etiquetaPrev = usaCicloIns ? 'el ciclo '+periodoPrevIns : 'el mismo periodo de '+periodoPrevIns;
+      insights.push({icon: delta>0?'🔺':'🔻', text:'El gasto '+(delta>0?'subió':'bajó')+' '+Math.abs(delta).toFixed(0)+'% vs '+etiquetaPrev+'.'});
     }
   }
 
@@ -2410,13 +2413,12 @@ function renderFinLineaSemana(){
 
 function renderFinanciero(){
   if(document.getElementById('fin-anio-select').options.length<=1){
-    populateFinAnioSelect();
-    populateFinSemanaSelect();
+    populateFinAnioSelect(true);
+    populateFinSemanaSelect(true);
   }
   renderFinKPIs();
   renderFinBarrasCategoria();
   renderFinBarrasTodosNegocios();
-  renderFinIngresoGastoSemana();
   renderFinLineaSemana();
   renderFinInsights();
 }
