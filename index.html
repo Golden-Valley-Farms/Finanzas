@@ -518,11 +518,32 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="kpi-grid">
         <div class="kpi-card" style="background:linear-gradient(135deg,var(--green-bg),var(--surface))">
           <div class="kpi-accent" style="background:var(--green)"></div>
-          <div class="kpi-lbl" id="fin-kpi1-lbl">Suma de Monto</div>
-          <div class="kpi-val" id="fin-kpi1" style="color:var(--green)">$0</div>
+          <div class="kpi-icon-row"><div class="kpi-icon" style="background:var(--green-bg);color:var(--green)">💰</div></div>
+          <div class="kpi-lbl">Ingreso Total</div>
+          <div class="kpi-val" id="fin-kpi-ing" style="color:var(--green)">$0</div>
+          <div class="kpi-sub" id="fin-kpi-ing-sub">Ventas registradas</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-accent" style="background:var(--fram)"></div>
+          <div class="kpi-icon-row"><div class="kpi-icon" style="background:var(--fram-bg);color:var(--fram)">🧾</div></div>
+          <div class="kpi-lbl" id="fin-kpi1-lbl">Gasto Total</div>
+          <div class="kpi-val" id="fin-kpi1" style="color:var(--fram)">$0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-accent" id="fin-kpi-util-accent" style="background:var(--green)"></div>
+          <div class="kpi-icon-row"><div class="kpi-icon" style="background:var(--surface2);color:var(--text2)">⚖️</div><span class="kpi-trend flat" id="fin-kpi-util-trend"></span></div>
+          <div class="kpi-lbl">Utilidad</div>
+          <div class="kpi-val" id="fin-kpi-util" style="color:var(--green)">$0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-accent" id="fin-kpi-margen-accent" style="background:var(--ofic)"></div>
+          <div class="kpi-icon-row"><div class="kpi-icon" style="background:var(--ofic-bg);color:var(--ofic)">🎯</div><span class="kpi-trend flat" id="fin-kpi-margen-trend"></span></div>
+          <div class="kpi-lbl">Margen</div>
+          <div class="kpi-val" id="fin-kpi-margen" style="color:var(--ofic)">0%</div>
+        </div>
+        <div class="kpi-card span2">
+          <div class="kpi-accent" style="background:var(--fram)"></div>
+          <div class="kpi-icon-row"><div class="kpi-icon" style="background:var(--surface2);color:var(--text2)">📊</div></div>
           <div class="kpi-lbl" id="fin-kpi2-lbl">Gasto Promedio</div>
           <div class="kpi-val" id="fin-kpi2" style="color:var(--fram)">$0</div>
         </div>
@@ -540,14 +561,20 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <div id="fin-barras-todos-negocios" style="position:relative"></div>
         </div>
 
-        <div class="dash-card fin-chart-full" id="fin-card-acumulado" style="display:none">
-          <div class="dash-card-title">Gasto Acumulado</div>
-          <div id="fin-area-acumulado" style="position:relative"></div>
+        <div class="dash-card fin-chart-full">
+          <div class="dash-card-title">Ingreso vs Gasto — por Semana</div>
+          <div class="dash-card-sub">Ventas registradas contra gasto operativo, semana a semana</div>
+          <div id="fin-ing-gasto-semana" style="position:relative"></div>
         </div>
 
         <div class="dash-card fin-chart-full">
           <div class="dash-card-title">Gastos x Semana</div>
           <div id="fin-linea-semana" style="position:relative"></div>
+        </div>
+
+        <div class="dash-card fin-chart-full">
+          <div class="dash-card-title">📌 Puntos clave</div>
+          <div id="fin-insights"></div>
         </div>
 
       </div>
@@ -1893,7 +1920,6 @@ function finNegTab(neg){
   document.querySelectorAll('#fin-neg-subnav .rep-tab').forEach(function(btn){
     btn.classList.toggle('active', btn.dataset.neg===neg);
   });
-  document.getElementById('fin-card-acumulado').style.display = neg==='todos' ? 'none' : 'block';
   document.getElementById('fin-card-negocio').style.display = neg==='todos' ? 'block' : 'none';
   document.getElementById('fin-cat-title').textContent = neg==='todos' ? 'Gastos x Sub-Concepto' : 'Gastos x Sub-Concepto — '+FIN_NEG_MAP[neg].label;
   populateFinAnioSelect();
@@ -1992,6 +2018,52 @@ function renderFinKPIs(){
   var prom = data.length ? suma/data.length : 0;
   document.getElementById('fin-kpi1').textContent = fmt(suma);
   document.getElementById('fin-kpi2').textContent = fmt(prom);
+
+  // ---- Ingreso / Utilidad / Margen ----
+  var ingEl = document.getElementById('fin-kpi-ing'), ingSubEl = document.getElementById('fin-kpi-ing-sub');
+  var utilEl = document.getElementById('fin-kpi-util'), utilTrendEl = document.getElementById('fin-kpi-util-trend');
+  var margEl = document.getElementById('fin-kpi-margen'), margTrendEl = document.getElementById('fin-kpi-margen-trend');
+  var utilAccentEl = document.getElementById('fin-kpi-util-accent'), margAccentEl = document.getElementById('fin-kpi-margen-accent');
+
+  if(!finIngresoAplica(finNegSel)){
+    if(ingEl) ingEl.textContent = '—';
+    if(ingSubEl) ingSubEl.textContent = 'Sin ventas registradas en la app';
+    if(utilEl){ utilEl.textContent = '—'; utilEl.style.color = 'var(--text3)'; }
+    if(margEl){ margEl.textContent = '—'; margEl.style.color = 'var(--text3)'; }
+    if(utilAccentEl) utilAccentEl.style.background = 'var(--text3)';
+    if(margAccentEl) margAccentEl.style.background = 'var(--text3)';
+    if(utilTrendEl) utilTrendEl.innerHTML = '';
+    if(margTrendEl) margTrendEl.innerHTML = '';
+    return;
+  }
+
+  var ingreso = finIngresoTotal(finNegSel, finAnioSel, finSemSel);
+  var utilidad = ingreso - suma;
+  var margen = ingreso>0 ? (utilidad/ingreso*100) : 0;
+
+  if(ingEl) ingEl.textContent = fmt(ingreso);
+  if(ingSubEl) ingSubEl.textContent = 'Ventas registradas';
+  if(utilEl){ utilEl.textContent = fmt(utilidad); utilEl.style.color = utilidad>=0 ? 'var(--green)' : 'var(--fram)'; }
+  if(margEl){ margEl.textContent = (ingreso>0 ? margen.toFixed(1) : '0.0')+'%'; margEl.style.color = margen>=0 ? 'var(--green)' : 'var(--fram)'; }
+  if(utilAccentEl) utilAccentEl.style.background = utilidad>=0 ? 'var(--green)' : 'var(--fram)';
+  if(margAccentEl) margAccentEl.style.background = margen>=0 ? 'var(--green)' : 'var(--fram)';
+
+  if(finAnioSel!=='todos'){
+    var anioPrev = Number(finAnioSel)-1;
+    var gastoPrev = finGastosFiltrados(finNegSel, finNegSel!=='todos').filter(function(g){
+      if(!g.fechaVal || anioDeFecha(g.fechaVal)!==anioPrev) return false;
+      if(finSemSel!=='todas' && semanaISO(g.fechaVal)!==Number(finSemSel)) return false;
+      return true;
+    }).reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0);
+    var ingPrev = finIngresoTotal(finNegSel, String(anioPrev), finSemSel);
+    var utilPrev = ingPrev - gastoPrev;
+    var margPrev = ingPrev>0 ? (utilPrev/ingPrev*100) : null;
+    if(utilTrendEl) utilTrendEl.innerHTML = trendBadge(utilidad, utilPrev);
+    if(margTrendEl) margTrendEl.innerHTML = trendBadge(margen, margPrev);
+  } else {
+    if(utilTrendEl) utilTrendEl.innerHTML = '';
+    if(margTrendEl) margTrendEl.innerHTML = '';
+  }
 }
 
 // ---- Barras horizontales: Gastos x Sub-Concepto (categoría) ----
@@ -2103,28 +2175,77 @@ function finSerieSemanal(data){
   });
 }
 
-// ---- Área: Gasto Acumulado (solo vista de negocio específico) ----
-function renderFinAreaAcumulado(){
-  var cont = document.getElementById('fin-area-acumulado');
-  if(!cont || finNegSel==='todos') return;
-  var data = finGastosFiltrados(finNegSel, true);
-  if(finAnioSel!=='todos'){
-    data = data.filter(function(g){return g.fechaVal && anioDeFecha(g.fechaVal)===Number(finAnioSel);});
-  }
-  var serie = finSerieSemanal(data);
-  var acumulado = 0;
-  var puntos = serie.map(function(p){
-    acumulado += p.total;
-    return {label:p.label, total:acumulado};
-  });
+// ---- Ingreso: aplica solo a negocios con ventas registradas en la app (jal/nay/com/todos) ----
+function finIngresoAplica(neg){
+  return neg==='todos' || neg==='jal' || neg==='nay' || neg==='com';
+}
 
-  if(!puntos.length){
+// Suma de ingresos (envios) para un negocio + filtro de año/semana dados
+function finIngresoTotal(negKey, anioSel, semSel){
+  if(!finIngresoAplica(negKey)) return 0;
+  var locsMap = {todos:['jal','nay','com'], jal:['jal'], nay:['nay'], com:['com']};
+  var locs = locsMap[negKey];
+  var data = envios.filter(function(e){ return locs.indexOf(e.loc)>=0; });
+  if(anioSel!=='todos'){
+    data = data.filter(function(e){ return e.fecha && anioDeFecha(e.fecha)===Number(anioSel); });
+  }
+  if(semSel!=='todas'){
+    data = data.filter(function(e){ return e.fecha && semanaISO(e.fecha)===Number(semSel); });
+  }
+  return data.reduce(function(a,e){ return a+envioTotal(e); }, 0);
+}
+
+// Serie semanal combinada Ingreso/Gasto (respeta negocio + año seleccionados; ignora el filtro de semana puntual, igual que las demás gráficas "x semana")
+function finComboSerieSemanal(){
+  if(!finIngresoAplica(finNegSel)) return null;
+  var gastoData = finGastosFiltrados(finNegSel, finNegSel!=='todos');
+  if(finAnioSel!=='todos'){
+    gastoData = gastoData.filter(function(g){ return g.fechaVal && anioDeFecha(g.fechaVal)===Number(finAnioSel); });
+  }
+  var locsMap = {todos:['jal','nay','com'], jal:['jal'], nay:['nay'], com:['com']};
+  var locs = locsMap[finNegSel];
+  var ingresoData = envios.filter(function(e){ return locs.indexOf(e.loc)>=0; });
+  if(finAnioSel!=='todos'){
+    ingresoData = ingresoData.filter(function(e){ return e.fecha && anioDeFecha(e.fecha)===Number(finAnioSel); });
+  }
+  var map = {};
+  function ensure(key,anio,sem){ if(!map[key]) map[key]={anio:anio,sem:sem,gasto:0,ingreso:0}; return map[key]; }
+  gastoData.forEach(function(g){
+    if(!g.fechaVal) return;
+    var anio=anioDeFecha(g.fechaVal), sem=semanaISO(g.fechaVal);
+    ensure(anio+'-'+(sem<10?'0'+sem:sem), anio, sem).gasto += (parseFloat(g.monto)||0);
+  });
+  ingresoData.forEach(function(e){
+    if(!e.fecha) return;
+    var anio=anioDeFecha(e.fecha), sem=semanaISO(e.fecha);
+    ensure(anio+'-'+(sem<10?'0'+sem:sem), anio, sem).ingreso += envioTotal(e);
+  });
+  var keys = Object.keys(map).sort();
+  return keys.map(function(k){
+    var v = map[k];
+    var lbl = finAnioSel==='todos' ? v.anio+' S'+(v.sem<10?'0'+v.sem:v.sem) : 'S'+(v.sem<10?'0'+v.sem:v.sem);
+    return {label:lbl, ingreso:v.ingreso, gasto:v.gasto};
+  });
+}
+
+// ---- Línea doble: Ingreso vs Gasto x Semana (sustituye al Gasto Acumulado) ----
+function renderFinIngresoGastoSemana(){
+  var cont = document.getElementById('fin-ing-gasto-semana');
+  if(!cont) return;
+
+  if(!finIngresoAplica(finNegSel)){
+    cont.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:20px 0">Este negocio no tiene ventas registradas en la app — aquí solo se rastrea el gasto.</div>';
+    return;
+  }
+
+  var puntos = finComboSerieSemanal();
+  if(!puntos || !puntos.length){
     cont.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:20px 0">Sin datos aún</div>';
     return;
   }
 
-  var maxV = Math.max.apply(null, puntos.map(function(p){return p.total;}).concat([1]));
-  var W = 680, H = 180, padL = 50, padR = 14, padT = 16, padB = 28;
+  var maxV = Math.max.apply(null, puntos.map(function(p){return Math.max(p.ingreso,p.gasto);}).concat([1]));
+  var W = 680, H = 190, padL = 50, padR = 14, padT = 16, padB = 30;
   var plotW = W-padL-padR, plotH = H-padT-padB;
   var n = puntos.length;
   var stepX = n>1 ? plotW/(n-1) : 0;
@@ -2141,24 +2262,99 @@ function renderFinAreaAcumulado(){
     gridLines += '<text x="'+(padL-6)+'" y="'+(gy+3)+'" font-size="8" fill="'+dashTextColor()+'" text-anchor="end" font-family="var(--mono)">'+fmtCompact(gv)+'</text>';
   }
 
-  var pathD = '', points = '', labels = '';
+  var ingPath='', gasPath='', ptsIng='', ptsGas='', labels='';
   puntos.forEach(function(p,i){
-    var x = xAt(i), y = yAt(p.total);
-    pathD += (i===0?'M':'L')+x.toFixed(1)+','+y.toFixed(1)+' ';
-    points += '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="2.5" fill="var(--green)" stroke="var(--surface)" stroke-width="1.2" class="dash-pt" data-val="'+p.total+'" data-lbl="'+p.label+'"/>';
-    if(i%3===0 || n<=10) labels += '<text x="'+x.toFixed(1)+'" y="'+(H-8)+'" font-size="7.5" fill="'+dashTextColor()+'" text-anchor="middle">'+p.label+'</text>';
+    var x = xAt(i), yI = yAt(p.ingreso), yG = yAt(p.gasto);
+    ingPath += (i===0?'M':'L')+x.toFixed(1)+','+yI.toFixed(1)+' ';
+    gasPath += (i===0?'M':'L')+x.toFixed(1)+','+yG.toFixed(1)+' ';
+    ptsIng += '<circle cx="'+x.toFixed(1)+'" cy="'+yI.toFixed(1)+'" r="2.6" fill="var(--green)" stroke="var(--surface)" stroke-width="1.2" class="dash-pt" data-val="'+p.ingreso+'" data-lbl="Ingreso '+p.label+'"/>';
+    ptsGas += '<circle cx="'+x.toFixed(1)+'" cy="'+yG.toFixed(1)+'" r="2.6" fill="var(--fram)" stroke="var(--surface)" stroke-width="1.2" class="dash-pt" data-val="'+p.gasto+'" data-lbl="Gasto '+p.label+'"/>';
+    if(i%2===0 || n<=10) labels += '<text x="'+x.toFixed(1)+'" y="'+(H-10)+'" font-size="7.5" fill="'+dashTextColor()+'" text-anchor="middle">'+p.label+'</text>';
   });
-  var areaD = pathD + 'L'+xAt(n-1).toFixed(1)+','+(padT+plotH)+' L'+xAt(0).toFixed(1)+','+(padT+plotH)+' Z';
 
   var svg = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">'+
     gridLines+
-    '<path d="'+areaD+'" fill="var(--green)" opacity="0.15"/>'+
-    '<path d="'+pathD+'" fill="none" stroke="var(--green)" stroke-width="2"/>'+
-    points+labels+
+    '<path d="'+gasPath+'" fill="none" stroke="var(--fram)" stroke-width="2"/>'+
+    '<path d="'+ingPath+'" fill="none" stroke="var(--green)" stroke-width="2"/>'+
+    ptsGas+ptsIng+labels+
     '</svg>';
 
-  cont.innerHTML = svg + '<div class="dash-tooltip" id="dash-tt-acum"></div>';
-  attachDashTooltips(cont, 'dash-tt-acum');
+  cont.innerHTML = svg +
+    '<div class="dash-legend"><div class="dash-legend-item"><span class="dash-legend-dot" style="background:var(--green)"></span>Ingreso</div><div class="dash-legend-item"><span class="dash-legend-dot" style="background:var(--fram)"></span>Gasto</div></div>'+
+    '<div class="dash-tooltip" id="dash-tt-ingasto"></div>';
+  attachDashTooltips(cont, 'dash-tt-ingasto');
+}
+
+// Etiqueta de tendencia (▲/▼/▬) comparando un valor actual contra uno previo
+function trendBadge(curr, prev){
+  if(prev===null || prev===undefined || prev===0 || curr===null || curr===undefined) return '';
+  var pct = ((curr-prev)/Math.abs(prev))*100;
+  var cls = pct>0.5 ? 'up' : (pct<-0.5 ? 'down' : 'flat');
+  var arrow = cls==='up' ? '▲' : (cls==='down' ? '▼' : '▬');
+  return '<span class="kpi-trend '+cls+'">'+arrow+' '+Math.abs(pct).toFixed(0)+'%</span>';
+}
+
+// ---- Puntos clave: lecturas automáticas para apoyar decisiones ----
+function renderFinInsights(){
+  var cont = document.getElementById('fin-insights');
+  if(!cont) return;
+
+  var data = finDataConSemana();
+  var insights = [];
+
+  // 1) Categoría con mayor concentración de gasto en el filtro activo
+  var porCat = {};
+  data.forEach(function(g){
+    var c = g.cat || 'Sin categoría';
+    porCat[c] = (porCat[c]||0) + (parseFloat(g.monto)||0);
+  });
+  var catRows = Object.keys(porCat).map(function(c){return [c, porCat[c]];}).sort(function(a,b){return b[1]-a[1];});
+  var totalGasto = catRows.reduce(function(a,r){return a+r[1];},0);
+  if(catRows.length && totalGasto>0){
+    var top = catRows[0];
+    var pctTop = top[1]/totalGasto*100;
+    insights.push({icon:'📌', text:'<b>'+top[0]+'</b> concentra el '+pctTop.toFixed(0)+'% del gasto en este filtro ('+fmt(top[1])+').'});
+  }
+
+  // 2) Semanas donde el gasto superó al ingreso (alerta de margen negativo)
+  if(finIngresoAplica(finNegSel)){
+    var combo = finComboSerieSemanal();
+    if(combo && combo.length){
+      var semNeg = combo.filter(function(p){return p.gasto>p.ingreso;}).length;
+      if(semNeg>0){
+        insights.push({icon:'⚠️', text:semNeg+' de '+combo.length+' semanas con datos tuvieron gasto mayor al ingreso en este filtro.'});
+      } else {
+        insights.push({icon:'✅', text:'Todas las semanas con datos en este filtro tuvieron ingreso mayor al gasto.'});
+      }
+    }
+  }
+
+  // 3) Comparativo vs el mismo periodo del año anterior (solo si hay un año específico seleccionado)
+  if(finAnioSel!=='todos'){
+    var anioPrev = Number(finAnioSel)-1;
+    var gastoPrev = finGastosFiltrados(finNegSel, finNegSel!=='todos').filter(function(g){
+      if(!g.fechaVal || anioDeFecha(g.fechaVal)!==anioPrev) return false;
+      if(finSemSel!=='todas' && semanaISO(g.fechaVal)!==Number(finSemSel)) return false;
+      return true;
+    }).reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0);
+    if(gastoPrev>0){
+      var gastoActual = data.reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0);
+      var delta = (gastoActual-gastoPrev)/gastoPrev*100;
+      insights.push({icon: delta>0?'🔺':'🔻', text:'El gasto '+(delta>0?'subió':'bajó')+' '+Math.abs(delta).toFixed(0)+'% vs el mismo periodo de '+anioPrev+'.'});
+    }
+  }
+
+  if(!insights.length){
+    cont.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:10px 0">Aún no hay suficientes datos para generar puntos clave con este filtro.</div>';
+    return;
+  }
+
+  cont.innerHTML = insights.map(function(it){
+    return '<div style="display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border)">'+
+      '<span style="font-size:14px;flex-shrink:0">'+it.icon+'</span>'+
+      '<span style="font-size:12.5px;color:var(--text2);line-height:1.4">'+it.text+'</span>'+
+      '</div>';
+  }).join('');
 }
 
 // ---- Línea: Gastos x Semana (del negocio/filtro activo) ----
@@ -2220,8 +2416,9 @@ function renderFinanciero(){
   renderFinKPIs();
   renderFinBarrasCategoria();
   renderFinBarrasTodosNegocios();
-  renderFinAreaAcumulado();
+  renderFinIngresoGastoSemana();
   renderFinLineaSemana();
+  renderFinInsights();
 }
 
 function renderRep(){
