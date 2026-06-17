@@ -310,7 +310,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   }
   #rep-fin-sec .kpi-grid{
     max-width:1400px;margin:0 auto 14px;
-    grid-template-columns:repeat(5,1fr);
+    grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
   }
   #rep-fin-sec .kpi-card.span2{grid-column:span 1}
   #rep-fin-sec .fin-charts-grid{
@@ -516,30 +516,19 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
 
       <div class="kpi-grid">
-        <div class="kpi-card" style="background:linear-gradient(135deg,var(--green-bg),var(--surface))">
-          <div class="kpi-accent" style="background:var(--green)"></div>
-          <div class="kpi-icon-row"><div class="kpi-icon" style="background:var(--green-bg);color:var(--green)">💰</div></div>
-          <div class="kpi-lbl">Ingreso Total</div>
-          <div class="kpi-val" id="fin-kpi-ing" style="color:var(--green)">$0</div>
-          <div class="kpi-sub" id="fin-kpi-ing-sub">Ventas registradas</div>
-        </div>
-        <div class="kpi-card">
+        <div class="kpi-card" style="background:linear-gradient(135deg,var(--fram-bg),var(--surface))">
           <div class="kpi-accent" style="background:var(--fram)"></div>
           <div class="kpi-icon-row"><div class="kpi-icon" style="background:var(--fram-bg);color:var(--fram)">🧾</div></div>
           <div class="kpi-lbl" id="fin-kpi1-lbl">Gasto Total</div>
           <div class="kpi-val" id="fin-kpi1" style="color:var(--fram)">$0</div>
+          <div class="kpi-sub">Según el filtro activo</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-accent" id="fin-kpi-util-accent" style="background:var(--green)"></div>
-          <div class="kpi-icon-row"><div class="kpi-icon" style="background:var(--surface2);color:var(--text2)">⚖️</div><span class="kpi-trend flat" id="fin-kpi-util-trend"></span></div>
-          <div class="kpi-lbl">Utilidad</div>
-          <div class="kpi-val" id="fin-kpi-util" style="color:var(--green)">$0</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-accent" id="fin-kpi-margen-accent" style="background:var(--ofic)"></div>
-          <div class="kpi-icon-row"><div class="kpi-icon" style="background:var(--ofic-bg);color:var(--ofic)">🎯</div><span class="kpi-trend flat" id="fin-kpi-margen-trend"></span></div>
-          <div class="kpi-lbl">Margen</div>
-          <div class="kpi-val" id="fin-kpi-margen" style="color:var(--ofic)">0%</div>
+          <div class="kpi-accent" style="background:var(--fram)"></div>
+          <div class="kpi-icon-row"><div class="kpi-icon" style="background:var(--surface2);color:var(--text2)">📅</div><span class="kpi-trend flat" id="fin-kpi-mes-trend"></span></div>
+          <div class="kpi-lbl">Gasto del Mes</div>
+          <div class="kpi-val" id="fin-kpi-mes" style="color:var(--fram)">$0</div>
+          <div class="kpi-sub" id="fin-kpi-mes-sub">Mes en curso</div>
         </div>
         <div class="kpi-card span2">
           <div class="kpi-accent" style="background:var(--fram)"></div>
@@ -564,6 +553,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="dash-card fin-chart-full">
           <div class="dash-card-title">Gastos x Semana</div>
           <div id="fin-linea-semana" style="position:relative"></div>
+        </div>
+
+        <div class="dash-card fin-chart-full">
+          <div class="dash-card-title">Por Rubro — Mes Actual vs Mes Anterior</div>
+          <div class="dash-card-sub" id="fin-comparativo-mes-sub"></div>
+          <div id="fin-comparativo-mes"></div>
         </div>
 
         <div class="dash-card fin-chart-full">
@@ -2043,53 +2038,14 @@ function renderFinKPIs(){
   document.getElementById('fin-kpi1').textContent = fmt(suma);
   document.getElementById('fin-kpi2').textContent = fmt(prom);
 
-  // ---- Ingreso / Utilidad / Margen ----
-  var ingEl = document.getElementById('fin-kpi-ing'), ingSubEl = document.getElementById('fin-kpi-ing-sub');
-  var utilEl = document.getElementById('fin-kpi-util'), utilTrendEl = document.getElementById('fin-kpi-util-trend');
-  var margEl = document.getElementById('fin-kpi-margen'), margTrendEl = document.getElementById('fin-kpi-margen-trend');
-  var utilAccentEl = document.getElementById('fin-kpi-util-accent'), margAccentEl = document.getElementById('fin-kpi-margen-accent');
-
-  if(!finIngresoAplica(finNegSel)){
-    if(ingEl) ingEl.textContent = '—';
-    if(ingSubEl) ingSubEl.textContent = 'Sin ventas registradas en la app';
-    if(utilEl){ utilEl.textContent = '—'; utilEl.style.color = 'var(--text3)'; }
-    if(margEl){ margEl.textContent = '—'; margEl.style.color = 'var(--text3)'; }
-    if(utilAccentEl) utilAccentEl.style.background = 'var(--text3)';
-    if(margAccentEl) margAccentEl.style.background = 'var(--text3)';
-    if(utilTrendEl) utilTrendEl.innerHTML = '';
-    if(margTrendEl) margTrendEl.innerHTML = '';
-    return;
-  }
-
-  var ingreso = finIngresoTotal(finNegSel, finAnioSel, finSemSel);
-  var utilidad = ingreso - suma;
-  var margen = ingreso>0 ? (utilidad/ingreso*100) : 0;
-
-  if(ingEl) ingEl.textContent = fmt(ingreso);
-  if(ingSubEl) ingSubEl.textContent = 'Ventas registradas';
-  if(utilEl){ utilEl.textContent = fmt(utilidad); utilEl.style.color = utilidad>=0 ? 'var(--green)' : 'var(--fram)'; }
-  if(margEl){ margEl.textContent = (ingreso>0 ? margen.toFixed(1) : '0.0')+'%'; margEl.style.color = margen>=0 ? 'var(--green)' : 'var(--fram)'; }
-  if(utilAccentEl) utilAccentEl.style.background = utilidad>=0 ? 'var(--green)' : 'var(--fram)';
-  if(margAccentEl) margAccentEl.style.background = margen>=0 ? 'var(--green)' : 'var(--fram)';
-
-  if(finAnioSel!=='todos'){
-    var usaCicloKpi = finUsaCiclo(finNegSel);
-    var periodoPrevKpi = finPeriodoPrevio(finAnioSel, usaCicloKpi);
-    var gastoPrev = finGastosFiltrados(finNegSel, finNegSel!=='todos').filter(function(g){
-      var per = usaCicloKpi ? (g.ciclo||cicloFromFecha(g.fechaVal)) : (g.fechaVal?String(anioDeFecha(g.fechaVal)):null);
-      if(per!==periodoPrevKpi) return false;
-      if(finSemSel!=='todas' && semanaISO(g.fechaVal)!==Number(finSemSel)) return false;
-      return true;
-    }).reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0);
-    var ingPrev = finIngresoTotal(finNegSel, periodoPrevKpi, finSemSel);
-    var utilPrev = ingPrev - gastoPrev;
-    var margPrev = ingPrev>0 ? (utilPrev/ingPrev*100) : null;
-    if(utilTrendEl) utilTrendEl.innerHTML = trendBadge(utilidad, utilPrev);
-    if(margTrendEl) margTrendEl.innerHTML = trendBadge(margen, margPrev);
-  } else {
-    if(utilTrendEl) utilTrendEl.innerHTML = '';
-    if(margTrendEl) margTrendEl.innerHTML = '';
-  }
+  // ---- Gasto del Mes (mes calendario actual, independiente del filtro de ciclo/año/semana) ----
+  var mesActual = finMesKey(0), mesAnterior = finMesKey(-1);
+  var gastoMesActual = finGastoDelMes(mesActual);
+  var gastoMesAnterior = finGastoDelMes(mesAnterior);
+  var mesEl = document.getElementById('fin-kpi-mes'), mesSubEl = document.getElementById('fin-kpi-mes-sub'), mesTrendEl = document.getElementById('fin-kpi-mes-trend');
+  if(mesEl) mesEl.textContent = fmt(gastoMesActual);
+  if(mesSubEl) mesSubEl.textContent = finMesLabel(mesActual);
+  if(mesTrendEl) mesTrendEl.innerHTML = trendBadge(gastoMesActual, gastoMesAnterior, true);
 }
 
 // ---- Barras horizontales: Gastos x Sub-Concepto (categoría) ----
@@ -2201,70 +2157,6 @@ function finSerieSemanal(data){
   });
 }
 
-// ---- Ingreso: aplica solo a negocios con ventas registradas en la app (jal/nay/com/todos) ----
-function finIngresoAplica(neg){
-  return neg==='todos' || neg==='jal' || neg==='nay' || neg==='com';
-}
-
-// Suma de ingresos (envios) para un negocio + filtro de periodo (ciclo o año) / semana dados
-function finIngresoTotal(negKey, periodoSel, semSel){
-  if(!finIngresoAplica(negKey)) return 0;
-  var locsMap = {todos:['jal','nay','com'], jal:['jal'], nay:['nay'], com:['com']};
-  var locs = locsMap[negKey];
-  var usaCiclo = finUsaCiclo(negKey);
-  var data = envios.filter(function(e){ return locs.indexOf(e.loc)>=0; });
-  if(periodoSel!=='todos'){
-    data = data.filter(function(e){
-      if(usaCiclo) return (e.ciclo||cicloFromFecha(e.fecha))===periodoSel;
-      return e.fecha && String(anioDeFecha(e.fecha))===String(periodoSel);
-    });
-  }
-  if(semSel!=='todas'){
-    data = data.filter(function(e){ return e.fecha && semanaISO(e.fecha)===Number(semSel); });
-  }
-  return data.reduce(function(a,e){ return a+envioTotal(e); }, 0);
-}
-
-// Serie semanal combinada Ingreso/Gasto (respeta negocio + periodo seleccionados; ignora el filtro de semana puntual, igual que las demás gráficas "x semana"; se usa para los Puntos clave)
-function finComboSerieSemanal(){
-  if(!finIngresoAplica(finNegSel)) return null;
-  var usaCiclo = finUsaCiclo(finNegSel);
-  var gastoData = finGastosFiltrados(finNegSel, finNegSel!=='todos');
-  if(finAnioSel!=='todos'){
-    gastoData = gastoData.filter(function(g){
-      if(usaCiclo) return (g.ciclo||cicloFromFecha(g.fechaVal))===finAnioSel;
-      return g.fechaVal && String(anioDeFecha(g.fechaVal))===String(finAnioSel);
-    });
-  }
-  var locsMap = {todos:['jal','nay','com'], jal:['jal'], nay:['nay'], com:['com']};
-  var locs = locsMap[finNegSel];
-  var ingresoData = envios.filter(function(e){ return locs.indexOf(e.loc)>=0; });
-  if(finAnioSel!=='todos'){
-    ingresoData = ingresoData.filter(function(e){
-      if(usaCiclo) return (e.ciclo||cicloFromFecha(e.fecha))===finAnioSel;
-      return e.fecha && String(anioDeFecha(e.fecha))===String(finAnioSel);
-    });
-  }
-  var map = {};
-  function ensure(key,anio,sem){ if(!map[key]) map[key]={anio:anio,sem:sem,gasto:0,ingreso:0}; return map[key]; }
-  gastoData.forEach(function(g){
-    if(!g.fechaVal) return;
-    var anio=anioDeFecha(g.fechaVal), sem=semanaISO(g.fechaVal);
-    ensure(anio+'-'+(sem<10?'0'+sem:sem), anio, sem).gasto += (parseFloat(g.monto)||0);
-  });
-  ingresoData.forEach(function(e){
-    if(!e.fecha) return;
-    var anio=anioDeFecha(e.fecha), sem=semanaISO(e.fecha);
-    ensure(anio+'-'+(sem<10?'0'+sem:sem), anio, sem).ingreso += envioTotal(e);
-  });
-  var keys = Object.keys(map).sort();
-  return keys.map(function(k){
-    var v = map[k];
-    var lbl = finAnioSel==='todos' ? v.anio+' S'+(v.sem<10?'0'+v.sem:v.sem) : 'S'+(v.sem<10?'0'+v.sem:v.sem);
-    return {label:lbl, ingreso:v.ingreso, gasto:v.gasto};
-  });
-}
-
 // ---- Periodo: ciclo agrícola para jal/nay/fram, año calendario para ofic/com/todos ----
 function finUsaCiclo(neg){
   return neg==='jal' || neg==='nay' || neg==='fram';
@@ -2285,13 +2177,85 @@ function finPeriodoPrevio(periodoVal, usaCiclo){
   return String(Number(periodoVal)-1);
 }
 
-// Etiqueta de tendencia (▲/▼/▬) comparando un valor actual contra uno previo
-function trendBadge(curr, prev){
+// Etiqueta de tendencia (▲/▼/▬) comparando un valor actual contra uno previo.
+// invertido=true para métricas de costo, donde subir es una alerta (rojo) y bajar es positivo (verde).
+function trendBadge(curr, prev, invertido){
   if(prev===null || prev===undefined || prev===0 || curr===null || curr===undefined) return '';
   var pct = ((curr-prev)/Math.abs(prev))*100;
-  var cls = pct>0.5 ? 'up' : (pct<-0.5 ? 'down' : 'flat');
-  var arrow = cls==='up' ? '▲' : (cls==='down' ? '▼' : '▬');
+  var subiendo = pct>0.5, bajando = pct<-0.5;
+  var cls = subiendo ? (invertido?'down':'up') : (bajando ? (invertido?'up':'down') : 'flat');
+  var arrow = subiendo ? '▲' : (bajando ? '▼' : '▬');
   return '<span class="kpi-trend '+cls+'">'+arrow+' '+Math.abs(pct).toFixed(0)+'%</span>';
+}
+
+// ---- Mes calendario (independiente del filtro de ciclo/año/semana): para el pulso de gasto mensual ----
+function finMesKey(offsetMeses){
+  var hoy = new Date();
+  var d = new Date(hoy.getFullYear(), hoy.getMonth()+offsetMeses, 1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+
+function finMesLabel(mesKey){
+  var p = mesKey.split('-');
+  var d = new Date(parseInt(p[0],10), parseInt(p[1],10)-1, 1);
+  var lbl = d.toLocaleDateString('es-MX',{month:'long',year:'numeric'});
+  return lbl.charAt(0).toUpperCase()+lbl.slice(1);
+}
+
+function finGastoDelMes(mesKey){
+  return finGastosFiltrados(finNegSel, finNegSel!=='todos').filter(function(g){
+    return g.fechaVal && g.fechaVal.substring(0,7)===mesKey;
+  }).reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0);
+}
+
+function finPorCategoriaMes(mesKey){
+  var base = finGastosFiltrados(finNegSel, finNegSel!=='todos');
+  var porCat = {};
+  base.forEach(function(g){
+    if(!g.fechaVal || g.fechaVal.substring(0,7)!==mesKey) return;
+    var c = g.cat || 'Sin categoría';
+    porCat[c] = (porCat[c]||0)+(parseFloat(g.monto)||0);
+  });
+  return porCat;
+}
+
+// ---- Comparativo por rubro: mes actual vs mes anterior (para detectar categorías que están subiendo) ----
+function renderFinComparativoMes(){
+  var cont = document.getElementById('fin-comparativo-mes');
+  var subEl = document.getElementById('fin-comparativo-mes-sub');
+  if(!cont) return;
+
+  var mesActual = finMesKey(0), mesAnterior = finMesKey(-1);
+  if(subEl) subEl.textContent = finMesLabel(mesActual)+' vs '+finMesLabel(mesAnterior);
+
+  var porCatActual = finPorCategoriaMes(mesActual);
+  var porCatAnterior = finPorCategoriaMes(mesAnterior);
+  var cats = {};
+  Object.keys(porCatActual).forEach(function(c){cats[c]=true;});
+  Object.keys(porCatAnterior).forEach(function(c){cats[c]=true;});
+  var rows = Object.keys(cats).map(function(c){
+    return {cat:c, actual:porCatActual[c]||0, anterior:porCatAnterior[c]||0};
+  });
+  rows.sort(function(a,b){return b.actual-a.actual;});
+
+  if(!rows.length){
+    cont.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:20px 0">Sin gastos registrados en estos dos meses</div>';
+    return;
+  }
+
+  cont.innerHTML = rows.map(function(r){
+    var badge = trendBadge(r.actual, r.anterior, true);
+    return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">'+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-size:12.5px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+r.cat+'</div>'+
+        '<div style="font-size:10.5px;color:var(--text3);margin-top:1px">Mes anterior: '+fmt(r.anterior)+'</div>'+
+      '</div>'+
+      '<div style="text-align:right;flex-shrink:0">'+
+        '<div style="font-size:13px;font-weight:700;font-family:var(--mono);color:var(--text)">'+fmt(r.actual)+'</div>'+
+        (badge?'<div style="margin-top:2px">'+badge+'</div>':'')+
+      '</div>'+
+    '</div>';
+  }).join('');
 }
 
 // ---- Puntos clave: lecturas automáticas para apoyar decisiones ----
@@ -2316,17 +2280,19 @@ function renderFinInsights(){
     insights.push({icon:'📌', text:'<b>'+top[0]+'</b> concentra el '+pctTop.toFixed(0)+'% del gasto en este filtro ('+fmt(top[1])+').'});
   }
 
-  // 2) Semanas donde el gasto superó al ingreso (alerta de margen negativo)
-  if(finIngresoAplica(finNegSel)){
-    var combo = finComboSerieSemanal();
-    if(combo && combo.length){
-      var semNeg = combo.filter(function(p){return p.gasto>p.ingreso;}).length;
-      if(semNeg>0){
-        insights.push({icon:'⚠️', text:semNeg+' de '+combo.length+' semanas con datos tuvieron gasto mayor al ingreso en este filtro.'});
-      } else {
-        insights.push({icon:'✅', text:'Todas las semanas con datos en este filtro tuvieron ingreso mayor al gasto.'});
-      }
-    }
+  // 2) Rubro con mayor incremento mes actual vs mes anterior
+  var mesActualIns = finMesKey(0), mesAnteriorIns = finMesKey(-1);
+  var porCatActualIns = finPorCategoriaMes(mesActualIns);
+  var porCatAnteriorIns = finPorCategoriaMes(mesAnteriorIns);
+  var subidas = Object.keys(porCatActualIns).map(function(c){
+    var actual = porCatActualIns[c], anterior = porCatAnteriorIns[c]||0;
+    return {cat:c, actual:actual, anterior:anterior, delta:actual-anterior};
+  }).filter(function(r){return r.anterior>0 && r.delta>0;});
+  subidas.sort(function(a,b){return (b.delta/b.anterior)-(a.delta/a.anterior);});
+  if(subidas.length){
+    var s = subidas[0];
+    var pctSube = (s.delta/s.anterior*100);
+    insights.push({icon:'⚠️', text:'<b>'+s.cat+'</b> subió '+pctSube.toFixed(0)+'% vs el mes anterior ('+fmt(s.anterior)+' → '+fmt(s.actual)+').'});
   }
 
   // 3) Comparativo vs el mismo periodo anterior (ciclo previo o año previo, según el negocio)
@@ -2420,6 +2386,7 @@ function renderFinanciero(){
   renderFinBarrasCategoria();
   renderFinBarrasTodosNegocios();
   renderFinLineaSemana();
+  renderFinComparativoMes();
   renderFinInsights();
 }
 
