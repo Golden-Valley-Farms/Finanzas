@@ -2471,18 +2471,15 @@ var partidasTemp = initPartidas();
 function updateVarSelect(){
   var sel = document.getElementById('vf-var-select');
   if(!sel) return;
-  var usadas = partidasTemp.map(function(p){ return p.variedad; });
   sel.innerHTML = '<option value="">— Selecciona variedad —</option>';
   VARIEDADES.forEach(function(v){
-    if(usadas.indexOf(v) < 0){
-      var o = document.createElement('option');
-      o.value = v; o.textContent = v;
-      sel.appendChild(o);
-    }
+    var o = document.createElement('option');
+    o.value = v; o.textContent = v;
+    sel.appendChild(o);
   });
-  // ocultar selector si ya están todas
+  // siempre visible — puede haber misma variedad en sectores distintos
   var wrap = document.getElementById('vf-add-variedad-wrap');
-  if(wrap) wrap.style.display = usadas.length >= VARIEDADES.length ? 'none' : 'block';
+  if(wrap) wrap.style.display = 'block';
 }
 
 function addPartidaDesdeSelect(){
@@ -2490,6 +2487,7 @@ function addPartidaDesdeSelect(){
   var v = sel ? sel.value : '';
   if(!v){ showToast('Selecciona una variedad'); return; }
   partidasTemp.push({variedad:v, sector:'', hectareas:'', pesoNeto:'', toneladas:'', precio:''});
+  if(sel) sel.value = '';
   renderPartidas();
 }
 
