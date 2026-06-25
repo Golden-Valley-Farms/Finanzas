@@ -773,7 +773,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="card" style="margin-bottom:12px">
         <div class="field-row">
           <div class="field">
-            <label>N° de operación</label>
+            <label>N° de envío</label>
             <input type="text" id="cf-num" readonly="" style="background:var(--surface2);color:var(--text2);font-family:var(--mono);font-size:13px">
           </div>
           <div class="field">
@@ -3219,15 +3219,15 @@ function initComerForm(){
   var hoyStr=new Date();
   var tz=hoyStr.getTimezoneOffset()*60000;
   var isoStr=new Date(hoyStr-tz).toISOString().slice(0,10);
-  var dd=String(new Date().getDate()).padStart(2,'0');
-  var mm=String(new Date().getMonth()+1).padStart(2,'0');
-  var yyyy=new Date().getFullYear();
+  var parts=isoStr.split('-');
+  var dd=parts[2];
+  var mm=parts[1];
+  var yyyy=parts[0];
   if(document.getElementById('cf-fecha')) document.getElementById('cf-fecha').value=dd+'/'+mm+'/'+yyyy;
   if(document.getElementById('cf-fecha-picker')) document.getElementById('cf-fecha-picker').value=isoStr;
   var anio=yyyy;
-  var seq=(envios.filter(function(e){return e.loc==='com'&&(e.num||'').indexOf('/'+anio+'/')>=0;}).length)+1;
-  var folioNum=String(seq).padStart(3,'0');
-  if(document.getElementById('cf-num')) document.getElementById('cf-num').value='Comer/'+anio+'/'+folioNum;
+  var seq=getNextNumEnvio('com', anio, null);
+  if(document.getElementById('cf-num')) document.getElementById('cf-num').value=buildNumEnvio('com', anio, seq);
   if(document.getElementById('cf-proveedor')) document.getElementById('cf-proveedor').value='';
   if(document.getElementById('cf-cliente')) document.getElementById('cf-cliente').value='';
   if(document.getElementById('cf-flete-compra')) document.getElementById('cf-flete-compra').value='';
@@ -3239,13 +3239,39 @@ function initComerForm(){
   hideComerClienteDropdown();
 }
 
-function onComerFechaInput(){}
-function normalizarComerFecha(){}
+function recalcComerNum(){
+  var anio = getAnioFromFecha(document.getElementById('cf-fecha').value);
+  var seq = getNextNumEnvio('com', anio, null);
+  document.getElementById('cf-num').value = buildNumEnvio('com', anio, seq);
+}
+function onComerFechaInput(){
+  var val = document.getElementById('cf-fecha').value;
+  val = val.replace(/[^0-9\/]/g,'');
+  document.getElementById('cf-fecha').value = val;
+  if(parseFechaEnvio(val)){
+    var iso = fechaEnvioToISO(val);
+    if(iso) document.getElementById('cf-fecha-picker').value = iso;
+    recalcComerNum();
+  }
+}
+function normalizarComerFecha(){
+  var field = document.getElementById('cf-fecha');
+  var d = parseFechaEnvio(field.value);
+  if(d && !isNaN(d)){
+    var dd = String(d.getDate()).padStart(2,'0');
+    var mm = String(d.getMonth()+1).padStart(2,'0');
+    field.value = dd+'/'+mm+'/'+d.getFullYear();
+    var iso = d.getFullYear()+'-'+mm+'-'+dd;
+    document.getElementById('cf-fecha-picker').value = iso;
+    recalcComerNum();
+  }
+}
 function onComerPickerChange(){
   var picker=document.getElementById('cf-fecha-picker');
   if(picker&&picker.value){
     var p=picker.value.split('-');
     document.getElementById('cf-fecha').value=p[2]+'/'+p[1]+'/'+p[0];
+    recalcComerNum();
   }
 }
 
