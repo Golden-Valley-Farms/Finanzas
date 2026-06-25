@@ -2737,7 +2737,7 @@ function renderEnvios(){
         '<td style="text-align:right">'+(p.hectareas||'-')+'</td>'+
         '<td style="text-align:right">'+(p.pesoNeto?p.pesoNeto.toLocaleString('es-MX'):'-')+'</td>'+
         '<td style="text-align:right">'+(p.precio?'$'+p.precio:'-')+'</td>'+
-        '<td style="text-align:right;color:var(--green);font-weight:600">'+fmt(p.total)+'</td>'+
+        '<td style="text-align:right;color:var(--green);font-weight:600">'+fmt(p.total!=null?p.total:(parseFloat(p.pesoNeto)||0)*(parseFloat(p.precio)||0))+'</td>'+
       '</tr>';
     }).join('');
 
@@ -2792,7 +2792,7 @@ function verEnvio(e){
       '<td style="text-align:right">'+p.toneladas+'</td>'+
       '<td style="text-align:right">'+tha+'</td>'+
       '<td style="text-align:right">'+fmt(p.precio)+'</td>'+
-      '<td style="text-align:right;font-weight:600;color:var(--green)">'+fmt(p.total)+'</td>'+
+      '<td style="text-align:right;font-weight:600;color:var(--green)">'+fmt(p.total!=null?p.total:(parseFloat(p.pesoNeto)||0)*(parseFloat(p.precio)||0))+'</td>'+
     '</tr>';
   }).join('');
 
@@ -3434,8 +3434,9 @@ function guardarOperacionComer(){
     flete:fleteVenta, fleteCompra:fleteCompra, esComer:true, total:totalVenta,
     partidas:comerPartidasTemp.map(function(p){
       var kgPagar=p.kgRecibidos&&p.descPct!==''?p.kgRecibidos*(1-parseFloat(p.descPct)/100):parseFloat(p.kgRecibidos||0);
+      var totalPartida=(parseFloat(p.kgRecibidos)||0)*(parseFloat(p.precioVenta)||0);
       return {variedad:p.variedad,kgRecibidos:p.kgRecibidos,descPct:p.descPct,kgPagar:kgPagar,
-        precioCompra:p.precioCompra,precioVenta:p.precioVenta,pesoNeto:p.kgRecibidos,precio:p.precioVenta,sector:''};
+        precioCompra:p.precioCompra,precioVenta:p.precioVenta,pesoNeto:p.kgRecibidos,precio:p.precioVenta,total:totalPartida,sector:''};
     })
   };
   envios.unshift(envioObj);
