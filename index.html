@@ -787,6 +787,16 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </div>
         <div class="field-row">
           <div class="field">
+            <label>Ciclo</label>
+            <select id="cf-ciclo"></select>
+          </div>
+          <div class="field">
+            <label>Folio externo</label>
+            <input type="text" id="cf-folio" placeholder="B&amp;M/2026/017">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
             <label>Proveedor</label>
             <div style="position:relative">
               <input type="text" id="cf-proveedor" placeholder="Nombre del proveedor" autocomplete="off" style="width:100%" oninput="onProveedorInput()" onclick="showProveedorDropdown()" onblur="setTimeout(hideProveedorDropdown,150)">
@@ -800,10 +810,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
               <div id="comer-cliente-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:200px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
             </div>
           </div>
-        </div>
-        <div class="field">
-          <label>Ciclo</label>
-          <select id="cf-ciclo"></select>
         </div>
       </div>
       <div class="step-label">Compra — por variedad</div>
@@ -3239,6 +3245,7 @@ function initComerForm(){
   var cfCiclo=document.getElementById('cf-ciclo');
   if(cfCiclo){ cfCiclo.innerHTML=''; CICLOS.forEach(function(c){var o=document.createElement('option');o.value=c;o.textContent=c;cfCiclo.appendChild(o);}); cfCiclo.value=cicloFromFecha(isoStr); }
   if(document.getElementById('cf-flete-venta')) document.getElementById('cf-flete-venta').value='';
+  if(document.getElementById('cf-folio')) document.getElementById('cf-folio').value='';
   renderComerPartidas();
   updateComerVarSelect();
   recalcComer();
@@ -3436,7 +3443,7 @@ function guardarOperacionComer(){
   var totalVenta=comerPartidasTemp.reduce(function(a,p){return a+parseFloat(p.kgRecibidos||0)*parseFloat(p.precioVenta||0);},0)+fleteVenta;
   var cicloV=(document.getElementById('cf-ciclo')&&document.getElementById('cf-ciclo').value)||cicloFromFecha(fecha);
   var envioObj={
-    id:Date.now(), num:num, folio:'', fecha:fecha, fechaLbl:fechaDisplay,
+    id:Date.now(), num:num, folio:(document.getElementById('cf-folio').value||'').trim(), fecha:fecha, fechaLbl:fechaDisplay,
     loc:'com', ciclo:cicloV, cliente:cliente, proveedor:proveedor,
     flete:fleteVenta, fleteCompra:fleteCompra, esComer:true, total:totalVenta,
     partidas:comerPartidasTemp.map(function(p){
