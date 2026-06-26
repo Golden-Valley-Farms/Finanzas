@@ -801,6 +801,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             </div>
           </div>
         </div>
+        <div class="field">
+          <label>Ciclo</label>
+          <select id="cf-ciclo"></select>
+        </div>
       </div>
       <div class="step-label">Compra — por variedad</div>
       <div id="cf-partidas-compra"></div>
@@ -3232,6 +3236,8 @@ function initComerForm(){
   if(document.getElementById('cf-proveedor')) document.getElementById('cf-proveedor').value='';
   if(document.getElementById('cf-cliente')) document.getElementById('cf-cliente').value='';
   if(document.getElementById('cf-flete-compra')) document.getElementById('cf-flete-compra').value='';
+  var cfCiclo=document.getElementById('cf-ciclo');
+  if(cfCiclo){ cfCiclo.innerHTML=''; CICLOS.forEach(function(c){var o=document.createElement('option');o.value=c;o.textContent=c;cfCiclo.appendChild(o);}); cfCiclo.value=cicloFromFecha(isoStr); }
   if(document.getElementById('cf-flete-venta')) document.getElementById('cf-flete-venta').value='';
   renderComerPartidas();
   updateComerVarSelect();
@@ -3428,7 +3434,7 @@ function guardarOperacionComer(){
     totalCompra+=kgPagar*parseFloat(p.precioCompra||0);
   });
   var totalVenta=comerPartidasTemp.reduce(function(a,p){return a+parseFloat(p.kgRecibidos||0)*parseFloat(p.precioVenta||0);},0)+fleteVenta;
-  var cicloV=fecha<(new Date().getFullYear()-1)+'-07-01'?'2024-2025':'2025-2026';
+  var cicloV=(document.getElementById('cf-ciclo')&&document.getElementById('cf-ciclo').value)||cicloFromFecha(fecha);
   var envioObj={
     id:Date.now(), num:num, folio:'', fecha:fecha, fechaLbl:fechaDisplay,
     loc:'com', ciclo:cicloV, cliente:cliente, proveedor:proveedor,
