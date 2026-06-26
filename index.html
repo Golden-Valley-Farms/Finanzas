@@ -172,6 +172,24 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .tag.general{background:var(--surface2);color:var(--text3);border:1px solid var(--border)}
 .tag.sector{background:var(--camote-bg);color:var(--camote);border:1px solid var(--camote-border)}
 
+
+/* ── Almacén Frío ── */
+.alm-lote{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:10px;cursor:pointer;transition:background .1s;box-shadow:var(--shadow)}
+.alm-lote:hover{background:var(--surface2)}
+.alm-lote-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.alm-lote-num{font-size:13px;font-weight:600;color:var(--text);font-family:var(--mono)}
+.alm-lote-kg{font-size:15px;font-weight:600;color:var(--jal);font-family:var(--mono)}
+.alm-lote-kg.nay{color:var(--nay)}
+.alm-lote-meta{font-size:12px;color:var(--text3);margin-bottom:8px}
+.alm-progress-wrap{background:var(--surface2);border-radius:20px;height:7px;overflow:hidden;margin-bottom:6px}
+.alm-progress-bar{height:100%;border-radius:20px;background:var(--green);transition:width .3s}
+.alm-progress-lbl{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);font-family:var(--mono)}
+.alm-closed{opacity:.55}
+.alm-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
+.alm-badge.activo{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+.alm-badge.cerrado{background:var(--surface2);color:var(--text3);border:1px solid var(--border)}
+.alm-despacho-item{background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;font-size:12px}
+
 /* Historial */
 .week-filter{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:14px;scrollbar-width:none}
 .week-filter::-webkit-scrollbar{display:none}
@@ -664,6 +682,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <button class="ven-tab active" id="vt-lista" onclick="venTab('lista')">Envios</button>
       <button class="ven-tab" id="vt-nuevo" onclick="venTab('nuevo')">+ Nuevo envio</button>
       <button class="ven-tab" id="vt-comer" onclick="venTab('comer')">Comercializadora</button>
+      <button class="ven-tab" id="vt-alm" onclick="venTab('alm')">🧊 Almacén</button>
     </div>
 
     <!-- Lista de envios -->
@@ -736,14 +755,14 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <label>Flete de compra ($)</label>
             <div class="monto-wrap">
               <span class="monto-prefix">$</span>
-              <input type="number" id="vf-flete-compra" placeholder="0" min="0" step="0.01">
+              <input type="number" id="vf-flete-compra" placeholder="0" min="0" step="0.01" oninput="recalcEnvioResumen()">
             </div>
           </div>
           <div class="field">
             <label>Flete de venta ($)</label>
             <div class="monto-wrap">
               <span class="monto-prefix">$</span>
-              <input type="number" id="vf-flete" placeholder="0" min="0" step="0.01">
+              <input type="number" id="vf-flete" placeholder="0" min="0" step="0.01" oninput="recalcEnvioResumen()">
             </div>
           </div>
         </div>
@@ -762,6 +781,20 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <option value="">— Selecciona variedad —</option>
           </select>
           <button onclick="addPartidaDesdeSelect()" style="padding:10px 16px;border-radius:var(--radius);border:1.5px solid var(--green-border);background:var(--green-bg);color:var(--green);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">+ Agregar</button>
+        </div>
+      </div>
+
+      <div class="step-label">Resumen de envío</div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="padding:10px;background:var(--green-bg);border-radius:var(--radius);border:1px solid var(--green-border)">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:4px">TOTAL VENTA</div>
+            <div id="vf-resumen-venta" style="font-size:15px;font-weight:600;color:var(--green);font-family:var(--mono)">$0</div>
+          </div>
+          <div id="vf-resumen-total-card" style="padding:10px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border)">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:4px">TOTAL CON FLETE</div>
+            <div id="vf-resumen-total" style="font-size:15px;font-weight:700;font-family:var(--mono);color:var(--green)">$0</div>
+          </div>
         </div>
       </div>
 
@@ -857,6 +890,87 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </button>
     </div>
   </div>
+
+    <!-- ALMACÉN FRÍO -->
+    <div id="alm-sec" style="display:none">
+
+      <!-- Sub-nav lotes / nuevo lote -->
+      <div style="display:flex;gap:6px;margin-bottom:14px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
+        <button class="ven-tab active" id="alm-tab-lista" onclick="almTab('lista')" style="flex:1">Lotes</button>
+        <button class="ven-tab" id="alm-tab-nuevo" onclick="almTab('nuevo')" style="flex:1">+ Nuevo lote</button>
+      </div>
+
+      <!-- Lista de lotes -->
+      <div id="alm-lista-sec">
+        <!-- filtro estado -->
+        <div style="display:flex;gap:6px;margin-bottom:12px">
+          <button class="wf-btn active" id="almf-todos" onclick="almFiltro('todos')">Todos</button>
+          <button class="wf-btn" id="almf-activo" onclick="almFiltro('activo')">En almacén</button>
+          <button class="wf-btn" id="almf-cerrado" onclick="almFiltro('cerrado')">Cerrados</button>
+        </div>
+        <div id="alm-lista"></div>
+      </div>
+
+      <!-- Formulario nuevo lote -->
+      <div id="alm-form-sec" style="display:none">
+        <div class="step-label" id="alm-form-title">Nuevo lote</div>
+        <div class="card" style="margin-bottom:12px">
+          <div class="field-row">
+            <div class="field">
+              <label>Ubicación</label>
+              <select id="af-loc" style="font-weight:600">
+                <option value="jal">🌾 Jalisco</option>
+                <option value="nay">🌿 Nayarit</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Fecha entrada</label>
+              <div style="display:flex;gap:6px;align-items:center">
+                <input type="text" id="af-fecha" placeholder="DD/MM/AAAA" maxlength="10" oninput="onAlfFechaInput()" onblur="normalizarAlfFecha()" style="flex:1;font-family:var(--mono);font-weight:600">
+                <input type="date" id="af-fecha-picker" onchange="onAlfPickerChange()" style="padding:8px 6px;border-radius:var(--radius);border:1.5px solid var(--green-border);background:var(--green-bg);cursor:pointer;flex-shrink:0;width:36px;color:transparent;color-scheme:dark light">
+              </div>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Ciclo</label>
+              <select id="af-ciclo"></select>
+            </div>
+            <div class="field">
+              <label>Variedad</label>
+              <select id="af-variedad"></select>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Kg ingresados</label>
+              <input type="number" id="af-kg" placeholder="0" min="0" step="0.01" oninput="recalcAlmForm()">
+            </div>
+            <div class="field">
+              <label>Precio est. $/kg</label>
+              <div class="monto-wrap"><span class="monto-prefix">$</span>
+                <input type="number" id="af-precio" placeholder="0" min="0" step="0.01" oninput="recalcAlmForm()">
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Notas (opcional)</label>
+            <input type="text" id="af-notas" placeholder="Ej: Cámara 2, sector norte">
+          </div>
+          <!-- resumen estimado -->
+          <div id="af-resumen" style="display:none;margin-top:10px;padding:10px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--radius)">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:2px">VALOR ESTIMADO</div>
+            <div id="af-resumen-val" style="font-size:16px;font-weight:700;color:var(--green);font-family:var(--mono)">$0</div>
+          </div>
+        </div>
+        <button class="btn-main" id="btn-alm-guardar" onclick="guardarLote()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"></path></svg>
+          Guardar lote
+        </button>
+        <button onclick="almTab('lista')" style="width:100%;margin-top:8px;padding:11px;border:1px solid var(--border);border-radius:var(--radius-lg);background:none;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font)">Cancelar</button>
+      </div>
+
+    </div>
 
   <!-- FRAMBUESA -->
   <div id="sc-fram" class="screen">
@@ -2559,7 +2673,7 @@ function editarEnvio(e){
 }
 
 function venTab(t){
-  ['lista','nuevo','comer'].forEach(function(tab){
+  ['lista','nuevo','comer','alm'].forEach(function(tab){
     var btn=document.getElementById('vt-'+tab);
     if(btn) btn.classList.toggle('active',tab===t);
   });
@@ -2567,6 +2681,8 @@ function venTab(t){
   document.getElementById('ven-form-sec').style.display = t==='nuevo'?'block':'none';
   var co=document.getElementById('comer-form-sec');
   if(co) co.style.display = t==='comer'?'block':'none';
+  var al=document.getElementById('alm-sec');
+  if(al) al.style.display = t==='alm'?'block':'none';
   if(t==='lista'){
     editandoEnvioId=null;
     document.getElementById('btn-ven-guardar').innerHTML=
@@ -2576,6 +2692,7 @@ function venTab(t){
   }
   if(t==='nuevo'){ renderPartidas(); updateVarSelect(); if(!editandoEnvioId) initNuevoEnvioForm(); else onTipoEnvioChange(); }
   if(t==='comer') initComerForm();
+  if(t==='alm'){ almTab('lista'); }
 }
 
 function renderPartidas(){
@@ -2612,6 +2729,7 @@ function renderPartidas(){
   });
 
   updateVarSelect();
+  recalcEnvioResumen();
 }
 
 function autoCalc(idx){
@@ -2623,6 +2741,7 @@ function autoCalc(idx){
   // total = kg * precio x kg
   var el=document.getElementById('ptot-'+idx);
   if(el) el.textContent=calcTotal(p);
+  recalcEnvioResumen();
 }
 
 function calcTotal(p){
@@ -2630,6 +2749,29 @@ function calcTotal(p){
   var precio=parseFloat(p.precio)||0;
   if(!kg||!precio) return '$0';
   return fmt(kg*precio);
+}
+
+function recalcEnvioResumen(){
+  var totalVenta=partidasTemp.reduce(function(a,p){
+    return a+(parseFloat(p.pesoNeto)||0)*(parseFloat(p.precio)||0);
+  },0);
+  var fleteVenta=parseFloat(document.getElementById('vf-flete')?document.getElementById('vf-flete').value:0)||0;
+  var fleteCompra=parseFloat(document.getElementById('vf-flete-compra')?document.getElementById('vf-flete-compra').value:0)||0;
+  var totalConFlete=totalVenta+fleteVenta;
+  var eFC=document.getElementById('vf-resumen-flete-compra');
+  var eFV=document.getElementById('vf-resumen-flete-venta');
+  var eV=document.getElementById('vf-resumen-venta');
+  var eT=document.getElementById('vf-resumen-total');
+  var eTCard=document.getElementById('vf-resumen-total-card');
+  if(eFC) eFC.textContent=fmt(fleteCompra);
+  if(eFV) eFV.textContent=fmt(fleteVenta);
+  if(eV)  eV.textContent=fmt(totalVenta);
+  if(eT)  eT.textContent=fmt(totalConFlete);
+  // highlight total card when there's real data
+  if(eTCard){
+    if(totalVenta>0){ eTCard.style.background='var(--green-bg)'; eTCard.style.borderColor='var(--green-border)'; }
+    else { eTCard.style.background='var(--surface2)'; eTCard.style.borderColor='var(--border)'; }
+  }
 }
 
 function guardarEnvio(){
@@ -4273,6 +4415,348 @@ function eliminarFramDesdeModal(id){
   });
   savePresentaciones();
 })();
+
+// ============================================================
+// ALMACÉN FRÍO
+// ============================================================
+var almLotes = [];
+try{ var _sal=localStorage.getItem('cc_alm_lotes'); if(_sal) almLotes=JSON.parse(_sal); }catch(e){}
+
+function saveAlmLotes(){ try{localStorage.setItem('cc_alm_lotes',JSON.stringify(almLotes));}catch(e){} }
+
+async function sbSaveAlmLote(l){
+  if(!sbOnline||!sb) return;
+  await sb.from('alm_lotes').upsert({
+    id:l.id, loc:l.loc, fecha:l.fecha, fecha_lbl:l.fechaLbl,
+    ciclo:l.ciclo, variedad:l.variedad, kg_total:l.kgTotal,
+    precio_est:l.precioEst, notas:l.notas||'',
+    despachos:l.despachos||[], cerrado:l.cerrado||false
+  });
+}
+async function sbDeleteAlmLote(id){
+  if(!sbOnline||!sb) return;
+  await sb.from('alm_lotes').delete().eq('id',id);
+}
+
+// ── helpers ──
+function almKgDespachados(lote){
+  return (lote.despachos||[]).reduce(function(a,d){return a+parseFloat(d.kg||0);},0);
+}
+function almKgDisponibles(lote){ return Math.max(0, parseFloat(lote.kgTotal||0) - almKgDespachados(lote)); }
+function almValorStock(lote){ return almKgDisponibles(lote) * parseFloat(lote.precioEst||0); }
+function almTotalVendido(lote){
+  return (lote.despachos||[]).reduce(function(a,d){return a+parseFloat(d.kg||0)*parseFloat(d.precio||0);},0);
+}
+
+// ── sub-tab ──
+var almFiltroActual = 'todos';
+function almTab(t){
+  document.getElementById('alm-lista-sec').style.display = t==='lista'?'block':'none';
+  document.getElementById('alm-form-sec').style.display  = t==='nuevo'?'block':'none';
+  document.getElementById('alm-tab-lista').classList.toggle('active', t==='lista');
+  document.getElementById('alm-tab-nuevo').classList.toggle('active', t==='nuevo');
+  if(t==='lista') renderAlmLotes();
+  if(t==='nuevo') initAlmForm();
+}
+
+function almFiltro(f){
+  almFiltroActual=f;
+  ['todos','activo','cerrado'].forEach(function(x){
+    var b=document.getElementById('almf-'+x);
+    if(b) b.classList.toggle('active', x===f);
+  });
+  renderAlmLotes();
+}
+
+// ── render lista ──
+function renderAlmLotes(){
+  var list=document.getElementById('alm-lista'); if(!list) return;
+  var data=almLotes.slice();
+  if(almFiltroActual==='activo')   data=data.filter(function(l){return !l.cerrado;});
+  if(almFiltroActual==='cerrado')  data=data.filter(function(l){return l.cerrado;});
+  if(!data.length){
+    list.innerHTML='<div class="empty"><div class="empty-icon">🧊</div><div class="empty-text">Sin lotes registrados aun.</div></div>'; return;
+  }
+  list.innerHTML='';
+  data.forEach(function(lote){
+    var kgTotal=parseFloat(lote.kgTotal||0);
+    var kgDisp=almKgDisponibles(lote);
+    var kgDesp=almKgDespachados(lote);
+    var pct=kgTotal>0?Math.round((kgDesp/kgTotal)*100):0;
+    var locColor=lote.loc==='nay'?'nay':'';
+    var locLbl=lote.loc==='nay'?'🌿 Nayarit':'🌾 Jalisco';
+    var item=document.createElement('div');
+    item.className='alm-lote'+(lote.cerrado?' alm-closed':'');
+    item.innerHTML=
+      '<div class="alm-lote-header">'+
+        '<div>'+
+          '<div class="alm-lote-num">'+lote.variedad+' &nbsp;<span class="alm-badge '+(lote.cerrado?'cerrado':'activo')+'">'+(lote.cerrado?'Cerrado':'En almacén')+'</span></div>'+
+          '<div class="alm-lote-meta" style="margin-top:3px">'+locLbl+' · '+lote.fechaLbl+' · '+lote.ciclo+'</div>'+
+        '</div>'+
+        '<div class="alm-lote-kg '+locColor+'">'+kgDisp.toLocaleString('es-MX')+' kg</div>'+
+      '</div>'+
+      '<div class="alm-progress-wrap"><div class="alm-progress-bar" style="width:'+pct+'%"></div></div>'+
+      '<div class="alm-progress-lbl">'+
+        '<span>'+kgDesp.toLocaleString('es-MX')+' kg despachados</span>'+
+        '<span>'+kgTotal.toLocaleString('es-MX')+' kg total</span>'+
+      '</div>'+
+      (lote.notas?'<div style="font-size:11px;color:var(--text3);margin-top:6px">📝 '+lote.notas+'</div>':'')+
+      '<div style="display:flex;gap:6px;margin-top:10px">'+
+        (!lote.cerrado?'<button onclick="event.stopPropagation();abrirDespacho('+lote.id+')" style="flex:1;padding:8px;border-radius:var(--radius);border:1.5px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">+ Despachar</button>':'') +
+        '<button onclick="event.stopPropagation();verLote('+lote.id+')" style="flex:1;padding:8px;border-radius:var(--radius);border:1px solid var(--border);background:none;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Ver detalle</button>'+
+      '</div>';
+    list.appendChild(item);
+  });
+}
+
+// ── init form ──
+var editandoLoteId = null;
+function initAlmForm(){
+  editandoLoteId=null;
+  document.getElementById('alm-form-title').textContent='Nuevo lote';
+  document.getElementById('btn-alm-guardar').textContent='Guardar lote';
+  // fecha hoy
+  var hoyStr=new Date(); var tz=hoyStr.getTimezoneOffset()*60000;
+  var isoStr=new Date(hoyStr-tz).toISOString().slice(0,10);
+  var p=isoStr.split('-');
+  document.getElementById('af-fecha').value=p[2]+'/'+p[1]+'/'+p[0];
+  document.getElementById('af-fecha-picker').value=isoStr;
+  // ciclo
+  var cSel=document.getElementById('af-ciclo');
+  cSel.innerHTML=''; CICLOS.forEach(function(c){var o=document.createElement('option');o.value=c;o.textContent=c;cSel.appendChild(o);}); cSel.value=cicloFromFecha(isoStr);
+  // variedad
+  var vSel=document.getElementById('af-variedad');
+  vSel.innerHTML=''; VARIEDADES.forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;vSel.appendChild(o);});
+  document.getElementById('af-kg').value='';
+  document.getElementById('af-precio').value='';
+  document.getElementById('af-notas').value='';
+  document.getElementById('af-resumen').style.display='none';
+  document.getElementById('af-loc').value='jal';
+}
+
+function onAlfFechaInput(){
+  var v=document.getElementById('af-fecha').value.replace(/[^0-9\/]/g,'');
+  document.getElementById('af-fecha').value=v;
+  if(parseFechaEnvio(v)){
+    var iso=fechaEnvioToISO(v); if(iso) document.getElementById('af-fecha-picker').value=iso;
+    var cSel=document.getElementById('af-ciclo'); if(cSel) cSel.value=cicloFromFecha(iso);
+  }
+}
+function normalizarAlfFecha(){
+  var field=document.getElementById('af-fecha');
+  var d=parseFechaEnvio(field.value);
+  if(d&&!isNaN(d)){
+    var dd=String(d.getDate()).padStart(2,'0');
+    var mm=String(d.getMonth()+1).padStart(2,'0');
+    field.value=dd+'/'+mm+'/'+d.getFullYear();
+    var iso=d.getFullYear()+'-'+mm+'-'+dd;
+    document.getElementById('af-fecha-picker').value=iso;
+    var cSel=document.getElementById('af-ciclo'); if(cSel) cSel.value=cicloFromFecha(iso);
+  }
+}
+function onAlfPickerChange(){
+  var picker=document.getElementById('af-fecha-picker');
+  if(picker&&picker.value){
+    document.getElementById('af-fecha').value=isoToDisplay(picker.value);
+    var cSel=document.getElementById('af-ciclo'); if(cSel) cSel.value=cicloFromFecha(picker.value);
+  }
+}
+function recalcAlmForm(){
+  var kg=parseFloat(document.getElementById('af-kg').value)||0;
+  var precio=parseFloat(document.getElementById('af-precio').value)||0;
+  var res=document.getElementById('af-resumen');
+  if(kg&&precio){ res.style.display='block'; document.getElementById('af-resumen-val').textContent=fmt(kg*precio); }
+  else { res.style.display='none'; }
+}
+
+// ── guardar lote ──
+function guardarLote(){
+  var loc=document.getElementById('af-loc').value;
+  var fechaDisplay=document.getElementById('af-fecha').value;
+  var fechaISO=fechaEnvioToISO(fechaDisplay);
+  var cicloV=document.getElementById('af-ciclo').value;
+  var variedad=document.getElementById('af-variedad').value;
+  var kg=parseFloat(document.getElementById('af-kg').value)||0;
+  var precio=parseFloat(document.getElementById('af-precio').value)||0;
+  var notas=document.getElementById('af-notas').value.trim();
+  if(!fechaISO){showToast('Selecciona una fecha');return;}
+  if(!variedad){showToast('Selecciona una variedad');return;}
+  if(!kg){showToast('Ingresa los kg');return;}
+  var fechaLbl=new Date(fechaISO+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+  if(editandoLoteId){
+    var idx=almLotes.findIndex(function(l){return l.id===editandoLoteId;});
+    if(idx>=0){
+      almLotes[idx].loc=loc; almLotes[idx].fecha=fechaISO; almLotes[idx].fechaLbl=fechaLbl;
+      almLotes[idx].ciclo=cicloV; almLotes[idx].variedad=variedad;
+      almLotes[idx].kgTotal=kg; almLotes[idx].precioEst=precio; almLotes[idx].notas=notas;
+      sbSaveAlmLote(almLotes[idx]);
+    }
+    showToast('Lote actualizado');
+  } else {
+    var lote={id:Date.now(),loc:loc,fecha:fechaISO,fechaLbl:fechaLbl,ciclo:cicloV,
+      variedad:variedad,kgTotal:kg,precioEst:precio,notas:notas,despachos:[],cerrado:false};
+    almLotes.unshift(lote);
+    sbSaveAlmLote(lote);
+    showToast('Lote guardado: '+kg.toLocaleString('es-MX')+' kg');
+  }
+  saveAlmLotes();
+  almTab('lista');
+}
+
+// ── modal despacho ──
+var despachoLoteId = null;
+function abrirDespacho(loteId){
+  var lote=almLotes.find(function(l){return l.id===loteId;});
+  if(!lote) return;
+  despachoLoteId=loteId;
+  var kgDisp=almKgDisponibles(lote);
+  var locLbl=lote.loc==='nay'?'🌿 Nayarit':'🌾 Jalisco';
+  document.getElementById('mo-title').innerHTML='📦 Despacho — '+lote.variedad;
+  document.getElementById('mo-body').innerHTML=
+    '<div class="modal-row"><span class="modal-key">Lote</span><span class="modal-val">'+lote.variedad+' · '+locLbl+'</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Disponible</span><span class="modal-val" style="font-family:var(--mono);color:var(--green);font-weight:600">'+kgDisp.toLocaleString('es-MX')+' kg</span></div>'+
+    '<div style="margin:14px 0 8px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Datos del despacho</div>'+
+    // fecha
+    '<div class="field" style="margin-bottom:10px"><label>Fecha</label>'+
+      '<div style="display:flex;gap:6px;align-items:center">'+
+        '<input type="text" id="dp-fecha" placeholder="DD/MM/AAAA" maxlength="10" style="flex:1;font-family:var(--mono)" oninput="this.value=this.value.replace(/[^0-9\/]/g,\'\')">'+
+        '<input type="date" id="dp-fecha-picker" onchange="document.getElementById(\'dp-fecha\').value=isoToDisplay(this.value)" style="padding:8px 6px;border-radius:var(--radius);border:1.5px solid var(--green-border);background:var(--green-bg);cursor:pointer;flex-shrink:0;width:36px;color:transparent;color-scheme:dark light">'+
+      '</div></div>'+
+    // cliente
+    '<div class="field" style="margin-bottom:10px"><label>Cliente</label>'+
+      '<input type="text" id="dp-cliente" placeholder="Nombre del cliente" style="width:100%"></div>'+
+    // kg
+    '<div class="field-row" style="margin-bottom:10px">'+
+      '<div class="field"><label>Kg a despachar</label><input type="number" id="dp-kg" placeholder="0" max="'+kgDisp+'" min="0" step="0.01" oninput="recalcDespacho()"></div>'+
+      '<div class="field"><label>Precio $/kg</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="dp-precio" placeholder="'+lote.precioEst+'" min="0" step="0.01" oninput="recalcDespacho()"></div></div>'+
+    '</div>'+
+    // flete
+    '<div class="field" style="margin-bottom:10px"><label>Flete de venta ($)</label>'+
+      '<div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="dp-flete" placeholder="0" min="0" step="0.01"></div></div>'+
+    // total estimado
+    '<div id="dp-resumen" style="display:none;padding:10px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--radius);margin-bottom:14px">'+
+      '<div style="font-size:11px;color:var(--text3);margin-bottom:2px">TOTAL ESTIMADO</div>'+
+      '<div id="dp-resumen-val" style="font-size:16px;font-weight:700;color:var(--green);font-family:var(--mono)">$0</div>'+
+    '</div>'+
+    '<button onclick="confirmarDespacho()" class="btn-main">📦 Confirmar despacho y crear envío</button>';
+  // set default fecha = hoy
+  var hoyStr=new Date(); var tz=hoyStr.getTimezoneOffset()*60000;
+  var isoStr=new Date(hoyStr-tz).toISOString().slice(0,10);
+  setTimeout(function(){
+    var df=document.getElementById('dp-fecha'); if(df) df.value=isoToDisplay(isoStr);
+    var dfp=document.getElementById('dp-fecha-picker'); if(dfp) dfp.value=isoStr;
+  },10);
+  document.getElementById('overlay').classList.add('open');
+}
+
+function recalcDespacho(){
+  var kg=parseFloat(document.getElementById('dp-kg')?document.getElementById('dp-kg').value:0)||0;
+  var precio=parseFloat(document.getElementById('dp-precio')?document.getElementById('dp-precio').value:0)||0;
+  var res=document.getElementById('dp-resumen');
+  if(res){ if(kg&&precio){ res.style.display='block'; document.getElementById('dp-resumen-val').textContent=fmt(kg*precio); } else { res.style.display='none'; } }
+}
+
+function confirmarDespacho(){
+  var lote=almLotes.find(function(l){return l.id===despachoLoteId;});
+  if(!lote) return;
+  var fechaDisplay=document.getElementById('dp-fecha').value;
+  var fechaISO=fechaEnvioToISO(fechaDisplay);
+  var cliente=(document.getElementById('dp-cliente').value||'').trim();
+  var kg=parseFloat(document.getElementById('dp-kg').value)||0;
+  var precio=parseFloat(document.getElementById('dp-precio').value)||0;
+  var flete=parseFloat(document.getElementById('dp-flete').value)||0;
+  if(!fechaISO){showToast('Selecciona la fecha del despacho');return;}
+  if(!cliente){showToast('Ingresa el cliente');return;}
+  if(!kg){showToast('Ingresa los kg a despachar');return;}
+  if(!precio){showToast('Ingresa el precio por kg');return;}
+  var kgDisp=almKgDisponibles(lote);
+  if(kg>kgDisp+0.01){showToast('No hay suficientes kg disponibles ('+kgDisp.toLocaleString('es-MX')+' kg)');return;}
+  var fechaLbl=new Date(fechaISO+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+  // crear despacho en lote
+  var despachoId=Date.now();
+  var despacho={id:despachoId,fecha:fechaISO,fechaLbl:fechaLbl,cliente:cliente,kg:kg,precio:precio,flete:flete};
+  lote.despachos.push(despacho);
+  // cerrar lote automáticamente si no quedan kg
+  if(almKgDisponibles(lote)<=0.01) lote.cerrado=true;
+  saveAlmLotes();
+  sbSaveAlmLote(lote);
+  // crear envío normal
+  var anio=new Date(fechaISO+'T12:00:00').getFullYear();
+  var seq=getNextNumEnvio(lote.loc, anio, null);
+  var numEnvio=buildNumEnvio(lote.loc, anio, seq);
+  var cicloV=lote.ciclo||cicloFromFecha(fechaISO);
+  var total=kg*precio;
+  var totalConFlete=total+flete;
+  agregarClienteSiNuevo(cliente);
+  var envioObj={
+    id:despachoId+1, num:numEnvio, folio:'', fecha:fechaISO, fechaLbl:fechaLbl,
+    cliente:cliente, loc:lote.loc, ciclo:cicloV, flete:flete, fleteCompra:0, factura:'',
+    loteId:lote.id, esDespachoAlm:true,
+    partidas:[{variedad:lote.variedad,sector:'',hectareas:0,pesoNeto:kg,toneladas:parseFloat((kg/1000).toFixed(3)),precio:precio,total:total}],
+    totalVenta:total, total:totalConFlete
+  };
+  envios.unshift(envioObj);
+  saveEnvios();
+  sbSaveEnvio(envioObj);
+  closeModal();
+  showToast('Despacho creado: '+fmt(total)+' · Envío '+numEnvio);
+  renderAlmLotes();
+}
+
+// ── ver detalle lote ──
+function verLote(loteId){
+  var lote=almLotes.find(function(l){return l.id===loteId;});
+  if(!lote) return;
+  var kgTotal=parseFloat(lote.kgTotal||0);
+  var kgDisp=almKgDisponibles(lote);
+  var kgDesp=almKgDespachados(lote);
+  var pct=kgTotal>0?Math.round((kgDesp/kgTotal)*100):0;
+  var locLbl=lote.loc==='nay'?'🌿 Nayarit':'🌾 Jalisco';
+  var despRows=(lote.despachos||[]).map(function(d){
+    return '<div class="alm-despacho-item">'+
+      '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'+
+        '<span style="font-weight:600;color:var(--text)">'+d.cliente+'</span>'+
+        '<span style="font-family:var(--mono);font-weight:600;color:var(--green)">'+fmt(d.kg*d.precio)+'</span>'+
+      '</div>'+
+      '<div style="color:var(--text3)">'+d.fechaLbl+' · '+d.kg.toLocaleString('es-MX')+' kg · $'+d.precio+'/kg'+(d.flete?' · Flete '+fmt(d.flete):'')+'</div>'+
+    '</div>';
+  }).join('');
+  document.getElementById('mo-title').innerHTML='🧊 '+lote.variedad+' &nbsp;<span class="chip '+(lote.loc==='nay'?'nay':'jal')+'">'+locLbl+'</span>';
+  document.getElementById('mo-body').innerHTML=
+    '<div class="modal-row"><span class="modal-key">Fecha entrada</span><span class="modal-val">'+lote.fechaLbl+'</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Ciclo</span><span class="modal-val">'+lote.ciclo+'</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Kg totales</span><span class="modal-val" style="font-family:var(--mono)">'+kgTotal.toLocaleString('es-MX')+' kg</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Kg disponibles</span><span class="modal-val" style="font-family:var(--mono);color:var(--green);font-weight:600">'+kgDisp.toLocaleString('es-MX')+' kg</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Kg despachados</span><span class="modal-val" style="font-family:var(--mono)">'+kgDesp.toLocaleString('es-MX')+' kg ('+pct+'%)</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Precio estimado</span><span class="modal-val" style="font-family:var(--mono)">$'+lote.precioEst+'/kg</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Valor stock</span><span class="modal-val" style="font-family:var(--mono);color:var(--green)">'+fmt(almValorStock(lote))+'</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Total vendido</span><span class="modal-val" style="font-family:var(--mono)">'+fmt(almTotalVendido(lote))+'</span></div>'+
+    (lote.notas?'<div class="modal-row"><span class="modal-key">Notas</span><span class="modal-val">'+lote.notas+'</span></div>':'')+
+    (despRows?'<div style="margin:14px 0 6px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Despachos ('+lote.despachos.length+')</div>'+despRows:
+      '<div style="margin-top:14px;text-align:center;font-size:13px;color:var(--text3)">Sin despachos aún</div>')+
+    '<div style="display:flex;gap:8px;margin-top:14px">'+
+      (!lote.cerrado?'<button onclick="closeModal();abrirDespacho('+lote.id+')" style="flex:1;padding:10px;border-radius:var(--radius);border:1.5px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">+ Despachar</button>':'') +
+      '<button onclick="confirmDelLote('+lote.id+')" style="flex:1;padding:10px;border-radius:var(--radius);border:1px solid var(--fram-border);background:none;color:var(--fram);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">🗑 Eliminar</button>'+
+    '</div>';
+  document.getElementById('overlay').classList.add('open');
+}
+
+function confirmDelLote(loteId){
+  var btn=event.target;
+  if(btn.dataset.confirm==='1'){
+    almLotes=almLotes.filter(function(l){return l.id!==loteId;});
+    saveAlmLotes();
+    sbDeleteAlmLote(loteId);
+    closeModal();
+    renderAlmLotes();
+    showToast('Lote eliminado');
+  } else {
+    btn.dataset.confirm='1'; btn.textContent='⚠️ Confirmar eliminación';
+    setTimeout(function(){if(btn){btn.dataset.confirm='';btn.textContent='🗑 Eliminar';}},2500);
+  }
+}
+// ============================================================
+
 // ============================================================
 
 </script>
