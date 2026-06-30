@@ -2169,14 +2169,22 @@ function rfrTab(t){
 
 function rfrSemanaKey(fechaStr){
   var d=new Date(fechaStr+'T12:00:00'); d.setHours(0,0,0,0);
-  var day=d.getDay(); var lun=new Date(d); lun.setDate(d.getDate()-day+(day===0?-6:1));
-  return lun.toISOString().slice(0,10);
+  var sun=new Date(d); sun.setDate(d.getDate()-d.getDay()); // retroceder al domingo
+  return sun.toISOString().slice(0,10);
+}
+
+function rfrWeekNum(key){
+  var sun=new Date(key+'T12:00:00');
+  var jan1=new Date(sun.getFullYear(),0,1);
+  var dayOfYear=Math.floor((sun-jan1)/86400000);
+  return Math.ceil((dayOfYear+jan1.getDay()+1)/7);
 }
 
 function rfrSemanaLbl(key){
-  var lun=new Date(key+'T12:00:00'), vie=new Date(lun); vie.setDate(vie.getDate()+4);
+  var sun=new Date(key+'T12:00:00');
+  var sat=new Date(sun); sat.setDate(sun.getDate()+6);
   var f=function(d){return d.toLocaleDateString('es-MX',{day:'2-digit',month:'short'});};
-  return f(lun)+' \u2013 '+f(vie);
+  return f(sun)+' \u2013 '+f(sat);
 }
 
 function renderRepFram(){
@@ -2357,14 +2365,12 @@ function rfrPoblarSelectSem(){
     if(!semMap[sk]) semMap[sk]=rfrSemanaAgrup(sk);
     rfrSemanaAcum(semMap[sk],r);
   });
-  var semKeys=Object.keys(semMap).sort(); // cronológico asc para numerar
+  var semKeys=Object.keys(semMap).sort();
   sel.innerHTML='<option value="">— Selecciona una semana —</option>';
-  // más reciente primero en el dropdown, pero numeramos cronológico
-  semKeys.slice().reverse().forEach(function(sk, revIdx){
-    var num=semKeys.length - revIdx;
+  semKeys.slice().reverse().forEach(function(sk){
     var o=document.createElement('option');
     o.value=sk;
-    o.textContent='Semana '+String(num).padStart(2,'0')+' · '+rfrSemanaLbl(sk);
+    o.textContent='Semana '+String(rfrWeekNum(sk)).padStart(2,'0')+' \u00b7 '+rfrSemanaLbl(sk);
     sel.appendChild(o);
   });
   if(prev&&sel.querySelector('option[value="'+prev+'"]')) sel.value=prev;
