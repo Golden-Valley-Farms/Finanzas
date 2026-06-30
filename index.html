@@ -2240,23 +2240,23 @@ function renderRfrDiaDetalle(){
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Cubetas cosechadas</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:22px;line-height:1.1">'+r.totalCubetas+'</div>'+
+        '<div class="kpi-val" style="color:var(--fram);font-size:44px;line-height:1.1">'+r.totalCubetas+'</div>'+
       '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Total cajas</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:22px;line-height:1.1">'+r.totalCajas+'</div>'+
+        '<div class="kpi-val" style="color:var(--fram);font-size:44px;line-height:1.1">'+r.totalCajas+'</div>'+
       '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Proceso (merma)</div>'+
-        '<div class="kpi-val" style="color:var(--camote);font-size:22px;line-height:1.1">'+(r.merma||0)+' <span style="font-size:12px;font-weight:400;color:var(--text3)">kg</span></div>'+
+        '<div class="kpi-val" style="color:var(--camote);font-size:44px;line-height:1.1">'+(r.merma||0)+' <span style="font-size:16px;font-weight:400;color:var(--text3)">kg</span></div>'+
       '</div>'+
     '</div>'+
-    // ── Fila 2: dos columnas ──
-    '<div class="rfr-dia-grid">'+
-      // Columna izquierda: trabajadores con gráfica vertical
-      '<div class="dash-card" style="margin-bottom:0">'+
+    // ── Fila 2: dos columnas de igual altura ──
+    '<div class="rfr-dia-grid" style="align-items:stretch">'+
+      // Columna izquierda: trabajadores — ocupa toda la altura
+      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
         '<div class="dash-card-title">Trabajadores del d\u00eda</div>'+
         '<div class="dash-card-sub">'+trabsSorted.length+' trabajadores · '+r.totalCubetas+' cubetas totales</div>'+
         '<div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text3)">'+
@@ -2264,23 +2264,21 @@ function renderRfrDiaDetalle(){
           '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#eda100;display:inline-block"></span>20–25</span>'+
           '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1baf7a;display:inline-block"></span>&gt; 25</span>'+
         '</div>'+
-        '<div style="position:relative;width:100%;height:300px">'+
+        '<div style="position:relative;width:100%;flex:1;min-height:280px">'+
           '<canvas id="rfr-dia-trab-chart" role="img" aria-label="Cubetas por trabajador">Trabajadores.</canvas>'+
         '</div>'+
       '</div>'+
-      // Columna derecha: calidad
-      '<div>'+
+      // Columna derecha: calidad — una sola card
+      '<div class="dash-card" style="margin-bottom:0">'+
         (defSum>0?
-          '<div class="dash-card" style="margin-bottom:10px">'+
-            '<div class="dash-card-title">Control de calidad</div>'+
-            '<div class="dash-card-sub">'+defSum+' kg de muestra analizada</div>'+
-            defRows+
-          '</div>'+
-          '<div class="dash-card" style="margin-bottom:0">'+
+          '<div class="dash-card-title">Control de calidad</div>'+
+          '<div class="dash-card-sub">'+defSum+' kg de muestra analizada</div>'+
+          defRows+
+          '<div style="margin-top:16px">'+
             '<div class="dash-card-title">Distribuci\u00f3n de defectos</div>'+
-            '<div style="position:relative;width:100%;height:200px"><canvas id="rfr-dia-pie" role="img" aria-label="Defectos">Defectos.</canvas></div>'+
+            '<div style="position:relative;width:100%;height:220px;margin-top:8px"><canvas id="rfr-dia-pie" role="img" aria-label="Defectos">Defectos.</canvas></div>'+
           '</div>':
-          '<div class="dash-card" style="margin-bottom:0;text-align:center;padding:24px 14px;color:var(--text3);font-size:13px">Sin datos de calidad este d\u00eda</div>')+
+          '<div style="text-align:center;padding:24px 0;color:var(--text3);font-size:13px">Sin datos de calidad este d\u00eda</div>')+
       '</div>'+
     '</div>';
 
@@ -2288,8 +2286,27 @@ function renderRfrDiaDetalle(){
 
   // Gráfica vertical de trabajadores
   setTimeout(function(){
+    var barLabelPlugin = {
+      id:'barLabels',
+      afterDatasetsDraw:function(chart){
+        var ctx=chart.ctx;
+        var ds=chart.data.datasets[0];
+        var meta=chart.getDatasetMeta(0);
+        meta.data.forEach(function(bar,i){
+          var v=ds.data[i];
+          ctx.save();
+          ctx.fillStyle='#ffffff';
+          ctx.font='bold 12px monospace';
+          ctx.textAlign='center';
+          ctx.textBaseline='bottom';
+          ctx.fillText(v, bar.x, bar.y-4);
+          ctx.restore();
+        });
+      }
+    };
     mkRfrChart('rfr-dia-trab-chart',{
       type:'bar',
+      plugins:[barLabelPlugin],
       data:{
         labels:trabsSorted.map(function(t){return t.nombre;}),
         datasets:[
@@ -2334,17 +2351,21 @@ function renderRfrDiaDetalle(){
 function rfrPoblarSelectSem(){
   var sel=document.getElementById('rfr-sel-sem'); if(!sel) return;
   var prev=sel.value;
-  // Agrupar datos por semana
   var semMap={};
   rfrDataCache.forEach(function(r){
     var sk=rfrSemanaKey(r.fecha);
     if(!semMap[sk]) semMap[sk]=rfrSemanaAgrup(sk);
     rfrSemanaAcum(semMap[sk],r);
   });
-  var semKeys=Object.keys(semMap).sort().reverse();
+  var semKeys=Object.keys(semMap).sort(); // cronológico asc para numerar
   sel.innerHTML='<option value="">— Selecciona una semana —</option>';
-  semKeys.forEach(function(sk){
-    var o=document.createElement('option'); o.value=sk; o.textContent=rfrSemanaLbl(sk); sel.appendChild(o);
+  // más reciente primero en el dropdown, pero numeramos cronológico
+  semKeys.slice().reverse().forEach(function(sk, revIdx){
+    var num=semKeys.length - revIdx;
+    var o=document.createElement('option');
+    o.value=sk;
+    o.textContent='Semana '+String(num).padStart(2,'0')+' · '+rfrSemanaLbl(sk);
+    sel.appendChild(o);
   });
   if(prev&&sel.querySelector('option[value="'+prev+'"]')) sel.value=prev;
   if(sel.value) renderRfrSemDetalle();
