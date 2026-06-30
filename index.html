@@ -4651,25 +4651,14 @@ function guardarLote(){
   almTab('lista');
 }
 
-// ── modal despacho general (multi-lote) ──
-var dgLoc = 'jal';
+// ── modal despacho general (multi-lote, multi-ubicación) ──
 var dgSel = {}; // {loteId: {kg, precio}}
 
 function abrirDespachoGeneral(preselectLoteId){
   dgSel = {};
-  dgLoc = 'jal';
-  if(preselectLoteId){
-    var l=almLotes.find(function(x){return x.id===preselectLoteId;});
-    if(l) dgLoc = l.loc;
-  }
   document.getElementById('mo-title').innerHTML='📦 Nuevo despacho';
   document.getElementById('mo-body').innerHTML=
-    '<div class="field" style="margin-bottom:10px"><label>Ubicación</label>'+
-      '<div style="display:flex;gap:6px">'+
-        '<button type="button" class="wf-btn'+(dgLoc==='jal'?' active':'')+'" id="dg-loc-jal" onclick="dgSwitchLoc(\'jal\')" style="flex:1">🌾 Jalisco</button>'+
-        '<button type="button" class="wf-btn'+(dgLoc==='nay'?' active':'')+'" id="dg-loc-nay" onclick="dgSwitchLoc(\'nay\')" style="flex:1">🌿 Nayarit</button>'+
-      '</div></div>'+
-    '<div style="margin:14px 0 8px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Datos del envío</div>'+
+    '<div style="margin-bottom:8px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Datos del despacho</div>'+
     '<div class="field" style="margin-bottom:10px"><label>Fecha</label>'+
       '<div style="display:flex;gap:6px;align-items:center">'+
         '<input type="text" id="dg-fecha" placeholder="DD/MM/AAAA" maxlength="10" style="flex:1;font-family:var(--mono)" oninput="this.value=this.value.replace(/[^0-9\/]/g,\'\')">'+
@@ -4678,7 +4667,9 @@ function abrirDespachoGeneral(preselectLoteId){
     '<div class="field" style="margin-bottom:10px"><label>Cliente</label>'+
       '<input type="text" id="dg-cliente" placeholder="Nombre del cliente" style="width:100%"></div>'+
     '<div class="field" style="margin-bottom:14px"><label>Flete de venta ($)</label>'+
-      '<div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="dg-flete" placeholder="0" min="0" step="0.01" oninput="recalcDespachoGeneral()"></div></div>'+
+      '<div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="dg-flete" placeholder="0" min="0" step="0.01" oninput="recalcDespachoGeneral()"></div>'+
+      '<div class="sector-hint">Si despachas lotes de Jalisco y Nayarit a la vez, el flete se reparte entre ambos envíos según su valor.</div>'+
+    '</div>'+
     '<div style="margin-bottom:8px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Lotes a despachar</div>'+
     '<div id="dg-lotes-list"></div>'+
     '<div id="dg-resumen" style="display:none;padding:10px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--radius);margin:14px 0">'+
@@ -4698,35 +4689,33 @@ function abrirDespachoGeneral(preselectLoteId){
   document.getElementById('overlay').classList.add('open');
 }
 
-function dgSwitchLoc(loc){
-  dgLoc=loc; dgSel={};
-  document.getElementById('dg-loc-jal').classList.toggle('active', loc==='jal');
-  document.getElementById('dg-loc-nay').classList.toggle('active', loc==='nay');
-  renderDgLotesList();
-  recalcDespachoGeneral();
-}
-
 function renderDgLotesList(){
   var cont=document.getElementById('dg-lotes-list'); if(!cont) return;
-  var data=almLotes.filter(function(l){return l.loc===dgLoc && !l.cerrado && almKgDisponibles(l)>0.009;});
-  if(!data.length){ cont.innerHTML='<div style="font-size:12px;color:var(--text3);padding:10px 0">Sin lotes disponibles en esta ubicación.</div>'; return; }
-  cont.innerHTML = data.map(function(lote){
-    var kgDisp=almKgDisponibles(lote);
-    var checked = !!dgSel[lote.id];
-    return '<div class="alm-lote" style="padding:10px 12px;margin-bottom:8px" id="dg-row-'+lote.id+'">'+
-      '<label style="display:flex;align-items:center;gap:8px;cursor:pointer">'+
-        '<input type="checkbox" id="dg-chk-'+lote.id+'" '+(checked?'checked':'')+' onchange="dgToggleLote('+lote.id+',this.checked)" style="width:16px;height:16px;flex-shrink:0">'+
-        '<div style="flex:1">'+
-          '<div style="font-size:13px;font-weight:600;color:var(--text)">'+lote.variedad+(lote.sector?' · Sector '+lote.sector:'')+'</div>'+
-          '<div style="font-size:11px;color:var(--text3)">Disponible: '+kgDisp.toLocaleString('es-MX')+' kg'+(lote.hectareas?' · '+lote.hectareas+' ha':'')+'</div>'+
-        '</div>'+
-      '</label>'+
-      '<div id="dg-fields-'+lote.id+'" style="display:'+(checked?'flex':'none')+';gap:8px;margin-top:10px">'+
-        '<div class="field" style="flex:1;margin-bottom:0"><label>Kg a despachar</label><input type="number" id="dg-kg-'+lote.id+'" placeholder="0" max="'+kgDisp+'" min="0" step="0.01" value="'+(checked&&dgSel[lote.id].kg?dgSel[lote.id].kg:'')+'" oninput="dgUpdateField('+lote.id+')"></div>'+
-        '<div class="field" style="flex:1;margin-bottom:0"><label>Precio $/kg</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="dg-precio-'+lote.id+'" placeholder="'+lote.precioEst+'" min="0" step="0.01" value="'+(checked&&dgSel[lote.id].precio?dgSel[lote.id].precio:'')+'" oninput="dgUpdateField('+lote.id+')"></div></div>'+
-      '</div>'+
-      (lote.hectareas?'<div id="dg-ha-'+lote.id+'" class="sector-hint" style="display:none;margin-top:6px"></div>':'')+
-    '</div>';
+  var data=almLotes.filter(function(l){return !l.cerrado && almKgDisponibles(l)>0.009;});
+  if(!data.length){ cont.innerHTML='<div style="font-size:12px;color:var(--text3);padding:10px 0">Sin lotes disponibles en almacén.</div>'; return; }
+  var grupos=[{loc:'jal',lbl:'🌾 Jalisco'},{loc:'nay',lbl:'🌿 Nayarit'}];
+  cont.innerHTML = grupos.map(function(grp){
+    var lotesGrp=data.filter(function(l){return l.loc===grp.loc;});
+    if(!lotesGrp.length) return '';
+    return '<div style="font-size:11px;font-weight:600;color:var(--text3);margin:10px 0 6px">'+grp.lbl+'</div>'+
+      lotesGrp.map(function(lote){
+        var kgDisp=almKgDisponibles(lote);
+        var checked = !!dgSel[lote.id];
+        return '<div class="alm-lote" style="padding:10px 12px;margin-bottom:8px" id="dg-row-'+lote.id+'">'+
+          '<label style="display:flex;align-items:center;gap:8px;cursor:pointer">'+
+            '<input type="checkbox" id="dg-chk-'+lote.id+'" '+(checked?'checked':'')+' onchange="dgToggleLote('+lote.id+',this.checked)" style="width:16px;height:16px;flex-shrink:0">'+
+            '<div style="flex:1">'+
+              '<div style="font-size:13px;font-weight:600;color:var(--text)">'+lote.variedad+(lote.sector?' · Sector '+lote.sector:'')+'</div>'+
+              '<div style="font-size:11px;color:var(--text3)">Disponible: '+kgDisp.toLocaleString('es-MX')+' kg'+(lote.hectareas?' · '+lote.hectareas+' ha':'')+'</div>'+
+            '</div>'+
+          '</label>'+
+          '<div id="dg-fields-'+lote.id+'" style="display:'+(checked?'flex':'none')+';gap:8px;margin-top:10px">'+
+            '<div class="field" style="flex:1;margin-bottom:0"><label>Kg a despachar</label><input type="number" id="dg-kg-'+lote.id+'" placeholder="0" max="'+kgDisp+'" min="0" step="0.01" value="'+(checked&&dgSel[lote.id].kg?dgSel[lote.id].kg:'')+'" oninput="dgUpdateField('+lote.id+')"></div>'+
+            '<div class="field" style="flex:1;margin-bottom:0"><label>Precio $/kg</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="dg-precio-'+lote.id+'" placeholder="'+lote.precioEst+'" min="0" step="0.01" value="'+(checked&&dgSel[lote.id].precio?dgSel[lote.id].precio:'')+'" oninput="dgUpdateField('+lote.id+')"></div></div>'+
+          '</div>'+
+          (lote.hectareas?'<div id="dg-ha-'+lote.id+'" class="sector-hint" style="display:none;margin-top:6px"></div>':'')+
+        '</div>';
+      }).join('');
   }).join('');
 }
 
@@ -4805,36 +4794,53 @@ function confirmarDespachoGeneral(){
   if(!items.length){showToast('Selecciona al menos un lote');return;}
   var fechaLbl=new Date(fechaISO+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
   var despachoId=Date.now();
-  var partidas=[], totalVenta=0;
-  items.forEach(function(it, idx){
-    var hectareasDesp=almHectareasDespacho(it.lote, it.kg);
-    var despacho={id:despachoId+idx,fecha:fechaISO,fechaLbl:fechaLbl,cliente:cliente,kg:it.kg,precio:it.precio,flete:0,hectareas:hectareasDesp};
-    it.lote.despachos.push(despacho);
-    if(almKgDisponibles(it.lote)<=0.01) it.lote.cerrado=true;
-    sbSaveAlmLote(it.lote);
-    var totalLinea=it.kg*it.precio;
-    totalVenta+=totalLinea;
-    partidas.push({variedad:it.lote.variedad,sector:it.lote.sector||'',hectareas:hectareasDesp,pesoNeto:it.kg,toneladas:parseFloat((it.kg/1000).toFixed(3)),precio:it.precio,total:totalLinea});
+  agregarClienteSiNuevo(cliente);
+  // agrupar automáticamente por la ubicación de origen de cada lote
+  var grupos={}; // {loc: {items:[], totalVenta:0}}
+  items.forEach(function(it){
+    var loc=it.lote.loc;
+    if(!grupos[loc]) grupos[loc]={items:[], totalVenta:0};
+    grupos[loc].items.push(it);
+    grupos[loc].totalVenta += it.kg*it.precio;
+  });
+  var totalGeneral=0;
+  Object.keys(grupos).forEach(function(loc){ totalGeneral+=grupos[loc].totalVenta; });
+  var numEnviosCreados=[];
+  var totalConFleteGeneral=0;
+  var idxGlobal=0;
+  Object.keys(grupos).forEach(function(loc){
+    var grp=grupos[loc];
+    var fleteGrp = totalGeneral>0 ? parseFloat((flete*(grp.totalVenta/totalGeneral)).toFixed(2)) : (Object.keys(grupos).length===1?flete:0);
+    var partidas=[];
+    grp.items.forEach(function(it){
+      var hectareasDesp=almHectareasDespacho(it.lote, it.kg);
+      var despacho={id:despachoId+idxGlobal,fecha:fechaISO,fechaLbl:fechaLbl,cliente:cliente,kg:it.kg,precio:it.precio,flete:0,hectareas:hectareasDesp};
+      it.lote.despachos.push(despacho);
+      if(almKgDisponibles(it.lote)<=0.01) it.lote.cerrado=true;
+      sbSaveAlmLote(it.lote);
+      partidas.push({variedad:it.lote.variedad,sector:it.lote.sector||'',hectareas:hectareasDesp,pesoNeto:it.kg,toneladas:parseFloat((it.kg/1000).toFixed(3)),precio:it.precio,total:it.kg*it.precio});
+      idxGlobal++;
+    });
+    var anio=new Date(fechaISO+'T12:00:00').getFullYear();
+    var seq=getNextNumEnvio(loc, anio, null);
+    var numEnvio=buildNumEnvio(loc, anio, seq);
+    var cicloV=grp.items[0].lote.ciclo||cicloFromFecha(fechaISO);
+    var totalConFlete=grp.totalVenta+fleteGrp;
+    totalConFleteGeneral+=totalConFlete;
+    var envioObj={
+      id:despachoId+900+idxGlobal, num:numEnvio, folio:'', fecha:fechaISO, fechaLbl:fechaLbl,
+      cliente:cliente, loc:loc, ciclo:cicloV, flete:fleteGrp, fleteCompra:0, factura:'',
+      loteIds:grp.items.map(function(it){return it.lote.id;}), esDespachoAlm:true,
+      partidas:partidas, totalVenta:grp.totalVenta, total:totalConFlete
+    };
+    envios.unshift(envioObj);
+    sbSaveEnvio(envioObj);
+    numEnviosCreados.push(numEnvio);
   });
   saveAlmLotes();
-  // crear un único envío con todas las partidas
-  var anio=new Date(fechaISO+'T12:00:00').getFullYear();
-  var seq=getNextNumEnvio(dgLoc, anio, null);
-  var numEnvio=buildNumEnvio(dgLoc, anio, seq);
-  var cicloV=items[0].lote.ciclo||cicloFromFecha(fechaISO);
-  var totalConFlete=totalVenta+flete;
-  agregarClienteSiNuevo(cliente);
-  var envioObj={
-    id:despachoId+999, num:numEnvio, folio:'', fecha:fechaISO, fechaLbl:fechaLbl,
-    cliente:cliente, loc:dgLoc, ciclo:cicloV, flete:flete, fleteCompra:0, factura:'',
-    loteIds:items.map(function(it){return it.lote.id;}), esDespachoAlm:true,
-    partidas:partidas, totalVenta:totalVenta, total:totalConFlete
-  };
-  envios.unshift(envioObj);
   saveEnvios();
-  sbSaveEnvio(envioObj);
   closeModal();
-  showToast('Despacho creado: '+fmt(totalConFlete)+' · Envío '+numEnvio+' ('+items.length+' lote'+(items.length>1?'s':'')+')');
+  showToast('Despacho creado: '+fmt(totalConFleteGeneral)+' · Envío'+(numEnviosCreados.length>1?'s':'')+' '+numEnviosCreados.join(', '));
   renderAlmLotes();
 }
 
