@@ -679,23 +679,77 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <!-- ============ SUB-TAB: FRAMBUESA ============ -->
     <div id="rep-fram-sec" style="display:none">
 
-      <!-- Selector ciclo + sub-nav -->
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-        <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Ciclo</span>
-        <select id="rfr-ciclo" onchange="renderRepFram()" style="flex:1;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
-          <option value="todos">Todos los ciclos</option>
-        </select>
-      </div>
-
-      <!-- Sub-tabs resumen / semana / día -->
+      <!-- Sub-tabs: día / semana / ciclo -->
       <div style="display:flex;gap:4px;margin-bottom:14px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
-        <button class="ven-tab active" id="rfr-tab-res" onclick="rfrTab('res')" style="flex:1;font-size:12px">Resumen</button>
+        <button class="ven-tab active" id="rfr-tab-dia" onclick="rfrTab('dia')" style="flex:1;font-size:12px">Por día</button>
         <button class="ven-tab" id="rfr-tab-sem" onclick="rfrTab('sem')" style="flex:1;font-size:12px">Por semana</button>
-        <button class="ven-tab" id="rfr-tab-dia" onclick="rfrTab('dia')" style="flex:1;font-size:12px">Por día</button>
+        <button class="ven-tab" id="rfr-tab-res" onclick="rfrTab('res')" style="flex:1;font-size:12px">Por ciclo</button>
       </div>
 
-      <!-- ── RESUMEN ── -->
-      <div id="rfr-sec-res">
+      <!-- ── POR DÍA ── -->
+      <div id="rfr-sec-dia">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
+          <select id="rfr-sel-dia" onchange="renderRfrDiaDetalle()" style="flex:1;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);font-weight:600;outline:none">
+            <option value="">— Selecciona un día —</option>
+          </select>
+        </div>
+        <div id="rfr-dia-detalle"></div>
+      </div>
+
+      <!-- ── POR SEMANA ── -->
+      <div id="rfr-sec-sem" style="display:none">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
+          <select id="rfr-sel-sem" onchange="renderRfrSemDetalle()" style="flex:1;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);font-weight:600;outline:none">
+            <option value="">— Selecciona una semana —</option>
+          </select>
+        </div>
+        <div id="rfr-sem-detalle">
+          <!-- KPIs semana -->
+          <div class="kpi-grid" id="rfr-sem-kpis" style="display:none">
+            <div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cubetas</div><div class="kpi-val" id="rfrs-k-cubetas" style="color:var(--fram)">—</div><div class="kpi-sub" id="rfrs-k-dias"></div></div>
+            <div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Prom. cubetas/día</div><div class="kpi-val" id="rfrs-k-prom" style="color:var(--fram)">—</div></div>
+            <div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cajas 6 oz</div><div class="kpi-val" id="rfrs-k-6oz" style="color:var(--fram)">—</div></div>
+            <div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cajas 12 oz</div><div class="kpi-val" id="rfrs-k-12oz" style="color:var(--fram)">—</div></div>
+            <div class="kpi-card span2"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Total cajas</div><div class="kpi-val" id="rfrs-k-cajas" style="color:var(--fram)">—</div></div>
+            <div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Proceso (merma)</div><div class="kpi-val" id="rfrs-k-merma" style="color:var(--camote)">—</div></div>
+          </div>
+          <!-- Gráfica trabajadores semana -->
+          <div class="dash-card fin-chart-full" id="rfr-sem-card-trab" style="margin-top:12px;display:none">
+            <div class="dash-card-title">Cubetas por trabajador — semana</div>
+            <div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text3)">
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#e34948;display:inline-block"></span>&lt; 20/día</span>
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#eda100;display:inline-block"></span>20–25/día</span>
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1baf7a;display:inline-block"></span>&gt; 25/día</span>
+            </div>
+            <div style="position:relative;width:100%" id="rfr-sem-trab-wrap">
+              <canvas id="rfr-chart-trab-sem" role="img" aria-label="Cubetas por trabajador en la semana seleccionada">Trabajadores semana.</canvas>
+            </div>
+          </div>
+          <!-- Calidad semana -->
+          <div class="fin-charts-grid" id="rfr-sem-card-cal" style="margin-top:0;display:none">
+            <div class="dash-card">
+              <div class="dash-card-title">Defectos (kg acumulados)</div>
+              <div id="rfrs-def-rows" style="margin-bottom:8px"></div>
+              <div style="position:relative;width:100%;height:180px"><canvas id="rfr-chart-def-sem" role="img" aria-label="Defectos de la semana">Defectos.</canvas></div>
+            </div>
+            <div class="dash-card">
+              <div class="dash-card-title">Cajas por sector</div>
+              <div style="position:relative;width:100%;height:180px"><canvas id="rfr-chart-sec-sem" role="img" aria-label="Cajas por sector en la semana">Sectores.</canvas></div>
+            </div>
+          </div>
+          <!-- Días de la semana -->
+          <div id="rfr-sem-dias" style="margin-top:12px"></div>
+        </div>
+      </div>
+
+      <!-- ── POR CICLO ── -->
+      <div id="rfr-sec-res" style="display:none">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+          <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Ciclo</span>
+          <select id="rfr-ciclo" onchange="renderRepFram()" style="flex:1;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);font-weight:600;outline:none">
+            <option value="todos">Todos los ciclos</option>
+          </select>
+        </div>
         <div class="kpi-grid">
           <div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Total cajas</div><div class="kpi-val" id="rfr-k-cajas" style="color:var(--fram)">—</div><div class="kpi-sub" id="rfr-k-cajas-sub">6oz + 12oz</div></div>
           <div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cajas 6 oz</div><div class="kpi-val" id="rfr-k-6oz" style="color:var(--fram)">—</div><div class="kpi-sub" id="rfr-k-6oz-pct"></div></div>
@@ -722,66 +776,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <div style="position:relative;width:100%;height:180px"><canvas id="rfr-chart-def" role="img" aria-label="Defectos por tipo">Defectos por tipo.</canvas></div>
           </div>
           <div class="dash-card fin-chart-full">
-            <div class="dash-card-title">Top trabajadores — cubetas acumuladas</div>
+            <div class="dash-card-title">Trabajadores — cubetas acumuladas</div>
             <div style="position:relative;width:100%" id="rfr-chart-trab-wrap"><canvas id="rfr-chart-trab" role="img" aria-label="Cubetas por trabajador">Cubetas por trabajador.</canvas></div>
           </div>
         </div>
-      </div>
-
-      <!-- ── POR SEMANA ── -->
-      <div id="rfr-sec-sem" style="display:none">
-
-        <!-- Tabla semanal -->
-        <div class="dash-card fin-chart-full" style="margin-bottom:12px">
-          <div class="dash-card-title">Resumen semanal</div>
-          <div style="overflow-x:auto">
-            <table id="rfr-tabla-sem" style="width:100%;border-collapse:collapse;font-size:12px">
-              <thead>
-                <tr style="border-bottom:1px solid var(--border)">
-                  <th style="text-align:left;padding:8px 6px;color:var(--text3);font-weight:600">Semana</th>
-                  <th style="text-align:center;padding:8px 6px;color:var(--text3);font-weight:600">Días</th>
-                  <th style="text-align:right;padding:8px 6px;color:var(--text3);font-weight:600">Cubetas</th>
-                  <th style="text-align:right;padding:8px 6px;color:var(--text3);font-weight:600">Prom/día</th>
-                  <th style="text-align:right;padding:8px 6px;color:var(--text3);font-weight:600">6 oz</th>
-                  <th style="text-align:right;padding:8px 6px;color:var(--text3);font-weight:600">12 oz</th>
-                  <th style="text-align:right;padding:8px 6px;color:var(--text3);font-weight:600">Total cajas</th>
-                  <th style="text-align:right;padding:8px 6px;color:var(--text3);font-weight:600">Proceso kg</th>
-                </tr>
-              </thead>
-              <tbody id="rfr-tbody-sem"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Rendimiento trabajadores con semáforo -->
-        <div class="dash-card fin-chart-full" style="margin-bottom:12px">
-          <div class="dash-card-title">Promedio cubetas/día por trabajador</div>
-          <div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text3)">
-            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#e34948;display:inline-block"></span>&lt; 20 cubetas</span>
-            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#eda100;display:inline-block"></span>20–25 cubetas</span>
-            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1baf7a;display:inline-block"></span>&gt; 25 cubetas</span>
-          </div>
-          <div style="position:relative;width:100%" id="rfr-trab-sem-wrap">
-            <canvas id="rfr-chart-trab-sem" role="img" aria-label="Promedio cubetas por día por trabajador con líneas de referencia en 20 y 25">Rendimiento trabajadores.</canvas>
-          </div>
-        </div>
-
-        <!-- Comparativo sectores -->
-        <div class="fin-charts-grid" style="margin-top:0">
-          <div class="dash-card">
-            <div class="dash-card-title">Cajas por sector (acumulado)</div>
-            <div style="position:relative;width:100%;height:180px"><canvas id="rfr-chart-sec-sem" role="img" aria-label="Cajas acumuladas por sector">Sectores.</canvas></div>
-          </div>
-          <div class="dash-card">
-            <div class="dash-card-title">Cajas/semana por sector</div>
-            <div style="position:relative;width:100%;height:180px"><canvas id="rfr-chart-sec-trend" role="img" aria-label="Tendencia de cajas por sector por semana">Sectores por semana.</canvas></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── POR DÍA ── -->
-      <div id="rfr-sec-dia" style="display:none">
-        <div id="rfr-dias-list"></div>
       </div>
 
     </div>
@@ -2121,16 +2119,12 @@ function repTab(t){
 // ---- REPORTE FRAMBUESA ----
 // ============================================================
 var rfrCharts = {};
-var rfrTabActual = 'res';
+var rfrTabActual = 'dia';
+var rfrDataCache = [];
 
-function rfrTab(t){
-  rfrTabActual = t;
-  ['res','sem','dia'].forEach(function(x){
-    document.getElementById('rfr-tab-'+x).classList.toggle('active', x===t);
-    document.getElementById('rfr-sec-'+x).style.display = x===t ? 'block' : 'none';
-  });
-  renderRepFram();
-}
+var DEF_COLS_RFR = {sobremadura:'#eda100',irregular:'#1baf7a',desgrane:'#e34948',deforme:'#4a3aa7',hongos:'#888780'};
+var DEF_LBL_RFR  = {sobremadura:'Sobremadura',irregular:'Irregular',desgrane:'Desgrane',deforme:'Deforme',hongos:'Hongos'};
+var SEC_COLS_RFR  = ['#2a78d6','#1baf7a','#eda100','#4a3aa7'];
 
 function mkRfrChart(id, cfg){
   if(rfrCharts[id]){ rfrCharts[id].destroy(); delete rfrCharts[id]; }
@@ -2138,30 +2132,32 @@ function mkRfrChart(id, cfg){
   rfrCharts[id]=new Chart(el, cfg);
 }
 
-function rfrGetData(){
-  var cicloSel=document.getElementById('rfr-ciclo');
-  var filtroCiclo=cicloSel?cicloSel.value:'todos';
-  var data=(framRegistros||[]).filter(function(r){ return filtroCiclo==='todos'||r.ciclo===filtroCiclo; });
-  return data.slice().sort(function(a,b){return a.fecha<b.fecha?-1:1;});
+function rfrGridCol(){ return window.matchMedia('(prefers-color-scheme:dark)').matches?'#2c2c2a':'#e1e0d9'; }
+
+function rfrTab(t){
+  rfrTabActual=t;
+  ['dia','sem','res'].forEach(function(x){
+    document.getElementById('rfr-tab-'+x).classList.toggle('active',x===t);
+    document.getElementById('rfr-sec-'+x).style.display=x===t?'block':'none';
+  });
+  renderRepFram();
 }
 
 function rfrSemanaKey(fechaStr){
-  var dt=new Date(fechaStr+'T12:00:00');
-  var d=new Date(dt); d.setHours(0,0,0,0);
-  var day=d.getDay(); var diff=d.getDate()-day+(day===0?-6:1);
-  var lun=new Date(d); lun.setDate(diff);
+  var d=new Date(fechaStr+'T12:00:00'); d.setHours(0,0,0,0);
+  var day=d.getDay(); var lun=new Date(d); lun.setDate(d.getDate()-day+(day===0?-6:1));
   return lun.toISOString().slice(0,10);
 }
 
 function rfrSemanaLbl(key){
-  var lun=new Date(key+'T12:00:00');
-  var vie=new Date(lun); vie.setDate(vie.getDate()+4);
-  var fmtD=function(d){return d.toLocaleDateString('es-MX',{day:'2-digit',month:'short'});};
-  return fmtD(lun)+' – '+fmtD(vie);
+  var lun=new Date(key+'T12:00:00'), vie=new Date(lun); vie.setDate(vie.getDate()+4);
+  var f=function(d){return d.toLocaleDateString('es-MX',{day:'2-digit',month:'short'});};
+  return f(lun)+' \u2013 '+f(vie);
 }
 
 function renderRepFram(){
   if(!framRegistros||!framRegistros.length) return;
+  // Poblar selector de ciclos (solo en "por ciclo")
   var cicloSel=document.getElementById('rfr-ciclo');
   if(cicloSel){
     var ciclosEnFram=[];
@@ -2172,19 +2168,236 @@ function renderRepFram(){
     ciclosEnFram.forEach(function(c){ var o=document.createElement('option'); o.value=c; o.textContent=c; cicloSel.appendChild(o); });
     if(prevVal&&cicloSel.querySelector('option[value="'+prevVal+'"]')) cicloSel.value=prevVal;
   }
-  var data=rfrGetData();
-  if(!data.length) return;
-  if(rfrTabActual==='res') renderRfrResumen(data);
-  if(rfrTabActual==='sem') renderRfrSemana(data);
-  if(rfrTabActual==='dia') renderRfrDia(data);
+  var filtroCiclo=cicloSel?cicloSel.value:'todos';
+  rfrDataCache=framRegistros.filter(function(r){return filtroCiclo==='todos'||r.ciclo===filtroCiclo;})
+    .slice().sort(function(a,b){return a.fecha<b.fecha?-1:1;});
+
+  if(rfrTabActual==='dia') rfrPoblarSelectDia();
+  if(rfrTabActual==='sem') rfrPoblarSelectSem();
+  if(rfrTabActual==='res') renderRfrResumen(rfrDataCache);
 }
 
+// ─── POR DÍA ───────────────────────────────────────────────
+function rfrPoblarSelectDia(){
+  var sel=document.getElementById('rfr-sel-dia'); if(!sel) return;
+  var prev=sel.value;
+  sel.innerHTML='<option value="">— Selecciona un d\u00eda —</option>';
+  rfrDataCache.slice().reverse().forEach(function(r){
+    var o=document.createElement('option'); o.value=r.fecha; o.textContent=r.fechaLbl; sel.appendChild(o);
+  });
+  if(prev&&sel.querySelector('option[value="'+prev+'"]')) sel.value=prev;
+  if(sel.value) renderRfrDiaDetalle();
+  else document.getElementById('rfr-dia-detalle').innerHTML='';
+}
+
+function renderRfrDiaDetalle(){
+  var sel=document.getElementById('rfr-sel-dia'); if(!sel||!sel.value) return;
+  var r=rfrDataCache.find(function(x){return x.fecha===sel.value;});
+  if(!r){ document.getElementById('rfr-dia-detalle').innerHTML=''; return; }
+
+  var defKeys=Object.keys(DEF_COLS_RFR);
+  var defVals=defKeys.map(function(k){return Math.round(((r.defectos&&r.defectos[k])||0)*100)/100;});
+  var defSum=Math.round(defVals.reduce(function(a,v){return a+v;},0)*100)/100;
+  var cajas6=0,cajas12=0;
+  (r.cajas||[]).forEach(function(c){
+    if(c.presentacion==='6 oz') cajas6+=c.cantidad||0;
+    else if(c.presentacion==='12 oz') cajas12+=c.cantidad||0;
+  });
+
+  var defRows=defKeys.filter(function(k,i){return defVals[i]>0;}).map(function(k){
+    var v=defVals[defKeys.indexOf(k)]; var pct=defSum>0?Math.round(v/defSum*100):0;
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:0.5px solid var(--border)">'+
+      '<span style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px">'+
+        '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+DEF_COLS_RFR[k]+';flex-shrink:0"></span>'+DEF_LBL_RFR[k]+'</span>'+
+      '<span style="font-family:var(--mono);font-size:12px;color:var(--text)">'+v+' kg <span style="color:var(--text3);font-size:11px">'+pct+'%</span></span></div>';
+  }).join('');
+
+  // Trabajadores ordenados por cubetas desc
+  var trabsSorted=(r.trabajadores||[]).slice().sort(function(a,b){return b.cubetas-a.cubetas;});
+  var maxCub=trabsSorted.length?trabsSorted[0].cubetas:1;
+
+  document.getElementById('rfr-dia-detalle').innerHTML=
+    // KPIs del día
+    '<div class="kpi-grid" style="margin-bottom:12px">'+
+      '<div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cubetas</div><div class="kpi-val" style="color:var(--fram)">'+r.totalCubetas+'</div></div>'+
+      '<div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cajas 6 oz</div><div class="kpi-val" style="color:var(--fram)">'+cajas6+'</div></div>'+
+      '<div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cajas 12 oz</div><div class="kpi-val" style="color:var(--fram)">'+cajas12+'</div></div>'+
+      '<div class="kpi-card span2"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Total cajas</div><div class="kpi-val" style="color:var(--fram)">'+r.totalCajas+'</div></div>'+
+      (r.merma>0?'<div class="kpi-card"><div class="kpi-accent" style="background:var(--camote)"></div><div class="kpi-lbl">Proceso kg</div><div class="kpi-val" style="color:var(--camote)">'+r.merma+'</div></div>':'')+
+    '</div>'+
+    // Trabajadores
+    (trabsSorted.length?
+      '<div class="dash-card fin-chart-full" style="margin-bottom:12px">'+
+        '<div class="dash-card-title">Trabajadores del d\u00eda</div>'+
+        trabsSorted.map(function(t){
+          var pct=maxCub>0?Math.round(t.cubetas/maxCub*100):0;
+          var col=t.cubetas>=25?'#1baf7a':t.cubetas>=20?'#eda100':'#e34948';
+          return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'+
+            '<span style="font-size:12px;color:var(--text);min-width:90px;font-weight:500">'+t.nombre+'</span>'+
+            '<div style="flex:1;background:var(--surface2);border-radius:4px;height:20px;overflow:hidden">'+
+              '<div style="height:100%;width:'+pct+'%;background:'+col+';border-radius:4px;transition:width .3s"></div>'+
+            '</div>'+
+            '<span style="font-size:13px;font-weight:700;color:'+col+';font-family:var(--mono);min-width:32px;text-align:right">'+t.cubetas+'</span>'+
+          '</div>';
+        }).join('')+
+      '</div>':'')+ 
+    // Calidad
+    (defSum>0?
+      '<div class="fin-charts-grid" style="margin-top:0">'+
+        '<div class="dash-card">'+
+          '<div class="dash-card-title">Control de calidad \u00b7 '+defSum+' kg muestra</div>'+
+          '<div>'+defRows+'</div>'+
+        '</div>'+
+        '<div class="dash-card">'+
+          '<div class="dash-card-title">Distribuci\u00f3n defectos</div>'+
+          '<div style="position:relative;width:100%;height:200px"><canvas id="rfr-dia-pie" role="img" aria-label="Defectos del d\u00eda">Defectos.</canvas></div>'+
+        '</div>'+
+      '</div>':
+      '<div class="card" style="text-align:center;padding:16px;font-size:13px;color:var(--text3)">Sin datos de calidad este d\u00eda</div>');
+
+  // Pastel de calidad
+  if(defSum>0){
+    setTimeout(function(){
+      mkRfrChart('rfr-dia-pie',{type:'doughnut',
+        data:{labels:defKeys.map(function(k){return DEF_LBL_RFR[k];}),
+          datasets:[{data:defVals,backgroundColor:defKeys.map(function(k){return DEF_COLS_RFR[k];}),hoverOffset:6}]},
+        options:{responsive:true,maintainAspectRatio:false,
+          plugins:{legend:{display:true,position:'bottom',labels:{color:'#898781',font:{size:11},boxWidth:10,padding:8}},
+            tooltip:{callbacks:{label:function(c){return ' '+c.label+': '+c.raw+' kg ('+Math.round(c.raw/defSum*100)+'%)';}}}}}});
+    },30);
+  }
+}
+
+// ─── POR SEMANA ─────────────────────────────────────────────
+function rfrPoblarSelectSem(){
+  var sel=document.getElementById('rfr-sel-sem'); if(!sel) return;
+  var prev=sel.value;
+  // Agrupar datos por semana
+  var semMap={};
+  rfrDataCache.forEach(function(r){
+    var sk=rfrSemanaKey(r.fecha);
+    if(!semMap[sk]) semMap[sk]=rfrSemanaAgrup(sk);
+    rfrSemanaAcum(semMap[sk],r);
+  });
+  var semKeys=Object.keys(semMap).sort().reverse();
+  sel.innerHTML='<option value="">— Selecciona una semana —</option>';
+  semKeys.forEach(function(sk){
+    var o=document.createElement('option'); o.value=sk; o.textContent=rfrSemanaLbl(sk); sel.appendChild(o);
+  });
+  if(prev&&sel.querySelector('option[value="'+prev+'"]')) sel.value=prev;
+  if(sel.value) renderRfrSemDetalle();
+  else { document.getElementById('rfr-sem-kpis').style.display='none';
+         document.getElementById('rfr-sem-card-trab').style.display='none';
+         document.getElementById('rfr-sem-card-cal').style.display='none';
+         document.getElementById('rfr-sem-dias').innerHTML=''; }
+}
+
+function rfrSemanaAgrup(sk){
+  return{sk:sk,dias:0,cubetas:0,c6oz:0,c12oz:0,cajas:0,merma:0,trabs:{},secMap:{},
+    defMap:{sobremadura:0,irregular:0,desgrane:0,deforme:0,hongos:0},registros:[]};
+}
+function rfrSemanaAcum(s,r){
+  s.dias++; s.cubetas+=r.totalCubetas||0; s.cajas+=r.totalCajas||0; s.merma+=r.merma||0;
+  s.registros.push(r);
+  (r.cajas||[]).forEach(function(c){
+    if(c.presentacion==='6 oz') s.c6oz+=c.cantidad||0;
+    else if(c.presentacion==='12 oz') s.c12oz+=c.cantidad||0;
+    var sec='S'+(c.sector||1); s.secMap[sec]=(s.secMap[sec]||0)+(c.cantidad||0);
+  });
+  (r.trabajadores||[]).forEach(function(t){
+    if(!s.trabs[t.nombre]) s.trabs[t.nombre]={cubetas:0,dias:0};
+    s.trabs[t.nombre].cubetas+=t.cubetas||0; s.trabs[t.nombre].dias++;
+  });
+  Object.keys(s.defMap).forEach(function(k){ s.defMap[k]+=((r.defectos&&r.defectos[k])||0); });
+}
+
+function renderRfrSemDetalle(){
+  var sel=document.getElementById('rfr-sel-sem'); if(!sel||!sel.value) return;
+  var sk=sel.value;
+  var s=rfrSemanaAgrup(sk);
+  rfrDataCache.filter(function(r){return rfrSemanaKey(r.fecha)===sk;}).forEach(function(r){rfrSemanaAcum(s,r);});
+
+  var prom=s.dias>0?Math.round(s.cubetas/s.dias*10)/10:0;
+  var gridCol=rfrGridCol(); var textMuted='#898781'; var textSec='#52514e';
+
+  // KPIs
+  document.getElementById('rfr-sem-kpis').style.display='';
+  document.getElementById('rfrs-k-cubetas').textContent=s.cubetas.toLocaleString('es-MX');
+  document.getElementById('rfrs-k-dias').textContent=s.dias+' d\u00eda'+(s.dias!==1?'s':'');
+  document.getElementById('rfrs-k-prom').textContent=prom;
+  document.getElementById('rfrs-k-6oz').textContent=s.c6oz;
+  document.getElementById('rfrs-k-12oz').textContent=s.c12oz;
+  document.getElementById('rfrs-k-cajas').textContent=s.cajas;
+  document.getElementById('rfrs-k-merma').textContent=Math.round(s.merma)+' kg';
+
+  // Gráfica trabajadores con semáforo
+  var trabArr=Object.keys(s.trabs).map(function(n){
+    var prom2=s.trabs[n].dias>0?Math.round(s.trabs[n].cubetas/s.trabs[n].dias*10)/10:0;
+    return{nombre:n,prom:prom2,cubetas:s.trabs[n].cubetas};
+  }).sort(function(a,b){return b.prom-a.prom;});
+  document.getElementById('rfr-sem-card-trab').style.display='';
+  var trabH=Math.max(200,trabArr.length*34+80);
+  document.getElementById('rfr-sem-trab-wrap').style.height=trabH+'px';
+  mkRfrChart('rfr-chart-trab-sem',{type:'bar',
+    data:{labels:trabArr.map(function(t){return t.nombre+' ('+t.cubetas+')';}),datasets:[
+      {label:'Prom/d\u00eda',data:trabArr.map(function(t){return t.prom;}),
+       backgroundColor:trabArr.map(function(t){return t.prom>=25?'#1baf7a':t.prom>=20?'#eda100':'#e34948';}),borderRadius:3,barPercentage:0.7},
+      {type:'line',label:'M\u00ednimo',data:Array(trabArr.length).fill(20),borderColor:'#e34948',borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false,yAxisID:'y'},
+      {type:'line',label:'Meta',data:Array(trabArr.length).fill(25),borderColor:'#1baf7a',borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false,yAxisID:'y'}
+    ]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:function(c){return c.datasetIndex===0?' '+c.raw+' cubetas/d\u00eda':c.datasetIndex===1?' M\u00ednimo: 20':' Meta: 25';}}}},
+      scales:{x:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true,min:0,suggestedMax:35},
+        y:{grid:{display:false},ticks:{color:textSec,font:{size:11}}},
+        y2:{display:false}}}});
+
+  // Calidad + sectores
+  document.getElementById('rfr-sem-card-cal').style.display='';
+  var defKeys=Object.keys(DEF_COLS_RFR);
+  var defVals=defKeys.map(function(k){return Math.round((s.defMap[k]||0)*10)/10;});
+  var defSum=Math.round(defVals.reduce(function(a,v){return a+v;},0)*10)/10;
+  document.getElementById('rfrs-def-rows').innerHTML=defSum>0?
+    defKeys.filter(function(k,i){return defVals[i]>0;}).map(function(k){
+      var v=defVals[defKeys.indexOf(k)]; var pct=defSum>0?Math.round(v/defSum*100):0;
+      return '<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:0.5px solid var(--border)">'+
+        '<span style="color:var(--text2);display:flex;align-items:center;gap:5px">'+
+          '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+DEF_COLS_RFR[k]+'"></span>'+DEF_LBL_RFR[k]+'</span>'+
+        '<span style="font-family:var(--mono);color:var(--text)">'+v+' kg <span style="color:var(--text3)">'+pct+'%</span></span></div>';
+    }).join(''):'<div style="font-size:12px;color:var(--text3)">Sin datos de calidad</div>';
+
+  mkRfrChart('rfr-chart-def-sem',{type:'doughnut',
+    data:{labels:defKeys.map(function(k){return DEF_LBL_RFR[k];}),datasets:[{data:defVals,backgroundColor:defKeys.map(function(k){return DEF_COLS_RFR[k];}),hoverOffset:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom',labels:{color:textMuted,font:{size:11},boxWidth:10,padding:6}},
+      tooltip:{callbacks:{label:function(c){return ' '+c.label+': '+c.raw+' kg'+(defSum>0?' ('+Math.round(c.raw/defSum*100)+'%)':'');}}}}}});
+
+  var secLbls=['S1','S2','S3','S4'];
+  mkRfrChart('rfr-chart-sec-sem',{type:'bar',
+    data:{labels:secLbls,datasets:[{data:secLbls.map(function(sl){return s.secMap[sl]||0;}),backgroundColor:SEC_COLS_RFR,borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:function(c){return ' '+c.raw+' cajas ('+c.label+')';}}}},
+      scales:{x:{grid:{display:false},ticks:{color:textMuted,font:{size:12}}},y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true}}}});
+
+  // Miniaturas de cada día de la semana
+  var dias=s.registros.slice().sort(function(a,b){return a.fecha<b.fecha?-1:1;});
+  document.getElementById('rfr-sem-dias').innerHTML=dias.length?
+    '<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:8px">D\u00edas de la semana</div>'+
+    dias.map(function(r){
+      var c6=0,c12=0;
+      (r.cajas||[]).forEach(function(c){if(c.presentacion==='6 oz')c6+=c.cantidad||0;else if(c.presentacion==='12 oz')c12+=c.cantidad||0;});
+      return '<div style="background:var(--surface2);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">'+
+        '<div><div style="font-size:12px;font-weight:600;color:var(--text)">'+r.fechaLbl+'</div>'+
+          '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+r.totalCajas+' cajas ('+c6+' x6oz'+(c12?' · '+c12+' x12oz':'')+')'+(r.merma?' · Proceso: '+r.merma+' kg':'')+'</div></div>'+
+        '<div style="font-size:20px;font-weight:700;color:var(--fram);font-family:var(--mono)">'+r.totalCubetas+
+          '<span style="font-size:10px;font-weight:400;color:var(--text3)"> cub</span></div>'+
+      '</div>';
+    }).join(''):'';
+}
+
+// ─── POR CICLO (Resumen) ────────────────────────────────────
 function renderRfrResumen(data){
-  var gridCol=window.matchMedia('(prefers-color-scheme:dark)').matches?'#2c2c2a':'#e1e0d9';
-  var textMuted='#898781'; var FRAM='#9B59B6';
-  var SEC_COLS=['#2a78d6','#1baf7a','#eda100','#4a3aa7'];
+  var gridCol=rfrGridCol(); var textMuted='#898781'; var FRAM='#9B59B6';
   var totalCajas=0,c6oz=0,c12oz=0,totalCubetas=0,totalMerma=0;
-  var trabsSet={}, semMap={}, secMap={}, defMap={sobremadura:0,irregular:0,desgrane:0,deforme:0,hongos:0};
+  var trabsSet={},semMap={},secMap={},defMap={sobremadura:0,irregular:0,desgrane:0,deforme:0,hongos:0};
   data.forEach(function(r){
     totalCajas+=r.totalCajas||0; totalCubetas+=r.totalCubetas||0; totalMerma+=r.merma||0;
     (r.cajas||[]).forEach(function(c){
@@ -2192,8 +2405,8 @@ function renderRfrResumen(data){
       else if(c.presentacion==='12 oz') c12oz+=c.cantidad||0;
       var s='Sector '+(c.sector||1); secMap[s]=(secMap[s]||0)+(c.cantidad||0);
     });
-    (r.trabajadores||[]).forEach(function(t){ trabsSet[t.nombre]=1; });
-    Object.keys(defMap).forEach(function(k){ defMap[k]+=((r.defectos&&r.defectos[k])||0); });
+    (r.trabajadores||[]).forEach(function(t){trabsSet[t.nombre]=1;});
+    Object.keys(defMap).forEach(function(k){defMap[k]+=((r.defectos&&r.defectos[k])||0);});
     var sk=rfrSemanaKey(r.fecha);
     if(!semMap[sk]) semMap[sk]={lbl:r.fecha.slice(5).replace('-','/'),cajas:0,merma:0};
     semMap[sk].cajas+=r.totalCajas||0; semMap[sk].merma+=r.merma||0;
@@ -2206,7 +2419,7 @@ function renderRfrResumen(data){
   document.getElementById('rfr-k-12oz').textContent=c12oz.toLocaleString('es-MX');
   document.getElementById('rfr-k-12oz-pct').textContent=pct12+'% del total';
   document.getElementById('rfr-k-cubetas').textContent=totalCubetas.toLocaleString('es-MX');
-  document.getElementById('rfr-k-dias').textContent=data.length+' dias de cosecha';
+  document.getElementById('rfr-k-dias').textContent=data.length+' d\u00edas de cosecha';
   document.getElementById('rfr-k-merma').textContent=Math.round(totalMerma).toLocaleString('es-MX')+' kg';
   document.getElementById('rfr-k-trabs').textContent=Object.keys(trabsSet).length;
   var semKeys=Object.keys(semMap).sort();
@@ -2216,17 +2429,17 @@ function renderRfrResumen(data){
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{
     x:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10},maxRotation:45,autoSkip:true,maxTicksLimit:14}},
     y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true,position:'left'},
-    y2:{grid:{display:false},ticks:{color:'#e34948',font:{size:10}},beginAtZero:true,position:'right'}
-  }}});
+    y2:{grid:{display:false},ticks:{color:'#e34948',font:{size:10}},beginAtZero:true,position:'right'}}}});
   var secLabels=Object.keys(secMap).sort(); var secVals=secLabels.map(function(k){return secMap[k];});
-  mkRfrChart('rfr-chart-sec',{type:'bar',data:{labels:secLabels,datasets:[{data:secVals,backgroundColor:SEC_COLS.slice(0,secLabels.length),borderRadius:3}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:textMuted,font:{size:11}}},y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true}}}});
+  mkRfrChart('rfr-chart-sec',{type:'bar',data:{labels:secLabels,datasets:[{data:secVals,backgroundColor:SEC_COLS_RFR.slice(0,secLabels.length),borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false},ticks:{color:textMuted,font:{size:11}}},y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true}}}});
   var defLabels=['Desgrane','Sobremadura','Deforme','Irregular'];
-  var defVals=[defMap.desgrane,defMap.sobremadura,defMap.deforme,defMap.irregular].map(function(v){return Math.round(v*10)/10;});
-  var defSum=defVals.reduce(function(a,v){return a+v;},0);
-  mkRfrChart('rfr-chart-def',{type:'doughnut',data:{labels:defLabels,datasets:[{data:defVals,backgroundColor:['#e34948','#eda100','#4a3aa7','#1baf7a'],hoverOffset:4}]},
+  var defVals2=[defMap.desgrane,defMap.sobremadura,defMap.deforme,defMap.irregular].map(function(v){return Math.round(v*10)/10;});
+  var defSum2=defVals2.reduce(function(a,v){return a+v;},0);
+  mkRfrChart('rfr-chart-def',{type:'doughnut',data:{labels:defLabels,datasets:[{data:defVals2,backgroundColor:['#e34948','#eda100','#4a3aa7','#1baf7a'],hoverOffset:4}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom',labels:{color:textMuted,font:{size:11},boxWidth:10,padding:8}},
-      tooltip:{callbacks:{label:function(c){return ' '+c.label+': '+c.raw+' kg'+(defSum>0?' ('+Math.round(c.raw/defSum*100)+'%)':'');}}}}}});
+      tooltip:{callbacks:{label:function(c){return ' '+c.label+': '+c.raw+' kg'+(defSum2>0?' ('+Math.round(c.raw/defSum2*100)+'%)':'');}}}}}});
   var trabMap={};
   data.forEach(function(r){(r.trabajadores||[]).forEach(function(t){trabMap[t.nombre]=(trabMap[t.nombre]||0)+(t.cubetas||0);});});
   var trabArr=Object.keys(trabMap).map(function(n){return{nombre:n,cubetas:trabMap[n]};}).sort(function(a,b){return b.cubetas-a.cubetas;}).slice(0,15);
@@ -2237,146 +2450,10 @@ function renderRfrResumen(data){
       scales:{x:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true},y:{grid:{display:false},ticks:{color:textMuted,font:{size:12}}}}}});
 }
 
-function renderRfrSemana(data){
-  var gridCol=window.matchMedia('(prefers-color-scheme:dark)').matches?'#2c2c2a':'#e1e0d9';
-  var textMuted='#898781'; var textSec='#52514e';
-  var SEC_COLS=['#2a78d6','#1baf7a','#eda100','#4a3aa7'];
-  var semMap={};
-  data.forEach(function(r){
-    var sk=rfrSemanaKey(r.fecha);
-    if(!semMap[sk]) semMap[sk]={lbl:rfrSemanaLbl(sk),dias:0,cubetas:0,c6oz:0,c12oz:0,cajas:0,merma:0,trabs:{},secMap:{}};
-    var s=semMap[sk];
-    s.dias++; s.cubetas+=r.totalCubetas||0; s.cajas+=r.totalCajas||0; s.merma+=r.merma||0;
-    (r.cajas||[]).forEach(function(c){
-      if(c.presentacion==='6 oz') s.c6oz+=c.cantidad||0;
-      else if(c.presentacion==='12 oz') s.c12oz+=c.cantidad||0;
-      var sec='Sector '+(c.sector||1); s.secMap[sec]=(s.secMap[sec]||0)+(c.cantidad||0);
-    });
-    (r.trabajadores||[]).forEach(function(t){
-      if(!s.trabs[t.nombre]) s.trabs[t.nombre]={cubetas:0,dias:0};
-      s.trabs[t.nombre].cubetas+=t.cubetas||0; s.trabs[t.nombre].dias++;
-    });
-  });
-  var semKeys=Object.keys(semMap).sort();
-  var tbody=document.getElementById('rfr-tbody-sem');
-  if(tbody){
-    tbody.innerHTML=semKeys.map(function(sk){
-      var s=semMap[sk]; var prom=s.dias>0?Math.round(s.cubetas/s.dias):0;
-      return '<tr style="border-bottom:0.5px solid var(--border)">'+
-        '<td style="padding:8px 6px;font-size:12px;color:var(--text);white-space:nowrap">'+s.lbl+'</td>'+
-        '<td style="padding:8px 6px;text-align:center;font-family:var(--mono);font-size:12px">'+s.dias+'</td>'+
-        '<td style="padding:8px 6px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--fram)">'+s.cubetas.toLocaleString('es-MX')+'</td>'+
-        '<td style="padding:8px 6px;text-align:right;font-family:var(--mono);font-size:12px">'+prom+'</td>'+
-        '<td style="padding:8px 6px;text-align:right;font-family:var(--mono);font-size:12px">'+s.c6oz+'</td>'+
-        '<td style="padding:8px 6px;text-align:right;font-family:var(--mono);font-size:12px">'+s.c12oz+'</td>'+
-        '<td style="padding:8px 6px;text-align:right;font-family:var(--mono);font-size:12px;font-weight:600">'+s.cajas+'</td>'+
-        '<td style="padding:8px 6px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--camote)">'+Math.round(s.merma)+'</td>'+
-      '</tr>';
-    }).join('');
-  }
-  var trabTotMap={};
-  data.forEach(function(r){(r.trabajadores||[]).forEach(function(t){
-    if(!trabTotMap[t.nombre]) trabTotMap[t.nombre]={cubetas:0,dias:0};
-    trabTotMap[t.nombre].cubetas+=t.cubetas||0; trabTotMap[t.nombre].dias++;
-  });});
-  var trabArr=Object.keys(trabTotMap).map(function(n){
-    var prom=trabTotMap[n].dias>0?Math.round(trabTotMap[n].cubetas/trabTotMap[n].dias*10)/10:0;
-    return{nombre:n,prom:prom};
-  }).sort(function(a,b){return b.prom-a.prom;});
-  var trabColors=trabArr.map(function(t){return t.prom>=25?'#1baf7a':t.prom>=20?'#eda100':'#e34948';});
-  var trabH2=Math.max(280,trabArr.length*36+80);
-  var wrap2=document.getElementById('rfr-trab-sem-wrap'); if(wrap2) wrap2.style.height=trabH2+'px';
-  mkRfrChart('rfr-chart-trab-sem',{type:'bar',data:{labels:trabArr.map(function(t){return t.nombre;}),datasets:[
-    {label:'Prom cubetas/dia',data:trabArr.map(function(t){return t.prom;}),backgroundColor:trabColors,borderRadius:3,barPercentage:0.7},
-    {type:'line',label:'Minimo',data:Array(trabArr.length).fill(20),borderColor:'#e34948',borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false,yAxisID:'y'},
-    {type:'line',label:'Meta',data:Array(trabArr.length).fill(25),borderColor:'#1baf7a',borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false,yAxisID:'y'}
-  ]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){
-      if(c.datasetIndex===0) return ' '+c.raw.toFixed(1)+' cubetas/dia';
-      return c.datasetIndex===1?' Minimo: 20':' Meta: 25';
-    }}}},
-    scales:{x:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true,min:0,suggestedMax:35},y:{grid:{display:false},ticks:{color:textSec,font:{size:11}}}}
-  }});
-  var secTotMap={};
-  data.forEach(function(r){(r.cajas||[]).forEach(function(c){ var s='S'+(c.sector||1); secTotMap[s]=(secTotMap[s]||0)+(c.cantidad||0); });});
-  var secLbls=['S1','S2','S3','S4'];
-  mkRfrChart('rfr-chart-sec-sem',{type:'bar',data:{labels:secLbls,datasets:[{data:secLbls.map(function(s){return secTotMap[s]||0;}),backgroundColor:SEC_COLS,borderRadius:3}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return ' '+c.raw.toLocaleString()+' cajas ('+c.label+')';}}}},
-      scales:{x:{grid:{display:false},ticks:{color:textMuted,font:{size:11}}},y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true}}}});
-  var secTrendDatasets=[1,2,3,4].map(function(sec,i){
-    return{label:'Sector '+sec,data:semKeys.map(function(sk){return semMap[sk].secMap['Sector '+sec]||0;}),borderColor:SEC_COLS[i],backgroundColor:SEC_COLS[i],borderWidth:2,pointRadius:2,fill:false,tension:0.3};
-  });
-  mkRfrChart('rfr-chart-sec-trend',{type:'line',data:{labels:semKeys.map(function(sk){return semMap[sk].lbl.slice(0,6);}),datasets:secTrendDatasets},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:true,position:'bottom',labels:{color:textMuted,font:{size:10},boxWidth:8,padding:8}}},
-      scales:{x:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:9},maxRotation:45,autoSkip:true,maxTicksLimit:10}},y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true}}}});
-}
-
-function renderRfrDia(data){
-  var cont=document.getElementById('rfr-dias-list'); if(!cont) return;
-  var DEF_COLS={sobremadura:'#eda100',irregular:'#1baf7a',desgrane:'#e34948',deforme:'#4a3aa7',hongos:'#888780'};
-  var DEF_LBL={sobremadura:'Sobremadura',irregular:'Irregular',desgrane:'Desgrane',deforme:'Deforme',hongos:'Hongos'};
-  cont.innerHTML=data.slice().reverse().map(function(r,idx){
-    var defKeys=Object.keys(DEF_COLS);
-    var defVals=defKeys.map(function(k){return Math.round(((r.defectos&&r.defectos[k])||0)*100)/100;});
-    var defSum=Math.round(defVals.reduce(function(a,v){return a+v;},0)*100)/100;
-    var cajas6=0,cajas12=0;
-    (r.cajas||[]).forEach(function(c){
-      if(c.presentacion==='6 oz') cajas6+=c.cantidad||0;
-      else if(c.presentacion==='12 oz') cajas12+=c.cantidad||0;
-    });
-    var defRows=defKeys.filter(function(k,i){return defVals[i]>0;}).map(function(k){
-      var v=defVals[defKeys.indexOf(k)]; var pct=defSum>0?Math.round(v/defSum*100):0;
-      return '<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0">'+
-        '<span style="color:var(--text2)"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+DEF_COLS[k]+';margin-right:4px"></span>'+DEF_LBL[k]+'</span>'+
-        '<span style="font-family:var(--mono);color:var(--text)">'+v+' kg &nbsp;<span style="color:var(--text3)">'+pct+'%</span></span></div>';
-    }).join('');
-    return '<div class="card" style="margin-bottom:10px;padding:12px">'+
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">'+
-        '<div><div style="font-size:13px;font-weight:600;color:var(--text)">'+r.fechaLbl+'</div>'+
-        '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+r.ciclo+(r.sector?' · Sector '+r.sector:'')+'</div></div>'+
-        '<div style="text-align:right"><div style="font-size:18px;font-weight:700;color:var(--fram);font-family:var(--mono)">'+r.totalCubetas+' <span style="font-size:11px;font-weight:400">cubetas</span></div>'+
-        '<div style="font-size:12px;color:var(--text2);font-family:var(--mono)">'+r.totalCajas+' cajas</div></div>'+
-      '</div>'+
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'+
-        '<div style="background:var(--surface2);border-radius:var(--radius);padding:8px;text-align:center"><div style="font-size:10px;color:var(--text3);margin-bottom:2px">6 oz</div><div style="font-size:16px;font-weight:600;color:var(--text);font-family:var(--mono)">'+cajas6+'</div></div>'+
-        '<div style="background:var(--surface2);border-radius:var(--radius);padding:8px;text-align:center"><div style="font-size:10px;color:var(--text3);margin-bottom:2px">12 oz</div><div style="font-size:16px;font-weight:600;color:var(--text);font-family:var(--mono)">'+cajas12+'</div></div>'+
-      '</div>'+
-      ((r.trabajadores||[]).length?
-        '<div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.03em">Trabajadores</div>'+
-        '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">'+
-          (r.trabajadores||[]).sort(function(a,b){return b.cubetas-a.cubetas;}).map(function(t){
-            return '<span style="font-size:11px;background:var(--fram-bg);color:var(--fram);border:1px solid var(--fram-border);border-radius:20px;padding:3px 8px">'+t.nombre+' <b>'+t.cubetas+'</b></span>';
-          }).join('')+
-        '</div>':'')+
-      (defSum>0?
-        '<div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.03em">Calidad · '+defSum+' kg muestra</div>'+
-        '<div style="display:grid;grid-template-columns:1fr 110px;gap:12px;align-items:center">'+
-          '<div>'+defRows+'</div>'+
-          '<div style="position:relative;width:110px;height:110px"><canvas id="rfr-dia-pie-'+idx+'" role="img" aria-label="Defectos '+r.fechaLbl+'">Defectos.</canvas></div>'+
-        '</div>':'<div style="font-size:11px;color:var(--text3)">Sin datos de calidad</div>')+
-      (r.merma>0?'<div style="margin-top:8px;font-size:11px;color:var(--camote)">Proceso: <b>'+r.merma+' kg</b></div>':'')+
-    '</div>';
-  }).join('');
-  setTimeout(function(){
-    var DEF_COLS2={sobremadura:'#eda100',irregular:'#1baf7a',desgrane:'#e34948',deforme:'#4a3aa7',hongos:'#888780'};
-    var DEF_LBL2={sobremadura:'Sobremadura',irregular:'Irregular',desgrane:'Desgrane',deforme:'Deforme',hongos:'Hongos'};
-    data.slice().reverse().forEach(function(r,idx){
-      var dKeys=Object.keys(DEF_COLS2);
-      var dVals=dKeys.map(function(k){return Math.round(((r.defectos&&r.defectos[k])||0)*100)/100;});
-      var dSum=dVals.reduce(function(a,v){return a+v;},0);
-      if(!dSum) return;
-      mkRfrChart('rfr-dia-pie-'+idx,{type:'doughnut',
-        data:{labels:dKeys.map(function(k){return DEF_LBL2[k];}),datasets:[{data:dVals,backgroundColor:dKeys.map(function(k){return DEF_COLS2[k];}),hoverOffset:4}]},
-        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
-          tooltip:{callbacks:{label:function(c){return ' '+c.label+': '+c.raw+' kg';}}}}}});
-    });
-  },50);
-}
-
 // ============================================================
 // ---- FINANCIERO: dashboard estilo Power BI con negocios y semanas ----
 // ============================================================
+
 
 
 var finNegSel = 'todos'; // todos | jal | nay | ofic | fram | com
