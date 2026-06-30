@@ -908,6 +908,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <button class="wf-btn" id="almf-activo" onclick="almFiltro('activo')">En almacén</button>
           <button class="wf-btn" id="almf-cerrado" onclick="almFiltro('cerrado')">Cerrados</button>
         </div>
+        <button class="btn-main" onclick="abrirDespachoGeneral()" style="margin-bottom:14px;background:var(--green);border-color:var(--green)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M16 16l4-4m0 0l-4-4m4 4H4"></path></svg>
+          📦 Despachar
+        </button>
         <div id="alm-lista"></div>
       </div>
 
@@ -4526,7 +4530,6 @@ function renderAlmLotes(){
       '</div>'+
       (lote.notas?'<div style="font-size:11px;color:var(--text3);margin-top:6px">📝 '+lote.notas+'</div>':'')+
       '<div style="display:flex;gap:6px;margin-top:10px">'+
-        (!lote.cerrado?'<button onclick="event.stopPropagation();abrirDespacho('+lote.id+')" style="flex:1;padding:8px;border-radius:var(--radius);border:1.5px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">+ Despachar</button>':'') +
         '<button onclick="event.stopPropagation();verLote('+lote.id+')" style="flex:1;padding:8px;border-radius:var(--radius);border:1px solid var(--border);background:none;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Ver detalle</button>'+
       '</div>';
     list.appendChild(item);
@@ -4648,52 +4651,126 @@ function guardarLote(){
   almTab('lista');
 }
 
-// ── modal despacho ──
-var despachoLoteId = null;
-function abrirDespacho(loteId){
-  var lote=almLotes.find(function(l){return l.id===loteId;});
-  if(!lote) return;
-  despachoLoteId=loteId;
-  var kgDisp=almKgDisponibles(lote);
-  var locLbl=lote.loc==='nay'?'🌿 Nayarit':'🌾 Jalisco';
-  document.getElementById('mo-title').innerHTML='📦 Despacho — '+lote.variedad;
+// ── modal despacho general (multi-lote) ──
+var dgLoc = 'jal';
+var dgSel = {}; // {loteId: {kg, precio}}
+
+function abrirDespachoGeneral(preselectLoteId){
+  dgSel = {};
+  dgLoc = 'jal';
+  if(preselectLoteId){
+    var l=almLotes.find(function(x){return x.id===preselectLoteId;});
+    if(l) dgLoc = l.loc;
+  }
+  document.getElementById('mo-title').innerHTML='📦 Nuevo despacho';
   document.getElementById('mo-body').innerHTML=
-    '<div class="modal-row"><span class="modal-key">Lote</span><span class="modal-val">'+lote.variedad+' · '+locLbl+'</span></div>'+
-    '<div class="modal-row"><span class="modal-key">Disponible</span><span class="modal-val" style="font-family:var(--mono);color:var(--green);font-weight:600">'+kgDisp.toLocaleString('es-MX')+' kg</span></div>'+
-    (lote.hectareas?'<div class="modal-row"><span class="modal-key">Hectáreas del lote</span><span class="modal-val" style="font-family:var(--mono)">'+lote.hectareas+' ha'+(lote.sector?' · Sector '+lote.sector:'')+'</span></div>':'')+
-    '<div style="margin:14px 0 8px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Datos del despacho</div>'+
-    // fecha
+    '<div class="field" style="margin-bottom:10px"><label>Ubicación</label>'+
+      '<div style="display:flex;gap:6px">'+
+        '<button type="button" class="wf-btn'+(dgLoc==='jal'?' active':'')+'" id="dg-loc-jal" onclick="dgSwitchLoc(\'jal\')" style="flex:1">🌾 Jalisco</button>'+
+        '<button type="button" class="wf-btn'+(dgLoc==='nay'?' active':'')+'" id="dg-loc-nay" onclick="dgSwitchLoc(\'nay\')" style="flex:1">🌿 Nayarit</button>'+
+      '</div></div>'+
+    '<div style="margin:14px 0 8px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Datos del envío</div>'+
     '<div class="field" style="margin-bottom:10px"><label>Fecha</label>'+
       '<div style="display:flex;gap:6px;align-items:center">'+
-        '<input type="text" id="dp-fecha" placeholder="DD/MM/AAAA" maxlength="10" style="flex:1;font-family:var(--mono)" oninput="this.value=this.value.replace(/[^0-9\/]/g,\'\')">'+
-        '<input type="date" id="dp-fecha-picker" onchange="document.getElementById(\'dp-fecha\').value=isoToDisplay(this.value)" style="padding:8px 6px;border-radius:var(--radius);border:1.5px solid var(--green-border);background:var(--green-bg);cursor:pointer;flex-shrink:0;width:36px;color:transparent;color-scheme:dark light">'+
+        '<input type="text" id="dg-fecha" placeholder="DD/MM/AAAA" maxlength="10" style="flex:1;font-family:var(--mono)" oninput="this.value=this.value.replace(/[^0-9\/]/g,\'\')">'+
+        '<input type="date" id="dg-fecha-picker" onchange="document.getElementById(\'dg-fecha\').value=isoToDisplay(this.value)" style="padding:8px 6px;border-radius:var(--radius);border:1.5px solid var(--green-border);background:var(--green-bg);cursor:pointer;flex-shrink:0;width:36px;color:transparent;color-scheme:dark light">'+
       '</div></div>'+
-    // cliente
     '<div class="field" style="margin-bottom:10px"><label>Cliente</label>'+
-      '<input type="text" id="dp-cliente" placeholder="Nombre del cliente" style="width:100%"></div>'+
-    // kg
-    '<div class="field-row" style="margin-bottom:10px">'+
-      '<div class="field"><label>Kg a despachar</label><input type="number" id="dp-kg" placeholder="0" max="'+kgDisp+'" min="0" step="0.01" oninput="recalcDespacho()"></div>'+
-      '<div class="field"><label>Precio $/kg</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="dp-precio" placeholder="'+lote.precioEst+'" min="0" step="0.01" oninput="recalcDespacho()"></div></div>'+
-    '</div>'+
-    // flete
-    '<div class="field" style="margin-bottom:10px"><label>Flete de venta ($)</label>'+
-      '<div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="dp-flete" placeholder="0" min="0" step="0.01" oninput="recalcDespacho()"></div></div>'+
-    (lote.hectareas?'<div id="dp-ha-hint" class="sector-hint" style="display:none;margin-bottom:10px"></div>':'')+
-    // total estimado
-    '<div id="dp-resumen" style="display:none;padding:10px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--radius);margin-bottom:14px">'+
+      '<input type="text" id="dg-cliente" placeholder="Nombre del cliente" style="width:100%"></div>'+
+    '<div class="field" style="margin-bottom:14px"><label>Flete de venta ($)</label>'+
+      '<div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="dg-flete" placeholder="0" min="0" step="0.01" oninput="recalcDespachoGeneral()"></div></div>'+
+    '<div style="margin-bottom:8px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Lotes a despachar</div>'+
+    '<div id="dg-lotes-list"></div>'+
+    '<div id="dg-resumen" style="display:none;padding:10px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--radius);margin:14px 0">'+
       '<div style="font-size:11px;color:var(--text3);margin-bottom:2px">TOTAL ESTIMADO (incluye flete)</div>'+
-      '<div id="dp-resumen-val" style="font-size:16px;font-weight:700;color:var(--green);font-family:var(--mono)">$0</div>'+
+      '<div id="dg-resumen-val" style="font-size:16px;font-weight:700;color:var(--green);font-family:var(--mono)">$0</div>'+
     '</div>'+
-    '<button onclick="confirmarDespacho()" class="btn-main">📦 Confirmar despacho y crear envío</button>';
-  // set default fecha = hoy
+    '<button onclick="confirmarDespachoGeneral()" class="btn-main">📦 Confirmar despacho y crear envío</button>';
+  // fecha hoy
   var hoyStr=new Date(); var tz=hoyStr.getTimezoneOffset()*60000;
   var isoStr=new Date(hoyStr-tz).toISOString().slice(0,10);
   setTimeout(function(){
-    var df=document.getElementById('dp-fecha'); if(df) df.value=isoToDisplay(isoStr);
-    var dfp=document.getElementById('dp-fecha-picker'); if(dfp) dfp.value=isoStr;
+    var df=document.getElementById('dg-fecha'); if(df) df.value=isoToDisplay(isoStr);
+    var dfp=document.getElementById('dg-fecha-picker'); if(dfp) dfp.value=isoStr;
   },10);
+  renderDgLotesList();
+  if(preselectLoteId){ dgToggleLote(preselectLoteId, true); }
   document.getElementById('overlay').classList.add('open');
+}
+
+function dgSwitchLoc(loc){
+  dgLoc=loc; dgSel={};
+  document.getElementById('dg-loc-jal').classList.toggle('active', loc==='jal');
+  document.getElementById('dg-loc-nay').classList.toggle('active', loc==='nay');
+  renderDgLotesList();
+  recalcDespachoGeneral();
+}
+
+function renderDgLotesList(){
+  var cont=document.getElementById('dg-lotes-list'); if(!cont) return;
+  var data=almLotes.filter(function(l){return l.loc===dgLoc && !l.cerrado && almKgDisponibles(l)>0.009;});
+  if(!data.length){ cont.innerHTML='<div style="font-size:12px;color:var(--text3);padding:10px 0">Sin lotes disponibles en esta ubicación.</div>'; return; }
+  cont.innerHTML = data.map(function(lote){
+    var kgDisp=almKgDisponibles(lote);
+    var checked = !!dgSel[lote.id];
+    return '<div class="alm-lote" style="padding:10px 12px;margin-bottom:8px" id="dg-row-'+lote.id+'">'+
+      '<label style="display:flex;align-items:center;gap:8px;cursor:pointer">'+
+        '<input type="checkbox" id="dg-chk-'+lote.id+'" '+(checked?'checked':'')+' onchange="dgToggleLote('+lote.id+',this.checked)" style="width:16px;height:16px;flex-shrink:0">'+
+        '<div style="flex:1">'+
+          '<div style="font-size:13px;font-weight:600;color:var(--text)">'+lote.variedad+(lote.sector?' · Sector '+lote.sector:'')+'</div>'+
+          '<div style="font-size:11px;color:var(--text3)">Disponible: '+kgDisp.toLocaleString('es-MX')+' kg'+(lote.hectareas?' · '+lote.hectareas+' ha':'')+'</div>'+
+        '</div>'+
+      '</label>'+
+      '<div id="dg-fields-'+lote.id+'" style="display:'+(checked?'flex':'none')+';gap:8px;margin-top:10px">'+
+        '<div class="field" style="flex:1;margin-bottom:0"><label>Kg a despachar</label><input type="number" id="dg-kg-'+lote.id+'" placeholder="0" max="'+kgDisp+'" min="0" step="0.01" value="'+(checked&&dgSel[lote.id].kg?dgSel[lote.id].kg:'')+'" oninput="dgUpdateField('+lote.id+')"></div>'+
+        '<div class="field" style="flex:1;margin-bottom:0"><label>Precio $/kg</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="dg-precio-'+lote.id+'" placeholder="'+lote.precioEst+'" min="0" step="0.01" value="'+(checked&&dgSel[lote.id].precio?dgSel[lote.id].precio:'')+'" oninput="dgUpdateField('+lote.id+')"></div></div>'+
+      '</div>'+
+      (lote.hectareas?'<div id="dg-ha-'+lote.id+'" class="sector-hint" style="display:none;margin-top:6px"></div>':'')+
+    '</div>';
+  }).join('');
+}
+
+function dgToggleLote(loteId, isChecked){
+  var fields=document.getElementById('dg-fields-'+loteId);
+  if(isChecked){
+    if(!dgSel[loteId]) dgSel[loteId]={kg:'',precio:''};
+    if(fields) fields.style.display='flex';
+    var chk=document.getElementById('dg-chk-'+loteId); if(chk) chk.checked=true;
+  } else {
+    delete dgSel[loteId];
+    if(fields) fields.style.display='none';
+  }
+  recalcDespachoGeneral();
+}
+
+function dgUpdateField(loteId){
+  var kgEl=document.getElementById('dg-kg-'+loteId), precioEl=document.getElementById('dg-precio-'+loteId);
+  if(!dgSel[loteId]) dgSel[loteId]={kg:'',precio:''};
+  dgSel[loteId].kg = kgEl?kgEl.value:'';
+  dgSel[loteId].precio = precioEl?precioEl.value:'';
+  var lote=almLotes.find(function(l){return l.id===loteId;});
+  var hint=document.getElementById('dg-ha-'+loteId);
+  if(hint && lote){
+    var kg=parseFloat(dgSel[loteId].kg)||0;
+    var ha=almHectareasDespacho(lote, kg);
+    if(kg && ha){ hint.style.display='block'; hint.textContent='≈ '+ha+' ha despachadas (de '+lote.hectareas+' ha del lote)'; }
+    else { hint.style.display='none'; }
+  }
+  recalcDespachoGeneral();
+}
+
+function recalcDespachoGeneral(){
+  var flete=parseFloat(document.getElementById('dg-flete')?document.getElementById('dg-flete').value:0)||0;
+  var total=0, anySel=false;
+  Object.keys(dgSel).forEach(function(loteId){
+    var kg=parseFloat(dgSel[loteId].kg)||0, precio=parseFloat(dgSel[loteId].precio)||0;
+    if(kg&&precio){ total+=kg*precio; anySel=true; }
+  });
+  var res=document.getElementById('dg-resumen');
+  if(res){
+    if(anySel){ res.style.display='block'; document.getElementById('dg-resumen-val').textContent=fmt(total+flete); }
+    else { res.style.display='none'; }
+  }
 }
 
 function almHectareasDespacho(lote, kg){
@@ -4703,66 +4780,61 @@ function almHectareasDespacho(lote, kg){
   return parseFloat(((kg/kgTotal)*haLote).toFixed(4));
 }
 
-function recalcDespacho(){
-  var lote=almLotes.find(function(l){return l.id===despachoLoteId;});
-  var kg=parseFloat(document.getElementById('dp-kg')?document.getElementById('dp-kg').value:0)||0;
-  var precio=parseFloat(document.getElementById('dp-precio')?document.getElementById('dp-precio').value:0)||0;
-  var flete=parseFloat(document.getElementById('dp-flete')?document.getElementById('dp-flete').value:0)||0;
-  var res=document.getElementById('dp-resumen');
-  if(res){ if(kg&&precio){ res.style.display='block'; document.getElementById('dp-resumen-val').textContent=fmt(kg*precio+flete); } else { res.style.display='none'; } }
-  var hint=document.getElementById('dp-ha-hint');
-  if(hint && lote){
-    var ha=almHectareasDespacho(lote, kg);
-    if(kg && ha){ hint.style.display='block'; hint.textContent='≈ '+ha+' ha despachadas (de '+lote.hectareas+' ha del lote)'; }
-    else { hint.style.display='none'; }
-  }
-}
-
-function confirmarDespacho(){
-  var lote=almLotes.find(function(l){return l.id===despachoLoteId;});
-  if(!lote) return;
-  var fechaDisplay=document.getElementById('dp-fecha').value;
+function confirmarDespachoGeneral(){
+  var fechaDisplay=document.getElementById('dg-fecha').value;
   var fechaISO=fechaEnvioToISO(fechaDisplay);
-  var cliente=(document.getElementById('dp-cliente').value||'').trim();
-  var kg=parseFloat(document.getElementById('dp-kg').value)||0;
-  var precio=parseFloat(document.getElementById('dp-precio').value)||0;
-  var flete=parseFloat(document.getElementById('dp-flete').value)||0;
+  var cliente=(document.getElementById('dg-cliente').value||'').trim();
+  var flete=parseFloat(document.getElementById('dg-flete').value)||0;
   if(!fechaISO){showToast('Selecciona la fecha del despacho');return;}
   if(!cliente){showToast('Ingresa el cliente');return;}
-  if(!kg){showToast('Ingresa los kg a despachar');return;}
-  if(!precio){showToast('Ingresa el precio por kg');return;}
-  var kgDisp=almKgDisponibles(lote);
-  if(kg>kgDisp+0.01){showToast('No hay suficientes kg disponibles ('+kgDisp.toLocaleString('es-MX')+' kg)');return;}
+  var loteIds=Object.keys(dgSel).map(function(k){return parseInt(k);});
+  if(!loteIds.length){showToast('Selecciona al menos un lote');return;}
+  // validar cada lote seleccionado
+  var items=[];
+  for(var i=0;i<loteIds.length;i++){
+    var loteId=loteIds[i];
+    var lote=almLotes.find(function(l){return l.id===loteId;});
+    if(!lote) continue;
+    var kg=parseFloat(dgSel[loteId].kg)||0;
+    var precio=parseFloat(dgSel[loteId].precio)||0;
+    if(!kg||!precio){showToast('Completa kg y precio de '+lote.variedad);return;}
+    var kgDisp=almKgDisponibles(lote);
+    if(kg>kgDisp+0.01){showToast('No hay suficientes kg en '+lote.variedad+' ('+kgDisp.toLocaleString('es-MX')+' kg)');return;}
+    items.push({lote:lote, kg:kg, precio:precio});
+  }
+  if(!items.length){showToast('Selecciona al menos un lote');return;}
   var fechaLbl=new Date(fechaISO+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
-  var hectareasDesp=almHectareasDespacho(lote, kg);
-  // crear despacho en lote
   var despachoId=Date.now();
-  var despacho={id:despachoId,fecha:fechaISO,fechaLbl:fechaLbl,cliente:cliente,kg:kg,precio:precio,flete:flete,hectareas:hectareasDesp};
-  lote.despachos.push(despacho);
-  // cerrar lote automáticamente si no quedan kg
-  if(almKgDisponibles(lote)<=0.01) lote.cerrado=true;
+  var partidas=[], totalVenta=0;
+  items.forEach(function(it, idx){
+    var hectareasDesp=almHectareasDespacho(it.lote, it.kg);
+    var despacho={id:despachoId+idx,fecha:fechaISO,fechaLbl:fechaLbl,cliente:cliente,kg:it.kg,precio:it.precio,flete:0,hectareas:hectareasDesp};
+    it.lote.despachos.push(despacho);
+    if(almKgDisponibles(it.lote)<=0.01) it.lote.cerrado=true;
+    sbSaveAlmLote(it.lote);
+    var totalLinea=it.kg*it.precio;
+    totalVenta+=totalLinea;
+    partidas.push({variedad:it.lote.variedad,sector:it.lote.sector||'',hectareas:hectareasDesp,pesoNeto:it.kg,toneladas:parseFloat((it.kg/1000).toFixed(3)),precio:it.precio,total:totalLinea});
+  });
   saveAlmLotes();
-  sbSaveAlmLote(lote);
-  // crear envío normal
+  // crear un único envío con todas las partidas
   var anio=new Date(fechaISO+'T12:00:00').getFullYear();
-  var seq=getNextNumEnvio(lote.loc, anio, null);
-  var numEnvio=buildNumEnvio(lote.loc, anio, seq);
-  var cicloV=lote.ciclo||cicloFromFecha(fechaISO);
-  var total=kg*precio;
-  var totalConFlete=total+flete;
+  var seq=getNextNumEnvio(dgLoc, anio, null);
+  var numEnvio=buildNumEnvio(dgLoc, anio, seq);
+  var cicloV=items[0].lote.ciclo||cicloFromFecha(fechaISO);
+  var totalConFlete=totalVenta+flete;
   agregarClienteSiNuevo(cliente);
   var envioObj={
-    id:despachoId+1, num:numEnvio, folio:'', fecha:fechaISO, fechaLbl:fechaLbl,
-    cliente:cliente, loc:lote.loc, ciclo:cicloV, flete:flete, fleteCompra:0, factura:'',
-    loteId:lote.id, esDespachoAlm:true,
-    partidas:[{variedad:lote.variedad,sector:lote.sector||'',hectareas:hectareasDesp,pesoNeto:kg,toneladas:parseFloat((kg/1000).toFixed(3)),precio:precio,total:total}],
-    totalVenta:total, total:totalConFlete
+    id:despachoId+999, num:numEnvio, folio:'', fecha:fechaISO, fechaLbl:fechaLbl,
+    cliente:cliente, loc:dgLoc, ciclo:cicloV, flete:flete, fleteCompra:0, factura:'',
+    loteIds:items.map(function(it){return it.lote.id;}), esDespachoAlm:true,
+    partidas:partidas, totalVenta:totalVenta, total:totalConFlete
   };
   envios.unshift(envioObj);
   saveEnvios();
   sbSaveEnvio(envioObj);
   closeModal();
-  showToast('Despacho creado: '+fmt(totalConFlete)+' · Envío '+numEnvio);
+  showToast('Despacho creado: '+fmt(totalConFlete)+' · Envío '+numEnvio+' ('+items.length+' lote'+(items.length>1?'s':'')+')');
   renderAlmLotes();
 }
 
@@ -4799,7 +4871,7 @@ function verLote(loteId){
     (despRows?'<div style="margin:14px 0 6px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Despachos ('+lote.despachos.length+')</div>'+despRows:
       '<div style="margin-top:14px;text-align:center;font-size:13px;color:var(--text3)">Sin despachos aún</div>')+
     '<div style="display:flex;gap:8px;margin-top:14px">'+
-      (!lote.cerrado?'<button onclick="closeModal();abrirDespacho('+lote.id+')" style="flex:1;padding:10px;border-radius:var(--radius);border:1.5px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">+ Despachar</button>':'') +
+      (!lote.cerrado?'<button onclick="closeModal();abrirDespachoGeneral('+lote.id+')" style="flex:1;padding:10px;border-radius:var(--radius);border:1.5px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">+ Despachar</button>':'') +
       '<button onclick="confirmDelLote('+lote.id+')" style="flex:1;padding:10px;border-radius:var(--radius);border:1px solid var(--fram-border);background:none;color:var(--fram);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">🗑 Eliminar</button>'+
     '</div>';
   document.getElementById('overlay').classList.add('open');
