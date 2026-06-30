@@ -1,6 +1,7 @@
 <html lang="es"><head>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.13/html-to-image.min.js" integrity="sha512-iZ2ORl595Wx6miw+GuadDet4WQbdSWS3JLMoNfY8cRGoEFy6oT3G9IbcrBeL6AfkgpA51ETt/faX6yLV+/gFJg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
     <script>
 
     </script>
@@ -501,6 +502,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="rep-subnav">
         <button class="rep-tab active" id="rt-fin" onclick="repTab('fin')">Financiero</button>
         <button class="rep-tab" id="rt-gen" onclick="repTab('gen')">General</button>
+        <button class="rep-tab" id="rt-fram" onclick="repTab('fram')">🍇 Frambuesa</button>
       </div>
     </div>
 
@@ -672,6 +674,60 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="report-block" id="rb-sec-nay"><div style="font-size:13px;color:var(--text3);text-align:center;padding:8px 0">Sin gastos de camote registrados</div></div>
       <div class="section-hd" style="margin-top:14px">Por mes</div>
       <div class="report-block" id="rb-sem"><div style="font-size:13px;color:var(--text3);text-align:center;padding:8px 0">Sin datos aun</div></div>
+    </div>
+
+    <!-- ============ SUB-TAB: FRAMBUESA ============ -->
+    <div id="rep-fram-sec" style="display:none">
+
+      <!-- Selector de ciclo -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Ciclo</span>
+        <select id="rfr-ciclo" onchange="renderRepFram()" style="flex:1;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
+          <option value="todos">Todos los ciclos</option>
+        </select>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid" id="rfr-kpis">
+        <div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Total cajas</div><div class="kpi-val" id="rfr-k-cajas" style="color:var(--fram)">—</div><div class="kpi-sub" id="rfr-k-cajas-sub">6oz + 12oz</div></div>
+        <div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cajas 6 oz</div><div class="kpi-val" id="rfr-k-6oz" style="color:var(--fram)">—</div><div class="kpi-sub" id="rfr-k-6oz-pct"></div></div>
+        <div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cajas 12 oz</div><div class="kpi-val" id="rfr-k-12oz" style="color:var(--fram)">—</div><div class="kpi-sub" id="rfr-k-12oz-pct"></div></div>
+        <div class="kpi-card span2"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Total cubetas</div><div class="kpi-val" id="rfr-k-cubetas" style="color:var(--fram)">—</div><div class="kpi-sub" id="rfr-k-dias">— días</div></div>
+        <div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Proceso (merma)</div><div class="kpi-val" id="rfr-k-merma" style="color:var(--camote)">—</div><div class="kpi-sub">kg registrados</div></div>
+        <div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Trabajadores</div><div class="kpi-val" id="rfr-k-trabs" style="color:var(--fram)">—</div><div class="kpi-sub">en el ciclo</div></div>
+      </div>
+
+      <!-- Gráfica cajas por semana -->
+      <div class="dash-card fin-chart-full" style="margin-top:12px">
+        <div class="dash-card-title">Cajas por semana</div>
+        <div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text3)">
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#9B59B6;display:inline-block"></span>Cajas</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:#e34948;vertical-align:middle"></span>Merma kg</span>
+        </div>
+        <div style="position:relative;width:100%;height:220px"><canvas id="rfr-chart-sem" role="img" aria-label="Cajas de frambuesa por semana">Producción semanal.</canvas></div>
+      </div>
+
+      <div class="fin-charts-grid" style="margin-top:0">
+
+        <!-- Por sector -->
+        <div class="dash-card">
+          <div class="dash-card-title">Cajas por sector</div>
+          <div style="position:relative;width:100%;height:180px"><canvas id="rfr-chart-sec" role="img" aria-label="Cajas por sector">Cajas por sector.</canvas></div>
+        </div>
+
+        <!-- Defectos -->
+        <div class="dash-card">
+          <div class="dash-card-title">Defectos (kg)</div>
+          <div style="position:relative;width:100%;height:180px"><canvas id="rfr-chart-def" role="img" aria-label="Defectos por tipo">Defectos por tipo.</canvas></div>
+        </div>
+
+        <!-- Trabajadores -->
+        <div class="dash-card fin-chart-full">
+          <div class="dash-card-title">Top trabajadores — cubetas acumuladas</div>
+          <div style="position:relative;width:100%" id="rfr-chart-trab-wrap"><canvas id="rfr-chart-trab" role="img" aria-label="Cubetas por trabajador">Cubetas por trabajador.</canvas></div>
+        </div>
+
+      </div>
     </div>
   </div>
 
@@ -1996,10 +2052,172 @@ function attachDashTooltips(cont, ttId){
 function repTab(t){
   document.getElementById('rt-fin').classList.toggle('active', t==='fin');
   document.getElementById('rt-gen').classList.toggle('active', t==='gen');
+  document.getElementById('rt-fram').classList.toggle('active', t==='fram');
   document.getElementById('rep-fin-sec').style.display = t==='fin' ? 'block' : 'none';
   document.getElementById('rep-gen-sec').style.display = t==='gen' ? 'block' : 'none';
+  document.getElementById('rep-fram-sec').style.display = t==='fram' ? 'block' : 'none';
   if(t==='fin') renderFinanciero();
   if(t==='gen') renderRep();
+  if(t==='fram') renderRepFram();
+}
+
+// ============================================================
+// ---- REPORTE FRAMBUESA ----
+// ============================================================
+var rfrCharts = {}; // almacena instancias Chart.js para destruir antes de redibujar
+
+function renderRepFram(){
+  if(!framRegistros||!framRegistros.length){
+    ['rfr-k-cajas','rfr-k-6oz','rfr-k-12oz','rfr-k-cubetas','rfr-k-merma','rfr-k-trabs'].forEach(function(id){
+      var el=document.getElementById(id); if(el) el.textContent='—';
+    });
+    return;
+  }
+
+  // Poblar selector de ciclos
+  var cicloSel=document.getElementById('rfr-ciclo');
+  if(cicloSel){
+    var ciclosEnFram=[];
+    framRegistros.forEach(function(r){ if(r.ciclo&&ciclosEnFram.indexOf(r.ciclo)<0) ciclosEnFram.push(r.ciclo); });
+    ciclosEnFram.sort().reverse();
+    var prevVal=cicloSel.value;
+    cicloSel.innerHTML='<option value="todos">Todos los ciclos</option>';
+    ciclosEnFram.forEach(function(c){ var o=document.createElement('option'); o.value=c; o.textContent=c; cicloSel.appendChild(o); });
+    if(prevVal&&cicloSel.querySelector('option[value="'+prevVal+'"]')) cicloSel.value=prevVal;
+  }
+  var filtroCiclo=cicloSel?cicloSel.value:'todos';
+
+  var data=framRegistros.filter(function(r){ return filtroCiclo==='todos'||r.ciclo===filtroCiclo; });
+  data=data.slice().sort(function(a,b){return a.fecha<b.fecha?-1:1;});
+  if(!data.length) return;
+
+  // ── KPIs ──
+  var totalCajas=0, c6oz=0, c12oz=0, totalCubetas=0, totalMerma=0;
+  var trabsSet={};
+  data.forEach(function(r){
+    totalCajas+=r.totalCajas||0;
+    totalCubetas+=r.totalCubetas||0;
+    totalMerma+=r.merma||0;
+    (r.cajas||[]).forEach(function(c){
+      if(c.presentacion==='6 oz') c6oz+=c.cantidad||0;
+      else if(c.presentacion==='12 oz') c12oz+=c.cantidad||0;
+    });
+    (r.trabajadores||[]).forEach(function(t){ trabsSet[t.nombre]=1; });
+  });
+  var pct6=totalCajas>0?Math.round(c6oz/totalCajas*100):0;
+  var pct12=totalCajas>0?Math.round(c12oz/totalCajas*100):0;
+  document.getElementById('rfr-k-cajas').textContent=totalCajas.toLocaleString('es-MX');
+  document.getElementById('rfr-k-cajas-sub').textContent='6oz + 12oz';
+  document.getElementById('rfr-k-6oz').textContent=c6oz.toLocaleString('es-MX');
+  document.getElementById('rfr-k-6oz-pct').textContent=pct6+'% del total';
+  document.getElementById('rfr-k-12oz').textContent=c12oz.toLocaleString('es-MX');
+  document.getElementById('rfr-k-12oz-pct').textContent=pct12+'% del total';
+  document.getElementById('rfr-k-cubetas').textContent=totalCubetas.toLocaleString('es-MX');
+  document.getElementById('rfr-k-dias').textContent=data.length+' días de cosecha';
+  document.getElementById('rfr-k-merma').textContent=Math.round(totalMerma).toLocaleString('es-MX')+' kg';
+  document.getElementById('rfr-k-trabs').textContent=Object.keys(trabsSet).length;
+
+  // ── Datos semanales ──
+  var semMap={};
+  data.forEach(function(r){
+    var dt=new Date(r.fecha+'T12:00:00');
+    var d=new Date(dt); d.setHours(0,0,0,0);
+    var day=d.getDay(); var diff=d.getDate()-day+(day===0?-6:1);
+    var lun=new Date(d.setDate(diff));
+    var key=lun.toISOString().slice(0,10);
+    var lbl=lun.toLocaleDateString('es-MX',{day:'2-digit',month:'short'});
+    if(!semMap[key]) semMap[key]={lbl:lbl,cajas:0,merma:0};
+    semMap[key].cajas+=r.totalCajas||0;
+    semMap[key].merma+=r.merma||0;
+  });
+  var semKeys=Object.keys(semMap).sort();
+  var semLabels=semKeys.map(function(k){return semMap[k].lbl;});
+  var semCajas=semKeys.map(function(k){return semMap[k].cajas;});
+  var semMerma=semKeys.map(function(k){return Math.round(semMap[k].merma*10)/10;});
+
+  // ── Cajas por sector ──
+  var secMap={};
+  data.forEach(function(r){
+    (r.cajas||[]).forEach(function(c){
+      var s='Sector '+(c.sector||1);
+      secMap[s]=(secMap[s]||0)+(c.cantidad||0);
+    });
+  });
+  var secLabels=Object.keys(secMap).sort();
+  var secVals=secLabels.map(function(k){return secMap[k];});
+
+  // ── Defectos ──
+  var defMap={sobremadura:0,irregular:0,desgrane:0,deforme:0,hongos:0};
+  data.forEach(function(r){ Object.keys(defMap).forEach(function(k){ defMap[k]+=(r.defectos&&r.defectos[k])||0; }); });
+  var defLabels=['Desgrane','Sobremadura','Deforme','Irregular','Hongos'];
+  var defVals=[Math.round(defMap.desgrane*10)/10, Math.round(defMap.sobremadura*10)/10, Math.round(defMap.deforme*10)/10, Math.round(defMap.irregular*10)/10, Math.round(defMap.hongos*10)/10];
+
+  // ── Trabajadores ──
+  var trabMap={};
+  data.forEach(function(r){ (r.trabajadores||[]).forEach(function(t){ trabMap[t.nombre]=(trabMap[t.nombre]||0)+(t.cubetas||0); }); });
+  var trabArr=Object.keys(trabMap).map(function(n){return{nombre:n,cubetas:trabMap[n]};}).sort(function(a,b){return b.cubetas-a.cubetas;}).slice(0,15);
+  var trabLabels=trabArr.map(function(t){return t.nombre;});
+  var trabVals=trabArr.map(function(t){return t.cubetas;});
+
+  // ── Altura dinámica para trabajadores ──
+  var trabH=Math.max(200, trabArr.length*38+60);
+  var wrap=document.getElementById('rfr-chart-trab-wrap'); if(wrap) wrap.style.height=trabH+'px';
+
+  // ── Dibujar charts ──
+  var gridCol=window.matchMedia('(prefers-color-scheme:dark)').matches?'#2c2c2a':'#e1e0d9';
+  var textMuted='#898781';
+  var FRAM_COL='#9B59B6';
+  var SEC_COLS=['#2a78d6','#1baf7a','#eda100','#4a3aa7'];
+  var DEF_COLS=['#e34948','#eda100','#4a3aa7','#1baf7a','#888780'];
+
+  function mkChart(id, cfg){
+    if(rfrCharts[id]){ rfrCharts[id].destroy(); delete rfrCharts[id]; }
+    var el=document.getElementById(id); if(!el) return;
+    rfrCharts[id]=new Chart(el, cfg);
+  }
+
+  mkChart('rfr-chart-sem',{
+    type:'bar',
+    data:{labels:semLabels,datasets:[
+      {type:'bar',label:'Cajas',data:semCajas,backgroundColor:FRAM_COL,borderRadius:3,yAxisID:'y'},
+      {type:'line',label:'Merma kg',data:semMerma,borderColor:'#e34948',borderWidth:2,pointRadius:2,fill:false,tension:0.3,yAxisID:'y2'}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10},maxRotation:45,autoSkip:true,maxTicksLimit:14}},
+        y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true,position:'left'},
+        y2:{grid:{display:false},ticks:{color:'#e34948',font:{size:10}},beginAtZero:true,position:'right'}
+      }
+    }
+  });
+
+  mkChart('rfr-chart-sec',{
+    type:'bar',
+    data:{labels:secLabels,datasets:[{data:secVals,backgroundColor:SEC_COLS,borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return ' '+c.raw.toLocaleString()+' cajas';}}}},
+      scales:{x:{grid:{display:false},ticks:{color:textMuted,font:{size:11}}},y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true}}
+    }
+  });
+
+  mkChart('rfr-chart-def',{
+    type:'doughnut',
+    data:{labels:defLabels,datasets:[{data:defVals,backgroundColor:DEF_COLS,hoverOffset:4}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,position:'bottom',labels:{color:textMuted,font:{size:11},boxWidth:10,padding:8}},
+        tooltip:{callbacks:{label:function(c){var s=defVals.reduce(function(a,v){return a+v;},0); return ' '+c.label+': '+c.raw+' kg'+(s>0?' ('+Math.round(c.raw/s*100)+'%)':'');}}}
+      }
+    }
+  });
+
+  mkChart('rfr-chart-trab',{
+    type:'bar',
+    data:{labels:trabLabels,datasets:[{data:trabVals,backgroundColor:FRAM_COL,borderRadius:3}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return ' '+c.raw.toLocaleString()+' cubetas';}}}},
+      scales:{x:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true},y:{grid:{display:false},ticks:{color:textMuted,font:{size:12}}}}
+    }
+  });
 }
 
 // ============================================================
