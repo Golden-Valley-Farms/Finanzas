@@ -2251,23 +2251,18 @@ function renderRfrDiaDetalle(){
     '</div>'+
     // ── Fila 2: dos columnas ──
     '<div class="rfr-dia-grid">'+
-      // Columna izquierda: trabajadores
+      // Columna izquierda: trabajadores con gráfica vertical
       '<div class="dash-card" style="margin-bottom:0">'+
         '<div class="dash-card-title">Trabajadores del d\u00eda</div>'+
         '<div class="dash-card-sub">'+trabsSorted.length+' trabajadores · '+r.totalCubetas+' cubetas totales</div>'+
-        (trabsSorted.length?
-          trabsSorted.map(function(t){
-            var pct=maxCub>0?Math.round(t.cubetas/maxCub*100):0;
-            var col=t.cubetas>=25?'#1baf7a':t.cubetas>=20?'#eda100':'#e34948';
-            return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:9px">'+
-              '<span style="font-size:12px;color:var(--text);min-width:90px;font-weight:500;flex-shrink:0">'+t.nombre+'</span>'+
-              '<div style="flex:1;background:var(--surface2);border-radius:4px;height:22px;overflow:hidden">'+
-                '<div style="height:100%;width:'+pct+'%;background:'+col+';border-radius:4px"></div>'+
-              '</div>'+
-              '<span style="font-size:14px;font-weight:700;color:'+col+';font-family:var(--mono);min-width:28px;text-align:right">'+t.cubetas+'</span>'+
-            '</div>';
-          }).join(''):
-          '<div style="color:var(--text3);font-size:13px">Sin trabajadores registrados</div>')+
+        '<div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text3)">'+
+          '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#e34948;display:inline-block"></span>&lt; 20</span>'+
+          '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#eda100;display:inline-block"></span>20–25</span>'+
+          '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1baf7a;display:inline-block"></span>&gt; 25</span>'+
+        '</div>'+
+        '<div style="position:relative;width:100%;height:300px">'+
+          '<canvas id="rfr-dia-trab-chart" role="img" aria-label="Cubetas por trabajador">Trabajadores.</canvas>'+
+        '</div>'+
       '</div>'+
       // Columna derecha: calidad
       '<div>'+
@@ -2285,16 +2280,50 @@ function renderRfrDiaDetalle(){
       '</div>'+
     '</div>';
 
-  if(defSum>0){
-    setTimeout(function(){
+  var gridCol=rfrGridCol(); var textMuted='#898781';
+
+  // Gráfica vertical de trabajadores
+  setTimeout(function(){
+    mkRfrChart('rfr-dia-trab-chart',{
+      type:'bar',
+      data:{
+        labels:trabsSorted.map(function(t){return t.nombre;}),
+        datasets:[
+          {label:'Cubetas',
+           data:trabsSorted.map(function(t){return t.cubetas;}),
+           backgroundColor:trabsSorted.map(function(t){return t.cubetas>=25?'#1baf7a':t.cubetas>=20?'#eda100':'#e34948';}),
+           borderRadius:4,barPercentage:0.65},
+          {type:'line',label:'Meta',data:Array(trabsSorted.length).fill(25),
+           borderColor:'#1baf7a',borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false},
+          {type:'line',label:'M\u00ednimo',data:Array(trabsSorted.length).fill(20),
+           borderColor:'#e34948',borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false}
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},
+          tooltip:{callbacks:{label:function(c){
+            if(c.datasetIndex===0) return ' '+c.raw+' cubetas';
+            return c.datasetIndex===1?' Meta: 25':' M\u00ednimo: 20';
+          }}}},
+        scales:{
+          x:{grid:{display:false},ticks:{color:textMuted,font:{size:11},maxRotation:45}},
+          y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:11}},
+             beginAtZero:true,suggestedMax:Math.max(30,maxCub+5),
+             title:{display:true,text:'Cubetas',color:textMuted,font:{size:11}}}
+        }
+      }
+    });
+
+    if(defSum>0){
       mkRfrChart('rfr-dia-pie',{type:'doughnut',
         data:{labels:defKeys.map(function(k){return DEF_LBL_RFR[k];}),
           datasets:[{data:defVals,backgroundColor:defKeys.map(function(k){return DEF_COLS_RFR[k];}),hoverOffset:6}]},
         options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
           plugins:{legend:{display:true,position:'bottom',labels:{color:'#898781',font:{size:11},boxWidth:10,padding:8}},
             tooltip:{callbacks:{label:function(c){return ' '+c.label+': '+c.raw+' kg ('+Math.round(c.raw/defSum*100)+'%)';}}}}}});
-    },30);
-  }
+    }
+  },30);
 }
 
 // ─── POR SEMANA ─────────────────────────────────────────────
