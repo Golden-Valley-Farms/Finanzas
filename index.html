@@ -4487,6 +4487,27 @@ function almTab(t){
   if(t==='nuevo') initAlmForm();
 }
 
+function editarLote(loteId){
+  var lote=almLotes.find(function(l){return l.id===loteId;});
+  if(!lote) return;
+  almTab('nuevo'); // esto llama initAlmForm() y resetea el form a "nuevo"
+  editandoLoteId=loteId;
+  document.getElementById('alm-form-title').textContent='Editar lote';
+  document.getElementById('btn-alm-guardar').textContent='Guardar cambios';
+  document.getElementById('af-loc').value=lote.loc;
+  buildAlmSectorSelect();
+  document.getElementById('af-fecha').value=isoToDisplay(lote.fecha);
+  document.getElementById('af-fecha-picker').value=lote.fecha;
+  document.getElementById('af-ciclo').value=lote.ciclo;
+  document.getElementById('af-variedad').value=lote.variedad;
+  document.getElementById('af-kg').value=lote.kgTotal;
+  document.getElementById('af-precio').value=lote.precioEst;
+  document.getElementById('af-hectareas').value=lote.hectareas||'';
+  document.getElementById('af-sector').value=lote.sector||'';
+  document.getElementById('af-notas').value=lote.notas||'';
+  recalcAlmForm();
+}
+
 function almFiltro(f){
   almFiltroActual=f;
   ['todos','activo','cerrado'].forEach(function(x){
@@ -4877,7 +4898,7 @@ function verLote(loteId){
     (despRows?'<div style="margin:14px 0 6px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Despachos ('+lote.despachos.length+')</div>'+despRows:
       '<div style="margin-top:14px;text-align:center;font-size:13px;color:var(--text3)">Sin despachos aún</div>')+
     '<div style="display:flex;gap:8px;margin-top:14px">'+
-      (!lote.cerrado?'<button onclick="closeModal();abrirDespachoGeneral('+lote.id+')" style="flex:1;padding:10px;border-radius:var(--radius);border:1.5px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">+ Despachar</button>':'') +
+      (!lote.cerrado?'<button onclick="closeModal();editarLote('+lote.id+')" style="flex:1;padding:10px;border-radius:var(--radius);border:1.5px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">✏️ Editar</button>':'') +
       '<button onclick="confirmDelLote('+lote.id+')" style="flex:1;padding:10px;border-radius:var(--radius);border:1px solid var(--fram-border);background:none;color:var(--fram);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">🗑 Eliminar</button>'+
     '</div>';
   document.getElementById('overlay').classList.add('open');
