@@ -705,13 +705,13 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </div>
         <div id="rfr-sem-detalle">
           <!-- KPIs semana -->
-          <div class="kpi-grid" id="rfr-sem-kpis" style="display:none">
-            <div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cubetas</div><div class="kpi-val" id="rfrs-k-cubetas" style="color:var(--fram)">—</div><div class="kpi-sub" id="rfrs-k-dias"></div></div>
-            <div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Prom. cubetas/día</div><div class="kpi-val" id="rfrs-k-prom" style="color:var(--fram)">—</div></div>
-            <div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cajas 6 oz</div><div class="kpi-val" id="rfrs-k-6oz" style="color:var(--fram)">—</div></div>
-            <div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cajas 12 oz</div><div class="kpi-val" id="rfrs-k-12oz" style="color:var(--fram)">—</div></div>
-            <div class="kpi-card span2"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Total cajas</div><div class="kpi-val" id="rfrs-k-cajas" style="color:var(--fram)">—</div></div>
-            <div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Proceso (merma)</div><div class="kpi-val" id="rfrs-k-merma" style="color:var(--camote)">—</div></div>
+          <div id="rfr-sem-kpis" style="display:none;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:14px">
+            <div class="kpi-card" style="padding:10px 12px"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cubetas</div><div class="kpi-val" id="rfrs-k-cubetas" style="color:var(--fram)">—</div><div class="kpi-sub" id="rfrs-k-dias"></div></div>
+            <div class="kpi-card" style="padding:10px 12px"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Prom. cubetas/día</div><div class="kpi-val" id="rfrs-k-prom" style="color:var(--fram)">—</div></div>
+            <div class="kpi-card" style="padding:10px 12px"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cajas 6 oz</div><div class="kpi-val" id="rfrs-k-6oz" style="color:var(--fram)">—</div></div>
+            <div class="kpi-card" style="padding:10px 12px"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cajas 12 oz</div><div class="kpi-val" id="rfrs-k-12oz" style="color:var(--fram)">—</div></div>
+            <div class="kpi-card" style="padding:10px 12px"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Total cajas</div><div class="kpi-val" id="rfrs-k-cajas" style="color:var(--fram)">—</div></div>
+            <div class="kpi-card" style="padding:10px 12px"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Proceso (merma)</div><div class="kpi-val" id="rfrs-k-merma" style="color:var(--camote)">—</div></div>
           </div>
           <!-- Gráfica trabajadores semana -->
           <div class="dash-card fin-chart-full" id="rfr-sem-card-trab" style="margin-top:12px;display:none">
@@ -2218,12 +2218,12 @@ function renderRfrDiaDetalle(){
 
   document.getElementById('rfr-dia-detalle').innerHTML=
     // KPIs del día
-    '<div class="kpi-grid" style="margin-bottom:12px">'+
-      '<div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cubetas</div><div class="kpi-val" style="color:var(--fram)">'+r.totalCubetas+'</div></div>'+
-      '<div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cajas 6 oz</div><div class="kpi-val" style="color:var(--fram)">'+cajas6+'</div></div>'+
-      '<div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cajas 12 oz</div><div class="kpi-val" style="color:var(--fram)">'+cajas12+'</div></div>'+
-      '<div class="kpi-card span2"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Total cajas</div><div class="kpi-val" style="color:var(--fram)">'+r.totalCajas+'</div></div>'+
-      (r.merma>0?'<div class="kpi-card"><div class="kpi-accent" style="background:var(--camote)"></div><div class="kpi-lbl">Proceso kg</div><div class="kpi-val" style="color:var(--camote)">'+r.merma+'</div></div>':'')+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:12px">'+
+    '<div class="kpi-card" style="padding:10px 12px"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cubetas</div><div class="kpi-val" style="color:var(--fram)">'+r.totalCubetas+'</div></div>'+
+      '<div class="kpi-card" style="padding:10px 12px"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cajas 6 oz</div><div class="kpi-val" style="color:var(--fram)">'+cajas6+'</div></div>'+
+      '<div class="kpi-card" style="padding:10px 12px"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cajas 12 oz</div><div class="kpi-val" style="color:var(--fram)">'+cajas12+'</div></div>'+
+      '<div class="kpi-card" style="padding:10px 12px"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Total cajas</div><div class="kpi-val" style="color:var(--fram)">'+r.totalCajas+'</div></div>'+
+      (r.merma>0?'<div class="kpi-card" style="padding:10px 12px"><div class="kpi-accent" style="background:var(--camote)"></div><div class="kpi-lbl">Proceso kg</div><div class="kpi-val" style="color:var(--camote)">'+r.merma+'</div></div>':'')+
     '</div>'+
     // Trabajadores
     (trabsSorted.length?
@@ -2321,7 +2321,7 @@ function renderRfrSemDetalle(){
   var gridCol=rfrGridCol(); var textMuted='#898781'; var textSec='#52514e';
 
   // KPIs
-  document.getElementById('rfr-sem-kpis').style.display='';
+  document.getElementById('rfr-sem-kpis').style.display='grid';
   document.getElementById('rfrs-k-cubetas').textContent=s.cubetas.toLocaleString('es-MX');
   document.getElementById('rfrs-k-dias').textContent=s.dias+' d\u00eda'+(s.dias!==1?'s':'');
   document.getElementById('rfrs-k-prom').textContent=prom;
