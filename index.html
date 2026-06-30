@@ -918,7 +918,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <div class="field-row">
             <div class="field">
               <label>Ubicación</label>
-              <select id="af-loc" style="font-weight:600">
+              <select id="af-loc" style="font-weight:600" onchange="buildAlmSectorSelect()">
                 <option value="jal">🌾 Jalisco</option>
                 <option value="nay">🌿 Nayarit</option>
               </select>
@@ -953,10 +953,21 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
               </div>
             </div>
           </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Hectáreas cosechadas</label>
+              <input type="number" id="af-hectareas" placeholder="0.00" min="0" step="0.01" oninput="recalcAlmForm()">
+            </div>
+            <div class="field">
+              <label>Sector</label>
+              <select id="af-sector"></select>
+            </div>
+          </div>
           <div class="field">
             <label>Notas (opcional)</label>
             <input type="text" id="af-notas" placeholder="Ej: Cámara 2, sector norte">
           </div>
+          <div id="af-rinde-hint" class="sector-hint" style="display:none"></div>
           <!-- resumen estimado -->
           <div id="af-resumen" style="display:none;margin-top:10px;padding:10px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--radius)">
             <div style="font-size:11px;color:var(--text3);margin-bottom:2px">VALOR ESTIMADO</div>
@@ -1238,6 +1249,7 @@ async function cargarDesdeSB(){
   showToast('Sincronizando...');
   var gData = await fetchAllRows('gastos', 'created_at', false);
   var eData = await fetchAllRows('envios', 'created_at', false);
+  var aData = await fetchAllRows('alm_lotes', 'created_at', false);
   var rC = await sb.from('clientes').select('nombre').order('nombre');
   var rP = await sb.from('proveedores').select('nombre').order('nombre');
   var rB = await sb.from('bancos').select('nombre').order('nombre');
@@ -1262,12 +1274,23 @@ async function cargarDesdeSB(){
     });
     localStorage.setItem('cc_envios', JSON.stringify(envios));
   }
+  if(aData && aData.length){
+    almLotes = aData.map(function(l){
+      return {id:l.id, loc:l.loc, fecha:l.fecha, fechaLbl:l.fecha_lbl,
+        ciclo:l.ciclo, variedad:l.variedad, kgTotal:parseFloat(l.kg_total||0),
+        precioEst:parseFloat(l.precio_est||0), notas:l.notas||'',
+        hectareas:parseFloat(l.hectareas||0), sector:l.sector||'',
+        despachos:l.despachos||[], cerrado:l.cerrado||false};
+    });
+    saveAlmLotes();
+  }
   if(rC.data) clientes = rC.data.map(function(c){return c.nombre;});
   if(rP.data) proveedores = rP.data.map(function(p){return p.nombre;});
   if(rB.data) bancos = rB.data.map(function(b){return b.nombre;});
 
   showToast('✅ Datos sincronizados');
   renderEnvios();
+  if(typeof renderAlmLotes==='function') renderAlmLotes();
 }
 
 async function sbSaveGasto(g){
@@ -4430,6 +4453,7 @@ async function sbSaveAlmLote(l){
     id:l.id, loc:l.loc, fecha:l.fecha, fecha_lbl:l.fechaLbl,
     ciclo:l.ciclo, variedad:l.variedad, kg_total:l.kgTotal,
     precio_est:l.precioEst, notas:l.notas||'',
+    hectareas:l.hectareas||0, sector:l.sector||'',
     despachos:l.despachos||[], cerrado:l.cerrado||false
   });
 }
@@ -4491,7 +4515,7 @@ function renderAlmLotes(){
       '<div class="alm-lote-header">'+
         '<div>'+
           '<div class="alm-lote-num">'+lote.variedad+' &nbsp;<span class="alm-badge '+(lote.cerrado?'cerrado':'activo')+'">'+(lote.cerrado?'Cerrado':'En almacén')+'</span></div>'+
-          '<div class="alm-lote-meta" style="margin-top:3px">'+locLbl+' · '+lote.fechaLbl+' · '+lote.ciclo+'</div>'+
+          '<div class="alm-lote-meta" style="margin-top:3px">'+locLbl+' · '+lote.fechaLbl+' · '+lote.ciclo+(lote.hectareas?' · '+lote.hectareas+' ha':'')+(lote.sector?' · Sector '+lote.sector:'')+'</div>'+
         '</div>'+
         '<div class="alm-lote-kg '+locColor+'">'+kgDisp.toLocaleString('es-MX')+' kg</div>'+
       '</div>'+
@@ -4529,9 +4553,23 @@ function initAlmForm(){
   vSel.innerHTML=''; VARIEDADES.forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;vSel.appendChild(o);});
   document.getElementById('af-kg').value='';
   document.getElementById('af-precio').value='';
+  document.getElementById('af-hectareas').value='';
   document.getElementById('af-notas').value='';
   document.getElementById('af-resumen').style.display='none';
+  document.getElementById('af-rinde-hint').style.display='none';
   document.getElementById('af-loc').value='jal';
+  buildAlmSectorSelect();
+}
+
+function buildAlmSectorSelect(){
+  var loc=document.getElementById('af-loc').value;
+  var n = SECTORES[loc+'_camote'] || 0;
+  var sel=document.getElementById('af-sector'); if(!sel) return;
+  var prev=sel.value;
+  sel.innerHTML='';
+  var def=document.createElement('option'); def.value=''; def.textContent='— Sin sector —'; sel.appendChild(def);
+  for(var i=1;i<=n;i++){ var o=document.createElement('option'); o.value=i; o.textContent='Sector '+i; sel.appendChild(o); }
+  sel.value = (prev && parseInt(prev)<=n) ? prev : '';
 }
 
 function onAlfFechaInput(){
@@ -4564,9 +4602,13 @@ function onAlfPickerChange(){
 function recalcAlmForm(){
   var kg=parseFloat(document.getElementById('af-kg').value)||0;
   var precio=parseFloat(document.getElementById('af-precio').value)||0;
+  var ha=parseFloat(document.getElementById('af-hectareas').value)||0;
   var res=document.getElementById('af-resumen');
   if(kg&&precio){ res.style.display='block'; document.getElementById('af-resumen-val').textContent=fmt(kg*precio); }
   else { res.style.display='none'; }
+  var hint=document.getElementById('af-rinde-hint');
+  if(kg&&ha){ hint.style.display='block'; hint.textContent='Rendimiento: '+(kg/ha/1000).toFixed(2)+' ton/ha · '+(kg/ha).toFixed(0)+' kg/ha'; }
+  else { hint.style.display='none'; }
 }
 
 // ── guardar lote ──
@@ -4578,6 +4620,8 @@ function guardarLote(){
   var variedad=document.getElementById('af-variedad').value;
   var kg=parseFloat(document.getElementById('af-kg').value)||0;
   var precio=parseFloat(document.getElementById('af-precio').value)||0;
+  var hectareas=parseFloat(document.getElementById('af-hectareas').value)||0;
+  var sector=document.getElementById('af-sector').value||'';
   var notas=document.getElementById('af-notas').value.trim();
   if(!fechaISO){showToast('Selecciona una fecha');return;}
   if(!variedad){showToast('Selecciona una variedad');return;}
@@ -4589,12 +4633,13 @@ function guardarLote(){
       almLotes[idx].loc=loc; almLotes[idx].fecha=fechaISO; almLotes[idx].fechaLbl=fechaLbl;
       almLotes[idx].ciclo=cicloV; almLotes[idx].variedad=variedad;
       almLotes[idx].kgTotal=kg; almLotes[idx].precioEst=precio; almLotes[idx].notas=notas;
+      almLotes[idx].hectareas=hectareas; almLotes[idx].sector=sector;
       sbSaveAlmLote(almLotes[idx]);
     }
     showToast('Lote actualizado');
   } else {
     var lote={id:Date.now(),loc:loc,fecha:fechaISO,fechaLbl:fechaLbl,ciclo:cicloV,
-      variedad:variedad,kgTotal:kg,precioEst:precio,notas:notas,despachos:[],cerrado:false};
+      variedad:variedad,kgTotal:kg,precioEst:precio,notas:notas,hectareas:hectareas,sector:sector,despachos:[],cerrado:false};
     almLotes.unshift(lote);
     sbSaveAlmLote(lote);
     showToast('Lote guardado: '+kg.toLocaleString('es-MX')+' kg');
@@ -4615,6 +4660,7 @@ function abrirDespacho(loteId){
   document.getElementById('mo-body').innerHTML=
     '<div class="modal-row"><span class="modal-key">Lote</span><span class="modal-val">'+lote.variedad+' · '+locLbl+'</span></div>'+
     '<div class="modal-row"><span class="modal-key">Disponible</span><span class="modal-val" style="font-family:var(--mono);color:var(--green);font-weight:600">'+kgDisp.toLocaleString('es-MX')+' kg</span></div>'+
+    (lote.hectareas?'<div class="modal-row"><span class="modal-key">Hectáreas del lote</span><span class="modal-val" style="font-family:var(--mono)">'+lote.hectareas+' ha'+(lote.sector?' · Sector '+lote.sector:'')+'</span></div>':'')+
     '<div style="margin:14px 0 8px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Datos del despacho</div>'+
     // fecha
     '<div class="field" style="margin-bottom:10px"><label>Fecha</label>'+
@@ -4632,10 +4678,11 @@ function abrirDespacho(loteId){
     '</div>'+
     // flete
     '<div class="field" style="margin-bottom:10px"><label>Flete de venta ($)</label>'+
-      '<div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="dp-flete" placeholder="0" min="0" step="0.01"></div></div>'+
+      '<div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="dp-flete" placeholder="0" min="0" step="0.01" oninput="recalcDespacho()"></div></div>'+
+    (lote.hectareas?'<div id="dp-ha-hint" class="sector-hint" style="display:none;margin-bottom:10px"></div>':'')+
     // total estimado
     '<div id="dp-resumen" style="display:none;padding:10px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--radius);margin-bottom:14px">'+
-      '<div style="font-size:11px;color:var(--text3);margin-bottom:2px">TOTAL ESTIMADO</div>'+
+      '<div style="font-size:11px;color:var(--text3);margin-bottom:2px">TOTAL ESTIMADO (incluye flete)</div>'+
       '<div id="dp-resumen-val" style="font-size:16px;font-weight:700;color:var(--green);font-family:var(--mono)">$0</div>'+
     '</div>'+
     '<button onclick="confirmarDespacho()" class="btn-main">📦 Confirmar despacho y crear envío</button>';
@@ -4649,11 +4696,26 @@ function abrirDespacho(loteId){
   document.getElementById('overlay').classList.add('open');
 }
 
+function almHectareasDespacho(lote, kg){
+  var kgTotal=parseFloat(lote.kgTotal||0);
+  var haLote=parseFloat(lote.hectareas||0);
+  if(!kgTotal||!haLote) return 0;
+  return parseFloat(((kg/kgTotal)*haLote).toFixed(4));
+}
+
 function recalcDespacho(){
+  var lote=almLotes.find(function(l){return l.id===despachoLoteId;});
   var kg=parseFloat(document.getElementById('dp-kg')?document.getElementById('dp-kg').value:0)||0;
   var precio=parseFloat(document.getElementById('dp-precio')?document.getElementById('dp-precio').value:0)||0;
+  var flete=parseFloat(document.getElementById('dp-flete')?document.getElementById('dp-flete').value:0)||0;
   var res=document.getElementById('dp-resumen');
-  if(res){ if(kg&&precio){ res.style.display='block'; document.getElementById('dp-resumen-val').textContent=fmt(kg*precio); } else { res.style.display='none'; } }
+  if(res){ if(kg&&precio){ res.style.display='block'; document.getElementById('dp-resumen-val').textContent=fmt(kg*precio+flete); } else { res.style.display='none'; } }
+  var hint=document.getElementById('dp-ha-hint');
+  if(hint && lote){
+    var ha=almHectareasDespacho(lote, kg);
+    if(kg && ha){ hint.style.display='block'; hint.textContent='≈ '+ha+' ha despachadas (de '+lote.hectareas+' ha del lote)'; }
+    else { hint.style.display='none'; }
+  }
 }
 
 function confirmarDespacho(){
@@ -4672,9 +4734,10 @@ function confirmarDespacho(){
   var kgDisp=almKgDisponibles(lote);
   if(kg>kgDisp+0.01){showToast('No hay suficientes kg disponibles ('+kgDisp.toLocaleString('es-MX')+' kg)');return;}
   var fechaLbl=new Date(fechaISO+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+  var hectareasDesp=almHectareasDespacho(lote, kg);
   // crear despacho en lote
   var despachoId=Date.now();
-  var despacho={id:despachoId,fecha:fechaISO,fechaLbl:fechaLbl,cliente:cliente,kg:kg,precio:precio,flete:flete};
+  var despacho={id:despachoId,fecha:fechaISO,fechaLbl:fechaLbl,cliente:cliente,kg:kg,precio:precio,flete:flete,hectareas:hectareasDesp};
   lote.despachos.push(despacho);
   // cerrar lote automáticamente si no quedan kg
   if(almKgDisponibles(lote)<=0.01) lote.cerrado=true;
@@ -4692,14 +4755,14 @@ function confirmarDespacho(){
     id:despachoId+1, num:numEnvio, folio:'', fecha:fechaISO, fechaLbl:fechaLbl,
     cliente:cliente, loc:lote.loc, ciclo:cicloV, flete:flete, fleteCompra:0, factura:'',
     loteId:lote.id, esDespachoAlm:true,
-    partidas:[{variedad:lote.variedad,sector:'',hectareas:0,pesoNeto:kg,toneladas:parseFloat((kg/1000).toFixed(3)),precio:precio,total:total}],
+    partidas:[{variedad:lote.variedad,sector:lote.sector||'',hectareas:hectareasDesp,pesoNeto:kg,toneladas:parseFloat((kg/1000).toFixed(3)),precio:precio,total:total}],
     totalVenta:total, total:totalConFlete
   };
   envios.unshift(envioObj);
   saveEnvios();
   sbSaveEnvio(envioObj);
   closeModal();
-  showToast('Despacho creado: '+fmt(total)+' · Envío '+numEnvio);
+  showToast('Despacho creado: '+fmt(totalConFlete)+' · Envío '+numEnvio);
   renderAlmLotes();
 }
 
@@ -4718,13 +4781,14 @@ function verLote(loteId){
         '<span style="font-weight:600;color:var(--text)">'+d.cliente+'</span>'+
         '<span style="font-family:var(--mono);font-weight:600;color:var(--green)">'+fmt(d.kg*d.precio)+'</span>'+
       '</div>'+
-      '<div style="color:var(--text3)">'+d.fechaLbl+' · '+d.kg.toLocaleString('es-MX')+' kg · $'+d.precio+'/kg'+(d.flete?' · Flete '+fmt(d.flete):'')+'</div>'+
+      '<div style="color:var(--text3)">'+d.fechaLbl+' · '+d.kg.toLocaleString('es-MX')+' kg · $'+d.precio+'/kg'+(d.flete?' · Flete '+fmt(d.flete):'')+(d.hectareas?' · '+d.hectareas+' ha':'')+'</div>'+
     '</div>';
   }).join('');
   document.getElementById('mo-title').innerHTML='🧊 '+lote.variedad+' &nbsp;<span class="chip '+(lote.loc==='nay'?'nay':'jal')+'">'+locLbl+'</span>';
   document.getElementById('mo-body').innerHTML=
     '<div class="modal-row"><span class="modal-key">Fecha entrada</span><span class="modal-val">'+lote.fechaLbl+'</span></div>'+
     '<div class="modal-row"><span class="modal-key">Ciclo</span><span class="modal-val">'+lote.ciclo+'</span></div>'+
+    (lote.hectareas?'<div class="modal-row"><span class="modal-key">Hectáreas</span><span class="modal-val" style="font-family:var(--mono)">'+lote.hectareas+' ha'+(lote.sector?' · Sector '+lote.sector:'')+'</span></div>':'')+
     '<div class="modal-row"><span class="modal-key">Kg totales</span><span class="modal-val" style="font-family:var(--mono)">'+kgTotal.toLocaleString('es-MX')+' kg</span></div>'+
     '<div class="modal-row"><span class="modal-key">Kg disponibles</span><span class="modal-val" style="font-family:var(--mono);color:var(--green);font-weight:600">'+kgDisp.toLocaleString('es-MX')+' kg</span></div>'+
     '<div class="modal-row"><span class="modal-key">Kg despachados</span><span class="modal-val" style="font-family:var(--mono)">'+kgDesp.toLocaleString('es-MX')+' kg ('+pct+'%)</span></div>'+
