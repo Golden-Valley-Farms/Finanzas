@@ -356,8 +356,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   #rep-fram-sec .fin-chart-full{grid-column:1/-1}
   #rep-fram-sec .rfr-dia-grid{
     max-width:1400px;margin:0 auto;
-    display:grid;grid-template-columns:3fr 2fr;gap:12px;align-items:start;
+    display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start;
   }
+  #rep-fram-sec .rfr-dia-grid .dash-card{
+    padding:12px;margin-bottom:8px;
+  }
+  #rep-fram-sec .rfr-dia-grid .dash-card:last-of-type{margin-bottom:0}
 }
 </style>
 </head>
@@ -2231,22 +2235,22 @@ function renderRfrDiaDetalle(){
   }).join('');
 
   document.getElementById('rfr-dia-detalle').innerHTML=
-    // ── Fila 1: KPIs en una sola línea ──
-    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;max-width:1400px">'+
-      '<div class="kpi-card" style="padding:12px 14px">'+
+    // ── Fila 1: KPIs compactos en una sola línea ──
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">'+
+      '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Cubetas cosechadas</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:28px">'+r.totalCubetas+'</div>'+
+        '<div class="kpi-val" style="color:var(--fram);font-size:22px;line-height:1.1">'+r.totalCubetas+'</div>'+
       '</div>'+
-      '<div class="kpi-card" style="padding:12px 14px">'+
+      '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Total cajas</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:28px">'+r.totalCajas+'</div>'+
+        '<div class="kpi-val" style="color:var(--fram);font-size:22px;line-height:1.1">'+r.totalCajas+'</div>'+
       '</div>'+
-      '<div class="kpi-card" style="padding:12px 14px">'+
+      '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Proceso (merma)</div>'+
-        '<div class="kpi-val" style="color:var(--camote);font-size:28px">'+(r.merma||0)+' <span style="font-size:13px;font-weight:400;color:var(--text3)">kg</span></div>'+
+        '<div class="kpi-val" style="color:var(--camote);font-size:22px;line-height:1.1">'+(r.merma||0)+' <span style="font-size:12px;font-weight:400;color:var(--text3)">kg</span></div>'+
       '</div>'+
     '</div>'+
     // ── Fila 2: dos columnas ──
