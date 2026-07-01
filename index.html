@@ -2387,7 +2387,7 @@ function renderRfrSemDetalle(){
     var v=defVals[defKeys.indexOf(k)]; var pct=defSum>0?Math.round(v/defSum*100):0;
     return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0">'+
       '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+DEF_COLS_RFR[k]+';flex-shrink:0"></span>'+
-      '<span style="font-size:12px;color:var(--text2)">'+DEF_LBL_RFR[k]+'</span>'+
+      '<span style="font-size:12px;color:var(--text2);width:88px;flex-shrink:0">'+DEF_LBL_RFR[k]+'</span>'+
       '<span style="font-family:var(--mono);font-size:17px;font-weight:700;color:var(--fram);text-shadow:0 0 10px var(--fram)">'+pct+'%</span>'+
     '</div>';
   }).join('');
@@ -2459,20 +2459,18 @@ function renderRfrSemDetalle(){
           '<canvas id="rfr-chart-cajas-dia-sem" role="img" aria-label="Cajas recolectadas por d\u00eda">Cajas por d\u00eda.</canvas>'+
         '</div>'+
       '</div>'+
-      '<div class="dash-card" style="margin-bottom:0">'+
+      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
         (defSum>0?
           '<div class="dash-card-title">Control de calidad</div>'+
           '<div class="dash-card-sub">Promedio semanal</div>'+
-          '<div style="display:flex;align-items:center;gap:10px;margin-top:6px">'+
-            '<div style="flex:1;min-width:0">'+defRows+'</div>'+
-            '<div style="position:relative;width:120px;height:120px;flex-shrink:0"><canvas id="rfr-chart-def-sem" role="img" aria-label="Defectos">Defectos.</canvas></div>'+
+          '<div style="display:flex;align-items:center;gap:10px;margin-top:6px;flex:1;min-height:140px">'+
+            '<div style="flex:0 0 auto">'+defRows+'</div>'+
+            '<div style="position:relative;width:130px;height:130px;flex-shrink:0"><canvas id="rfr-chart-def-sem" role="img" aria-label="Defectos">Defectos.</canvas></div>'+
           '</div>':
-          '<div style="text-align:center;padding:16px 0;color:var(--text3);font-size:13px">Sin datos de calidad esta semana</div>')+
-        '<div style="margin-top:16px">'+
-          '<div class="dash-card-title">Cajas por sector</div>'+
-          '<div style="position:relative;width:100%;height:220px;margin-top:8px"><canvas id="rfr-chart-sec-sem" role="img" aria-label="Cajas por sector">Sectores.</canvas></div>'+
-          '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Sectores</div>'+
-        '</div>'+
+          '<div style="text-align:center;padding:16px 0;color:var(--text3);font-size:13px;flex:1;min-height:140px">Sin datos de calidad esta semana</div>')+
+        '<div class="dash-card-title" style="margin-top:14px">Cajas por sector</div>'+
+        '<div style="position:relative;width:100%;flex:1;min-height:140px;margin-top:8px"><canvas id="rfr-chart-sec-sem" role="img" aria-label="Cajas por sector">Sectores.</canvas></div>'+
+        '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Sectores</div>'+
       '</div>'+
     '</div>';
 
@@ -2572,7 +2570,7 @@ function renderRfrSemDetalle(){
         data:{labels:defKeys.map(function(k){return DEF_LBL_RFR[k];}),
           datasets:[{data:defVals,backgroundColor:defKeys.map(function(k){return DEF_COLS_RFR[k];}),hoverOffset:6}]},
         options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
-          plugins:{legend:{display:false},
+          plugins:{legend:{display:true,position:'bottom',labels:{color:'#898781',font:{size:11},boxWidth:10,padding:8}},
             tooltip:{callbacks:{label:function(c){return ' '+c.label+': '+(defSum>0?Math.round(c.raw/defSum*100):0)+'%';}}}}}});
     }
 
