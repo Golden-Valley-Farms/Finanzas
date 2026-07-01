@@ -2205,6 +2205,8 @@ function renderRfrDiaDetalle(){
   var trabsSorted=(r.trabajadores||[]).slice().sort(function(a,b){return b.cubetas-a.cubetas;});
   var maxCub=trabsSorted.length?trabsSorted[0].cubetas:1;
 
+  var defKeysSorted=defKeys.slice().sort(function(a,b){return defVals[defKeys.indexOf(b)]-defVals[defKeys.indexOf(a)];});
+
   var defRows=defKeys.filter(function(k,i){return defVals[i]>0;})
     .sort(function(a,b){return defVals[defKeys.indexOf(b)]-defVals[defKeys.indexOf(a)];})
     .map(function(k){
@@ -2319,8 +2321,8 @@ function renderRfrDiaDetalle(){
 
     if(defSum>0){
       mkRfrChart('rfr-dia-pie',{type:'doughnut',
-        data:{labels:defKeys.map(function(k){return DEF_LBL_RFR[k];}),
-          datasets:[{data:defVals,backgroundColor:defKeys.map(function(k){return DEF_COLS_RFR[k];}),hoverOffset:6}]},
+        data:{labels:defKeysSorted.map(function(k){return DEF_LBL_RFR[k];}),
+          datasets:[{data:defKeysSorted.map(function(k){return defVals[defKeys.indexOf(k)];}),backgroundColor:defKeysSorted.map(function(k){return DEF_COLS_RFR[k];}),hoverOffset:6}]},
         options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
           plugins:{legend:{display:true,position:'bottom',labels:{color:'#898781',font:{size:11},boxWidth:10,padding:8}},
             tooltip:{callbacks:{label:function(c){return ' '+c.label+': '+c.raw+' kg ('+Math.round(c.raw/defSum*100)+'%)';}}}}}});
@@ -2384,6 +2386,8 @@ function renderRfrSemDetalle(){
   var defKeys=Object.keys(DEF_COLS_RFR);
   var defVals=defKeys.map(function(k){return Math.round((s.defMap[k]||0)*10)/10;});
   var defSum=Math.round(defVals.reduce(function(a,v){return a+v;},0)*10)/10;
+
+  var defKeysSorted=defKeys.slice().sort(function(a,b){return defVals[defKeys.indexOf(b)]-defVals[defKeys.indexOf(a)];});
 
   var defRows=defKeys.filter(function(k,i){return defVals[i]>0;})
     .sort(function(a,b){return defVals[defKeys.indexOf(b)]-defVals[defKeys.indexOf(a)];})
@@ -2571,8 +2575,8 @@ function renderRfrSemDetalle(){
 
     if(defSum>0){
       mkRfrChart('rfr-chart-def-sem',{type:'doughnut',
-        data:{labels:defKeys.map(function(k){return DEF_LBL_RFR[k];}),
-          datasets:[{data:defVals,backgroundColor:defKeys.map(function(k){return DEF_COLS_RFR[k];}),hoverOffset:6}]},
+        data:{labels:defKeysSorted.map(function(k){return DEF_LBL_RFR[k];}),
+          datasets:[{data:defKeysSorted.map(function(k){return defVals[defKeys.indexOf(k)];}),backgroundColor:defKeysSorted.map(function(k){return DEF_COLS_RFR[k];}),hoverOffset:6}]},
         options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
           plugins:{legend:{display:true,position:'bottom',labels:{color:'#898781',font:{size:11},boxWidth:10,padding:8}},
             tooltip:{callbacks:{label:function(c){return ' '+c.label+': '+(defSum>0?Math.round(c.raw/defSum*100):0)+'%';}}}}}});
