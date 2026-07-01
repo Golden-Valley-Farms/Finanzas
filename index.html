@@ -2385,10 +2385,11 @@ function renderRfrSemDetalle(){
 
   var defRows=defKeys.filter(function(k,i){return defVals[i]>0;}).map(function(k){
     var v=defVals[defKeys.indexOf(k)]; var pct=defSum>0?Math.round(v/defSum*100):0;
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid var(--border)">'+
-      '<span style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:7px">'+
-        '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+DEF_COLS_RFR[k]+';flex-shrink:0"></span>'+DEF_LBL_RFR[k]+'</span>'+
-      '<span style="font-family:var(--mono);font-size:19px;font-weight:700;color:var(--fram);text-shadow:0 0 12px var(--fram)">'+pct+'%</span></div>';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0">'+
+      '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+DEF_COLS_RFR[k]+';flex-shrink:0"></span>'+
+      '<span style="font-size:12px;color:var(--text2)">'+DEF_LBL_RFR[k]+'</span>'+
+      '<span style="font-family:var(--mono);font-size:17px;font-weight:700;color:var(--fram);text-shadow:0 0 10px var(--fram)">'+pct+'%</span>'+
+    '</div>';
   }).join('');
 
   var trabArr=Object.keys(s.trabs).map(function(n){
@@ -2470,7 +2471,7 @@ function renderRfrSemDetalle(){
           '<div style="text-align:center;padding:16px 0;color:var(--text3);font-size:13px">Sin datos de calidad esta semana</div>')+
         '<div style="margin-top:16px">'+
           '<div class="dash-card-title">Cajas por sector</div>'+
-          '<div style="position:relative;width:100%;height:180px;margin-top:8px"><canvas id="rfr-chart-sec-sem" role="img" aria-label="Cajas por sector">Sectores.</canvas></div>'+
+          '<div style="position:relative;width:100%;height:220px;margin-top:8px"><canvas id="rfr-chart-sec-sem" role="img" aria-label="Cajas por sector">Sectores.</canvas></div>'+
           '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Sectores</div>'+
         '</div>'+
       '</div>'+
@@ -2572,7 +2573,7 @@ function renderRfrSemDetalle(){
         data:{labels:defKeys.map(function(k){return DEF_LBL_RFR[k];}),
           datasets:[{data:defVals,backgroundColor:defKeys.map(function(k){return DEF_COLS_RFR[k];}),hoverOffset:6}]},
         options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
-          plugins:{legend:{display:true,position:'bottom',labels:{color:'#898781',font:{size:11},boxWidth:10,padding:8}},
+          plugins:{legend:{display:false},
             tooltip:{callbacks:{label:function(c){return ' '+c.label+': '+(defSum>0?Math.round(c.raw/defSum*100):0)+'%';}}}}}});
     }
 
