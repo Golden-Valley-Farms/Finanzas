@@ -354,6 +354,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   }
   #rep-fram-sec .fin-charts-grid .dash-card{margin-bottom:0}
   #rep-fram-sec .fin-chart-full{grid-column:1/-1}
+  #rep-fram-sec .rfr-dia-kpis{
+    max-width:1400px;margin:0 auto 10px;
+    display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+  }
+  #rep-fram-sec .rfr-dia-kpis .kpi-card{padding:8px 12px}
   #rep-fram-sec .rfr-dia-grid{
     max-width:1400px;margin:0 auto;
     display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start;
@@ -2214,10 +2219,12 @@ function rfrPoblarSelectDia(){
   var sel=document.getElementById('rfr-sel-dia'); if(!sel) return;
   var prev=sel.value;
   sel.innerHTML='<option value="">— Selecciona un d\u00eda —</option>';
-  rfrDataCache.slice().reverse().forEach(function(r){
+  var fechasDesc=rfrDataCache.slice().reverse();
+  fechasDesc.forEach(function(r){
     var o=document.createElement('option'); o.value=r.fecha; o.textContent=r.fechaLbl; sel.appendChild(o);
   });
   if(prev&&sel.querySelector('option[value="'+prev+'"]')) sel.value=prev;
+  else if(fechasDesc.length) sel.value=fechasDesc[0].fecha;
   if(sel.value) renderRfrDiaDetalle();
   else document.getElementById('rfr-dia-detalle').innerHTML='';
 }
@@ -2239,12 +2246,12 @@ function renderRfrDiaDetalle(){
     return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid var(--border)">'+
       '<span style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:7px">'+
         '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+DEF_COLS_RFR[k]+';flex-shrink:0"></span>'+DEF_LBL_RFR[k]+'</span>'+
-      '<span style="font-family:var(--mono);font-size:12px;color:var(--text)">'+v+' kg &nbsp;<span style="color:var(--text3);font-size:11px;min-width:28px;display:inline-block;text-align:right">'+pct+'%</span></span></div>';
+      '<span style="font-family:var(--mono);font-size:17px;font-weight:600;color:var(--text)">'+v+' <span style="font-size:12px;font-weight:400;color:var(--text3)">kg</span> &nbsp;<span style="color:var(--fram);font-size:19px;font-weight:700;min-width:36px;display:inline-block;text-align:right;text-shadow:0 0 12px var(--fram)">'+pct+'%</span></span></div>';
   }).join('');
 
   document.getElementById('rfr-dia-detalle').innerHTML=
     // ── Fila 1: KPIs compactos en una sola línea ──
-    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">'+
+    '<div class="rfr-dia-kpis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Cubetas cosechadas</div>'+
