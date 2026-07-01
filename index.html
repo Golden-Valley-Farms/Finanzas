@@ -732,43 +732,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <option value="">— Selecciona una semana —</option>
           </select>
         </div>
-        <div id="rfr-sem-detalle">
-          <!-- KPIs semana -->
-          <div id="rfr-sem-kpis" style="display:none;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:14px">
-            <div class="kpi-card" style="padding:10px 12px"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cubetas</div><div class="kpi-val" id="rfrs-k-cubetas" style="color:var(--fram)">—</div><div class="kpi-sub" id="rfrs-k-dias"></div></div>
-            <div class="kpi-card" style="padding:10px 12px"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Prom. cubetas/día</div><div class="kpi-val" id="rfrs-k-prom" style="color:var(--fram)">—</div></div>
-            <div class="kpi-card" style="padding:10px 12px"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cajas 6 oz</div><div class="kpi-val" id="rfrs-k-6oz" style="color:var(--fram)">—</div></div>
-            <div class="kpi-card" style="padding:10px 12px"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cajas 12 oz</div><div class="kpi-val" id="rfrs-k-12oz" style="color:var(--fram)">—</div></div>
-            <div class="kpi-card" style="padding:10px 12px"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Total cajas</div><div class="kpi-val" id="rfrs-k-cajas" style="color:var(--fram)">—</div></div>
-            <div class="kpi-card" style="padding:10px 12px"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Proceso (merma)</div><div class="kpi-val" id="rfrs-k-merma" style="color:var(--camote)">—</div></div>
-          </div>
-          <!-- Gráfica trabajadores semana -->
-          <div class="dash-card fin-chart-full" id="rfr-sem-card-trab" style="margin-top:12px;display:none">
-            <div class="dash-card-title">Cubetas por trabajador — semana</div>
-            <div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text3)">
-              <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#e34948;display:inline-block"></span>&lt; 20/día</span>
-              <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#eda100;display:inline-block"></span>20–25/día</span>
-              <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1baf7a;display:inline-block"></span>&gt; 25/día</span>
-            </div>
-            <div style="position:relative;width:100%" id="rfr-sem-trab-wrap">
-              <canvas id="rfr-chart-trab-sem" role="img" aria-label="Cubetas por trabajador en la semana seleccionada">Trabajadores semana.</canvas>
-            </div>
-          </div>
-          <!-- Calidad semana -->
-          <div class="fin-charts-grid" id="rfr-sem-card-cal" style="margin-top:0;display:none">
-            <div class="dash-card">
-              <div class="dash-card-title">Defectos (kg acumulados)</div>
-              <div id="rfrs-def-rows" style="margin-bottom:8px"></div>
-              <div style="position:relative;width:100%;height:180px"><canvas id="rfr-chart-def-sem" role="img" aria-label="Defectos de la semana">Defectos.</canvas></div>
-            </div>
-            <div class="dash-card">
-              <div class="dash-card-title">Cajas por sector</div>
-              <div style="position:relative;width:100%;height:180px"><canvas id="rfr-chart-sec-sem" role="img" aria-label="Cajas por sector en la semana">Sectores.</canvas></div>
-            </div>
-          </div>
-          <!-- Días de la semana -->
-          <div id="rfr-sem-dias" style="margin-top:12px"></div>
-        </div>
+        <div id="rfr-sem-detalle"></div>
       </div>
 
       <!-- ── POR CICLO ── -->
@@ -2382,10 +2346,7 @@ function rfrPoblarSelectSem(){
   });
   if(prev&&sel.querySelector('option[value="'+prev+'"]')) sel.value=prev;
   if(sel.value) renderRfrSemDetalle();
-  else { document.getElementById('rfr-sem-kpis').style.display='none';
-         document.getElementById('rfr-sem-card-trab').style.display='none';
-         document.getElementById('rfr-sem-card-cal').style.display='none';
-         document.getElementById('rfr-sem-dias').innerHTML=''; }
+  else document.getElementById('rfr-sem-detalle').innerHTML='';
 }
 
 function rfrSemanaAgrup(sk){
@@ -2413,81 +2374,181 @@ function renderRfrSemDetalle(){
   var s=rfrSemanaAgrup(sk);
   rfrDataCache.filter(function(r){return rfrSemanaKey(r.fecha)===sk;}).forEach(function(r){rfrSemanaAcum(s,r);});
 
-  var prom=s.dias>0?Math.round(s.cubetas/s.dias*10)/10:0;
-  var gridCol=rfrGridCol(); var textMuted='#898781'; var textSec='#52514e';
+  var promCubetas=s.dias>0?Math.round(s.cubetas/s.dias*10)/10:0;
+  var promCajas=s.dias>0?Math.round(s.cajas/s.dias*10)/10:0;
 
-  // KPIs
-  document.getElementById('rfr-sem-kpis').style.display='grid';
-  document.getElementById('rfrs-k-cubetas').textContent=s.cubetas.toLocaleString('es-MX');
-  document.getElementById('rfrs-k-dias').textContent=s.dias+' d\u00eda'+(s.dias!==1?'s':'');
-  document.getElementById('rfrs-k-prom').textContent=prom;
-  document.getElementById('rfrs-k-6oz').textContent=s.c6oz;
-  document.getElementById('rfrs-k-12oz').textContent=s.c12oz;
-  document.getElementById('rfrs-k-cajas').textContent=s.cajas;
-  document.getElementById('rfrs-k-merma').textContent=Math.round(s.merma)+' kg';
+  var defKeys=Object.keys(DEF_COLS_RFR);
+  var defVals=defKeys.map(function(k){return Math.round((s.defMap[k]||0)*10)/10;});
+  var defSum=Math.round(defVals.reduce(function(a,v){return a+v;},0)*10)/10;
 
-  // Gráfica trabajadores con semáforo
+  var defRows=defKeys.filter(function(k,i){return defVals[i]>0;}).map(function(k){
+    var v=defVals[defKeys.indexOf(k)]; var pct=defSum>0?Math.round(v/defSum*100):0;
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid var(--border)">'+
+      '<span style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:7px">'+
+        '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+DEF_COLS_RFR[k]+';flex-shrink:0"></span>'+DEF_LBL_RFR[k]+'</span>'+
+      '<span style="font-family:var(--mono);font-size:19px;font-weight:700;color:var(--fram);text-shadow:0 0 12px var(--fram)">'+pct+'%</span></div>';
+  }).join('');
+
   var trabArr=Object.keys(s.trabs).map(function(n){
     var prom2=s.trabs[n].dias>0?Math.round(s.trabs[n].cubetas/s.trabs[n].dias*10)/10:0;
     return{nombre:n,prom:prom2,cubetas:s.trabs[n].cubetas};
   }).sort(function(a,b){return b.prom-a.prom;});
-  document.getElementById('rfr-sem-card-trab').style.display='';
-  var trabH=Math.max(200,trabArr.length*34+80);
-  document.getElementById('rfr-sem-trab-wrap').style.height=trabH+'px';
-  mkRfrChart('rfr-chart-trab-sem',{type:'bar',
-    data:{labels:trabArr.map(function(t){return t.nombre+' ('+t.cubetas+')';}),datasets:[
-      {label:'Prom/d\u00eda',data:trabArr.map(function(t){return t.prom;}),
-       backgroundColor:trabArr.map(function(t){return t.prom>=25?'#1baf7a':t.prom>=20?'#eda100':'#e34948';}),borderRadius:3,barPercentage:0.7},
-      {type:'line',label:'M\u00ednimo',data:Array(trabArr.length).fill(20),borderColor:'#e34948',borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false,yAxisID:'y'},
-      {type:'line',label:'Meta',data:Array(trabArr.length).fill(25),borderColor:'#1baf7a',borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false,yAxisID:'y'}
-    ]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
-      tooltip:{callbacks:{label:function(c){return c.datasetIndex===0?' '+c.raw+' cubetas/d\u00eda':c.datasetIndex===1?' M\u00ednimo: 20':' Meta: 25';}}}},
-      scales:{x:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true,min:0,suggestedMax:35},
-        y:{grid:{display:false},ticks:{color:textSec,font:{size:11}}},
-        y2:{display:false}}}});
+  var maxProm=trabArr.length?trabArr[0].prom:1;
 
-  // Calidad + sectores
-  document.getElementById('rfr-sem-card-cal').style.display='';
-  var defKeys=Object.keys(DEF_COLS_RFR);
-  var defVals=defKeys.map(function(k){return Math.round((s.defMap[k]||0)*10)/10;});
-  var defSum=Math.round(defVals.reduce(function(a,v){return a+v;},0)*10)/10;
-  document.getElementById('rfrs-def-rows').innerHTML=defSum>0?
-    defKeys.filter(function(k,i){return defVals[i]>0;}).map(function(k){
-      var v=defVals[defKeys.indexOf(k)]; var pct=defSum>0?Math.round(v/defSum*100):0;
-      return '<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:0.5px solid var(--border)">'+
-        '<span style="color:var(--text2);display:flex;align-items:center;gap:5px">'+
-          '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+DEF_COLS_RFR[k]+'"></span>'+DEF_LBL_RFR[k]+'</span>'+
-        '<span style="font-family:var(--mono);color:var(--text)">'+v+' kg <span style="color:var(--text3)">'+pct+'%</span></span></div>';
-    }).join(''):'<div style="font-size:12px;color:var(--text3)">Sin datos de calidad</div>';
+  var secIds=['S1','S2','S3','S4']; var secVals=secIds.map(function(sl){return s.secMap[sl]||0;});
+  var secSum=secVals.reduce(function(a,v){return a+v;},0);
 
-  mkRfrChart('rfr-chart-def-sem',{type:'doughnut',
-    data:{labels:defKeys.map(function(k){return DEF_LBL_RFR[k];}),datasets:[{data:defVals,backgroundColor:defKeys.map(function(k){return DEF_COLS_RFR[k];}),hoverOffset:4}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom',labels:{color:textMuted,font:{size:11},boxWidth:10,padding:6}},
-      tooltip:{callbacks:{label:function(c){return ' '+c.label+': '+c.raw+' kg'+(defSum>0?' ('+Math.round(c.raw/defSum*100)+'%)':'');}}}}}});
+  document.getElementById('rfr-sem-detalle').innerHTML=
+    // ── Fila 1: KPIs ──
+    '<div class="rfr-dia-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px">'+
+      '<div class="kpi-card" style="padding:8px 12px">'+
+        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
+        '<div class="kpi-lbl">Total cubetas</div>'+
+        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+s.cubetas.toLocaleString('es-MX')+'</div>'+
+      '</div>'+
+      '<div class="kpi-card" style="padding:8px 12px">'+
+        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
+        '<div class="kpi-lbl">Prom. cubetas/d\u00eda</div>'+
+        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+promCubetas+'</div>'+
+      '</div>'+
+      '<div class="kpi-card" style="padding:8px 12px">'+
+        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
+        '<div class="kpi-lbl">Total cajas</div>'+
+        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+s.cajas.toLocaleString('es-MX')+'</div>'+
+      '</div>'+
+      '<div class="kpi-card" style="padding:8px 12px">'+
+        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
+        '<div class="kpi-lbl">Prom. cajas/d\u00eda</div>'+
+        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+promCajas+'</div>'+
+      '</div>'+
+      '<div class="kpi-card" style="padding:8px 12px">'+
+        '<div class="kpi-accent" style="background:var(--camote)"></div>'+
+        '<div class="kpi-lbl">Proceso (merma)</div>'+
+        '<div class="kpi-val" style="color:var(--camote);font-size:34px;line-height:1.1">'+Math.round(s.merma)+' <span style="font-size:14px;font-weight:400;color:var(--text3)">kg</span></div>'+
+      '</div>'+
+    '</div>'+
+    // ── Fila 2: dos columnas de igual altura ──
+    '<div class="rfr-dia-grid" style="align-items:stretch">'+
+      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
+        '<div class="dash-card-title">Cubetas por trabajador \u2014 semana</div>'+
+        '<div class="dash-card-sub">'+trabArr.length+' trabajadores \u00b7 promedio por d\u00eda</div>'+
+        '<div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text3)">'+
+          '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#e34948;display:inline-block"></span>&lt; 20</span>'+
+          '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#eda100;display:inline-block"></span>20\u201325</span>'+
+          '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1baf7a;display:inline-block"></span>&gt; 25</span>'+
+        '</div>'+
+        '<div style="position:relative;width:100%;flex:1;min-height:280px">'+
+          '<canvas id="rfr-chart-trab-sem" role="img" aria-label="Promedio de cubetas por trabajador">Trabajadores.</canvas>'+
+        '</div>'+
+      '</div>'+
+      '<div class="dash-card" style="margin-bottom:0">'+
+        (defSum>0?
+          '<div class="dash-card-title">Control de calidad</div>'+
+          '<div class="dash-card-sub">Promedio semanal</div>'+
+          defRows+
+          '<div style="margin-top:16px">'+
+            '<div class="dash-card-title">Distribuci\u00f3n de defectos</div>'+
+            '<div style="position:relative;width:100%;height:180px;margin-top:8px"><canvas id="rfr-chart-def-sem" role="img" aria-label="Defectos">Defectos.</canvas></div>'+
+          '</div>':
+          '<div style="text-align:center;padding:16px 0;color:var(--text3);font-size:13px">Sin datos de calidad esta semana</div>')+
+        '<div style="margin-top:16px">'+
+          '<div class="dash-card-title">Cajas por sector</div>'+
+          '<div style="position:relative;width:100%;height:180px;margin-top:8px"><canvas id="rfr-chart-sec-sem" role="img" aria-label="Cajas por sector">Sectores.</canvas></div>'+
+          '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Sectores</div>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
 
-  var secLbls=['S1','S2','S3','S4'];
-  mkRfrChart('rfr-chart-sec-sem',{type:'bar',
-    data:{labels:secLbls,datasets:[{data:secLbls.map(function(sl){return s.secMap[sl]||0;}),backgroundColor:SEC_COLS_RFR,borderRadius:3}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
-      tooltip:{callbacks:{label:function(c){return ' '+c.raw+' cajas ('+c.label+')';}}}},
-      scales:{x:{grid:{display:false},ticks:{color:textMuted,font:{size:12}}},y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true}}}});
+  var gridCol=rfrGridCol(); var textMuted='#898781';
 
-  // Miniaturas de cada día de la semana
-  var dias=s.registros.slice().sort(function(a,b){return a.fecha<b.fecha?-1:1;});
-  document.getElementById('rfr-sem-dias').innerHTML=dias.length?
-    '<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:8px">D\u00edas de la semana</div>'+
-    dias.map(function(r){
-      var c6=0,c12=0;
-      (r.cajas||[]).forEach(function(c){if(c.presentacion==='6 oz')c6+=c.cantidad||0;else if(c.presentacion==='12 oz')c12+=c.cantidad||0;});
-      return '<div style="background:var(--surface2);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">'+
-        '<div><div style="font-size:12px;font-weight:600;color:var(--text)">'+r.fechaLbl+'</div>'+
-          '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+r.totalCajas+' cajas ('+c6+' x6oz'+(c12?' · '+c12+' x12oz':'')+')'+(r.merma?' · Proceso: '+r.merma+' kg':'')+'</div></div>'+
-        '<div style="font-size:20px;font-weight:700;color:var(--fram);font-family:var(--mono)">'+r.totalCubetas+
-          '<span style="font-size:10px;font-weight:400;color:var(--text3)"> cub</span></div>'+
-      '</div>';
-    }).join(''):'';
+  setTimeout(function(){
+    var barLabelPlugin = {
+      id:'barLabels',
+      afterDatasetsDraw:function(chart){
+        var ctx=chart.ctx;
+        var ds=chart.data.datasets[0];
+        var meta=chart.getDatasetMeta(0);
+        meta.data.forEach(function(bar,i){
+          var v=ds.data[i];
+          ctx.save();
+          ctx.fillStyle='#ffffff';
+          ctx.font='bold 12px monospace';
+          ctx.textAlign='center';
+          ctx.textBaseline='bottom';
+          ctx.fillText(v, bar.x, bar.y-4);
+          ctx.restore();
+        });
+      }
+    };
+    mkRfrChart('rfr-chart-trab-sem',{
+      type:'bar',
+      plugins:[barLabelPlugin],
+      data:{
+        labels:trabArr.map(function(t){return t.nombre;}),
+        datasets:[
+          {label:'Prom/d\u00eda',
+           data:trabArr.map(function(t){return t.prom;}),
+           backgroundColor:trabArr.map(function(t){return t.prom>=25?'#1baf7a':t.prom>=20?'#eda100':'#e34948';}),
+           borderRadius:4,barPercentage:0.65},
+          {type:'line',label:'Meta',data:Array(trabArr.length).fill(25),
+           borderColor:'#1baf7a',borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false},
+          {type:'line',label:'M\u00ednimo',data:Array(trabArr.length).fill(20),
+           borderColor:'#e34948',borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false}
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},
+          tooltip:{callbacks:{label:function(c){
+            if(c.datasetIndex===0) return ' '+c.raw+' cubetas/d\u00eda';
+            return c.datasetIndex===1?' Meta: 25':' M\u00ednimo: 20';
+          }}}},
+        scales:{
+          x:{grid:{display:false},ticks:{color:textMuted,font:{size:11},maxRotation:45}},
+          y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:11}},
+             beginAtZero:true,suggestedMax:Math.max(30,maxProm+5),
+             title:{display:true,text:'Cubetas/d\u00eda',color:textMuted,font:{size:11}}}
+        }
+      }
+    });
+
+    if(defSum>0){
+      mkRfrChart('rfr-chart-def-sem',{type:'doughnut',
+        data:{labels:defKeys.map(function(k){return DEF_LBL_RFR[k];}),
+          datasets:[{data:defVals,backgroundColor:defKeys.map(function(k){return DEF_COLS_RFR[k];}),hoverOffset:6}]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
+          plugins:{legend:{display:true,position:'bottom',labels:{color:'#898781',font:{size:11},boxWidth:10,padding:8}},
+            tooltip:{callbacks:{label:function(c){return ' '+c.label+': '+(defSum>0?Math.round(c.raw/defSum*100):0)+'%';}}}}}});
+    }
+
+    var secLabelPlugin = {
+      id:'secBarLabels',
+      afterDatasetsDraw:function(chart){
+        var ctx=chart.ctx;
+        var ds=chart.data.datasets[0];
+        var meta=chart.getDatasetMeta(0);
+        meta.data.forEach(function(bar,i){
+          var v=ds.data[i]; if(!v) return;
+          ctx.save();
+          ctx.fillStyle='#ffffff';
+          ctx.font='bold 12px monospace';
+          ctx.textAlign='center';
+          ctx.textBaseline='bottom';
+          ctx.fillText(v, bar.x, bar.y-4);
+          ctx.restore();
+        });
+      }
+    };
+    mkRfrChart('rfr-chart-sec-sem',{type:'bar',
+      plugins:[secLabelPlugin],
+      data:{labels:['1','2','3','4'],datasets:[{data:secVals,backgroundColor:SEC_COLS_RFR,borderRadius:3}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:function(c){return ' '+c.raw+' cajas ('+Math.round((secSum>0?c.raw/secSum*100:0))+'%)';}}}},
+        scales:{x:{grid:{display:false},ticks:{color:textMuted,font:{size:12}}},y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true}}}});
+  },30);
 }
+
+
 
 // ─── POR CICLO (Resumen) ────────────────────────────────────
 function renderRfrResumen(data){
