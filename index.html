@@ -2205,7 +2205,9 @@ function renderRfrDiaDetalle(){
   var trabsSorted=(r.trabajadores||[]).slice().sort(function(a,b){return b.cubetas-a.cubetas;});
   var maxCub=trabsSorted.length?trabsSorted[0].cubetas:1;
 
-  var defRows=defKeys.filter(function(k,i){return defVals[i]>0;}).map(function(k){
+  var defRows=defKeys.filter(function(k,i){return defVals[i]>0;})
+    .sort(function(a,b){return defVals[defKeys.indexOf(b)]-defVals[defKeys.indexOf(a)];})
+    .map(function(k){
     var v=defVals[defKeys.indexOf(k)]; var pct=defSum>0?Math.round(v/defSum*100):0;
     return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid var(--border)">'+
       '<span style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:7px">'+
@@ -2383,7 +2385,9 @@ function renderRfrSemDetalle(){
   var defVals=defKeys.map(function(k){return Math.round((s.defMap[k]||0)*10)/10;});
   var defSum=Math.round(defVals.reduce(function(a,v){return a+v;},0)*10)/10;
 
-  var defRows=defKeys.filter(function(k,i){return defVals[i]>0;}).map(function(k){
+  var defRows=defKeys.filter(function(k,i){return defVals[i]>0;})
+    .sort(function(a,b){return defVals[defKeys.indexOf(b)]-defVals[defKeys.indexOf(a)];})
+    .map(function(k){
     var v=defVals[defKeys.indexOf(k)]; var pct=defSum>0?Math.round(v/defSum*100):0;
     return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0">'+
       '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+DEF_COLS_RFR[k]+';flex-shrink:0"></span>'+
