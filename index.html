@@ -2451,11 +2451,11 @@ function renderRfrSemDetalle(){
           '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#eda100;display:inline-block"></span>20\u201325</span>'+
           '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1baf7a;display:inline-block"></span>&gt; 25</span>'+
         '</div>'+
-        '<div style="position:relative;width:100%;flex:1;min-height:140px">'+
+        '<div style="position:relative;width:100%;flex:1;min-height:220px">'+
           '<canvas id="rfr-chart-trab-sem" role="img" aria-label="Promedio de cubetas por trabajador">Trabajadores.</canvas>'+
         '</div>'+
         '<div class="dash-card-title" style="margin-top:14px">Cajas por d\u00eda</div>'+
-        '<div style="position:relative;width:100%;flex:1;min-height:140px">'+
+        '<div style="position:relative;width:100%;flex:1;min-height:220px">'+
           '<canvas id="rfr-chart-cajas-dia-sem" role="img" aria-label="Cajas recolectadas por d\u00eda">Cajas por d\u00eda.</canvas>'+
         '</div>'+
       '</div>'+
@@ -2463,13 +2463,13 @@ function renderRfrSemDetalle(){
         (defSum>0?
           '<div class="dash-card-title">Control de calidad</div>'+
           '<div class="dash-card-sub">Promedio semanal</div>'+
-          '<div style="display:flex;align-items:center;gap:10px;margin-top:6px;flex:1;min-height:140px">'+
+          '<div style="display:flex;align-items:center;gap:14px;margin-top:6px;flex:1;min-height:220px">'+
             '<div style="flex:0 0 auto">'+defRows+'</div>'+
-            '<div style="position:relative;width:130px;height:130px;flex-shrink:0"><canvas id="rfr-chart-def-sem" role="img" aria-label="Defectos">Defectos.</canvas></div>'+
+            '<div style="position:relative;flex:1;min-width:200px;height:100%"><canvas id="rfr-chart-def-sem" role="img" aria-label="Defectos">Defectos.</canvas></div>'+
           '</div>':
-          '<div style="text-align:center;padding:16px 0;color:var(--text3);font-size:13px;flex:1;min-height:140px">Sin datos de calidad esta semana</div>')+
+          '<div style="text-align:center;padding:16px 0;color:var(--text3);font-size:13px;flex:1;min-height:220px">Sin datos de calidad esta semana</div>')+
         '<div class="dash-card-title" style="margin-top:14px">Cajas por sector</div>'+
-        '<div style="position:relative;width:100%;flex:1;min-height:140px;margin-top:8px"><canvas id="rfr-chart-sec-sem" role="img" aria-label="Cajas por sector">Sectores.</canvas></div>'+
+        '<div style="position:relative;width:100%;flex:1;min-height:220px;margin-top:8px"><canvas id="rfr-chart-sec-sem" role="img" aria-label="Cajas por sector">Sectores.</canvas></div>'+
         '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Sectores</div>'+
       '</div>'+
     '</div>';
