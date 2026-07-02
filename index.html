@@ -4454,6 +4454,38 @@ var PRESENTACIONES_CAJA = ['6 oz','12 oz'];
 var framSectorSel = 1; // kept for compatibility
 var trabsTemp = []; // [{nombre, cubetas}]
 var cajasTemp = []; // [{presentacion, cantidad}]
+var KG_POR_CAJA = 2.4;
+
+// Backfill: asegura que todo registro cargado de localStorage tenga totalKg calculado
+(function(){
+  var changed=false;
+  framRegistros.forEach(function(r){
+    var kgCorrecto = Math.round((r.totalCajas||0)*KG_POR_CAJA*100)/100;
+    if(r.totalKg===undefined || r.totalKg===null || r.totalKg!==kgCorrecto){
+      r.totalKg = kgCorrecto;
+      changed=true;
+    }
+  });
+  if(changed) saveFramRegistros();
+})();
+
+// Migra (recalcula y reenvía) el kg de TODOS los registros, local + Supabase.
+// Se puede llamar manualmente desde la consola: migrarKgFramASupabase()
+async function migrarKgFramASupabase(){
+  if(!framRegistros.length){ showToast('No hay registros de frambuesa'); return; }
+  framRegistros.forEach(function(r){
+    r.totalKg = Math.round((r.totalCajas||0)*KG_POR_CAJA*100)/100;
+  });
+  saveFramRegistros();
+  if(!sbOnline||!sb){ showToast('✅ kg recalculado localmente (sin conexión a Supabase)'); return; }
+  showToast('Actualizando kg en Supabase... 0/'+framRegistros.length);
+  for(var i=0;i<framRegistros.length;i++){
+    await sbSaveFramRegistro(framRegistros[i]);
+    if((i+1)%10===0 || i===framRegistros.length-1) showToast('Actualizando kg en Supabase... '+(i+1)+'/'+framRegistros.length);
+  }
+  showToast('✅ kg actualizado en '+framRegistros.length+' registros (local + Supabase)');
+  if(typeof renderFramHist==='function') renderFramHist();
+}
 
 // ---- Supabase helpers for fram ----
 async function sbSaveFramRegistro(r){
@@ -4462,6 +4494,7 @@ async function sbSaveFramRegistro(r){
     id:r.id, fecha:r.fecha, sector:r.sector, ciclo:r.ciclo||'',
     trabajadores:r.trabajadores||[], cajas:r.cajas||[],
     total_cubetas:r.totalCubetas||0, total_cajas:r.totalCajas||0,
+    total_kg:r.totalKg||0,
     merma:r.merma||0, muestra:r.muestra||0,
     defectos:r.defectos||{}
   });
@@ -4912,6 +4945,7 @@ function guardarRegistroFram(){
     cajas: cajasTemp.map(function(c){return {presentacion:c.presentacion, sector:c.sector, cantidad:c.cantidad};}),
     totalCubetas: totalCubetas,
     totalCajas: totalCajas,
+    totalKg: Math.round(totalCajas*KG_POR_CAJA*100)/100,
     merma: merma,
     muestra: muestra,
     defectos: defectos
@@ -5004,6 +5038,7 @@ function renderFramHist(){
       '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">'+
         '<span class="tag fram">🍇 '+r.totalCubetas+' cubetas</span>'+
         (r.totalCajas?'<span class="tag general">📦 '+r.totalCajas+' cajas</span>':'')+
+        (r.totalKg?'<span class="tag general">⚖️ '+r.totalKg+' kg</span>':'')+
         (r.merma?'<span class="tag camote">Merma '+r.merma+' kg</span>':'')+
       '</div>'+
       '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">'+
@@ -5057,6 +5092,7 @@ function verFramRegistro(r){
     '<div class="modal-row"><span class="modal-key">Fecha</span><span class="modal-val">'+r.fechaLbl+'</span></div>'+
     '<div class="modal-row"><span class="modal-key">Ciclo</span><span class="modal-val">'+(r.ciclo||'—')+'</span></div>'+
     '<div class="modal-row"><span class="modal-key">Total cubetas</span><span class="modal-val" style="font-family:var(--mono);color:var(--fram);font-size:16px">'+r.totalCubetas+'</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Total kg (cajas × '+KG_POR_CAJA+')</span><span class="modal-val" style="font-family:var(--mono);color:var(--fram);font-size:16px">'+(r.totalKg||0)+' kg</span></div>'+
     '<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin:10px 0 4px">Recolección</div>'+
     trabRows+
     (cajaRows?'<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin:10px 0 4px">Clasificación</div>'+cajaRows:'')+
