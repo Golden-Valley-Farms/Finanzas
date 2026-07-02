@@ -2246,7 +2246,7 @@ function renderRfrDiaDetalle(){
       '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
-        '<div class="kpi-lbl">% kg cosechados / (kg + merma)</div>'+
+        '<div class="kpi-lbl">Rendimiento</div>'+
         '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+(pctKgMerma===null?'—':pctKgMerma+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
       '</div>'+
     '</div>'+
@@ -2298,7 +2298,7 @@ function renderRfrDiaDetalle(){
         meta.data.forEach(function(bar,i){
           var v=ds.data[i];
           ctx.save();
-          ctx.fillStyle='#ffffff';
+          ctx.fillStyle='#eda100';
           ctx.font='bold 12px monospace';
           ctx.textAlign='center';
           ctx.textBaseline='bottom';
@@ -2357,7 +2357,7 @@ function renderRfrDiaDetalle(){
         meta.data.forEach(function(bar,i){
           var v=ds.data[i]; if(!v) return;
           ctx.save();
-          ctx.fillStyle='#ffffff';
+          ctx.fillStyle='#eda100';
           ctx.font='bold 12px monospace';
           ctx.textAlign='center';
           ctx.textBaseline='bottom';
@@ -2500,7 +2500,7 @@ function renderRfrSemDetalle(){
       '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
-        '<div class="kpi-lbl">% kg cosechados / (kg + merma)</div>'+
+        '<div class="kpi-lbl">Rendimiento</div>'+
         '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+(pctKgMerma===null?'\u2014':pctKgMerma+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
       '</div>'+
     '</div>'+
@@ -2559,7 +2559,7 @@ function renderRfrSemDetalle(){
         meta.data.forEach(function(bar,i){
           var v=ds.data[i];
           ctx.save();
-          ctx.fillStyle='#ffffff';
+          ctx.fillStyle='#eda100';
           ctx.font='bold 12px monospace';
           ctx.textAlign='center';
           ctx.textBaseline='bottom';
@@ -2609,7 +2609,7 @@ function renderRfrSemDetalle(){
         meta.data.forEach(function(bar,i){
           var v=ds.data[i]; if(v===null||v===undefined||!bar) return;
           ctx.save();
-          ctx.fillStyle='#ffffff';
+          ctx.fillStyle='#eda100';
           ctx.font='bold 12px monospace';
           ctx.textAlign='center';
           ctx.textBaseline='bottom';
@@ -2656,7 +2656,7 @@ function renderRfrSemDetalle(){
         meta.data.forEach(function(bar,i){
           var v=ds.data[i]; if(!v) return;
           ctx.save();
-          ctx.fillStyle='#ffffff';
+          ctx.fillStyle='#eda100';
           ctx.font='bold 12px monospace';
           ctx.textAlign='center';
           ctx.textBaseline='bottom';
@@ -2672,8 +2672,28 @@ function renderRfrSemDetalle(){
         tooltip:{callbacks:{label:function(c){return ' '+c.raw+' cajas ('+Math.round((secSum>0?c.raw/secSum*100:0))+'%)';}}}},
         scales:{x:{grid:{display:false},ticks:{color:textMuted,font:{size:12}}},y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true}}}});
 
+    var lineaLabelPlugin = {
+      id:'lineaSemLabels',
+      afterDatasetsDraw:function(chart){
+        var ctx=chart.ctx;
+        chart.data.datasets.forEach(function(ds,dsIdx){
+          var meta=chart.getDatasetMeta(dsIdx);
+          meta.data.forEach(function(pt,i){
+            var v=ds.data[i]; if(v===null||v===undefined||!pt) return;
+            ctx.save();
+            ctx.fillStyle='#eda100';
+            ctx.font='bold 11px monospace';
+            ctx.textAlign='center';
+            ctx.textBaseline='bottom';
+            ctx.fillText(v, pt.x, pt.y-8);
+            ctx.restore();
+          });
+        });
+      }
+    };
     mkRfrChart('rfr-chart-linea-sem',{
       type:'line',
+      plugins:[lineaLabelPlugin],
       data:{
         labels:diaLbls,
         datasets:[
@@ -2785,7 +2805,7 @@ function renderRfrResumen(data){
       '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
-        '<div class="kpi-lbl">% kg cosechados / (kg + merma)</div>'+
+        '<div class="kpi-lbl">Rendimiento</div>'+
         '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+(pctKgMerma===null?'\u2014':pctKgMerma+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
       '</div>'+
     '</div>'+
@@ -2878,7 +2898,7 @@ function renderRfrResumen(data){
         var ctx=chart.ctx; var ds=chart.data.datasets[0]; var meta=chart.getDatasetMeta(0);
         meta.data.forEach(function(bar,i){
           var v=ds.data[i]; if(!v) return;
-          ctx.save(); ctx.fillStyle='#ffffff'; ctx.font='bold 12px monospace';
+          ctx.save(); ctx.fillStyle='#eda100'; ctx.font='bold 12px monospace';
           ctx.textAlign='center'; ctx.textBaseline='bottom';
           ctx.fillText(v, bar.x, bar.y-4); ctx.restore();
         });
