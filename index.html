@@ -2218,7 +2218,7 @@ function renderRfrDiaDetalle(){
   }).join('');
 
   var kgCosechados = r.totalKg||0;
-  var pctKgMerma = (r.merma||0)>0 ? Math.round((kgCosechados/r.merma)*100) : null;
+  var pctKgMerma = (kgCosechados+(r.merma||0))>0 ? Math.round((kgCosechados/(kgCosechados+(r.merma||0)))*100) : null;
 
   var secMapDia={}; (r.cajas||[]).forEach(function(c){
     var sec='S'+(c.sector||1); secMapDia[sec]=(secMapDia[sec]||0)+(c.cantidad||0);
@@ -2251,7 +2251,7 @@ function renderRfrDiaDetalle(){
       '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
-        '<div class="kpi-lbl">% kg cosechados / merma</div>'+
+        '<div class="kpi-lbl">% kg cosechados / (kg + merma)</div>'+
         '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+(pctKgMerma===null?'—':pctKgMerma+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
       '</div>'+
     '</div>'+
