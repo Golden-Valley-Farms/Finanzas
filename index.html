@@ -1356,6 +1356,7 @@ async function cargarDesdeSB(){
   var gData = await fetchAllRows('gastos', 'created_at', false);
   var eData = await fetchAllRows('envios', 'created_at', false);
   var aData = await fetchAllRows('alm_lotes', 'created_at', false);
+  var frData = await fetchAllRows('fram_registros', 'fecha', false);
   var rC = await sb.from('clientes').select('nombre').order('nombre');
   var rP = await sb.from('proveedores').select('nombre').order('nombre');
   var rB = await sb.from('bancos').select('nombre').order('nombre');
@@ -1389,6 +1390,22 @@ async function cargarDesdeSB(){
         despachos:l.despachos||[], cerrado:l.cerrado||false};
     });
     saveAlmLotes();
+  }
+  if(frData && frData.length){
+    framRegistros = frData.map(function(r){
+      var fechaDate = new Date(r.fecha+'T12:00:00');
+      var fechaLbl = fechaDate.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+      return {id:r.id, fecha:r.fecha, fechaLbl:fechaLbl,
+        sector:r.sector, ciclo:r.ciclo||'',
+        trabajadores:r.trabajadores||[], cajas:r.cajas||[],
+        totalCubetas:r.total_cubetas||0, totalCajas:r.total_cajas||0,
+        totalKg:r.total_kg||0, merma:r.merma||0, muestra:r.muestra||0,
+        defectos:r.defectos||{}};
+    }).sort(function(a,b){return a.fecha<b.fecha?1:-1;});
+    saveFramRegistros();
+    if(typeof renderFramHist==='function') renderFramHist();
+    if(typeof rfrPoblarSelectDia==='function') rfrPoblarSelectDia();
+    if(typeof rfrPoblarSelectSem==='function') rfrPoblarSelectSem();
   }
   if(rC.data) clientes = rC.data.map(function(c){return c.nombre;});
   if(rP.data) proveedores = rP.data.map(function(p){return p.nombre;});
