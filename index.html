@@ -2702,7 +2702,7 @@ function renderRfrResumen(data){
   var cont=document.getElementById('rfr-res-detalle'); if(!cont) return;
   if(!data.length){ cont.innerHTML='<div style="text-align:center;padding:40px 0;color:var(--text3);font-size:13px">Sin registros para este ciclo</div>'; return; }
 
-  var totalCajas=0,totalCubetas=0,totalMerma=0;
+  var totalCajas=0,totalCubetas=0,totalMerma=0,totalKgCosechados=0;
   var diasSet={};
   var trabs={};
   var secMap={};
@@ -2724,15 +2724,18 @@ function renderRfrResumen(data){
     Object.keys(defMap).forEach(function(k){defMap[k]+=((r.defectos&&r.defectos[k])||0);});
     var d=new Date(r.fecha+'T12:00:00'); var dow=d.getDay();
     if(dow>=1&&dow<=6) cajasPorDiaSemana[dow-1]+=(r.totalCajas||0);
+    var kgReg=(r.totalKg!==undefined&&r.totalKg!==null)?r.totalKg:Math.round((r.totalCajas||0)*(typeof KG_POR_CAJA!=='undefined'?KG_POR_CAJA:2.4)*100)/100;
+    totalKgCosechados+=kgReg;
     var sk=rfrSemanaKey(r.fecha);
     if(!semKg[sk]) semKg[sk]={kg:0,merma:0};
-    var kgReg=(r.totalKg!==undefined&&r.totalKg!==null)?r.totalKg:Math.round((r.totalCajas||0)*(typeof KG_POR_CAJA!=='undefined'?KG_POR_CAJA:2.4)*100)/100;
     semKg[sk].kg+=kgReg; semKg[sk].merma+=(r.merma||0);
   });
 
   var numDias=Object.keys(diasSet).length;
   var promCubetas=numDias>0?Math.round(totalCubetas/numDias*10)/10:0;
   var promCajas=numDias>0?Math.round(totalCajas/numDias*10)/10:0;
+  totalKgCosechados=Math.round(totalKgCosechados*10)/10;
+  var pctKgMerma=(totalKgCosechados+totalMerma)>0?Math.round((totalKgCosechados/(totalKgCosechados+totalMerma))*100):null;
 
   var defKeys=Object.keys(DEF_COLS_RFR);
   var defVals=defKeys.map(function(k){return Math.round((defMap[k]||0)*10)/10;});
@@ -2769,7 +2772,7 @@ function renderRfrResumen(data){
 
   cont.innerHTML=
     // ── Fila 1: KPIs ──
-    '<div class="rfr-dia-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px">'+
+    '<div class="rfr-dia-kpis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Total cajas</div>'+
@@ -2781,19 +2784,9 @@ function renderRfrResumen(data){
         '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+promCajas+'</div>'+
       '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
-        '<div class="kpi-accent" style="background:var(--camote)"></div>'+
-        '<div class="kpi-lbl">Proceso (merma)</div>'+
-        '<div class="kpi-val" style="color:var(--camote);font-size:34px;line-height:1.1">'+Math.round(totalMerma)+' <span style="font-size:14px;font-weight:400;color:var(--text3)">kg</span></div>'+
-      '</div>'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
-        '<div class="kpi-lbl">Total cubetas</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+totalCubetas.toLocaleString('es-MX')+'</div>'+
-      '</div>'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
-        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
-        '<div class="kpi-lbl">Prom. cubetas/d\u00eda</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+promCubetas+'</div>'+
+        '<div class="kpi-lbl">% kg cosechados / (kg + merma)</div>'+
+        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+(pctKgMerma===null?'\u2014':pctKgMerma+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
       '</div>'+
     '</div>'+
     // ── Fila 2: dos columnas de igual altura ──
