@@ -1360,6 +1360,7 @@ async function cargarDesdeSB(){
   var rC = await sb.from('clientes').select('nombre').order('nombre');
   var rP = await sb.from('proveedores').select('nombre').order('nombre');
   var rB = await sb.from('bancos').select('nombre').order('nombre');
+  var rT = await sb.from('trabajadores').select('nombre').order('nombre');
 
   if(gData && gData.length){
     gastos = gData.map(function(g){
@@ -1410,6 +1411,7 @@ async function cargarDesdeSB(){
   if(rC.data) clientes = rC.data.map(function(c){return c.nombre;});
   if(rP.data) proveedores = rP.data.map(function(p){return p.nombre;});
   if(rB.data) bancos = rB.data.map(function(b){return b.nombre;});
+  if(rT.data && rT.data.length){ trabajadores = rT.data.map(function(t){return t.nombre;}); saveTrabajadores(); }
 
   showToast('✅ Datos sincronizados');
   renderEnvios();
@@ -4581,6 +4583,15 @@ function agregarTrabajadorSiNuevo(nom){
   trabajadores.push(nom);
   trabajadores.sort(function(a,b){return a.localeCompare(b,'es');});
   saveTrabajadores();
+  sbSaveTrabajador(nom);
+}
+async function sbSaveTrabajador(nombre){
+  if(!sbOnline||!sb) return;
+  await sb.from('trabajadores').upsert({nombre:nombre},{onConflict:'nombre'});
+}
+async function sbDeleteTrabajador(nombre){
+  if(!sbOnline||!sb) return;
+  await sb.from('trabajadores').delete().eq('nombre', nombre);
 }
 
 // ---- Presentaciones de caja ----
@@ -4722,6 +4733,7 @@ function renderTrabajadorDropdown(){
       e.preventDefault(); e.stopPropagation();
       trabajadores=trabajadores.filter(function(x){return x!==t;});
       saveTrabajadores();
+      sbDeleteTrabajador(t);
       renderTrabajadorDropdown();
       showToast('Trabajador eliminado');
     };
