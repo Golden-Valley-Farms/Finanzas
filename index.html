@@ -744,36 +744,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <option value="todos">Todos los ciclos</option>
           </select>
         </div>
-        <div class="kpi-grid">
-          <div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Total cajas</div><div class="kpi-val" id="rfr-k-cajas" style="color:var(--fram)">—</div><div class="kpi-sub" id="rfr-k-cajas-sub">6oz + 12oz</div></div>
-          <div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cajas 6 oz</div><div class="kpi-val" id="rfr-k-6oz" style="color:var(--fram)">—</div><div class="kpi-sub" id="rfr-k-6oz-pct"></div></div>
-          <div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Cajas 12 oz</div><div class="kpi-val" id="rfr-k-12oz" style="color:var(--fram)">—</div><div class="kpi-sub" id="rfr-k-12oz-pct"></div></div>
-          <div class="kpi-card span2"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Total cubetas</div><div class="kpi-val" id="rfr-k-cubetas" style="color:var(--fram)">—</div><div class="kpi-sub" id="rfr-k-dias">— días</div></div>
-          <div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Proceso (merma)</div><div class="kpi-val" id="rfr-k-merma" style="color:var(--camote)">—</div><div class="kpi-sub">kg registrados</div></div>
-          <div class="kpi-card"><div class="kpi-accent" style="background:var(--fram)"></div><div class="kpi-lbl">Trabajadores</div><div class="kpi-val" id="rfr-k-trabs" style="color:var(--fram)">—</div><div class="kpi-sub">en el ciclo</div></div>
-        </div>
-        <div class="dash-card fin-chart-full" style="margin-top:12px">
-          <div class="dash-card-title">Cajas por semana</div>
-          <div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text3)">
-            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#9B59B6;display:inline-block"></span>Cajas</span>
-            <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:#e34948;vertical-align:middle"></span>Merma kg</span>
-          </div>
-          <div style="position:relative;width:100%;height:220px"><canvas id="rfr-chart-sem" role="img" aria-label="Cajas de frambuesa por semana">Producción semanal.</canvas></div>
-        </div>
-        <div class="fin-charts-grid" style="margin-top:0">
-          <div class="dash-card">
-            <div class="dash-card-title">Cajas por sector</div>
-            <div style="position:relative;width:100%;height:180px"><canvas id="rfr-chart-sec" role="img" aria-label="Cajas por sector">Cajas por sector.</canvas></div>
-          </div>
-          <div class="dash-card">
-            <div class="dash-card-title">Defectos (kg)</div>
-            <div style="position:relative;width:100%;height:180px"><canvas id="rfr-chart-def" role="img" aria-label="Defectos por tipo">Defectos por tipo.</canvas></div>
-          </div>
-          <div class="dash-card fin-chart-full">
-            <div class="dash-card-title">Trabajadores — cubetas acumuladas</div>
-            <div style="position:relative;width:100%" id="rfr-chart-trab-wrap"><canvas id="rfr-chart-trab" role="img" aria-label="Cubetas por trabajador">Cubetas por trabajador.</canvas></div>
-          </div>
-        </div>
+        <div id="rfr-res-detalle"></div>
       </div>
 
     </div>
@@ -2686,59 +2657,271 @@ function renderRfrSemDetalle(){
 
 // ─── POR CICLO (Resumen) ────────────────────────────────────
 function renderRfrResumen(data){
-  var gridCol=rfrGridCol(); var textMuted='#898781'; var FRAM='#9B59B6';
-  var totalCajas=0,c6oz=0,c12oz=0,totalCubetas=0,totalMerma=0;
-  var trabsSet={},semMap={},secMap={},defMap={sobremadura:0,irregular:0,desgrane:0,deforme:0,hongos:0};
+  var cont=document.getElementById('rfr-res-detalle'); if(!cont) return;
+  if(!data.length){ cont.innerHTML='<div style="text-align:center;padding:40px 0;color:var(--text3);font-size:13px">Sin registros para este ciclo</div>'; return; }
+
+  var totalCajas=0,totalCubetas=0,totalMerma=0;
+  var diasSet={};
+  var trabs={};
+  var secMap={};
+  var defMap={sobremadura:0,irregular:0,desgrane:0,deforme:0,hongos:0};
+  var cajasPorDiaSemana=[0,0,0,0,0,0]; // Lun..Sáb
+  var semKg={};
+
   data.forEach(function(r){
     totalCajas+=r.totalCajas||0; totalCubetas+=r.totalCubetas||0; totalMerma+=r.merma||0;
-    (r.cajas||[]).forEach(function(c){
-      if(c.presentacion==='6 oz') c6oz+=c.cantidad||0;
-      else if(c.presentacion==='12 oz') c12oz+=c.cantidad||0;
-      var s='Sector '+(c.sector||1); secMap[s]=(secMap[s]||0)+(c.cantidad||0);
+    diasSet[r.fecha]=1;
+    (r.trabajadores||[]).forEach(function(t){
+      if(!trabs[t.nombre]) trabs[t.nombre]={cubetas:0,dias:0};
+      trabs[t.nombre].cubetas+=(t.cubetas||0);
+      trabs[t.nombre].dias+=1;
     });
-    (r.trabajadores||[]).forEach(function(t){trabsSet[t.nombre]=1;});
+    (r.cajas||[]).forEach(function(c){
+      var s='S'+(c.sector||1); secMap[s]=(secMap[s]||0)+(c.cantidad||0);
+    });
     Object.keys(defMap).forEach(function(k){defMap[k]+=((r.defectos&&r.defectos[k])||0);});
+    var d=new Date(r.fecha+'T12:00:00'); var dow=d.getDay();
+    if(dow>=1&&dow<=6) cajasPorDiaSemana[dow-1]+=(r.totalCajas||0);
     var sk=rfrSemanaKey(r.fecha);
-    if(!semMap[sk]) semMap[sk]={lbl:r.fecha.slice(5).replace('-','/'),cajas:0,merma:0};
-    semMap[sk].cajas+=r.totalCajas||0; semMap[sk].merma+=r.merma||0;
+    if(!semKg[sk]) semKg[sk]={kg:0,merma:0};
+    var kgReg=(r.totalKg!==undefined&&r.totalKg!==null)?r.totalKg:Math.round((r.totalCajas||0)*(typeof KG_POR_CAJA!=='undefined'?KG_POR_CAJA:2.4)*100)/100;
+    semKg[sk].kg+=kgReg; semKg[sk].merma+=(r.merma||0);
   });
-  var pct6=totalCajas>0?Math.round(c6oz/totalCajas*100):0;
-  var pct12=totalCajas>0?Math.round(c12oz/totalCajas*100):0;
-  document.getElementById('rfr-k-cajas').textContent=totalCajas.toLocaleString('es-MX');
-  document.getElementById('rfr-k-6oz').textContent=c6oz.toLocaleString('es-MX');
-  document.getElementById('rfr-k-6oz-pct').textContent=pct6+'% del total';
-  document.getElementById('rfr-k-12oz').textContent=c12oz.toLocaleString('es-MX');
-  document.getElementById('rfr-k-12oz-pct').textContent=pct12+'% del total';
-  document.getElementById('rfr-k-cubetas').textContent=totalCubetas.toLocaleString('es-MX');
-  document.getElementById('rfr-k-dias').textContent=data.length+' d\u00edas de cosecha';
-  document.getElementById('rfr-k-merma').textContent=Math.round(totalMerma).toLocaleString('es-MX')+' kg';
-  document.getElementById('rfr-k-trabs').textContent=Object.keys(trabsSet).length;
-  var semKeys=Object.keys(semMap).sort();
-  mkRfrChart('rfr-chart-sem',{type:'bar',data:{labels:semKeys.map(function(k){return semMap[k].lbl;}),datasets:[
-    {type:'bar',label:'Cajas',data:semKeys.map(function(k){return semMap[k].cajas;}),backgroundColor:FRAM,borderRadius:3,yAxisID:'y'},
-    {type:'line',label:'Merma',data:semKeys.map(function(k){return Math.round(semMap[k].merma*10)/10;}),borderColor:'#e34948',borderWidth:2,pointRadius:2,fill:false,tension:0.3,yAxisID:'y2'}
-  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{
-    x:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10},maxRotation:45,autoSkip:true,maxTicksLimit:14}},
-    y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true,position:'left'},
-    y2:{grid:{display:false},ticks:{color:'#e34948',font:{size:10}},beginAtZero:true,position:'right'}}}});
-  var secLabels=Object.keys(secMap).sort(); var secVals=secLabels.map(function(k){return secMap[k];});
-  mkRfrChart('rfr-chart-sec',{type:'bar',data:{labels:secLabels,datasets:[{data:secVals,backgroundColor:SEC_COLS_RFR.slice(0,secLabels.length),borderRadius:3}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{x:{grid:{display:false},ticks:{color:textMuted,font:{size:11}}},y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true}}}});
-  var defLabels=['Desgrane','Sobremadura','Deforme','Irregular'];
-  var defVals2=[defMap.desgrane,defMap.sobremadura,defMap.deforme,defMap.irregular].map(function(v){return Math.round(v*10)/10;});
-  var defSum2=defVals2.reduce(function(a,v){return a+v;},0);
-  mkRfrChart('rfr-chart-def',{type:'doughnut',data:{labels:defLabels,datasets:[{data:defVals2,backgroundColor:['#e34948','#eda100','#4a3aa7','#1baf7a'],hoverOffset:4}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom',labels:{color:textMuted,font:{size:11},boxWidth:10,padding:8}},
-      tooltip:{callbacks:{label:function(c){return ' '+c.label+': '+c.raw+' kg'+(defSum2>0?' ('+Math.round(c.raw/defSum2*100)+'%)':'');}}}}}});
-  var trabMap={};
-  data.forEach(function(r){(r.trabajadores||[]).forEach(function(t){trabMap[t.nombre]=(trabMap[t.nombre]||0)+(t.cubetas||0);});});
-  var trabArr=Object.keys(trabMap).map(function(n){return{nombre:n,cubetas:trabMap[n]};}).sort(function(a,b){return b.cubetas-a.cubetas;}).slice(0,15);
-  var trabH=Math.max(200,trabArr.length*38+60);
-  var wrap=document.getElementById('rfr-chart-trab-wrap'); if(wrap) wrap.style.height=trabH+'px';
-  mkRfrChart('rfr-chart-trab',{type:'bar',data:{labels:trabArr.map(function(t){return t.nombre;}),datasets:[{data:trabArr.map(function(t){return t.cubetas;}),backgroundColor:FRAM,borderRadius:3}]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return ' '+c.raw.toLocaleString()+' cubetas';}}}},
-      scales:{x:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true},y:{grid:{display:false},ticks:{color:textMuted,font:{size:12}}}}}});
+
+  var numDias=Object.keys(diasSet).length;
+  var promCubetas=numDias>0?Math.round(totalCubetas/numDias*10)/10:0;
+  var promCajas=numDias>0?Math.round(totalCajas/numDias*10)/10:0;
+
+  var defKeys=Object.keys(DEF_COLS_RFR);
+  var defVals=defKeys.map(function(k){return Math.round((defMap[k]||0)*10)/10;});
+  var defSum=Math.round(defVals.reduce(function(a,v){return a+v;},0)*10)/10;
+  var defKeysSorted=defKeys.slice().sort(function(a,b){return defVals[defKeys.indexOf(b)]-defVals[defKeys.indexOf(a)];});
+  var defRows=defKeys.filter(function(k,i){return defVals[i]>0;})
+    .sort(function(a,b){return defVals[defKeys.indexOf(b)]-defVals[defKeys.indexOf(a)];})
+    .map(function(k){
+    var v=defVals[defKeys.indexOf(k)]; var pct=defSum>0?Math.round(v/defSum*100):0;
+    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0">'+
+      '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+DEF_COLS_RFR[k]+';flex-shrink:0"></span>'+
+      '<span style="font-size:12px;color:var(--text2);width:88px;flex-shrink:0">'+DEF_LBL_RFR[k]+'</span>'+
+      '<span style="font-family:var(--mono);font-size:17px;font-weight:700;color:var(--fram);text-shadow:0 0 10px var(--fram)">'+pct+'%</span>'+
+    '</div>';
+  }).join('');
+
+  var trabArr=Object.keys(trabs).map(function(n){
+    var prom=trabs[n].dias>0?Math.round(trabs[n].cubetas/trabs[n].dias*10)/10:0;
+    return{nombre:n,prom:prom,cubetas:trabs[n].cubetas};
+  }).sort(function(a,b){return b.prom-a.prom;});
+  var maxProm=trabArr.length?trabArr[0].prom:1;
+
+  var diaLbls=['Lun','Mar','Mi\u00e9','Jue','Vie','S\u00e1b'];
+  var cajasPorDia=cajasPorDiaSemana;
+  var maxCajasDia=Math.max.apply(null,cajasPorDia.concat([1]));
+
+  var secIds=['S1','S2','S3','S4']; var secVals=secIds.map(function(sl){return secMap[sl]||0;});
+  var secSum=secVals.reduce(function(a,v){return a+v;},0);
+
+  var semKeys=Object.keys(semKg).sort();
+  var semNumLbls=semKeys.map(function(k){return String(rfrWeekNum(k));});
+  var semKgVals=semKeys.map(function(k){return Math.round(semKg[k].kg*10)/10;});
+  var semMermaVals=semKeys.map(function(k){return Math.round(semKg[k].merma*10)/10;});
+
+  cont.innerHTML=
+    // ── Fila 1: KPIs ──
+    '<div class="rfr-dia-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px">'+
+      '<div class="kpi-card" style="padding:8px 12px">'+
+        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
+        '<div class="kpi-lbl">Total cajas</div>'+
+        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+totalCajas.toLocaleString('es-MX')+'</div>'+
+      '</div>'+
+      '<div class="kpi-card" style="padding:8px 12px">'+
+        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
+        '<div class="kpi-lbl">Prom. cajas/d\u00eda</div>'+
+        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+promCajas+'</div>'+
+      '</div>'+
+      '<div class="kpi-card" style="padding:8px 12px">'+
+        '<div class="kpi-accent" style="background:var(--camote)"></div>'+
+        '<div class="kpi-lbl">Proceso (merma)</div>'+
+        '<div class="kpi-val" style="color:var(--camote);font-size:34px;line-height:1.1">'+Math.round(totalMerma)+' <span style="font-size:14px;font-weight:400;color:var(--text3)">kg</span></div>'+
+      '</div>'+
+      '<div class="kpi-card" style="padding:8px 12px">'+
+        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
+        '<div class="kpi-lbl">Total cubetas</div>'+
+        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+totalCubetas.toLocaleString('es-MX')+'</div>'+
+      '</div>'+
+      '<div class="kpi-card" style="padding:8px 12px">'+
+        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
+        '<div class="kpi-lbl">Prom. cubetas/d\u00eda</div>'+
+        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+promCubetas+'</div>'+
+      '</div>'+
+    '</div>'+
+    // ── Fila 2: dos columnas de igual altura ──
+    '<div class="rfr-dia-grid" style="align-items:stretch">'+
+      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
+        '<div class="dash-card-title">Cubetas por trabajador \u2014 ciclo</div>'+
+        '<div class="dash-card-sub">'+trabArr.length+' trabajadores \u00b7 promedio por d\u00eda</div>'+
+        '<div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text3)">'+
+          '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#e34948;display:inline-block"></span>&lt; 20</span>'+
+          '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#eda100;display:inline-block"></span>20\u201325</span>'+
+          '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1baf7a;display:inline-block"></span>&gt; 25</span>'+
+        '</div>'+
+        '<div style="position:relative;width:100%;flex:1;min-height:220px">'+
+          '<canvas id="rfr-res-trab-chart" role="img" aria-label="Promedio de cubetas por trabajador">Trabajadores.</canvas>'+
+        '</div>'+
+        '<div class="dash-card-title" style="margin-top:14px">Cajas por d\u00eda</div>'+
+        '<div style="position:relative;width:100%;flex:1;min-height:220px">'+
+          '<canvas id="rfr-res-cajas-dia-chart" role="img" aria-label="Cajas recolectadas por d\u00eda">Cajas por d\u00eda.</canvas>'+
+        '</div>'+
+      '</div>'+
+      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
+        (defSum>0?
+          '<div class="dash-card-title">Control de calidad</div>'+
+          '<div class="dash-card-sub">Promedio del ciclo</div>'+
+          '<div style="display:flex;align-items:center;gap:14px;margin-top:6px;flex:1;min-height:220px">'+
+            '<div style="flex:0 0 auto">'+defRows+'</div>'+
+            '<div style="position:relative;flex:1;min-width:200px;height:100%"><canvas id="rfr-res-def-chart" role="img" aria-label="Defectos">Defectos.</canvas></div>'+
+          '</div>':
+          '<div style="text-align:center;padding:16px 0;color:var(--text3);font-size:13px;flex:1;min-height:220px">Sin datos de calidad este ciclo</div>')+
+        '<div class="dash-card-title" style="margin-top:14px">Cajas por sector</div>'+
+        '<div style="position:relative;width:100%;flex:1;min-height:220px;margin-top:8px"><canvas id="rfr-res-sec-chart" role="img" aria-label="Cajas por sector">Sectores.</canvas></div>'+
+        '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Sectores</div>'+
+      '</div>'+
+    '</div>'+
+    // ── Fila 3: Kg cosechados vs Kg de proceso por semana (ancho completo) ──
+    '<div class="dash-card rfr-dia-full" style="margin-bottom:0;margin-top:10px;display:flex;flex-direction:column">'+
+      '<div class="dash-card-title">Kg cosechados vs. Kg de proceso</div>'+
+      '<div class="dash-card-sub">Por semana del ciclo</div>'+
+      '<div style="display:flex;gap:14px;margin:8px 0;font-size:11px;color:var(--text3)">'+
+        '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:var(--fram);vertical-align:middle"></span>Kg cosechados</span>'+
+        '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:#e34948;vertical-align:middle"></span>Kg de proceso</span>'+
+      '</div>'+
+      '<div style="position:relative;width:100%;flex:1;min-height:260px"><canvas id="rfr-res-linea-chart" role="img" aria-label="Kg cosechados vs kg de proceso por semana">L\u00ednea semanal.</canvas></div>'+
+      '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
+    '</div>';
+
+  var gridCol=rfrGridCol(); var textMuted='#898781';
+
+  setTimeout(function(){
+    var barLabelPlugin = {
+      id:'resBarLabels',
+      afterDatasetsDraw:function(chart){
+        var ctx=chart.ctx; var ds=chart.data.datasets[0]; var meta=chart.getDatasetMeta(0);
+        meta.data.forEach(function(bar,i){
+          var v=ds.data[i];
+          ctx.save(); ctx.fillStyle='#ffffff'; ctx.font='bold 12px monospace';
+          ctx.textAlign='center'; ctx.textBaseline='bottom';
+          ctx.fillText(v, bar.x, bar.y-4); ctx.restore();
+        });
+      }
+    };
+    mkRfrChart('rfr-res-trab-chart',{
+      type:'bar',
+      plugins:[barLabelPlugin],
+      data:{
+        labels:trabArr.map(function(t){return t.nombre;}),
+        datasets:[
+          {label:'Prom/d\u00eda',
+           data:trabArr.map(function(t){return t.prom;}),
+           backgroundColor:trabArr.map(function(t){return t.prom>=25?'#1baf7a':t.prom>=20?'#eda100':'#e34948';}),
+           borderRadius:4,barPercentage:0.65},
+          {type:'line',label:'Meta',data:Array(trabArr.length).fill(25),
+           borderColor:'#1baf7a',borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false},
+          {type:'line',label:'M\u00ednimo',data:Array(trabArr.length).fill(20),
+           borderColor:'#e34948',borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false}
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},
+          tooltip:{callbacks:{label:function(c){
+            if(c.datasetIndex===0) return ' '+c.raw+' cubetas/d\u00eda';
+            return c.datasetIndex===1?' Meta: 25':' M\u00ednimo: 20';
+          }}}},
+        scales:{
+          x:{grid:{display:false},ticks:{color:textMuted,font:{size:11},maxRotation:45}},
+          y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:11}},
+             beginAtZero:true,suggestedMax:Math.max(30,maxProm+5),
+             title:{display:true,text:'Cubetas/d\u00eda',color:textMuted,font:{size:11}}}
+        }
+      }
+    });
+
+    var cajasDiaLabelPlugin = {
+      id:'resCajasDiaLabels',
+      afterDatasetsDraw:function(chart){
+        var ctx=chart.ctx; var ds=chart.data.datasets[0]; var meta=chart.getDatasetMeta(0);
+        meta.data.forEach(function(bar,i){
+          var v=ds.data[i]; if(!v||!bar) return;
+          ctx.save(); ctx.fillStyle='#ffffff'; ctx.font='bold 12px monospace';
+          ctx.textAlign='center'; ctx.textBaseline='bottom';
+          ctx.fillText(v, bar.x, bar.y-4); ctx.restore();
+        });
+      }
+    };
+    mkRfrChart('rfr-res-cajas-dia-chart',{
+      type:'bar',
+      plugins:[cajasDiaLabelPlugin],
+      data:{labels:diaLbls,datasets:[{label:'Cajas',data:cajasPorDia,backgroundColor:'#9B59B6',borderRadius:4,barPercentage:0.65}]},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return ' '+c.raw+' cajas';}}}},
+        scales:{
+          x:{grid:{display:false},ticks:{color:textMuted,font:{size:11}}},
+          y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:11}},
+             beginAtZero:true,suggestedMax:maxCajasDia+Math.ceil(maxCajasDia*0.15)+1,
+             title:{display:true,text:'Cajas',color:textMuted,font:{size:11}}}
+        }
+      }
+    });
+
+    if(defSum>0){
+      mkRfrChart('rfr-res-def-chart',{type:'doughnut',
+        data:{labels:defKeysSorted.map(function(k){return DEF_LBL_RFR[k];}),
+          datasets:[{data:defKeysSorted.map(function(k){return defVals[defKeys.indexOf(k)];}),backgroundColor:defKeysSorted.map(function(k){return DEF_COLS_RFR[k];}),hoverOffset:6}]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
+          plugins:{legend:{display:true,position:'bottom',labels:{color:'#898781',font:{size:11},boxWidth:10,padding:8}},
+            tooltip:{callbacks:{label:function(c){return ' '+c.label+': '+(defSum>0?Math.round(c.raw/defSum*100):0)+'%';}}}}}});
+    }
+
+    var secLabelPlugin = {
+      id:'resSecBarLabels',
+      afterDatasetsDraw:function(chart){
+        var ctx=chart.ctx; var ds=chart.data.datasets[0]; var meta=chart.getDatasetMeta(0);
+        meta.data.forEach(function(bar,i){
+          var v=ds.data[i]; if(!v) return;
+          ctx.save(); ctx.fillStyle='#ffffff'; ctx.font='bold 12px monospace';
+          ctx.textAlign='center'; ctx.textBaseline='bottom';
+          ctx.fillText(v, bar.x, bar.y-4); ctx.restore();
+        });
+      }
+    };
+    mkRfrChart('rfr-res-sec-chart',{type:'bar',
+      plugins:[secLabelPlugin],
+      data:{labels:['1','2','3','4'],datasets:[{data:secVals,backgroundColor:SEC_COLS_RFR,borderRadius:3}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:function(c){return ' '+c.raw+' cajas ('+Math.round((secSum>0?c.raw/secSum*100:0))+'%)';}}}},
+        scales:{x:{grid:{display:false},ticks:{color:textMuted,font:{size:12}}},y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true}}}});
+
+    mkRfrChart('rfr-res-linea-chart',{
+      type:'line',
+      data:{
+        labels:semNumLbls,
+        datasets:[
+          {label:'Kg cosechados',data:semKgVals,borderColor:'#D6336C',backgroundColor:'rgba(214,51,108,0.08)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#D6336C',fill:true,tension:0.3},
+          {label:'Kg de proceso',data:semMermaVals,borderColor:'#e34948',backgroundColor:'rgba(227,73,72,0.08)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#e34948',fill:true,tension:0.3}
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},
+          tooltip:{callbacks:{label:function(c){return ' '+c.dataset.label+': '+c.raw+' kg';}}}},
+        scales:{
+          x:{grid:{display:false},ticks:{color:textMuted,font:{size:11}}},
+          y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:11}},beginAtZero:true,
+             title:{display:true,text:'Kg',color:textMuted,font:{size:11}}}
+        }
+      }
+    });
+  },30);
 }
 
 // ============================================================
