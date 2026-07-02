@@ -1342,7 +1342,8 @@ async function fetchAllRows(table, orderCol, asc){
     if(orderCol) q = q.order(orderCol, {ascending: !!asc});
     q = q.range(from, from+pageSize-1);
     var res = await q;
-    if(res.error || !res.data || !res.data.length) break;
+    if(res.error){ console.error('Error cargando "'+table+'" desde Supabase:', res.error.message); break; }
+    if(!res.data || !res.data.length) break;
     all = all.concat(res.data);
     if(res.data.length < pageSize) break;
     from += pageSize;
@@ -1407,6 +1408,8 @@ async function cargarDesdeSB(){
     if(typeof renderFramHist==='function') renderFramHist();
     if(typeof rfrPoblarSelectDia==='function') rfrPoblarSelectDia();
     if(typeof rfrPoblarSelectSem==='function') rfrPoblarSelectSem();
+  } else if(!framRegistros.length){
+    console.warn('Supabase conectado pero "fram_registros" regresó vacío. Revisa la tabla y sus políticas RLS.');
   }
   if(rC.data) clientes = rC.data.map(function(c){return c.nombre;});
   if(rP.data) proveedores = rP.data.map(function(p){return p.nombre;});
@@ -4594,6 +4597,19 @@ async function sbDeleteTrabajador(nombre){
   await sb.from('trabajadores').delete().eq('nombre', nombre);
 }
 
+// Sube todos los trabajadores guardados localmente a Supabase.
+// Útil una sola vez para respaldar la lista actual.
+// Se puede llamar manualmente desde la consola: migrarTrabajadoresASupabase()
+async function migrarTrabajadoresASupabase(){
+  if(!trabajadores.length){ showToast('No hay trabajadores guardados'); return; }
+  if(!sbOnline||!sb){ showToast('Sin conexión a Supabase'); return; }
+  showToast('Subiendo trabajadores... 0/'+trabajadores.length);
+  for(var i=0;i<trabajadores.length;i++){
+    await sbSaveTrabajador(trabajadores[i]);
+  }
+  showToast('✅ '+trabajadores.length+' trabajadores respaldados en Supabase');
+}
+
 // ---- Presentaciones de caja ----
 var presentacionesCaja = PRESENTACIONES_CAJA.slice();
 // Allow user-added presentaciones
@@ -5246,6 +5262,20 @@ async function sbSaveAlmLote(l){
 async function sbDeleteAlmLote(id){
   if(!sbOnline||!sb) return;
   await sb.from('alm_lotes').delete().eq('id',id);
+}
+
+// Sube todos los lotes de camote guardados localmente a Supabase.
+// Útil una sola vez después de crear la tabla 'alm_lotes'.
+// Se puede llamar manualmente desde la consola: migrarAlmLotesASupabase()
+async function migrarAlmLotesASupabase(){
+  if(!almLotes.length){ showToast('No hay lotes de camote guardados'); return; }
+  if(!sbOnline||!sb){ showToast('Sin conexión a Supabase'); return; }
+  showToast('Subiendo lotes... 0/'+almLotes.length);
+  for(var i=0;i<almLotes.length;i++){
+    await sbSaveAlmLote(almLotes[i]);
+    if((i+1)%10===0 || i===almLotes.length-1) showToast('Subiendo lotes... '+(i+1)+'/'+almLotes.length);
+  }
+  showToast('✅ '+almLotes.length+' lotes de camote respaldados en Supabase');
 }
 
 // ── helpers ──
