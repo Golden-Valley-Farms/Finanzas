@@ -2465,9 +2465,29 @@ function renderRfrSemDetalle(){
   var secIds=['S1','S2','S3','S4']; var secVals=secIds.map(function(sl){return s.secMap[sl]||0;});
   var secSum=secVals.reduce(function(a,v){return a+v;},0);
 
+  var kgCosechados=Math.round(s.registros.reduce(function(a,r){
+    var kg=(r.totalKg!==undefined&&r.totalKg!==null)?r.totalKg:Math.round((r.totalCajas||0)*(typeof KG_POR_CAJA!=='undefined'?KG_POR_CAJA:2.4)*100)/100;
+    return a+kg;
+  },0)*10)/10;
+  var pctKgMerma=(kgCosechados+s.merma)>0?Math.round((kgCosechados/(kgCosechados+s.merma))*100):null;
+
+  var kgPorDia=diaLbls.map(function(_,i){
+    var d=new Date(sunDate); d.setDate(sunDate.getDate()+1+i);
+    var fechaStr=d.toISOString().slice(0,10);
+    var reg=s.registros.find(function(r){return r.fecha===fechaStr;});
+    if(!reg) return null;
+    return (reg.totalKg!==undefined&&reg.totalKg!==null)?reg.totalKg:Math.round((reg.totalCajas||0)*(typeof KG_POR_CAJA!=='undefined'?KG_POR_CAJA:2.4)*100)/100;
+  });
+  var mermaPorDia=diaLbls.map(function(_,i){
+    var d=new Date(sunDate); d.setDate(sunDate.getDate()+1+i);
+    var fechaStr=d.toISOString().slice(0,10);
+    var reg=s.registros.find(function(r){return r.fecha===fechaStr;});
+    return reg?(reg.merma||0):null;
+  });
+
   document.getElementById('rfr-sem-detalle').innerHTML=
     // ── Fila 1: KPIs ──
-    '<div class="rfr-dia-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px">'+
+    '<div class="rfr-dia-kpis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Total cajas</div>'+
@@ -2479,19 +2499,9 @@ function renderRfrSemDetalle(){
         '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+promCajas+'</div>'+
       '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
-        '<div class="kpi-accent" style="background:var(--camote)"></div>'+
-        '<div class="kpi-lbl">Proceso (merma)</div>'+
-        '<div class="kpi-val" style="color:var(--camote);font-size:34px;line-height:1.1">'+Math.round(s.merma)+' <span style="font-size:14px;font-weight:400;color:var(--text3)">kg</span></div>'+
-      '</div>'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
-        '<div class="kpi-lbl">Total cubetas</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+s.cubetas.toLocaleString('es-MX')+'</div>'+
-      '</div>'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
-        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
-        '<div class="kpi-lbl">Prom. cubetas/d\u00eda</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+promCubetas+'</div>'+
+        '<div class="kpi-lbl">% kg cosechados / (kg + merma)</div>'+
+        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+(pctKgMerma===null?'\u2014':pctKgMerma+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
       '</div>'+
     '</div>'+
     // ── Fila 2: dos columnas de igual altura ──
@@ -2525,6 +2535,16 @@ function renderRfrSemDetalle(){
         '<div style="position:relative;width:100%;flex:1;min-height:220px;margin-top:8px"><canvas id="rfr-chart-sec-sem" role="img" aria-label="Cajas por sector">Sectores.</canvas></div>'+
         '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Sectores</div>'+
       '</div>'+
+    '</div>'+
+    // ── Fila 3: Kg cosechados vs Kg de proceso por día (ancho completo) ──
+    '<div class="dash-card rfr-dia-full" style="margin-bottom:0;margin-top:10px;display:flex;flex-direction:column">'+
+      '<div class="dash-card-title">Kg cosechados vs. Kg de proceso</div>'+
+      '<div class="dash-card-sub">Lunes a s\u00e1bado de la semana</div>'+
+      '<div style="display:flex;gap:14px;margin:8px 0;font-size:11px;color:var(--text3)">'+
+        '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:#D6336C;vertical-align:middle"></span>Kg cosechados</span>'+
+        '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:#e34948;vertical-align:middle"></span>Kg de proceso</span>'+
+      '</div>'+
+      '<div style="position:relative;width:100%;flex:1;min-height:260px"><canvas id="rfr-chart-linea-sem" role="img" aria-label="Kg cosechados vs kg de proceso por d\u00eda">L\u00ednea semanal.</canvas></div>'+
     '</div>';
 
   var gridCol=rfrGridCol(); var textMuted='#898781';
@@ -2651,6 +2671,27 @@ function renderRfrSemDetalle(){
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
         tooltip:{callbacks:{label:function(c){return ' '+c.raw+' cajas ('+Math.round((secSum>0?c.raw/secSum*100:0))+'%)';}}}},
         scales:{x:{grid:{display:false},ticks:{color:textMuted,font:{size:12}}},y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true}}}});
+
+    mkRfrChart('rfr-chart-linea-sem',{
+      type:'line',
+      data:{
+        labels:diaLbls,
+        datasets:[
+          {label:'Kg cosechados',data:kgPorDia,borderColor:'#D6336C',backgroundColor:'rgba(214,51,108,0.08)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#D6336C',fill:true,tension:0.3,spanGaps:true},
+          {label:'Kg de proceso',data:mermaPorDia,borderColor:'#e34948',backgroundColor:'rgba(227,73,72,0.08)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#e34948',fill:true,tension:0.3,spanGaps:true}
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},
+          tooltip:{callbacks:{label:function(c){return ' '+c.dataset.label+': '+c.raw+' kg';}}}},
+        scales:{
+          x:{grid:{display:false},ticks:{color:textMuted,font:{size:11}}},
+          y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:11}},beginAtZero:true,
+             title:{display:true,text:'Kg',color:textMuted,font:{size:11}}}
+        }
+      }
+    });
   },30);
 }
 
