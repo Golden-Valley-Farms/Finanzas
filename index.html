@@ -370,6 +370,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   #rep-fram-sec .rfr-dia-full{max-width:1400px;margin:10px auto 0}
   #rep-fram-sec .rfr-topbar{max-width:1400px;margin-left:auto;margin-right:auto}
 }
+.rfr-chart-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-top:10px}
+.rfr-chart-box:first-child{margin-top:0}
 </style>
 </head>
 <body id="artifacts-component-root-html">
@@ -2254,35 +2256,41 @@ function renderRfrDiaDetalle(){
     '<div class="rfr-dia-grid" style="align-items:stretch">'+
       // Columna izquierda: trabajadores — ocupa toda la altura
       '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
-        '<div class="dash-card-title">Trabajadores del d\u00eda</div>'+
-        '<div class="dash-card-sub">'+trabsSorted.length+' trabajadores · '+r.totalCubetas+' cubetas totales</div>'+
-        '<div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text3)">'+
-          '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#e34948;display:inline-block"></span>&lt; 20</span>'+
-          '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#eda100;display:inline-block"></span>20–25</span>'+
-          '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1baf7a;display:inline-block"></span>&gt; 25</span>'+
-        '</div>'+
-        '<div style="position:relative;width:100%;flex:1;min-height:280px">'+
-          '<canvas id="rfr-dia-trab-chart" role="img" aria-label="Cubetas por trabajador">Trabajadores.</canvas>'+
+        '<div class="rfr-chart-box" style="display:flex;flex-direction:column;flex:1;min-height:0">'+
+          '<div class="dash-card-title">Trabajadores del d\u00eda</div>'+
+          '<div class="dash-card-sub">'+trabsSorted.length+' trabajadores · '+r.totalCubetas+' cubetas totales</div>'+
+          '<div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text3)">'+
+            '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#e34948;display:inline-block"></span>&lt; 20</span>'+
+            '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#eda100;display:inline-block"></span>20–25</span>'+
+            '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1baf7a;display:inline-block"></span>&gt; 25</span>'+
+          '</div>'+
+          '<div style="position:relative;width:100%;flex:1;min-height:280px">'+
+            '<canvas id="rfr-dia-trab-chart" role="img" aria-label="Cubetas por trabajador">Trabajadores.</canvas>'+
+          '</div>'+
         '</div>'+
       '</div>'+
-      // Columna derecha: calidad — una sola card
-      '<div class="dash-card" style="margin-bottom:0">'+
+      // Columna derecha: calidad — dos cajas
+      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
         (defSum>0?
-          '<div class="dash-card-title">Control de calidad</div>'+
-          '<div class="dash-card-sub">'+defSum+' kg de muestra analizada</div>'+
-          defRows+
-          '<div style="margin-top:16px">'+
+          '<div class="rfr-chart-box">'+
+            '<div class="dash-card-title">Control de calidad</div>'+
+            '<div class="dash-card-sub">'+defSum+' kg de muestra analizada</div>'+
+            defRows+
+          '</div>'+
+          '<div class="rfr-chart-box">'+
             '<div class="dash-card-title">Distribuci\u00f3n de defectos</div>'+
             '<div style="position:relative;width:100%;height:220px;margin-top:8px"><canvas id="rfr-dia-pie" role="img" aria-label="Defectos">Defectos.</canvas></div>'+
           '</div>':
-          '<div style="text-align:center;padding:24px 0;color:var(--text3);font-size:13px">Sin datos de calidad este d\u00eda</div>')+
+          '<div class="rfr-chart-box" style="text-align:center;padding:24px 0;color:var(--text3);font-size:13px">Sin datos de calidad este d\u00eda</div>')+
       '</div>'+
     '</div>'+
     // ── Fila 3: Cajas por sector (ancho completo) ──
     '<div class="dash-card rfr-dia-full" style="margin-bottom:0;margin-top:10px;display:flex;flex-direction:column">'+
-      '<div class="dash-card-title">Cajas por sector</div>'+
-      '<div style="position:relative;width:100%;flex:1;min-height:220px;margin-top:8px"><canvas id="rfr-dia-chart-sec" role="img" aria-label="Cajas por sector">Sectores.</canvas></div>'+
-      '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Sectores</div>'+
+      '<div class="rfr-chart-box" style="display:flex;flex-direction:column;flex:1;min-height:0">'+
+        '<div class="dash-card-title">Cajas por sector</div>'+
+        '<div style="position:relative;width:100%;flex:1;min-height:220px;margin-top:8px"><canvas id="rfr-dia-chart-sec" role="img" aria-label="Cajas por sector">Sectores.</canvas></div>'+
+        '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Sectores</div>'+
+      '</div>'+
     '</div>';
 
   var gridCol=rfrGridCol(); var textMuted='#898781';
@@ -2298,7 +2306,7 @@ function renderRfrDiaDetalle(){
         meta.data.forEach(function(bar,i){
           var v=ds.data[i];
           ctx.save();
-          ctx.fillStyle='#eda100';
+          ctx.fillStyle='#1a7a4a';
           ctx.font='bold 12px monospace';
           ctx.textAlign='center';
           ctx.textBaseline='bottom';
@@ -2357,7 +2365,7 @@ function renderRfrDiaDetalle(){
         meta.data.forEach(function(bar,i){
           var v=ds.data[i]; if(!v) return;
           ctx.save();
-          ctx.fillStyle='#eda100';
+          ctx.fillStyle='#1a7a4a';
           ctx.font='bold 12px monospace';
           ctx.textAlign='center';
           ctx.textBaseline='bottom';
@@ -2507,44 +2515,54 @@ function renderRfrSemDetalle(){
     // ── Fila 2: dos columnas de igual altura ──
     '<div class="rfr-dia-grid" style="align-items:stretch">'+
       '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
-        '<div class="dash-card-title">Cubetas por trabajador \u2014 semana</div>'+
-        '<div class="dash-card-sub">'+trabArr.length+' trabajadores \u00b7 promedio por d\u00eda</div>'+
-        '<div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text3)">'+
-          '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#e34948;display:inline-block"></span>&lt; 20</span>'+
-          '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#eda100;display:inline-block"></span>20\u201325</span>'+
-          '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1baf7a;display:inline-block"></span>&gt; 25</span>'+
+        '<div class="rfr-chart-box" style="display:flex;flex-direction:column;flex:1;min-height:0">'+
+          '<div class="dash-card-title">Cubetas por trabajador \u2014 semana</div>'+
+          '<div class="dash-card-sub">'+trabArr.length+' trabajadores \u00b7 promedio por d\u00eda</div>'+
+          '<div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text3)">'+
+            '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#e34948;display:inline-block"></span>&lt; 20</span>'+
+            '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#eda100;display:inline-block"></span>20\u201325</span>'+
+            '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1baf7a;display:inline-block"></span>&gt; 25</span>'+
+          '</div>'+
+          '<div style="position:relative;width:100%;flex:1;min-height:220px">'+
+            '<canvas id="rfr-chart-trab-sem" role="img" aria-label="Promedio de cubetas por trabajador">Trabajadores.</canvas>'+
+          '</div>'+
         '</div>'+
-        '<div style="position:relative;width:100%;flex:1;min-height:220px">'+
-          '<canvas id="rfr-chart-trab-sem" role="img" aria-label="Promedio de cubetas por trabajador">Trabajadores.</canvas>'+
-        '</div>'+
-        '<div class="dash-card-title" style="margin-top:14px">Cajas por d\u00eda</div>'+
-        '<div style="position:relative;width:100%;flex:1;min-height:220px">'+
-          '<canvas id="rfr-chart-cajas-dia-sem" role="img" aria-label="Cajas recolectadas por d\u00eda">Cajas por d\u00eda.</canvas>'+
+        '<div class="rfr-chart-box" style="display:flex;flex-direction:column;flex:1;min-height:0">'+
+          '<div class="dash-card-title">Cajas por d\u00eda</div>'+
+          '<div style="position:relative;width:100%;flex:1;min-height:220px">'+
+            '<canvas id="rfr-chart-cajas-dia-sem" role="img" aria-label="Cajas recolectadas por d\u00eda">Cajas por d\u00eda.</canvas>'+
+          '</div>'+
         '</div>'+
       '</div>'+
       '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
         (defSum>0?
-          '<div class="dash-card-title">Control de calidad</div>'+
-          '<div class="dash-card-sub">Promedio semanal</div>'+
-          '<div style="display:flex;align-items:center;gap:14px;margin-top:6px;flex:1;min-height:220px">'+
-            '<div style="flex:0 0 auto">'+defRows+'</div>'+
-            '<div style="position:relative;flex:1;min-width:200px;height:100%"><canvas id="rfr-chart-def-sem" role="img" aria-label="Defectos">Defectos.</canvas></div>'+
+          '<div class="rfr-chart-box" style="flex:1;min-height:0">'+
+            '<div class="dash-card-title">Control de calidad</div>'+
+            '<div class="dash-card-sub">Promedio semanal</div>'+
+            '<div style="display:flex;align-items:center;gap:14px;margin-top:6px">'+
+              '<div style="flex:0 0 auto">'+defRows+'</div>'+
+              '<div style="position:relative;flex:1;min-width:200px;height:180px"><canvas id="rfr-chart-def-sem" role="img" aria-label="Defectos">Defectos.</canvas></div>'+
+            '</div>'+
           '</div>':
-          '<div style="text-align:center;padding:16px 0;color:var(--text3);font-size:13px;flex:1;min-height:220px">Sin datos de calidad esta semana</div>')+
-        '<div class="dash-card-title" style="margin-top:14px">Cajas por sector</div>'+
-        '<div style="position:relative;width:100%;flex:1;min-height:220px;margin-top:8px"><canvas id="rfr-chart-sec-sem" role="img" aria-label="Cajas por sector">Sectores.</canvas></div>'+
-        '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Sectores</div>'+
+          '<div class="rfr-chart-box" style="text-align:center;padding:16px 0;color:var(--text3);font-size:13px;flex:1;min-height:0">Sin datos de calidad esta semana</div>')+
+        '<div class="rfr-chart-box" style="display:flex;flex-direction:column;flex:1;min-height:0">'+
+          '<div class="dash-card-title">Cajas por sector</div>'+
+          '<div style="position:relative;width:100%;flex:1;min-height:220px;margin-top:8px"><canvas id="rfr-chart-sec-sem" role="img" aria-label="Cajas por sector">Sectores.</canvas></div>'+
+          '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Sectores</div>'+
+        '</div>'+
       '</div>'+
     '</div>'+
     // ── Fila 3: Kg cosechados vs Kg de proceso por día (ancho completo) ──
     '<div class="dash-card rfr-dia-full" style="margin-bottom:0;margin-top:10px;display:flex;flex-direction:column">'+
-      '<div class="dash-card-title">Kg cosechados vs. Kg de proceso</div>'+
-      '<div class="dash-card-sub">Lunes a s\u00e1bado de la semana</div>'+
-      '<div style="display:flex;gap:14px;margin:8px 0;font-size:11px;color:var(--text3)">'+
-        '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:#D6336C;vertical-align:middle"></span>Kg cosechados</span>'+
-        '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:#e34948;vertical-align:middle"></span>Kg de proceso</span>'+
+      '<div class="rfr-chart-box" style="display:flex;flex-direction:column;flex:1;min-height:0">'+
+        '<div class="dash-card-title">Kg cosechados vs. Kg de proceso</div>'+
+        '<div class="dash-card-sub">Lunes a s\u00e1bado de la semana</div>'+
+        '<div style="display:flex;gap:14px;margin:8px 0;font-size:11px;color:var(--text3)">'+
+          '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:#D6336C;vertical-align:middle"></span>Kg cosechados</span>'+
+          '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:#e34948;vertical-align:middle"></span>Kg de proceso</span>'+
+        '</div>'+
+        '<div style="position:relative;width:100%;flex:1;min-height:260px"><canvas id="rfr-chart-linea-sem" role="img" aria-label="Kg cosechados vs kg de proceso por d\u00eda">L\u00ednea semanal.</canvas></div>'+
       '</div>'+
-      '<div style="position:relative;width:100%;flex:1;min-height:260px"><canvas id="rfr-chart-linea-sem" role="img" aria-label="Kg cosechados vs kg de proceso por d\u00eda">L\u00ednea semanal.</canvas></div>'+
     '</div>';
 
   var gridCol=rfrGridCol(); var textMuted='#898781';
@@ -2559,7 +2577,7 @@ function renderRfrSemDetalle(){
         meta.data.forEach(function(bar,i){
           var v=ds.data[i];
           ctx.save();
-          ctx.fillStyle='#eda100';
+          ctx.fillStyle='#1a7a4a';
           ctx.font='bold 12px monospace';
           ctx.textAlign='center';
           ctx.textBaseline='bottom';
@@ -2609,7 +2627,7 @@ function renderRfrSemDetalle(){
         meta.data.forEach(function(bar,i){
           var v=ds.data[i]; if(v===null||v===undefined||!bar) return;
           ctx.save();
-          ctx.fillStyle='#eda100';
+          ctx.fillStyle='#1a7a4a';
           ctx.font='bold 12px monospace';
           ctx.textAlign='center';
           ctx.textBaseline='bottom';
@@ -2656,7 +2674,7 @@ function renderRfrSemDetalle(){
         meta.data.forEach(function(bar,i){
           var v=ds.data[i]; if(!v) return;
           ctx.save();
-          ctx.fillStyle='#eda100';
+          ctx.fillStyle='#1a7a4a';
           ctx.font='bold 12px monospace';
           ctx.textAlign='center';
           ctx.textBaseline='bottom';
@@ -2681,7 +2699,7 @@ function renderRfrSemDetalle(){
           meta.data.forEach(function(pt,i){
             var v=ds.data[i]; if(v===null||v===undefined||!pt) return;
             ctx.save();
-            ctx.fillStyle='#eda100';
+            ctx.fillStyle='#1a7a4a';
             ctx.font='bold 11px monospace';
             ctx.textAlign='center';
             ctx.textBaseline='bottom';
@@ -2812,41 +2830,49 @@ function renderRfrResumen(data){
     // ── Fila 2: dos columnas de igual altura ──
     '<div class="rfr-dia-grid" style="align-items:stretch">'+
       '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
-        '<div class="dash-card-title">Cubetas por trabajador \u2014 ciclo</div>'+
-        '<div class="dash-card-sub">'+trabArr.length+' trabajadores \u00b7 promedio por d\u00eda</div>'+
-        '<div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text3)">'+
-          '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#e34948;display:inline-block"></span>&lt; 20</span>'+
-          '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#eda100;display:inline-block"></span>20\u201325</span>'+
-          '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1baf7a;display:inline-block"></span>&gt; 25</span>'+
-        '</div>'+
-        '<div style="position:relative;width:100%;flex:1;min-height:460px">'+
-          '<canvas id="rfr-res-trab-chart" role="img" aria-label="Promedio de cubetas por trabajador">Trabajadores.</canvas>'+
+        '<div class="rfr-chart-box" style="display:flex;flex-direction:column;flex:1;min-height:0">'+
+          '<div class="dash-card-title">Cubetas por trabajador \u2014 ciclo</div>'+
+          '<div class="dash-card-sub">'+trabArr.length+' trabajadores \u00b7 promedio por d\u00eda</div>'+
+          '<div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text3)">'+
+            '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#e34948;display:inline-block"></span>&lt; 20</span>'+
+            '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#eda100;display:inline-block"></span>20\u201325</span>'+
+            '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1baf7a;display:inline-block"></span>&gt; 25</span>'+
+          '</div>'+
+          '<div style="position:relative;width:100%;flex:1;min-height:460px">'+
+            '<canvas id="rfr-res-trab-chart" role="img" aria-label="Promedio de cubetas por trabajador">Trabajadores.</canvas>'+
+          '</div>'+
         '</div>'+
       '</div>'+
       '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
         (defSum>0?
-          '<div class="dash-card-title">Control de calidad</div>'+
-          '<div class="dash-card-sub">Promedio del ciclo</div>'+
-          '<div style="display:flex;align-items:center;gap:14px;margin-top:6px;flex:1;min-height:220px">'+
-            '<div style="flex:0 0 auto">'+defRows+'</div>'+
-            '<div style="position:relative;flex:1;min-width:200px;height:100%"><canvas id="rfr-res-def-chart" role="img" aria-label="Defectos">Defectos.</canvas></div>'+
+          '<div class="rfr-chart-box" style="flex:1;min-height:0">'+
+            '<div class="dash-card-title">Control de calidad</div>'+
+            '<div class="dash-card-sub">Promedio del ciclo</div>'+
+            '<div style="display:flex;align-items:center;gap:14px;margin-top:6px">'+
+              '<div style="flex:0 0 auto">'+defRows+'</div>'+
+              '<div style="position:relative;flex:1;min-width:200px;height:180px"><canvas id="rfr-res-def-chart" role="img" aria-label="Defectos">Defectos.</canvas></div>'+
+            '</div>'+
           '</div>':
-          '<div style="text-align:center;padding:16px 0;color:var(--text3);font-size:13px;flex:1;min-height:220px">Sin datos de calidad este ciclo</div>')+
-        '<div class="dash-card-title" style="margin-top:14px">Cajas por sector</div>'+
-        '<div style="position:relative;width:100%;flex:1;min-height:220px;margin-top:8px"><canvas id="rfr-res-sec-chart" role="img" aria-label="Cajas por sector">Sectores.</canvas></div>'+
-        '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Sectores</div>'+
+          '<div class="rfr-chart-box" style="text-align:center;padding:16px 0;color:var(--text3);font-size:13px;flex:1;min-height:0">Sin datos de calidad este ciclo</div>')+
+        '<div class="rfr-chart-box" style="display:flex;flex-direction:column;flex:1;min-height:0">'+
+          '<div class="dash-card-title">Cajas por sector</div>'+
+          '<div style="position:relative;width:100%;flex:1;min-height:220px;margin-top:8px"><canvas id="rfr-res-sec-chart" role="img" aria-label="Cajas por sector">Sectores.</canvas></div>'+
+          '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Sectores</div>'+
+        '</div>'+
       '</div>'+
     '</div>'+
     // ── Fila 3: Kg cosechados vs Kg de proceso por semana (ancho completo) ──
     '<div class="dash-card rfr-dia-full" style="margin-bottom:0;margin-top:10px;display:flex;flex-direction:column">'+
-      '<div class="dash-card-title">Kg cosechados vs. Kg de proceso</div>'+
-      '<div class="dash-card-sub">Por semana del ciclo</div>'+
-      '<div style="display:flex;gap:14px;margin:8px 0;font-size:11px;color:var(--text3)">'+
-        '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:var(--fram);vertical-align:middle"></span>Kg cosechados</span>'+
-        '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:#e34948;vertical-align:middle"></span>Kg de proceso</span>'+
+      '<div class="rfr-chart-box" style="display:flex;flex-direction:column;flex:1;min-height:0">'+
+        '<div class="dash-card-title">Kg cosechados vs. Kg de proceso</div>'+
+        '<div class="dash-card-sub">Por semana del ciclo</div>'+
+        '<div style="display:flex;gap:14px;margin:8px 0;font-size:11px;color:var(--text3)">'+
+          '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:var(--fram);vertical-align:middle"></span>Kg cosechados</span>'+
+          '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:#e34948;vertical-align:middle"></span>Kg de proceso</span>'+
+        '</div>'+
+        '<div style="position:relative;width:100%;flex:1;min-height:260px"><canvas id="rfr-res-linea-chart" role="img" aria-label="Kg cosechados vs kg de proceso por semana">L\u00ednea semanal.</canvas></div>'+
+        '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
       '</div>'+
-      '<div style="position:relative;width:100%;flex:1;min-height:260px"><canvas id="rfr-res-linea-chart" role="img" aria-label="Kg cosechados vs kg de proceso por semana">L\u00ednea semanal.</canvas></div>'+
-      '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
     '</div>';
 
   var gridCol=rfrGridCol(); var textMuted='#898781';
@@ -2898,7 +2924,7 @@ function renderRfrResumen(data){
         var ctx=chart.ctx; var ds=chart.data.datasets[0]; var meta=chart.getDatasetMeta(0);
         meta.data.forEach(function(bar,i){
           var v=ds.data[i]; if(!v) return;
-          ctx.save(); ctx.fillStyle='#eda100'; ctx.font='bold 12px monospace';
+          ctx.save(); ctx.fillStyle='#1a7a4a'; ctx.font='bold 12px monospace';
           ctx.textAlign='center'; ctx.textBaseline='bottom';
           ctx.fillText(v, bar.x, bar.y-4); ctx.restore();
         });
