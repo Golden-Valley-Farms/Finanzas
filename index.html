@@ -356,7 +356,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   #rep-fram-sec .fin-chart-full{grid-column:1/-1}
   #rep-fram-sec .rfr-dia-kpis{
     max-width:1400px;margin:0 auto 10px;
-    display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+    display:grid;grid-template-columns:repeat(5,1fr);gap:8px;
   }
   #rep-fram-sec .rfr-dia-kpis .kpi-card{padding:8px 12px}
   #rep-fram-sec .rfr-dia-grid{
@@ -2217,23 +2217,36 @@ function renderRfrDiaDetalle(){
       '<span style="font-family:var(--mono);font-size:17px;font-weight:600;color:var(--text)">'+v+' <span style="font-size:12px;font-weight:400;color:var(--text3)">kg</span> &nbsp;<span style="color:var(--fram);font-size:19px;font-weight:700;min-width:36px;display:inline-block;text-align:right;text-shadow:0 0 12px var(--fram)">'+pct+'%</span></span></div>';
   }).join('');
 
+  var kgCosechados = r.totalKg||0;
+  var pctKgMerma = (r.merma||0)>0 ? Math.round((kgCosechados/r.merma)*100) : null;
+
   document.getElementById('rfr-dia-detalle').innerHTML=
     // ── Fila 1: KPIs compactos en una sola línea ──
-    '<div class="rfr-dia-kpis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">'+
+    '<div class="rfr-dia-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px">'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Cubetas cosechadas</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:44px;line-height:1.1">'+r.totalCubetas+'</div>'+
+        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+r.totalCubetas+'</div>'+
       '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Total cajas</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:44px;line-height:1.1">'+r.totalCajas+'</div>'+
+        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+r.totalCajas+'</div>'+
+      '</div>'+
+      '<div class="kpi-card" style="padding:8px 12px">'+
+        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
+        '<div class="kpi-lbl">Kg cosechados</div>'+
+        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+kgCosechados+' <span style="font-size:14px;font-weight:400;color:var(--text3)">kg</span></div>'+
       '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Proceso (merma)</div>'+
-        '<div class="kpi-val" style="color:var(--camote);font-size:44px;line-height:1.1">'+(r.merma||0)+' <span style="font-size:16px;font-weight:400;color:var(--text3)">kg</span></div>'+
+        '<div class="kpi-val" style="color:var(--camote);font-size:34px;line-height:1.1">'+(r.merma||0)+' <span style="font-size:14px;font-weight:400;color:var(--text3)">kg</span></div>'+
+      '</div>'+
+      '<div class="kpi-card" style="padding:8px 12px">'+
+        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
+        '<div class="kpi-lbl">% kg cosechados / merma</div>'+
+        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+(pctKgMerma===null?'—':pctKgMerma+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
       '</div>'+
     '</div>'+
     // ── Fila 2: dos columnas de igual altura ──
