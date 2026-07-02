@@ -367,6 +367,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     padding:12px;margin-bottom:8px;
   }
   #rep-fram-sec .rfr-dia-grid .dash-card:last-of-type{margin-bottom:0}
+  #rep-fram-sec .rfr-dia-full{max-width:1400px;margin:10px auto 0}
 }
 </style>
 </head>
@@ -2139,7 +2140,7 @@ var rfrDataCache = [];
 
 var DEF_COLS_RFR = {sobremadura:'#eda100',irregular:'#1baf7a',desgrane:'#e34948',deforme:'#4a3aa7',hongos:'#888780'};
 var DEF_LBL_RFR  = {sobremadura:'Sobremadura',irregular:'Irregular',desgrane:'Desgrane',deforme:'Deforme',hongos:'Hongos'};
-var SEC_COLS_RFR  = ['#1baf7a','#1baf7a','#1baf7a','#1baf7a'];
+var SEC_COLS_RFR  = ['#2a78d6','#1baf7a','#eda100','#4a3aa7'];
 
 function mkRfrChart(id, cfg){
   if(rfrCharts[id]){ rfrCharts[id].destroy(); delete rfrCharts[id]; }
@@ -2306,7 +2307,7 @@ function renderRfrDiaDetalle(){
       '</div>'+
     '</div>'+
     // ── Fila 3: Cajas por sector (ancho completo) ──
-    '<div class="dash-card" style="margin-bottom:0;margin-top:10px;display:flex;flex-direction:column">'+
+    '<div class="dash-card rfr-dia-full" style="margin-bottom:0;margin-top:10px;display:flex;flex-direction:column">'+
       '<div class="dash-card-title">Cajas por sector</div>'+
       '<div style="position:relative;width:100%;flex:1;min-height:220px;margin-top:8px"><canvas id="rfr-dia-chart-sec" role="img" aria-label="Cajas por sector">Sectores.</canvas></div>'+
       '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Sectores</div>'+
