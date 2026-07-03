@@ -361,7 +361,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   #rep-fram-sec .rfr-dia-kpis .kpi-card{padding:8px 12px}
   #rep-fram-sec .rfr-dia-grid{
     max-width:1400px;margin:0 auto;
-    display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:stretch;
+    display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:stretch;
   }
   #rep-fram-sec .rfr-dia-grid .dash-card{
     padding:12px;margin-bottom:8px;
@@ -2379,7 +2379,7 @@ function renderRfrDiaDetalle(){
       data:{labels:['1','2','3','4'],datasets:[{data:secValsDia,backgroundColor:SEC_COLS_RFR,borderRadius:3}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
         tooltip:{callbacks:{label:function(c){return ' '+c.raw+' cajas ('+Math.round((secSumDia>0?c.raw/secSumDia*100:0))+'%)';}}}},
-        scales:{x:{grid:{display:false},ticks:{color:textMuted,font:{size:12}}},y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true}}}});
+        scales:{x:{grid:{display:false},ticks:{color:textMuted,font:{size:12}}},y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true,suggestedMax:(function(){var m=Math.max.apply(null,secValsDia.concat([1]));return m+Math.ceil(m*0.15)+1;})()}}}});
   },30);
 }
 
@@ -2685,7 +2685,7 @@ function renderRfrSemDetalle(){
       data:{labels:['1','2','3','4'],datasets:[{data:secVals,backgroundColor:SEC_COLS_RFR,borderRadius:3}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
         tooltip:{callbacks:{label:function(c){return ' '+c.raw+' cajas ('+Math.round((secSum>0?c.raw/secSum*100:0))+'%)';}}}},
-        scales:{x:{grid:{display:false},ticks:{color:textMuted,font:{size:12}}},y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true}}}});
+        scales:{x:{grid:{display:false},ticks:{color:textMuted,font:{size:12}}},y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true,suggestedMax:(function(){var m=Math.max.apply(null,secVals.concat([1]));return m+Math.ceil(m*0.15)+1;})()}}}});
 
     var lineaLabelPlugin = {
       id:'lineaSemLabels',
@@ -2827,7 +2827,7 @@ function renderRfrResumen(data){
     '</div>'+
     // ── Fila 2: tarjetas independientes (trabajador ocupa las 2 filas a la izquierda) ──
     '<div class="rfr-dia-grid">'+
-      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column;grid-row:span 2">'+
+      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column;grid-row:span 2;min-width:0">'+
         '<div class="dash-card-title">Cubetas por trabajador \u2014 ciclo</div>'+
         '<div class="dash-card-sub">'+trabArr.length+' trabajadores \u00b7 promedio por d\u00eda</div>'+
         '<div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text3)">'+
@@ -2835,7 +2835,7 @@ function renderRfrResumen(data){
           '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#eda100;display:inline-block"></span>20\u201325</span>'+
           '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1baf7a;display:inline-block"></span>&gt; 25</span>'+
         '</div>'+
-        '<div style="position:relative;width:100%;flex:1;min-height:460px;overflow-x:auto;overflow-y:hidden">'+
+        '<div style="position:relative;width:100%;flex:1;min-height:460px;min-width:0;overflow-x:auto;overflow-y:hidden">'+
           '<div style="position:relative;height:100%;min-width:'+Math.max(700,trabArr.length*42)+'px">'+
             '<canvas id="rfr-res-trab-chart" role="img" aria-label="Promedio de cubetas por trabajador">Trabajadores.</canvas>'+
           '</div>'+
@@ -2929,7 +2929,7 @@ function renderRfrResumen(data){
       data:{labels:['1','2','3','4'],datasets:[{data:secVals,backgroundColor:SEC_COLS_RFR,borderRadius:3}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
         tooltip:{callbacks:{label:function(c){return ' '+c.raw+' cajas ('+Math.round((secSum>0?c.raw/secSum*100:0))+'%)';}}}},
-        scales:{x:{grid:{display:false},ticks:{color:textMuted,font:{size:12}}},y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true}}}});
+        scales:{x:{grid:{display:false},ticks:{color:textMuted,font:{size:12}}},y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true,suggestedMax:(function(){var m=Math.max.apply(null,secVals.concat([1]));return m+Math.ceil(m*0.15)+1;})()}}}});
 
     mkRfrChart('rfr-res-linea-chart',{
       type:'line',
