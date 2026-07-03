@@ -370,7 +370,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   #rep-fram-sec .rfr-dia-full{max-width:1400px;margin:10px auto 0}
   #rep-fram-sec .rfr-topbar{max-width:1400px;margin-left:auto;margin-right:auto}
 }
-.rfr-chart-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-top:10px;box-shadow:0 1px 3px rgba(0,0,0,0.15)}
+.rfr-chart-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-top:14px;box-shadow:0 1px 3px rgba(0,0,0,0.15)}
 .rfr-chart-box:first-child{margin-top:0}
 </style>
 </head>
@@ -2523,7 +2523,7 @@ function renderRfrSemDetalle(){
     '</div>'+
     // ── Fila 2: dos columnas de igual altura ──
     '<div class="rfr-dia-grid" style="align-items:stretch">'+
-      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
+      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column;background:var(--bg)">'+
         '<div class="rfr-chart-box" style="display:flex;flex-direction:column;flex:1;min-height:0">'+
           '<div class="dash-card-title">Cubetas por trabajador \u2014 semana</div>'+
           '<div class="dash-card-sub">'+trabArr.length+' trabajadores \u00b7 promedio por d\u00eda</div>'+
@@ -2543,7 +2543,7 @@ function renderRfrSemDetalle(){
           '</div>'+
         '</div>'+
       '</div>'+
-      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
+      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column;background:var(--bg)">'+
         (defSum>0?
           '<div class="rfr-chart-box" style="flex:1;min-height:0">'+
             '<div class="dash-card-title">Control de calidad</div>'+
@@ -2853,7 +2853,7 @@ function renderRfrResumen(data){
           '</div>'+
         '</div>'+
       '</div>'+
-      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
+      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column;background:var(--bg)">'+
         (defSum>0?
           '<div class="rfr-chart-box" style="flex:1;min-height:0">'+
             '<div class="dash-card-title">Control de calidad</div>'+
@@ -2911,7 +2911,7 @@ function renderRfrResumen(data){
             return c.datasetIndex===1?' Meta: 25':' M\u00ednimo: 20';
           }}}},
         scales:{
-          x:{grid:{display:false},ticks:{color:textMuted,font:{size:11},maxRotation:45}},
+          x:{grid:{display:false},ticks:{color:textMuted,font:{size:10},maxRotation:60,minRotation:60,autoSkip:false}},
           y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:11}},
              beginAtZero:true,suggestedMax:Math.max(30,maxProm+5),
              title:{display:true,text:'Cubetas/d\u00eda',color:textMuted,font:{size:11}}}
