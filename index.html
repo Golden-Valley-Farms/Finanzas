@@ -2199,7 +2199,13 @@ function renderRfrDiaDetalle(){
   var defVals=defKeys.map(function(k){return Math.round(((r.defectos&&r.defectos[k])||0)*100)/100;});
   var defSum=Math.round(defVals.reduce(function(a,v){return a+v;},0)*100)/100;
 
-  var trabsSorted=(r.trabajadores||[]).slice().sort(function(a,b){return b.cubetas-a.cubetas;});
+  var trabsMapDia={};
+  (r.trabajadores||[]).forEach(function(t){
+    var nom=rfrNombreNorm(t.nombre);
+    if(!trabsMapDia[nom]) trabsMapDia[nom]=0;
+    trabsMapDia[nom]+=t.cubetas||0;
+  });
+  var trabsSorted=Object.keys(trabsMapDia).map(function(n){return{nombre:n,cubetas:trabsMapDia[n]};}).sort(function(a,b){return b.cubetas-a.cubetas;});
   var maxCub=trabsSorted.length?trabsSorted[0].cubetas:1;
 
   var defKeysSorted=defKeys.slice().sort(function(a,b){return defVals[defKeys.indexOf(b)]-defVals[defKeys.indexOf(a)];});
@@ -2412,6 +2418,8 @@ function rfrSemanaAgrup(sk){
   return{sk:sk,dias:0,cubetas:0,c6oz:0,c12oz:0,cajas:0,merma:0,trabs:{},secMap:{},
     defMap:{sobremadura:0,irregular:0,desgrane:0,deforme:0,hongos:0},registros:[]};
 }
+function rfrNombreNorm(n){ return (n||'').trim().toUpperCase(); }
+
 function rfrSemanaAcum(s,r){
   s.dias++; s.cubetas+=r.totalCubetas||0; s.cajas+=r.totalCajas||0; s.merma+=r.merma||0;
   s.registros.push(r);
@@ -2421,8 +2429,9 @@ function rfrSemanaAcum(s,r){
     var sec='S'+(c.sector||1); s.secMap[sec]=(s.secMap[sec]||0)+(c.cantidad||0);
   });
   (r.trabajadores||[]).forEach(function(t){
-    if(!s.trabs[t.nombre]) s.trabs[t.nombre]={cubetas:0,dias:0};
-    s.trabs[t.nombre].cubetas+=t.cubetas||0; s.trabs[t.nombre].dias++;
+    var nom=rfrNombreNorm(t.nombre);
+    if(!s.trabs[nom]) s.trabs[nom]={cubetas:0,dias:0};
+    s.trabs[nom].cubetas+=t.cubetas||0; s.trabs[nom].dias++;
   });
   Object.keys(s.defMap).forEach(function(k){ s.defMap[k]+=((r.defectos&&r.defectos[k])||0); });
 }
@@ -2752,9 +2761,10 @@ function renderRfrResumen(data){
     totalCajas+=r.totalCajas||0; totalCubetas+=r.totalCubetas||0; totalMerma+=r.merma||0;
     diasSet[r.fecha]=1;
     (r.trabajadores||[]).forEach(function(t){
-      if(!trabs[t.nombre]) trabs[t.nombre]={cubetas:0,dias:0};
-      trabs[t.nombre].cubetas+=(t.cubetas||0);
-      trabs[t.nombre].dias+=1;
+      var nom=rfrNombreNorm(t.nombre);
+      if(!trabs[nom]) trabs[nom]={cubetas:0,dias:0};
+      trabs[nom].cubetas+=(t.cubetas||0);
+      trabs[nom].dias+=1;
     });
     (r.cajas||[]).forEach(function(c){
       var s='S'+(c.sector||1); secMap[s]=(secMap[s]||0)+(c.cantidad||0);
