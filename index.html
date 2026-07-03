@@ -361,7 +361,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   #rep-fram-sec .rfr-dia-kpis .kpi-card{padding:8px 12px}
   #rep-fram-sec .rfr-dia-grid{
     max-width:1400px;margin:0 auto;
-    display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start;
+    display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:stretch;
   }
   #rep-fram-sec .rfr-dia-grid .dash-card{
     padding:12px;margin-bottom:8px;
@@ -2835,8 +2835,10 @@ function renderRfrResumen(data){
           '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#eda100;display:inline-block"></span>20\u201325</span>'+
           '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1baf7a;display:inline-block"></span>&gt; 25</span>'+
         '</div>'+
-        '<div style="position:relative;width:100%;flex:1;min-height:460px">'+
-          '<canvas id="rfr-res-trab-chart" role="img" aria-label="Promedio de cubetas por trabajador">Trabajadores.</canvas>'+
+        '<div style="position:relative;width:100%;flex:1;min-height:460px;overflow-x:auto;overflow-y:hidden">'+
+          '<div style="position:relative;height:100%;min-width:'+Math.max(700,trabArr.length*42)+'px">'+
+            '<canvas id="rfr-res-trab-chart" role="img" aria-label="Promedio de cubetas por trabajador">Trabajadores.</canvas>'+
+          '</div>'+
         '</div>'+
       '</div>'+
       '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
@@ -2893,7 +2895,7 @@ function renderRfrResumen(data){
             return c.datasetIndex===1?' Meta: 25':' M\u00ednimo: 20';
           }}}},
         scales:{
-          x:{grid:{display:false},ticks:{color:textMuted,font:{size:10},maxRotation:60,minRotation:60,autoSkip:false}},
+          x:{grid:{display:false},ticks:{color:textMuted,font:{size:11},maxRotation:45,minRotation:45,autoSkip:false}},
           y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:11}},
              beginAtZero:true,suggestedMax:Math.max(30,maxProm+5),
              title:{display:true,text:'Cubetas/d\u00eda',color:textMuted,font:{size:11}}}
