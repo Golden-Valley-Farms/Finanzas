@@ -2221,7 +2221,7 @@ function renderRfrDiaDetalle(){
   }).join('');
 
   var kgCosechados = r.totalKg||0;
-  var pctKgMerma = (kgCosechados+(r.merma||0))>0 ? Math.round((kgCosechados/(kgCosechados+(r.merma||0)))*100) : null;
+  var pctKgMerma = (kgCosechados+(r.merma||0))>0 ? Math.round(((r.merma||0)/(kgCosechados+(r.merma||0)))*100) : null;
 
   var secMapDia={}; (r.cajas||[]).forEach(function(c){
     var sec='S'+(c.sector||1); secMapDia[sec]=(secMapDia[sec]||0)+(c.cantidad||0);
@@ -2254,7 +2254,7 @@ function renderRfrDiaDetalle(){
       '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
-        '<div class="kpi-lbl">Rendimiento</div>'+
+        '<div class="kpi-lbl">Merma</div>'+
         '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+(pctKgMerma===null?'—':pctKgMerma+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
       '</div>'+
     '</div>'+
@@ -2480,7 +2480,7 @@ function renderRfrSemDetalle(){
     var kg=(r.totalKg!==undefined&&r.totalKg!==null)?r.totalKg:Math.round((r.totalCajas||0)*(typeof KG_POR_CAJA!=='undefined'?KG_POR_CAJA:2.4)*100)/100;
     return a+kg;
   },0)*10)/10;
-  var pctKgMerma=(kgCosechados+s.merma)>0?Math.round((kgCosechados/(kgCosechados+s.merma))*100):null;
+  var pctKgMerma=(kgCosechados+s.merma)>0?Math.round((s.merma/(kgCosechados+s.merma))*100):null;
 
   var kgPorDia=diaLbls.map(function(_,i){
     var d=new Date(sunDate); d.setDate(sunDate.getDate()+1+i);
@@ -2511,7 +2511,7 @@ function renderRfrSemDetalle(){
       '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
-        '<div class="kpi-lbl">Rendimiento</div>'+
+        '<div class="kpi-lbl">Merma</div>'+
         '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+(pctKgMerma===null?'\u2014':pctKgMerma+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
       '</div>'+
     '</div>'+
@@ -2535,7 +2535,7 @@ function renderRfrSemDetalle(){
           '<div class="dash-card-sub">Promedio semanal</div>'+
           '<div style="display:flex;align-items:center;gap:14px;margin-top:6px">'+
             '<div style="flex:0 0 auto">'+defRows+'</div>'+
-            '<div style="position:relative;flex:1;min-width:200px;height:180px"><canvas id="rfr-chart-def-sem" role="img" aria-label="Defectos">Defectos.</canvas></div>'+
+            '<div style="position:relative;flex:1;min-width:220px;height:240px"><canvas id="rfr-chart-def-sem" role="img" aria-label="Defectos">Defectos.</canvas></div>'+
           '</div>':
           '<div style="text-align:center;padding:16px 0;color:var(--text3);font-size:13px">Sin datos de calidad esta semana</div>')+
       '</div>'+
@@ -2658,8 +2658,8 @@ function renderRfrSemDetalle(){
         data:{labels:defKeysSorted.map(function(k){return DEF_LBL_RFR[k];}),
           datasets:[{data:defKeysSorted.map(function(k){return defVals[defKeys.indexOf(k)];}),backgroundColor:defKeysSorted.map(function(k){return DEF_COLS_RFR[k];}),hoverOffset:6}]},
         options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
-          plugins:{legend:{display:true,position:'bottom',labels:{color:'#898781',font:{size:11},boxWidth:10,padding:8}},
-            tooltip:{callbacks:{label:function(c){return ' '+c.label+': '+(defSum>0?Math.round(c.raw/defSum*100):0)+'%';}}}}}});
+          plugins:{legend:{display:true,position:'bottom',labels:{color:'#898781',font:{size:11},boxWidth:10,padding:14}},
+            tooltip:{callbacks:{label:function(c){return ' '+c.label+': '+(defSum>0?Math.round(c.raw/defSum*100):0)+'%';}}}},layout:{padding:{top:8}}}});
     }
 
     var secLabelPlugin = {
@@ -2771,7 +2771,7 @@ function renderRfrResumen(data){
   var promCubetas=numDias>0?Math.round(totalCubetas/numDias*10)/10:0;
   var promCajas=numDias>0?Math.round(totalCajas/numDias*10)/10:0;
   totalKgCosechados=Math.round(totalKgCosechados*10)/10;
-  var pctKgMerma=(totalKgCosechados+totalMerma)>0?Math.round((totalKgCosechados/(totalKgCosechados+totalMerma))*100):null;
+  var pctKgMerma=(totalKgCosechados+totalMerma)>0?Math.round((totalMerma/(totalKgCosechados+totalMerma))*100):null;
 
   var defKeys=Object.keys(DEF_COLS_RFR);
   var defVals=defKeys.map(function(k){return Math.round((defMap[k]||0)*10)/10;});
@@ -2821,7 +2821,7 @@ function renderRfrResumen(data){
       '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
-        '<div class="kpi-lbl">Rendimiento</div>'+
+        '<div class="kpi-lbl">Merma</div>'+
         '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+(pctKgMerma===null?'\u2014':pctKgMerma+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
       '</div>'+
     '</div>'+
