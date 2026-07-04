@@ -2381,6 +2381,7 @@ function renderRfrDiaDetalle(){
         tooltip:{callbacks:{label:function(c){return ' '+c.raw+' cajas ('+Math.round((secSumDia>0?c.raw/secSumDia*100:0))+'%)';}}}},
         scales:{x:{grid:{display:false},ticks:{color:textMuted,font:{size:12}}},y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true,suggestedMax:(function(){var m=Math.max.apply(null,secValsDia.concat([1]));return m+Math.ceil(m*0.15)+1;})()}}}});
   },30);
+  setTimeout(function(){ window.dispatchEvent(new Event('resize')); },150);
 }
 
 // ─── POR SEMANA ─────────────────────────────────────────────
@@ -2728,6 +2729,7 @@ function renderRfrSemDetalle(){
       }
     });
   },30);
+  setTimeout(function(){ window.dispatchEvent(new Event('resize')); },150);
 }
 
 
@@ -2952,6 +2954,7 @@ function renderRfrResumen(data){
       }
     });
   },30);
+  setTimeout(function(){ window.dispatchEvent(new Event('resize')); },150);
 }
 
 // ============================================================
