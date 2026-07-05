@@ -1247,7 +1247,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           </div>
           <div class="field">
             <label>Semana</label>
-            <select id="ff-semana" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;padding-right:32px">
+            <select id="ff-semana" onchange="onFramFinSemanaChange()" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;padding-right:32px">
               <option value="">— Selecciona una semana —</option>
             </select>
           </div>
@@ -4919,16 +4919,24 @@ async function sbDeleteFramFinanza(id){
 }
 
 // ---- Registro Finanzas ----
+function cicloDeSemanaFram(sk){
+  var reg = framRegistros.find(function(r){return rfrSemanaKey(r.fecha)===sk;});
+  return reg ? reg.ciclo : null;
+}
+
+function onFramFinSemanaChange(){
+  var sk = document.getElementById('ff-semana').value;
+  if(!sk) return;
+  var ciclo = cicloDeSemanaFram(sk);
+  if(ciclo){
+    var cicloSel = document.getElementById('ff-ciclo');
+    var opt = Array.prototype.find.call(cicloSel.options, function(o){return o.value===ciclo;});
+    if(opt) cicloSel.value = ciclo;
+  }
+}
+
 function initFramFinForm(editF){
   framFinEditId = editF ? editF.id : null;
-
-  var cicloSel = document.getElementById('ff-ciclo');
-  cicloSel.innerHTML = '';
-  CICLOS.forEach(function(c){
-    var o=document.createElement('option'); o.value=c; o.textContent=c;
-    if(editF ? c===editF.ciclo : c===CICLOS[CICLOS.length-1]) o.selected=true;
-    cicloSel.appendChild(o);
-  });
 
   // Semanas disponibles: todas las que ya tengan cosecha registrada
   var semKeys = [];
@@ -4944,6 +4952,15 @@ function initFramFinForm(editF){
     o.textContent = 'Semana '+String(rfrWeekNum(sk)).padStart(2,'0')+' \u00b7 '+rfrSemanaLbl(sk);
     if(editF && editF.semanaKey===sk) o.selected=true;
     semSel.appendChild(o);
+  });
+
+  var cicloDefault = editF ? editF.ciclo : (semKeys.length ? cicloDeSemanaFram(semKeys[0]) : null);
+  var cicloSel = document.getElementById('ff-ciclo');
+  cicloSel.innerHTML = '';
+  CICLOS.forEach(function(c){
+    var o=document.createElement('option'); o.value=c; o.textContent=c;
+    if(cicloDefault ? c===cicloDefault : c===CICLOS[CICLOS.length-1]) o.selected=true;
+    cicloSel.appendChild(o);
   });
 
   document.getElementById('ff-cajas').value = editF ? (editF.cajas||'') : '';
