@@ -4995,8 +4995,9 @@ function guardarRegistroFinanzasFram(){
   reg.descPlanta = descPlanta; reg.descInocuidad = descInocuidad;
 
   var semLbl = 'Semana '+String(rfrWeekNum(semanaKey)).padStart(2,'0')+' \u00b7 '+rfrSemanaLbl(semanaKey);
-  var fechaVal = semanaKey;
-  var fechaLbl = new Date(semanaKey+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+  var satDate = new Date(semanaKey+'T12:00:00'); satDate.setDate(satDate.getDate()+6);
+  var fechaVal = satDate.toISOString().slice(0,10);
+  var fechaLbl = satDate.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
 
   var descuentos = [
     {key:'prestamo', cat:'Pago Prestamo', label:'Pr\u00e9stamo', monto:descPrestamo},
