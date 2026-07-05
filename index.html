@@ -1483,7 +1483,8 @@ async function cargarDesdeSB(){
       return {id:f.id, ciclo:f.ciclo||'', semanaKey:f.semana_key||'',
         cajas:f.cajas||0, precio:f.precio||0,
         descPrestamo:f.desc_prestamo||0, descIntereses:f.desc_intereses||0,
-        descPlanta:f.desc_planta||0, descInocuidad:f.desc_inocuidad||0};
+        descPlanta:f.desc_planta||0, descInocuidad:f.desc_inocuidad||0,
+        gastoIds:f.gasto_ids||{}};
     });
     saveFramFinanzas();
     if(typeof renderFramFinHist==='function') renderFramFinHist();
@@ -1568,7 +1569,7 @@ var SECTORES = { jal_camote: 2, nay_camote: 10 };
 var CATS = {
   camote_general:   ['Compra Insumos','Compra Insumos Agroquímicos','Compra Insumos Riego','Compra Mercancia','Nóminas Operativas'],
   camote_cosecha:   ['Arado','Cosecha','Desvarada','Flete Cosecha','Plantacion'],
-  fram:             ['Compra Insumos','Compra Insumos Agroquímicos','Compra Insumos Riego','Compra Mercancia','Inocuidad','Intereses Operativos','Nóminas Operativas','Pago Prestamo'],
+  fram:             ['Compra Insumos','Compra Insumos Agroquímicos','Compra Insumos Riego','Compra Mercancia','Inocuidad','Intereses Operativos','Nóminas Operativas','Pago Prestamo','Planta'],
   campo_general:    ['Adquisición de Maquinaria','Combustible','Compra Insumos','Fletes','Mantenimiento Equipo','Otros Gastos','Servicios','Viáticos'],
   ofic:             ['Combustible','Contabilidad','Impuestos','IMSS','Intereses Operativos','Manejo de Cuenta','Nóminas Administrativas','Otros Gastos','Seguros','Servicios','Viáticos'],
   com:              ['Compra Mercancia','Fletes']
@@ -4907,7 +4908,8 @@ async function sbSaveFramFinanza(f){
     id:f.id, ciclo:f.ciclo||'', semana_key:f.semanaKey||'',
     cajas:f.cajas||0, precio:f.precio||0,
     desc_prestamo:f.descPrestamo||0, desc_intereses:f.descIntereses||0,
-    desc_planta:f.descPlanta||0, desc_inocuidad:f.descInocuidad||0
+    desc_planta:f.descPlanta||0, desc_inocuidad:f.descInocuidad||0,
+    gasto_ids:f.gastoIds||{}
   });
 }
 async function sbDeleteFramFinanza(id){
@@ -4984,12 +4986,46 @@ function guardarRegistroFinanzasFram(){
     reg = framFinanzas.find(function(f){return f.id===framFinEditId;});
   }
   if(!reg){
-    reg = {id: Date.now()};
+    reg = {id: Date.now(), gastoIds:{}};
     framFinanzas.unshift(reg);
   }
+  if(!reg.gastoIds) reg.gastoIds = {};
   reg.ciclo = ciclo; reg.semanaKey = semanaKey; reg.cajas = cajas; reg.precio = precio;
   reg.descPrestamo = descPrestamo; reg.descIntereses = descIntereses;
   reg.descPlanta = descPlanta; reg.descInocuidad = descInocuidad;
+
+  var semLbl = 'Semana '+String(rfrWeekNum(semanaKey)).padStart(2,'0')+' \u00b7 '+rfrSemanaLbl(semanaKey);
+  var fechaVal = semanaKey;
+  var fechaLbl = new Date(semanaKey+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+
+  var descuentos = [
+    {key:'prestamo', cat:'Pago Prestamo', label:'Pr\u00e9stamo', monto:descPrestamo},
+    {key:'intereses', cat:'Intereses Operativos', label:'Intereses', monto:descIntereses},
+    {key:'planta', cat:'Planta', label:'Planta', monto:descPlanta},
+    {key:'inocuidad', cat:'Inocuidad', label:'Inocuidad', monto:descInocuidad}
+  ];
+  descuentos.forEach(function(d){
+    var existingId = reg.gastoIds[d.key];
+    if(d.monto>0){
+      var gasto = existingId ? gastos.find(function(g){return g.id===existingId;}) : null;
+      if(gasto){
+        gasto.monto = d.monto; gasto.ciclo = ciclo; gasto.fechaVal = fechaVal; gasto.fechaLbl = fechaLbl;
+        gasto.desc = 'Descuento '+d.label+' \u2014 '+semLbl;
+      } else {
+        gasto = {id: Date.now()+Math.floor(Math.random()*1000), fechaVal:fechaVal, fechaLbl:fechaLbl,
+          loc:'jal', cultivo:'fram', cat:d.cat, desc:'Descuento '+d.label+' \u2014 '+semLbl,
+          monto:d.monto, ciclo:ciclo, sector:'', autoGen:true};
+        gastos.unshift(gasto);
+        reg.gastoIds[d.key] = gasto.id;
+      }
+      sbSaveGasto(gasto);
+    } else if(existingId){
+      gastos = gastos.filter(function(g){return g.id!==existingId;});
+      sbDeleteGasto(existingId);
+      delete reg.gastoIds[d.key];
+    }
+  });
+  save();
 
   saveFramFinanzas();
   sbSaveFramFinanza(reg);
@@ -5017,6 +5053,15 @@ function confirmDelFramFin(id){
   var btn = document.getElementById('delbtn-ff-'+id);
   if(!btn) return;
   if(btn.dataset.confirm==='1'){
+    var reg = framFinanzas.find(function(f){return f.id===id;});
+    if(reg && reg.gastoIds){
+      Object.keys(reg.gastoIds).forEach(function(k){
+        var gId = reg.gastoIds[k];
+        gastos = gastos.filter(function(g){return g.id!==gId;});
+        sbDeleteGasto(gId);
+      });
+      save();
+    }
     framFinanzas = framFinanzas.filter(function(f){return f.id!==id;});
     saveFramFinanzas();
     sbDeleteFramFinanza(id);
