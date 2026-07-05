@@ -95,10 +95,10 @@ input,select,textarea,button{font-family:var(--font)}
 
 /* Ventas */
 .ven-subnav{display:flex;gap:6px;margin-bottom:14px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px}
-.fram-subnav-wrap{display:flex;justify-content:center;margin-bottom:14px;overflow-x:auto}
-.fram-subnav{display:inline-flex;gap:6px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px}
-.fram-tab{flex-shrink:0}
-.fram-tab{padding:8px 20px;border:none;background:transparent;border-radius:8px;font-size:13px;cursor:pointer;color:var(--text2);font-family:var(--font);transition:all .15s;font-weight:500;white-space:nowrap}
+.fram-subnav-wrap{display:flex;justify-content:center;margin-bottom:14px}
+.fram-subnav{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px;width:100%;max-width:520px}
+.fram-tab{text-align:center}
+.fram-tab{padding:8px 10px;border:none;background:transparent;border-radius:8px;font-size:12.5px;cursor:pointer;color:var(--text2);font-family:var(--font);transition:all .15s;font-weight:500;line-height:1.25}
 .fram-tab.active{background:var(--surface);color:var(--text);border:0.5px solid var(--border)}
 .ven-tab{flex:1;padding:8px;border:none;background:transparent;border-radius:var(--radius-md,8px);font-size:13px;cursor:pointer;color:var(--text2);font-family:var(--font);transition:all .15s;font-weight:500}
 .ven-tab.active{background:var(--surface);color:var(--text);border:0.5px solid var(--border)}
@@ -1272,7 +1272,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="card" style="margin-bottom:12px">
         <div class="field-row">
           <div class="field">
-            <label>Pr\u00e9stamo</label>
+            <label>Préstamo</label>
             <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="ff-desc-prestamo" placeholder="0" min="0" step="0.01" style="padding-left:24px" oninput="recalcFramFin()"></div>
           </div>
           <div class="field">
@@ -1338,7 +1338,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <option value="todos">Todos los ciclos</option>
         </select>
       </div>
-      <div id="fram-finhist-list"><div class="empty"><div class="empty-icon">💰</div><div class="empty-text">Sin registros de finanzas a\u00fan.</div></div></div>
+      <div id="fram-finhist-list"><div class="empty"><div class="empty-icon">💰</div><div class="empty-text">Sin registros de finanzas aún.</div></div></div>
     </div>
   </div>
 </div>
