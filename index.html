@@ -95,8 +95,9 @@ input,select,textarea,button{font-family:var(--font)}
 
 /* Ventas */
 .ven-subnav{display:flex;gap:6px;margin-bottom:14px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px}
-.fram-subnav-wrap{display:flex;justify-content:center;margin-bottom:14px}
+.fram-subnav-wrap{display:flex;justify-content:center;margin-bottom:14px;overflow-x:auto}
 .fram-subnav{display:inline-flex;gap:6px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px}
+.fram-tab{flex-shrink:0}
 .fram-tab{padding:8px 20px;border:none;background:transparent;border-radius:8px;font-size:13px;cursor:pointer;color:var(--text2);font-family:var(--font);transition:all .15s;font-weight:500;white-space:nowrap}
 .fram-tab.active{background:var(--surface);color:var(--text);border:0.5px solid var(--border)}
 .ven-tab{flex:1;padding:8px;border:none;background:transparent;border-radius:var(--radius-md,8px);font-size:13px;cursor:pointer;color:var(--text2);font-family:var(--font);transition:all .15s;font-weight:500}
@@ -1068,8 +1069,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   <div id="sc-fram" class="screen">
     <div class="fram-subnav-wrap">
       <div class="fram-subnav">
-        <button class="fram-tab active" id="ft-nuevo" onclick="framTab('nuevo', true)">+ Registro</button>
+        <button class="fram-tab active" id="ft-nuevo" onclick="framTab('nuevo', true)">Registro Cosecha</button>
+        <button class="fram-tab" id="ft-fin" onclick="framTab('fin', true)">Registro Finanzas</button>
         <button class="fram-tab" id="ft-hist" onclick="framTab('hist')">Historial</button>
+        <button class="fram-tab" id="ft-finhist" onclick="framTab('finhist')">Historial Finanzas</button>
       </div>
     </div>
 
@@ -1233,6 +1236,84 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </button>
     </div>
 
+    <!-- FORMULARIO REGISTRO FINANZAS -->
+    <div id="fram-fin-sec" style="display:none">
+      <div class="step-label">1. Ciclo y semana</div>
+      <div class="card" style="margin-bottom:12px">
+        <div class="field-row">
+          <div class="field">
+            <label>Ciclo</label>
+            <select id="ff-ciclo" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;padding-right:32px"></select>
+          </div>
+          <div class="field">
+            <label>Semana</label>
+            <select id="ff-semana" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;padding-right:32px">
+              <option value="">— Selecciona una semana —</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-label">2. Facturación</div>
+      <div class="card" style="margin-bottom:12px">
+        <div class="field-row">
+          <div class="field">
+            <label>Cajas facturadas</label>
+            <input type="number" id="ff-cajas" placeholder="0" min="0" oninput="recalcFramFin()">
+          </div>
+          <div class="field">
+            <label>Precio por caja</label>
+            <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="ff-precio" placeholder="0" min="0" step="0.01" style="padding-left:24px" oninput="recalcFramFin()"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-label">3. Descuentos</div>
+      <div class="card" style="margin-bottom:12px">
+        <div class="field-row">
+          <div class="field">
+            <label>Pr\u00e9stamo</label>
+            <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="ff-desc-prestamo" placeholder="0" min="0" step="0.01" style="padding-left:24px" oninput="recalcFramFin()"></div>
+          </div>
+          <div class="field">
+            <label>Intereses</label>
+            <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="ff-desc-intereses" placeholder="0" min="0" step="0.01" style="padding-left:24px" oninput="recalcFramFin()"></div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Planta</label>
+            <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="ff-desc-planta" placeholder="0" min="0" step="0.01" style="padding-left:24px" oninput="recalcFramFin()"></div>
+          </div>
+          <div class="field">
+            <label>Inocuidad</label>
+            <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="ff-desc-inocuidad" placeholder="0" min="0" step="0.01" style="padding-left:24px" oninput="recalcFramFin()"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-label">Resumen</div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0">
+          <span style="color:var(--text2)">Total facturado</span>
+          <span id="ff-total-facturado" style="font-family:var(--mono);color:var(--fram);font-weight:600">$0.00</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0">
+          <span style="color:var(--text2)">Total descuentos</span>
+          <span id="ff-total-descuentos" style="font-family:var(--mono);color:var(--camote);font-weight:600">$0.00</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:14px;padding:8px 0 0;margin-top:4px;border-top:1px solid var(--border)">
+          <span style="color:var(--text);font-weight:600">Neto a recibir</span>
+          <span id="ff-neto" style="font-family:var(--mono);color:var(--text);font-weight:700;font-size:16px">$0.00</span>
+        </div>
+      </div>
+
+      <button class="btn-main" id="btn-framfin-guardar" onclick="guardarRegistroFinanzasFram()" style="background:var(--fram)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"></path></svg>
+        Guardar registro
+      </button>
+    </div>
+
     <!-- HISTORIAL FRAMBUESA -->
     <div id="fram-hist-sec" style="display:none">
       <div style="display:flex;gap:8px;margin-bottom:12px">
@@ -1248,6 +1329,16 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </select>
       </div>
       <div id="fram-hist-list"><div class="empty"><div class="empty-icon">🍇</div><div class="empty-text">Sin registros de frambuesa aún.</div></div></div>
+    </div>
+
+    <!-- HISTORIAL FINANZAS -->
+    <div id="fram-finhist-sec" style="display:none">
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <select id="ff-fil-ciclo" onchange="renderFramFinHist()" style="flex:1;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center;padding-right:28px">
+          <option value="todos">Todos los ciclos</option>
+        </select>
+      </div>
+      <div id="fram-finhist-list"><div class="empty"><div class="empty-icon">💰</div><div class="empty-text">Sin registros de finanzas a\u00fan.</div></div></div>
     </div>
   </div>
 </div>
@@ -1333,6 +1424,7 @@ async function cargarDesdeSB(){
   var eData = await fetchAllRows('envios', 'created_at', false);
   var aData = await fetchAllRows('alm_lotes', 'created_at', false);
   var frData = await fetchAllRows('fram_registros', 'fecha', false);
+  var ffData = await fetchAllRows('fram_finanzas', 'created_at', false);
   var rC = await sb.from('clientes').select('nombre').order('nombre');
   var rP = await sb.from('proveedores').select('nombre').order('nombre');
   var rB = await sb.from('bancos').select('nombre').order('nombre');
@@ -1385,6 +1477,16 @@ async function cargarDesdeSB(){
     if(typeof rfrPoblarSelectSem==='function') rfrPoblarSelectSem();
   } else if(!framRegistros.length){
     console.warn('Supabase conectado pero "fram_registros" regresó vacío. Revisa la tabla y sus políticas RLS.');
+  }
+  if(ffData && ffData.length){
+    framFinanzas = ffData.map(function(f){
+      return {id:f.id, ciclo:f.ciclo||'', semanaKey:f.semana_key||'',
+        cajas:f.cajas||0, precio:f.precio||0,
+        descPrestamo:f.desc_prestamo||0, descIntereses:f.desc_intereses||0,
+        descPlanta:f.desc_planta||0, descInocuidad:f.desc_inocuidad||0};
+    });
+    saveFramFinanzas();
+    if(typeof renderFramFinHist==='function') renderFramFinHist();
   }
   if(rC.data) clientes = rC.data.map(function(c){return c.nombre;});
   if(rP.data) proveedores = rP.data.map(function(p){return p.nombre;});
@@ -4739,6 +4841,11 @@ var framRegistros = [];
 try{ var sfr=localStorage.getItem('cc_fram'); if(sfr) framRegistros=JSON.parse(sfr); }catch(e){}
 function saveFramRegistros(){ try{localStorage.setItem('cc_fram',JSON.stringify(framRegistros));}catch(e){} }
 
+var framFinanzas = [];
+try{ var sff=localStorage.getItem('cc_fram_fin'); if(sff) framFinanzas=JSON.parse(sff); }catch(e){}
+function saveFramFinanzas(){ try{localStorage.setItem('cc_fram_fin',JSON.stringify(framFinanzas));}catch(e){} }
+var framFinEditId = null;
+
 var PRESENTACIONES_CAJA = ['6 oz','12 oz'];
 var framSectorSel = 1; // kept for compatibility
 var trabsTemp = []; // [{nombre, cubetas}]
@@ -4792,6 +4899,188 @@ async function sbDeleteFramRegistro(id){
   if(!sbOnline||!sb){ showToast('Sin conexión a Supabase'); return; }
   var res = await sb.from('fram_registros').delete().eq('id', id);
   if(res.error) showToast('Error al borrar en Supabase: '+res.error.message);
+}
+
+async function sbSaveFramFinanza(f){
+  if(!sbOnline||!sb) return;
+  await sb.from('fram_finanzas').upsert({
+    id:f.id, ciclo:f.ciclo||'', semana_key:f.semanaKey||'',
+    cajas:f.cajas||0, precio:f.precio||0,
+    desc_prestamo:f.descPrestamo||0, desc_intereses:f.descIntereses||0,
+    desc_planta:f.descPlanta||0, desc_inocuidad:f.descInocuidad||0
+  });
+}
+async function sbDeleteFramFinanza(id){
+  if(!sbOnline||!sb){ showToast('Sin conexión a Supabase'); return; }
+  var res = await sb.from('fram_finanzas').delete().eq('id', id);
+  if(res.error) showToast('Error al borrar en Supabase: '+res.error.message);
+}
+
+// ---- Registro Finanzas ----
+function initFramFinForm(editF){
+  framFinEditId = editF ? editF.id : null;
+
+  var cicloSel = document.getElementById('ff-ciclo');
+  cicloSel.innerHTML = '';
+  CICLOS.forEach(function(c){
+    var o=document.createElement('option'); o.value=c; o.textContent=c;
+    if(editF ? c===editF.ciclo : c===CICLOS[CICLOS.length-1]) o.selected=true;
+    cicloSel.appendChild(o);
+  });
+
+  // Semanas disponibles: todas las que ya tengan cosecha registrada
+  var semKeys = [];
+  framRegistros.forEach(function(r){
+    var sk = rfrSemanaKey(r.fecha);
+    if(semKeys.indexOf(sk)<0) semKeys.push(sk);
+  });
+  semKeys.sort().reverse();
+  var semSel = document.getElementById('ff-semana');
+  semSel.innerHTML = '<option value="">— Selecciona una semana —</option>';
+  semKeys.forEach(function(sk){
+    var o=document.createElement('option'); o.value=sk;
+    o.textContent = 'Semana '+String(rfrWeekNum(sk)).padStart(2,'0')+' \u00b7 '+rfrSemanaLbl(sk);
+    if(editF && editF.semanaKey===sk) o.selected=true;
+    semSel.appendChild(o);
+  });
+
+  document.getElementById('ff-cajas').value = editF ? (editF.cajas||'') : '';
+  document.getElementById('ff-precio').value = editF ? (editF.precio||'') : '';
+  document.getElementById('ff-desc-prestamo').value = editF ? (editF.descPrestamo||'') : '';
+  document.getElementById('ff-desc-intereses').value = editF ? (editF.descIntereses||'') : '';
+  document.getElementById('ff-desc-planta').value = editF ? (editF.descPlanta||'') : '';
+  document.getElementById('ff-desc-inocuidad').value = editF ? (editF.descInocuidad||'') : '';
+  recalcFramFin();
+}
+
+function recalcFramFin(){
+  var cajas = parseFloat(document.getElementById('ff-cajas').value)||0;
+  var precio = parseFloat(document.getElementById('ff-precio').value)||0;
+  var dPrestamo = parseFloat(document.getElementById('ff-desc-prestamo').value)||0;
+  var dIntereses = parseFloat(document.getElementById('ff-desc-intereses').value)||0;
+  var dPlanta = parseFloat(document.getElementById('ff-desc-planta').value)||0;
+  var dInocuidad = parseFloat(document.getElementById('ff-desc-inocuidad').value)||0;
+  var totalFacturado = cajas*precio;
+  var totalDescuentos = dPrestamo+dIntereses+dPlanta+dInocuidad;
+  var neto = totalFacturado-totalDescuentos;
+  document.getElementById('ff-total-facturado').textContent = '$'+totalFacturado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+  document.getElementById('ff-total-descuentos').textContent = '$'+totalDescuentos.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+  document.getElementById('ff-neto').textContent = '$'+neto.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function guardarRegistroFinanzasFram(){
+  var ciclo = document.getElementById('ff-ciclo').value;
+  var semanaKey = document.getElementById('ff-semana').value;
+  if(!semanaKey){ showToast('Selecciona una semana'); return; }
+  var cajas = parseFloat(document.getElementById('ff-cajas').value)||0;
+  var precio = parseFloat(document.getElementById('ff-precio').value)||0;
+  var descPrestamo = parseFloat(document.getElementById('ff-desc-prestamo').value)||0;
+  var descIntereses = parseFloat(document.getElementById('ff-desc-intereses').value)||0;
+  var descPlanta = parseFloat(document.getElementById('ff-desc-planta').value)||0;
+  var descInocuidad = parseFloat(document.getElementById('ff-desc-inocuidad').value)||0;
+
+  var reg;
+  if(framFinEditId){
+    reg = framFinanzas.find(function(f){return f.id===framFinEditId;});
+  }
+  if(!reg){
+    reg = {id: Date.now()};
+    framFinanzas.unshift(reg);
+  }
+  reg.ciclo = ciclo; reg.semanaKey = semanaKey; reg.cajas = cajas; reg.precio = precio;
+  reg.descPrestamo = descPrestamo; reg.descIntereses = descIntereses;
+  reg.descPlanta = descPlanta; reg.descInocuidad = descInocuidad;
+
+  saveFramFinanzas();
+  sbSaveFramFinanza(reg);
+  showToast('Registro de finanzas guardado');
+  framFinEditId = null;
+  framTab('finhist');
+}
+
+function editarFramFin(id){
+  var reg = framFinanzas.find(function(f){return f.id===id;});
+  if(!reg) return;
+  document.getElementById('ft-nuevo').classList.remove('active');
+  document.getElementById('ft-fin').classList.add('active');
+  document.getElementById('ft-hist').classList.remove('active');
+  document.getElementById('ft-finhist').classList.remove('active');
+  document.getElementById('fram-form-sec').style.display = 'none';
+  document.getElementById('fram-fin-sec').style.display = 'block';
+  document.getElementById('fram-hist-sec').style.display = 'none';
+  document.getElementById('fram-finhist-sec').style.display = 'none';
+  initFramFinForm(reg);
+  window.scrollTo(0,0);
+}
+
+function confirmDelFramFin(id){
+  var btn = document.getElementById('delbtn-ff-'+id);
+  if(!btn) return;
+  if(btn.dataset.confirm==='1'){
+    framFinanzas = framFinanzas.filter(function(f){return f.id!==id;});
+    saveFramFinanzas();
+    sbDeleteFramFinanza(id);
+    renderFramFinHist();
+    showToast('Registro eliminado');
+  } else {
+    btn.dataset.confirm='1'; btn.textContent='⚠️ Confirmar';
+    setTimeout(function(){
+      if(btn){ btn.dataset.confirm=''; btn.textContent='Eliminar'; }
+    }, 2500);
+  }
+}
+
+function renderFramFinHist(){
+  var filCic = document.getElementById('ff-fil-ciclo').value;
+
+  var ciclosEnFin = [];
+  framFinanzas.forEach(function(f){ if(f.ciclo && ciclosEnFin.indexOf(f.ciclo)<0) ciclosEnFin.push(f.ciclo); });
+  ciclosEnFin.sort();
+  var filCicloSel = document.getElementById('ff-fil-ciclo');
+  filCicloSel.innerHTML='<option value="todos">Todos los ciclos</option>';
+  ciclosEnFin.forEach(function(c){
+    var o=document.createElement('option'); o.value=c; o.textContent=c;
+    if(c===filCic) o.selected=true;
+    filCicloSel.appendChild(o);
+  });
+
+  var data = framFinanzas.filter(function(f){
+    return filCic==='todos' || f.ciclo===filCic;
+  }).slice().sort(function(a,b){return a.semanaKey<b.semanaKey?1:-1;});
+
+  var list = document.getElementById('fram-finhist-list');
+  if(!data.length){
+    list.innerHTML='<div class="empty"><div class="empty-icon">💰</div><div class="empty-text">Sin registros para este filtro.</div></div>';
+    return;
+  }
+  list.innerHTML='';
+  data.forEach(function(f){
+    var totalFacturado = (f.cajas||0)*(f.precio||0);
+    var totalDescuentos = (f.descPrestamo||0)+(f.descIntereses||0)+(f.descPlanta||0)+(f.descInocuidad||0);
+    var neto = totalFacturado-totalDescuentos;
+    var semLbl = f.semanaKey ? ('Semana '+String(rfrWeekNum(f.semanaKey)).padStart(2,'0')+' \u00b7 '+rfrSemanaLbl(f.semanaKey)) : '\u2014';
+    var item = document.createElement('div');
+    item.className='fram-hist-item';
+    item.innerHTML=
+      '<div class="fram-hist-header">'+
+        '<div>'+
+          '<div class="fram-hist-fecha">'+semLbl+'</div>'+
+          '<div style="font-size:12px;color:var(--text3);margin-top:2px">'+(f.ciclo||'')+'</div>'+
+        '</div>'+
+        '<div class="fram-hist-cubetas">$'+neto.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>'+
+      '</div>'+
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">'+
+        '<span class="tag fram">📦 '+(f.cajas||0)+' cajas</span>'+
+        '<span class="tag general">$'+(f.precio||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'/caja</span>'+
+        '<span class="tag general">Facturado $'+totalFacturado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span>'+
+        (totalDescuentos?'<span class="tag camote">Descuentos $'+totalDescuentos.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span>':'')+
+      '</div>'+
+      '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">'+
+        '<button onclick="editarFramFin('+f.id+')" style="padding:6px 12px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Editar</button>'+
+        '<button id="delbtn-ff-'+f.id+'" onclick="confirmDelFramFin('+f.id+')" style="padding:6px 12px;border-radius:var(--radius);border:1px solid var(--fram-border);background:transparent;color:var(--fram);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Eliminar</button>'+
+      '</div>';
+    list.appendChild(item);
+  });
 }
 
 // ---- Trabajadores list (stored separately) ----
@@ -5288,20 +5577,30 @@ function guardarRegistroFram(){
 
 function framTab(t, forceNew){
   document.getElementById('ft-nuevo').classList.toggle('active', t==='nuevo');
+  document.getElementById('ft-fin').classList.toggle('active', t==='fin');
   document.getElementById('ft-hist').classList.toggle('active', t==='hist');
+  document.getElementById('ft-finhist').classList.toggle('active', t==='finhist');
   document.getElementById('fram-form-sec').style.display = t==='nuevo'?'block':'none';
+  document.getElementById('fram-fin-sec').style.display = t==='fin'?'block':'none';
   document.getElementById('fram-hist-sec').style.display = t==='hist'?'block':'none';
+  document.getElementById('fram-finhist-sec').style.display = t==='finhist'?'block':'none';
   if(t==='nuevo' && (!framEditId || forceNew)){ framEditId=null; initFramForm(); }
+  if(t==='fin' && (!framFinEditId || forceNew)){ framFinEditId=null; initFramFinForm(); }
   if(t==='hist') renderFramHist();
+  if(t==='finhist') renderFramFinHist();
 }
 
 function editarFramRegistro(id){
   var reg = framRegistros.find(function(r){return r.id===id;});
   if(!reg) return;
   document.getElementById('ft-nuevo').classList.add('active');
+  document.getElementById('ft-fin').classList.remove('active');
   document.getElementById('ft-hist').classList.remove('active');
+  document.getElementById('ft-finhist').classList.remove('active');
   document.getElementById('fram-form-sec').style.display = 'block';
+  document.getElementById('fram-fin-sec').style.display = 'none';
   document.getElementById('fram-hist-sec').style.display = 'none';
+  document.getElementById('fram-finhist-sec').style.display = 'none';
   initFramForm(reg);
   window.scrollTo(0,0);
 }
