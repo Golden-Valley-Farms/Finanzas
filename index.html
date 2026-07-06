@@ -1252,6 +1252,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             </select>
           </div>
         </div>
+        <div class="field" style="margin-top:14px;margin-bottom:0">
+          <label>Cliente</label>
+          <input type="text" id="ff-cliente" placeholder="Nombre del cliente" list="clientes-list">
+        </div>
       </div>
 
       <div class="step-label">2. Facturación</div>
@@ -1432,7 +1436,11 @@ async function cargarDesdeSB(){
 
   if(gData && gData.length){
     gastos = gData.map(function(g){
-      return {id:g.id, fechaVal:g.fecha_val, fechaLbl:g.fecha_lbl,
+      var semLbl = g.fecha_lbl;
+      if(g.auto_gen && g.fecha_val){
+        try{ semLbl = 'Semana '+String(rfrWeekNum(rfrSemanaKey(g.fecha_val))).padStart(2,'0'); }catch(e){}
+      }
+      return {id:g.id, fechaVal:g.fecha_val, fecha:g.fecha_lbl, semLbl:semLbl,
         loc:g.loc, cultivo:g.cultivo, cat:g.cat, desc:g.descripcion,
         monto:parseFloat(g.monto||0), ciclo:g.ciclo, sector:g.sector,
         banco:g.banco, proveedor:g.proveedor||'', autoGen:g.auto_gen};
@@ -1480,7 +1488,7 @@ async function cargarDesdeSB(){
   }
   if(ffData && ffData.length){
     framFinanzas = ffData.map(function(f){
-      return {id:f.id, ciclo:f.ciclo||'', semanaKey:f.semana_key||'',
+      return {id:f.id, ciclo:f.ciclo||'', semanaKey:f.semana_key||'', cliente:f.cliente||'',
         cajas:f.cajas||0, precio:f.precio||0,
         descPrestamo:f.desc_prestamo||0, descIntereses:f.desc_intereses||0,
         descPlanta:f.desc_planta||0, descInocuidad:f.desc_inocuidad||0,
@@ -4905,7 +4913,7 @@ async function sbDeleteFramRegistro(id){
 async function sbSaveFramFinanza(f){
   if(!sbOnline||!sb) return;
   await sb.from('fram_finanzas').upsert({
-    id:f.id, ciclo:f.ciclo||'', semana_key:f.semanaKey||'',
+    id:f.id, ciclo:f.ciclo||'', semana_key:f.semanaKey||'', cliente:f.cliente||'',
     cajas:f.cajas||0, precio:f.precio||0,
     desc_prestamo:f.descPrestamo||0, desc_intereses:f.descIntereses||0,
     desc_planta:f.descPlanta||0, desc_inocuidad:f.descInocuidad||0,
@@ -4963,6 +4971,7 @@ function initFramFinForm(editF){
     cicloSel.appendChild(o);
   });
 
+  document.getElementById('ff-cliente').value = editF ? (editF.cliente||'') : '';
   document.getElementById('ff-cajas').value = editF ? (editF.cajas||'') : '';
   document.getElementById('ff-precio').value = editF ? (editF.precio||'') : '';
   document.getElementById('ff-desc-prestamo').value = editF ? (editF.descPrestamo||'') : '';
@@ -4991,6 +5000,8 @@ function guardarRegistroFinanzasFram(){
   var ciclo = document.getElementById('ff-ciclo').value;
   var semanaKey = document.getElementById('ff-semana').value;
   if(!semanaKey){ showToast('Selecciona una semana'); return; }
+  var cliente = document.getElementById('ff-cliente').value.trim();
+  agregarClienteSiNuevo(cliente);
   var cajas = parseFloat(document.getElementById('ff-cajas').value)||0;
   var precio = parseFloat(document.getElementById('ff-precio').value)||0;
   var descPrestamo = parseFloat(document.getElementById('ff-desc-prestamo').value)||0;
@@ -5007,11 +5018,11 @@ function guardarRegistroFinanzasFram(){
     framFinanzas.unshift(reg);
   }
   if(!reg.gastoIds) reg.gastoIds = {};
-  reg.ciclo = ciclo; reg.semanaKey = semanaKey; reg.cajas = cajas; reg.precio = precio;
+  reg.ciclo = ciclo; reg.semanaKey = semanaKey; reg.cliente = cliente; reg.cajas = cajas; reg.precio = precio;
   reg.descPrestamo = descPrestamo; reg.descIntereses = descIntereses;
   reg.descPlanta = descPlanta; reg.descInocuidad = descInocuidad;
 
-  var semLbl = 'Semana '+String(rfrWeekNum(semanaKey)).padStart(2,'0')+' \u00b7 '+rfrSemanaLbl(semanaKey);
+  var semNumLbl = 'Semana '+String(rfrWeekNum(semanaKey)).padStart(2,'0');
   var satDate = new Date(semanaKey+'T12:00:00'); satDate.setDate(satDate.getDate()+6);
   var fechaVal = satDate.toISOString().slice(0,10);
   var fechaLbl = satDate.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
@@ -5027,12 +5038,14 @@ function guardarRegistroFinanzasFram(){
     if(d.monto>0){
       var gasto = existingId ? gastos.find(function(g){return g.id===existingId;}) : null;
       if(gasto){
-        gasto.monto = d.monto; gasto.ciclo = ciclo; gasto.fechaVal = fechaVal; gasto.fechaLbl = fechaLbl;
-        gasto.desc = 'Descuento '+d.label+' \u2014 '+semLbl;
+        gasto.monto = d.monto; gasto.ciclo = ciclo; gasto.proveedor = cliente;
+        gasto.fechaVal = fechaVal; gasto.fecha = fechaLbl; gasto.semLbl = semNumLbl;
+        gasto.desc = 'Descuento '+d.label+' \u2014 '+semNumLbl;
       } else {
-        gasto = {id: Date.now()+Math.floor(Math.random()*1000), fechaVal:fechaVal, fechaLbl:fechaLbl,
-          loc:'jal', cultivo:'fram', cat:d.cat, desc:'Descuento '+d.label+' \u2014 '+semLbl,
-          monto:d.monto, ciclo:ciclo, sector:'', autoGen:true};
+        gasto = {id: Date.now()+Math.floor(Math.random()*1000),
+          fechaVal:fechaVal, fecha:fechaLbl, semKey:'', semLbl:semNumLbl,
+          loc:'jal', cultivo:'fram', cat:d.cat, desc:'Descuento '+d.label+' \u2014 '+semNumLbl,
+          monto:d.monto, ciclo:ciclo, sector:'', banco:'', proveedor:cliente, autoGen:true};
         gastos.unshift(gasto);
         reg.gastoIds[d.key] = gasto.id;
       }
@@ -5128,7 +5141,7 @@ function renderFramFinHist(){
       '<div class="fram-hist-header">'+
         '<div>'+
           '<div class="fram-hist-fecha">'+semLbl+'</div>'+
-          '<div style="font-size:12px;color:var(--text3);margin-top:2px">'+(f.ciclo||'')+'</div>'+
+          '<div style="font-size:12px;color:var(--text3);margin-top:2px">'+(f.ciclo||'')+(f.cliente?' \u00b7 '+f.cliente:'')+'</div>'+
         '</div>'+
         '<div class="fram-hist-cubetas">$'+neto.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>'+
       '</div>'+
