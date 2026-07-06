@@ -2666,7 +2666,12 @@ function renderRfrSemDetalle(){
 
   document.getElementById('rfr-sem-detalle').innerHTML=
     // ── Fila 1: KPIs ──
-    '<div class="rfr-dia-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px">'+
+    '<div class="rfr-dia-kpis" style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:10px">'+
+      '<div class="kpi-card" style="padding:8px 12px">'+
+        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
+        '<div class="kpi-lbl">Cubetas cosechadas</div>'+
+        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+s.cubetas.toLocaleString('es-MX')+'</div>'+
+      '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Total cajas</div>'+
