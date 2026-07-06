@@ -525,7 +525,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </select>
       </div>
       <div>
-        <select id="his-fil-cat" onchange="filtroCat=this.value;renderHis()" style="width:100%;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center;padding-right:30px"><option value="todas">Categor\u00eda: Todas</option></select>
+        <select id="his-fil-cat" onchange="filtroCat=this.value;renderHis()" style="width:100%;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center;padding-right:30px"><option value="todas">Categoria: Todas</option></select>
       </div>
     </div>
     <div class="his-sel-bar" id="his-sel-bar">
@@ -1084,7 +1084,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="fram-subnav">
         <button class="fram-tab active" id="ft-nuevo" onclick="framTab('nuevo', true)">Registro Cosecha</button>
         <button class="fram-tab" id="ft-fin" onclick="framTab('fin', true)">Registro Finanzas</button>
-        <button class="fram-tab" id="ft-nomina" onclick="framTab('nomina', true)">N\u00f3mina Cosechadores</button>
+        <button class="fram-tab" id="ft-nomina" onclick="framTab('nomina', true)">Nomina Cosechadores</button>
         <button class="fram-tab" id="ft-hist" onclick="framTab('hist')">Historial</button>
         <button class="fram-tab" id="ft-finhist" onclick="framTab('finhist')">Historial Finanzas</button>
       </div>
@@ -1290,7 +1290,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="card" style="margin-bottom:12px">
         <div class="field-row">
           <div class="field">
-            <label>Pr\u00e9stamo</label>
+            <label>Prestamo</label>
             <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="ff-desc-prestamo" placeholder="0" min="0" step="0.01" style="padding-left:24px" oninput="recalcFramFin()"></div>
           </div>
           <div class="field">
@@ -1370,14 +1370,14 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </div>
         <datalist id="trabajadores-list-dl"></datalist>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
-          <span style="font-size:12px;color:var(--text2);font-weight:500">Total n\u00f3mina cosechadores</span>
+          <span style="font-size:12px;color:var(--text2);font-weight:500">Total nomina cosechadores</span>
           <span id="fn-total" style="font-size:18px;font-weight:700;color:var(--fram);font-family:var(--mono)">$0.00</span>
         </div>
       </div>
 
       <button class="btn-main" id="btn-framnomina-guardar" onclick="guardarFramNomina()" style="background:var(--fram)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"></path></svg>
-        Guardar n\u00f3mina de la semana
+        Guardar nomina de la semana
       </button>
     </div>
 
@@ -2071,7 +2071,7 @@ function renderHis(){
   var catsEnGastos = [];
   gastos.forEach(function(g){ if(g.cat && catsEnGastos.indexOf(g.cat)<0) catsEnGastos.push(g.cat); });
   catsEnGastos.sort(function(a,b){return a.localeCompare(b,'es');});
-  selCat.innerHTML = '<option value="todas">Categor\u00eda: Todas</option>';
+  selCat.innerHTML = '<option value="todas">Categoria: Todas</option>';
   catsEnGastos.forEach(function(c){
     var o = document.createElement('option');
     o.value = c; o.textContent = c;
@@ -5256,7 +5256,7 @@ function guardarRegistroFinanzasFram(){
   var fechaLbl = satDate.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
 
   var descuentos = [
-    {key:'prestamo', cat:'Pago Prestamo', label:'Pr\u00e9stamo', monto:descPrestamo},
+    {key:'prestamo', cat:'Pago Prestamo', label:'Prestamo', monto:descPrestamo},
     {key:'intereses', cat:'Intereses Operativos', label:'Intereses', monto:descIntereses},
     {key:'planta', cat:'Planta', label:'Planta', monto:descPlanta},
     {key:'inocuidad', cat:'Inocuidad', label:'Inocuidad', monto:descInocuidad}
@@ -5516,7 +5516,21 @@ function renderFramFinHist(){
         '<span class="tag general">$'+(f.precio||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'/caja</span>'+
         '<span class="tag general">Facturado $'+totalFacturado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span>'+
         (totalDescuentos?'<span class="tag camote">Descuentos $'+totalDescuentos.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span>':'')+
+        (f.nominaCosechadores?'<span class="tag fram">👷 Nomina cosechadores $'+f.nominaCosechadores.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span>':'')+
       '</div>'+
+      ((f.nominaCosechadoresDetalle && f.nominaCosechadoresDetalle.length)?
+        '<details style="margin-bottom:6px">'+
+          '<summary style="cursor:pointer;font-size:12px;color:var(--text3);font-weight:600">Ver desglose de cosechadores ('+f.nominaCosechadoresDetalle.length+')</summary>'+
+          '<div style="margin-top:8px;background:var(--surface2);border-radius:var(--radius);padding:10px 12px">'+
+            f.nominaCosechadoresDetalle.map(function(t){
+              return '<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0">'+
+                '<span style="color:var(--text2)">'+t.nombre+'</span>'+
+                '<span style="font-family:var(--mono);color:var(--fram)">$'+(t.sueldo||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span>'+
+              '</div>';
+            }).join('')+
+          '</div>'+
+        '</details>'
+        : '')+
       '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">'+
         '<button onclick="editarFramFin('+f.id+')" style="padding:6px 12px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Editar</button>'+
         '<button id="delbtn-ff-'+f.id+'" onclick="confirmDelFramFin('+f.id+')" style="padding:6px 12px;border-radius:var(--radius);border:1px solid var(--fram-border);background:transparent;color:var(--fram);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Eliminar</button>'+
