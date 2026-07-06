@@ -1285,11 +1285,20 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </div>
       </div>
 
-      <div class="step-label">3. Descuentos</div>
+      <div class="step-label">3. N\u00f3mina cosechadores</div>
+      <div class="card" style="margin-bottom:12px">
+        <div class="field" style="margin-bottom:0">
+          <label>Total n\u00f3mina de cosechadores esa semana</label>
+          <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="ff-nomina-cosechadores" placeholder="0" min="0" step="0.01" style="padding-left:24px" oninput="recalcFramFin()"></div>
+          <div style="font-size:11px;color:var(--text3);margin-top:6px">Solo la parte de la n\u00f3mina que corresponde a quienes cosecharon esa semana (sin empaque, chofer, etc.)</div>
+        </div>
+      </div>
+
+      <div class="step-label">4. Descuentos</div>
       <div class="card" style="margin-bottom:12px">
         <div class="field-row">
           <div class="field">
-            <label>Préstamo</label>
+            <label>Pr\u00e9stamo</label>
             <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="ff-desc-prestamo" placeholder="0" min="0" step="0.01" style="padding-left:24px" oninput="recalcFramFin()"></div>
           </div>
           <div class="field">
@@ -1498,7 +1507,7 @@ async function cargarDesdeSB(){
   if(ffData && ffData.length){
     framFinanzas = ffData.map(function(f){
       return {id:f.id, ciclo:f.ciclo||'', semanaKey:f.semana_key||'', cliente:f.cliente||'',
-        cajas:f.cajas||0, precio:f.precio||0,
+        cajas:f.cajas||0, precio:f.precio||0, nominaCosechadores:f.nomina_cosechadores||0,
         descPrestamo:f.desc_prestamo||0, descIntereses:f.desc_intereses||0,
         descPlanta:f.desc_planta||0, descInocuidad:f.desc_inocuidad||0,
         gastoIds:f.gasto_ids||{}};
@@ -1665,6 +1674,10 @@ function nominaFramSemana(semanaKey){
     }
   });
   return total;
+}
+function nominaCosechadoresFramSemana(semanaKey){
+  var reg = framFinanzas.find(function(f){return f.semanaKey===semanaKey;});
+  return reg ? (reg.nominaCosechadores||0) : null;
 }
 function recalcularSemanasGastos(){
   var n=0;
@@ -2628,7 +2641,8 @@ function renderRfrSemDetalle(){
   var nominaSemana = nominaFramSemana(sk);
   var numCosechadores = trabArr.length;
   var costoCubetaGeneral = s.cubetas>0 ? (nominaSemana/s.cubetas) : null;
-  var costoCubetaCosechadores = (s.cubetas>0 && numCosechadores>0) ? ((nominaSemana/numCosechadores)/s.cubetas) : null;
+  var nominaCosechSemana = nominaCosechadoresFramSemana(sk);
+  var costoCubetaCosechadores = (s.cubetas>0 && nominaCosechSemana!==null) ? (nominaCosechSemana/s.cubetas) : null;
 
   // Cajas por día (lunes a sábado) de la semana seleccionada
   var diaLbls=['Lun','Mar','Mi\u00e9','Jue','Vie','S\u00e1b'];
@@ -2996,7 +3010,8 @@ function renderRfrResumen(data){
   var semMermaVals=semKeys.map(function(k){return Math.round(semKg[k].merma*10)/10;});
 
   // Costo por cubeta (general y cosechadores) por semana, usando la nómina operativa de frambuesa de esa semana
-  var sumNomina=0, sumCubetasPonderado=0, sumNominaPorCosechador=0;
+  var sumNomina=0, sumCubetasPonderado=0;
+  var sumNominaCosech=0, sumCubetasConNominaCosech=0;
   var costoGeneralPorSemana=semKeys.map(function(sk){
     var nomina=nominaFramSemana(sk);
     var cub=semCubetas[sk]||0;
@@ -3004,14 +3019,14 @@ function renderRfrResumen(data){
     return cub>0?Math.round((nomina/cub)*100)/100:null;
   });
   var costoCosechadoresPorSemana=semKeys.map(function(sk){
-    var nomina=nominaFramSemana(sk);
     var cub=semCubetas[sk]||0;
-    var numCosech=Object.keys(semTrab[sk]||{}).length;
-    if(numCosech>0) sumNominaPorCosechador += nomina/numCosech;
-    return (cub>0&&numCosech>0)?Math.round(((nomina/numCosech)/cub)*100)/100:null;
+    var nominaCosech=nominaCosechadoresFramSemana(sk);
+    if(nominaCosech===null || cub<=0) return null;
+    sumNominaCosech+=nominaCosech; sumCubetasConNominaCosech+=cub;
+    return Math.round((nominaCosech/cub)*100)/100;
   });
   var costoGeneralPonderado = sumCubetasPonderado>0 ? (sumNomina/sumCubetasPonderado) : null;
-  var costoCosechadoresPonderado = sumCubetasPonderado>0 ? (sumNominaPorCosechador/sumCubetasPonderado) : null;
+  var costoCosechadoresPonderado = sumCubetasConNominaCosech>0 ? (sumNominaCosech/sumCubetasConNominaCosech) : null;
 
   cont.innerHTML=
     // ── Fila 1: KPIs ──
@@ -3095,7 +3110,7 @@ function renderRfrResumen(data){
     // ── Fila 5: Costo por cubeta cosechadores (ancho completo) ──
     '<div class="dash-card rfr-dia-full" style="margin-bottom:0;margin-top:10px;display:flex;flex-direction:column">'+
       '<div class="dash-card-title">Costo por cubeta \u2014 cosechadores</div>'+
-      '<div class="dash-card-sub">(N\u00f3mina \u00f7 cosechadores) \u00f7 cubetas, por semana</div>'+
+      '<div class="dash-card-sub">N\u00f3mina de cosechadores \u00f7 cubetas totales, por semana</div>'+
       '<div style="position:relative;width:100%;flex:1;min-height:220px;margin-top:8px"><canvas id="rfr-res-costo-cosechadores-chart" role="img" aria-label="Costo por cubeta cosechadores por semana">Costo por cubeta cosechadores.</canvas></div>'+
       '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
     '</div>';
@@ -5084,7 +5099,7 @@ async function sbSaveFramFinanza(f){
   if(!sbOnline||!sb) return;
   await sb.from('fram_finanzas').upsert({
     id:f.id, ciclo:f.ciclo||'', semana_key:f.semanaKey||'', cliente:f.cliente||'',
-    cajas:f.cajas||0, precio:f.precio||0,
+    cajas:f.cajas||0, precio:f.precio||0, nomina_cosechadores:f.nominaCosechadores||0,
     desc_prestamo:f.descPrestamo||0, desc_intereses:f.descIntereses||0,
     desc_planta:f.descPlanta||0, desc_inocuidad:f.descInocuidad||0,
     gasto_ids:f.gastoIds||{}
@@ -5144,6 +5159,7 @@ function initFramFinForm(editF){
   document.getElementById('ff-cliente').value = editF ? (editF.cliente||'') : '';
   document.getElementById('ff-cajas').value = editF ? (editF.cajas||'') : '';
   document.getElementById('ff-precio').value = editF ? (editF.precio||'') : '';
+  document.getElementById('ff-nomina-cosechadores').value = editF ? (editF.nominaCosechadores||'') : '';
   document.getElementById('ff-desc-prestamo').value = editF ? (editF.descPrestamo||'') : '';
   document.getElementById('ff-desc-intereses').value = editF ? (editF.descIntereses||'') : '';
   document.getElementById('ff-desc-planta').value = editF ? (editF.descPlanta||'') : '';
@@ -5174,6 +5190,7 @@ function guardarRegistroFinanzasFram(){
   agregarClienteSiNuevo(cliente);
   var cajas = parseFloat(document.getElementById('ff-cajas').value)||0;
   var precio = parseFloat(document.getElementById('ff-precio').value)||0;
+  var nominaCosechadores = parseFloat(document.getElementById('ff-nomina-cosechadores').value)||0;
   var descPrestamo = parseFloat(document.getElementById('ff-desc-prestamo').value)||0;
   var descIntereses = parseFloat(document.getElementById('ff-desc-intereses').value)||0;
   var descPlanta = parseFloat(document.getElementById('ff-desc-planta').value)||0;
@@ -5189,6 +5206,7 @@ function guardarRegistroFinanzasFram(){
   }
   if(!reg.gastoIds) reg.gastoIds = {};
   reg.ciclo = ciclo; reg.semanaKey = semanaKey; reg.cliente = cliente; reg.cajas = cajas; reg.precio = precio;
+  reg.nominaCosechadores = nominaCosechadores;
   reg.descPrestamo = descPrestamo; reg.descIntereses = descIntereses;
   reg.descPlanta = descPlanta; reg.descInocuidad = descInocuidad;
 
