@@ -1948,7 +1948,7 @@ function registrar(){
     editandoGastoId=null;
     var btn=document.getElementById('btn-reg');
     btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"/></svg> Registrar gasto';
-    save(); updateHeader();
+    save(); updateHeader(); sbSaveGasto(gastos[idx]);
     showToast('✅ Gasto actualizado');
     document.getElementById('f-monto').value='';
     document.getElementById('f-desc').value='';
@@ -2045,8 +2045,10 @@ function bulkDelete(){
   if(!btn) return;
   if(btn.dataset.confirm==='1'){
     // Confirmed - actually delete
+    var idsABorrar = Array.from(selIds);
     gastos=gastos.filter(function(g){return !selIds.has(String(g.id));});
     save(); updateHeader();
+    idsABorrar.forEach(function(gid){ sbDeleteGasto(gid); });
     var deleted=n;
     selMode=false; selIds.clear();
     btn.dataset.confirm='';
@@ -2220,6 +2222,7 @@ function delGastoModal(id){
   if(!btn) return;
   if(btn.dataset.confirm==='1'){
     gastos=gastos.filter(function(g){return g.id!=id;}); save(); updateHeader();
+    sbDeleteGasto(id);
     document.getElementById('overlay').classList.remove('open');
     renderHis(); showToast('Gasto eliminado');
   } else {
