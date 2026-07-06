@@ -96,8 +96,8 @@ input,select,textarea,button{font-family:var(--font)}
 /* Ventas */
 .ven-subnav{display:flex;gap:6px;margin-bottom:14px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px}
 .fram-subnav-wrap{display:flex;justify-content:center;margin-bottom:14px}
-.fram-subnav{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px;width:100%;max-width:520px}
-.fram-tab{text-align:center}
+.fram-subnav{display:flex;flex-wrap:wrap;gap:6px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px;width:100%;max-width:620px}
+.fram-tab{text-align:center;flex:1 1 calc(50% - 3px);min-width:130px}
 .fram-tab{padding:8px 10px;border:none;background:transparent;border-radius:8px;font-size:12.5px;cursor:pointer;color:var(--text2);font-family:var(--font);transition:all .15s;font-weight:500;line-height:1.25}
 .fram-tab.active{background:var(--surface);color:var(--text);border:0.5px solid var(--border)}
 .ven-tab{flex:1;padding:8px;border:none;background:transparent;border-radius:var(--radius-md,8px);font-size:13px;cursor:pointer;color:var(--text2);font-family:var(--font);transition:all .15s;font-weight:500}
@@ -1084,6 +1084,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="fram-subnav">
         <button class="fram-tab active" id="ft-nuevo" onclick="framTab('nuevo', true)">Registro Cosecha</button>
         <button class="fram-tab" id="ft-fin" onclick="framTab('fin', true)">Registro Finanzas</button>
+        <button class="fram-tab" id="ft-nomina" onclick="framTab('nomina', true)">N\u00f3mina Cosechadores</button>
         <button class="fram-tab" id="ft-hist" onclick="framTab('hist')">Historial</button>
         <button class="fram-tab" id="ft-finhist" onclick="framTab('finhist')">Historial Finanzas</button>
       </div>
@@ -1285,16 +1286,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </div>
       </div>
 
-      <div class="step-label">3. N\u00f3mina cosechadores</div>
-      <div class="card" style="margin-bottom:12px">
-        <div class="field" style="margin-bottom:0">
-          <label>Total n\u00f3mina de cosechadores esa semana</label>
-          <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="ff-nomina-cosechadores" placeholder="0" min="0" step="0.01" style="padding-left:24px" oninput="recalcFramFin()"></div>
-          <div style="font-size:11px;color:var(--text3);margin-top:6px">Solo la parte de la n\u00f3mina que corresponde a quienes cosecharon esa semana (sin empaque, chofer, etc.)</div>
-        </div>
-      </div>
-
-      <div class="step-label">4. Descuentos</div>
+      <div class="step-label">3. Descuentos</div>
       <div class="card" style="margin-bottom:12px">
         <div class="field-row">
           <div class="field">
@@ -1337,6 +1329,55 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <button class="btn-main" id="btn-framfin-guardar" onclick="guardarRegistroFinanzasFram()" style="background:var(--fram)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"></path></svg>
         Guardar registro
+      </button>
+    </div>
+
+    <!-- NÓMINA COSECHADORES -->
+    <div id="fram-nomina-sec" style="display:none">
+      <div class="step-label">1. Ciclo y semana</div>
+      <div class="card" style="margin-bottom:12px">
+        <div class="field-row">
+          <div class="field">
+            <label>Ciclo</label>
+            <select id="fn-ciclo" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;padding-right:32px"></select>
+          </div>
+          <div class="field">
+            <label>Semana</label>
+            <select id="fn-semana" onchange="onFramNominaSemanaChange()" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;padding-right:32px">
+              <option value="">— Selecciona una semana —</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-label">2. Cosechadores y sueldo semanal</div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="display:grid;grid-template-columns:1fr 110px 28px;gap:8px;margin-bottom:6px;padding:0 2px">
+          <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Trabajador</span>
+          <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;text-align:center">Sueldo</span>
+          <span></span>
+        </div>
+        <div id="fn-trab-list"></div>
+        <div style="display:grid;grid-template-columns:1fr 110px 28px;gap:8px;align-items:center;margin-top:6px">
+          <input type="text" id="fn-trab-input" placeholder="Nombre del trabajador" autocomplete="off" list="trabajadores-list-dl"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('fn-trab-sueldo-input').focus();}"
+            style="width:100%">
+          <input type="number" id="fn-trab-sueldo-input" placeholder="0" min="0" step="0.01"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();agregarFramNominaRow();}"
+            style="width:100%;padding:10px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:600;color:var(--fram);font-family:var(--mono);text-align:center;outline:none">
+          <button onclick="agregarFramNominaRow()" title="Agregar"
+            style="width:28px;height:28px;border-radius:50%;border:none;background:var(--fram);color:#fff;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">+</button>
+        </div>
+        <datalist id="trabajadores-list-dl"></datalist>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+          <span style="font-size:12px;color:var(--text2);font-weight:500">Total n\u00f3mina cosechadores</span>
+          <span id="fn-total" style="font-size:18px;font-weight:700;color:var(--fram);font-family:var(--mono)">$0.00</span>
+        </div>
+      </div>
+
+      <button class="btn-main" id="btn-framnomina-guardar" onclick="guardarFramNomina()" style="background:var(--fram)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"></path></svg>
+        Guardar n\u00f3mina de la semana
       </button>
     </div>
 
@@ -1508,6 +1549,7 @@ async function cargarDesdeSB(){
     framFinanzas = ffData.map(function(f){
       return {id:f.id, ciclo:f.ciclo||'', semanaKey:f.semana_key||'', cliente:f.cliente||'',
         cajas:f.cajas||0, precio:f.precio||0, nominaCosechadores:f.nomina_cosechadores||0,
+        nominaCosechadoresDetalle:f.nomina_cosechadores_detalle||[],
         descPrestamo:f.desc_prestamo||0, descIntereses:f.desc_intereses||0,
         descPlanta:f.desc_planta||0, descInocuidad:f.desc_inocuidad||0,
         gastoIds:f.gasto_ids||{}};
@@ -5100,6 +5142,7 @@ async function sbSaveFramFinanza(f){
   await sb.from('fram_finanzas').upsert({
     id:f.id, ciclo:f.ciclo||'', semana_key:f.semanaKey||'', cliente:f.cliente||'',
     cajas:f.cajas||0, precio:f.precio||0, nomina_cosechadores:f.nominaCosechadores||0,
+    nomina_cosechadores_detalle:f.nominaCosechadoresDetalle||[],
     desc_prestamo:f.descPrestamo||0, desc_intereses:f.descIntereses||0,
     desc_planta:f.descPlanta||0, desc_inocuidad:f.descInocuidad||0,
     gasto_ids:f.gastoIds||{}
@@ -5159,7 +5202,6 @@ function initFramFinForm(editF){
   document.getElementById('ff-cliente').value = editF ? (editF.cliente||'') : '';
   document.getElementById('ff-cajas').value = editF ? (editF.cajas||'') : '';
   document.getElementById('ff-precio').value = editF ? (editF.precio||'') : '';
-  document.getElementById('ff-nomina-cosechadores').value = editF ? (editF.nominaCosechadores||'') : '';
   document.getElementById('ff-desc-prestamo').value = editF ? (editF.descPrestamo||'') : '';
   document.getElementById('ff-desc-intereses').value = editF ? (editF.descIntereses||'') : '';
   document.getElementById('ff-desc-planta').value = editF ? (editF.descPlanta||'') : '';
@@ -5190,7 +5232,6 @@ function guardarRegistroFinanzasFram(){
   agregarClienteSiNuevo(cliente);
   var cajas = parseFloat(document.getElementById('ff-cajas').value)||0;
   var precio = parseFloat(document.getElementById('ff-precio').value)||0;
-  var nominaCosechadores = parseFloat(document.getElementById('ff-nomina-cosechadores').value)||0;
   var descPrestamo = parseFloat(document.getElementById('ff-desc-prestamo').value)||0;
   var descIntereses = parseFloat(document.getElementById('ff-desc-intereses').value)||0;
   var descPlanta = parseFloat(document.getElementById('ff-desc-planta').value)||0;
@@ -5206,7 +5247,6 @@ function guardarRegistroFinanzasFram(){
   }
   if(!reg.gastoIds) reg.gastoIds = {};
   reg.ciclo = ciclo; reg.semanaKey = semanaKey; reg.cliente = cliente; reg.cajas = cajas; reg.precio = precio;
-  reg.nominaCosechadores = nominaCosechadores;
   reg.descPrestamo = descPrestamo; reg.descIntereses = descIntereses;
   reg.descPlanta = descPlanta; reg.descInocuidad = descInocuidad;
 
@@ -5253,15 +5293,153 @@ function guardarRegistroFinanzasFram(){
   framTab('finhist');
 }
 
+// ---- Nómina Cosechadores ----
+var fnTrabTemp = []; // [{nombre, sueldo}]
+
+function updateTrabajadoresDatalist(){
+  var dl = document.getElementById('trabajadores-list-dl');
+  if(!dl) return;
+  dl.innerHTML = '';
+  trabajadores.forEach(function(n){
+    var o = document.createElement('option');
+    o.value = n;
+    dl.appendChild(o);
+  });
+}
+
+function initFramNominaForm(){
+  updateTrabajadoresDatalist();
+  var semKeys = [];
+  framRegistros.forEach(function(r){
+    var sk = rfrSemanaKey(r.fecha);
+    if(semKeys.indexOf(sk)<0) semKeys.push(sk);
+  });
+  semKeys.sort().reverse();
+  var semSel = document.getElementById('fn-semana');
+  semSel.innerHTML = '<option value="">— Selecciona una semana —</option>';
+  semKeys.forEach(function(sk){
+    var o=document.createElement('option'); o.value=sk;
+    o.textContent = 'Semana '+String(rfrWeekNum(sk)).padStart(2,'0')+' \u00b7 '+rfrSemanaLbl(sk);
+    semSel.appendChild(o);
+  });
+
+  var cicloDefault = semKeys.length ? cicloDeSemanaFram(semKeys[0]) : null;
+  var cicloSel = document.getElementById('fn-ciclo');
+  cicloSel.innerHTML = '';
+  CICLOS.forEach(function(c){
+    var o=document.createElement('option'); o.value=c; o.textContent=c;
+    if(cicloDefault ? c===cicloDefault : c===CICLOS[CICLOS.length-1]) o.selected=true;
+    cicloSel.appendChild(o);
+  });
+
+  fnTrabTemp = [];
+  if(semKeys.length) cargarFramNominaExistente(semKeys[0]);
+  renderFramNominaRows();
+}
+
+function onFramNominaSemanaChange(){
+  var sk = document.getElementById('fn-semana').value;
+  if(!sk) return;
+  var ciclo = cicloDeSemanaFram(sk);
+  if(ciclo){
+    var cicloSel = document.getElementById('fn-ciclo');
+    var opt = Array.prototype.find.call(cicloSel.options, function(o){return o.value===ciclo;});
+    if(opt) cicloSel.value = ciclo;
+  }
+  cargarFramNominaExistente(sk);
+  renderFramNominaRows();
+}
+
+function cargarFramNominaExistente(semanaKey){
+  var reg = framFinanzas.find(function(f){return f.semanaKey===semanaKey;});
+  fnTrabTemp = (reg && reg.nominaCosechadoresDetalle) ? reg.nominaCosechadoresDetalle.map(function(t){return {nombre:t.nombre, sueldo:t.sueldo};}) : [];
+}
+
+function renderFramNominaRows(){
+  var cont = document.getElementById('fn-trab-list');
+  cont.innerHTML = '';
+  fnTrabTemp.forEach(function(t, idx){
+    var row = document.createElement('div');
+    row.style.cssText = 'display:grid;grid-template-columns:1fr 110px 28px;gap:8px;align-items:center;margin-bottom:6px';
+    row.innerHTML =
+      '<input type="text" value="'+t.nombre+'" readonly style="width:100%;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:500;color:var(--text);outline:none">'+
+      '<input type="number" value="'+(t.sueldo||'')+'" placeholder="0" min="0" step="0.01"'+
+      ' oninput="fnTrabTemp['+idx+'].sueldo=parseFloat(this.value)||0;actualizarTotalFramNomina()"'+
+      ' onchange="fnTrabTemp['+idx+'].sueldo=parseFloat(this.value)||0;actualizarTotalFramNomina()"'+
+      ' style="width:100%;padding:9px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:600;color:var(--fram);font-family:var(--mono);text-align:center;outline:none">'+
+      '<button onclick="removeFramNominaRow('+idx+')" title="Eliminar"'+
+      ' style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:none;cursor:pointer;color:var(--text3);font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0">×</button>';
+    cont.appendChild(row);
+  });
+  actualizarTotalFramNomina();
+}
+
+function actualizarTotalFramNomina(){
+  var inputs = document.querySelectorAll('#fn-trab-list input[type="number"]');
+  var tot = 0;
+  inputs.forEach(function(inp, idx){
+    var v = parseFloat(inp.value)||0;
+    if(fnTrabTemp[idx]) fnTrabTemp[idx].sueldo = v;
+    tot += v;
+  });
+  document.getElementById('fn-total').textContent = '$'+tot.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function agregarFramNominaRow(){
+  var inp = document.getElementById('fn-trab-input');
+  var sueldoInp = document.getElementById('fn-trab-sueldo-input');
+  var nom = inp.value.trim();
+  if(!nom){ showToast('Escribe el nombre del trabajador'); return; }
+  if(fnTrabTemp.find(function(t){return t.nombre===nom;})){
+    showToast('Ya est\u00e1 en la lista'); inp.value=''; sueldoInp.value=''; return;
+  }
+  var sueldo = parseFloat(sueldoInp.value)||0;
+  fnTrabTemp.push({nombre:nom, sueldo:sueldo});
+  agregarTrabajadorSiNuevo(nom);
+  updateTrabajadoresDatalist();
+  inp.value=''; sueldoInp.value='';
+  renderFramNominaRows();
+  setTimeout(function(){ inp.focus(); }, 50);
+}
+
+function removeFramNominaRow(idx){
+  fnTrabTemp.splice(idx,1);
+  renderFramNominaRows();
+}
+
+function guardarFramNomina(){
+  var semanaKey = document.getElementById('fn-semana').value;
+  if(!semanaKey){ showToast('Selecciona una semana'); return; }
+  if(!fnTrabTemp.length){ showToast('Agrega al menos un trabajador'); return; }
+  var ciclo = document.getElementById('fn-ciclo').value;
+  var total = fnTrabTemp.reduce(function(a,t){return a+(parseFloat(t.sueldo)||0);},0);
+
+  var reg = framFinanzas.find(function(f){return f.semanaKey===semanaKey;});
+  if(!reg){
+    reg = {id: Date.now(), gastoIds:{}, ciclo:ciclo, semanaKey:semanaKey};
+    framFinanzas.unshift(reg);
+  }
+  reg.nominaCosechadoresDetalle = fnTrabTemp.map(function(t){return {nombre:t.nombre, sueldo:t.sueldo};});
+  reg.nominaCosechadores = total;
+  if(!reg.ciclo) reg.ciclo = ciclo;
+
+  saveFramFinanzas();
+  sbSaveFramFinanza(reg);
+  showToast('N\u00f3mina de cosechadores guardada');
+  if(typeof renderRepFram==='function') renderRepFram();
+}
+
 function editarFramFin(id){
   var reg = framFinanzas.find(function(f){return f.id===id;});
   if(!reg) return;
   document.getElementById('ft-nuevo').classList.remove('active');
   document.getElementById('ft-fin').classList.add('active');
+  document.getElementById('ft-nomina').classList.remove('active');
   document.getElementById('ft-hist').classList.remove('active');
   document.getElementById('ft-finhist').classList.remove('active');
   document.getElementById('fram-form-sec').style.display = 'none';
   document.getElementById('fram-fin-sec').style.display = 'block';
+  document.getElementById('fram-nomina-sec').style.display = 'none';
   document.getElementById('fram-hist-sec').style.display = 'none';
   document.getElementById('fram-finhist-sec').style.display = 'none';
   initFramFinForm(reg);
@@ -5842,14 +6020,17 @@ function guardarRegistroFram(){
 function framTab(t, forceNew){
   document.getElementById('ft-nuevo').classList.toggle('active', t==='nuevo');
   document.getElementById('ft-fin').classList.toggle('active', t==='fin');
+  document.getElementById('ft-nomina').classList.toggle('active', t==='nomina');
   document.getElementById('ft-hist').classList.toggle('active', t==='hist');
   document.getElementById('ft-finhist').classList.toggle('active', t==='finhist');
   document.getElementById('fram-form-sec').style.display = t==='nuevo'?'block':'none';
   document.getElementById('fram-fin-sec').style.display = t==='fin'?'block':'none';
+  document.getElementById('fram-nomina-sec').style.display = t==='nomina'?'block':'none';
   document.getElementById('fram-hist-sec').style.display = t==='hist'?'block':'none';
   document.getElementById('fram-finhist-sec').style.display = t==='finhist'?'block':'none';
   if(t==='nuevo' && (!framEditId || forceNew)){ framEditId=null; initFramForm(); }
   if(t==='fin' && (!framFinEditId || forceNew)){ framFinEditId=null; initFramFinForm(); }
+  if(t==='nomina' && forceNew){ initFramNominaForm(); }
   if(t==='hist') renderFramHist();
   if(t==='finhist') renderFramFinHist();
 }
@@ -5859,10 +6040,12 @@ function editarFramRegistro(id){
   if(!reg) return;
   document.getElementById('ft-nuevo').classList.add('active');
   document.getElementById('ft-fin').classList.remove('active');
+  document.getElementById('ft-nomina').classList.remove('active');
   document.getElementById('ft-hist').classList.remove('active');
   document.getElementById('ft-finhist').classList.remove('active');
   document.getElementById('fram-form-sec').style.display = 'block';
   document.getElementById('fram-fin-sec').style.display = 'none';
+  document.getElementById('fram-nomina-sec').style.display = 'none';
   document.getElementById('fram-hist-sec').style.display = 'none';
   document.getElementById('fram-finhist-sec').style.display = 'none';
   initFramForm(reg);
