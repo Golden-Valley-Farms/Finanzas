@@ -95,9 +95,12 @@ input,select,textarea,button{font-family:var(--font)}
 
 /* Ventas */
 .ven-subnav{display:flex;gap:6px;margin-bottom:14px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px}
-.fram-subnav-wrap{display:flex;justify-content:center;margin-bottom:14px}
+.fram-subnav-wrap{display:flex;justify-content:center;margin-bottom:10px}
 .fram-subnav{display:flex;flex-wrap:wrap;gap:6px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px;width:100%;max-width:620px}
-.fram-tab{text-align:center;flex:1 1 calc(50% - 3px);min-width:130px}
+.fram-tab{text-align:center;flex:1 1 calc(33.333% - 4px);min-width:100px}
+.fram-subnav-sub{max-width:360px;background:transparent;padding:0}
+.fram-subnav-sub .fram-tab{flex:1 1 calc(50% - 3px);font-size:12px;padding:6px 10px;color:var(--text3)}
+.fram-subnav-sub .fram-tab.active{color:var(--text);background:var(--surface2)}
 .fram-tab{padding:8px 10px;border:none;background:transparent;border-radius:8px;font-size:12.5px;cursor:pointer;color:var(--text2);font-family:var(--font);transition:all .15s;font-weight:500;line-height:1.25}
 .fram-tab.active{background:var(--surface);color:var(--text);border:0.5px solid var(--border)}
 .ven-tab{flex:1;padding:8px;border:none;background:transparent;border-radius:var(--radius-md,8px);font-size:13px;cursor:pointer;color:var(--text2);font-family:var(--font);transition:all .15s;font-weight:500}
@@ -1081,12 +1084,24 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   <!-- FRAMBUESA -->
   <div id="sc-fram" class="screen">
     <div class="fram-subnav-wrap">
-      <div class="fram-subnav">
-        <button class="fram-tab active" id="ft-nuevo" onclick="framTab('nuevo', true)">Registro Cosecha</button>
-        <button class="fram-tab" id="ft-fin" onclick="framTab('fin', true)">Registro Finanzas</button>
-        <button class="fram-tab" id="ft-nomina" onclick="framTab('nomina', true)">Nomina Cosechadores</button>
-        <button class="fram-tab" id="ft-hist" onclick="framTab('hist')">Historial</button>
-        <button class="fram-tab" id="ft-finhist" onclick="framTab('finhist')">Historial Finanzas</button>
+      <div class="fram-subnav" id="fram-maintabs">
+        <button class="fram-tab active" id="fmt-cosecha" onclick="framMainTab('cosecha')">Cosecha</button>
+        <button class="fram-tab" id="fmt-finanzas" onclick="framMainTab('finanzas')">Finanzas</button>
+        <button class="fram-tab" id="fmt-nomina" onclick="framMainTab('nomina')">N\u00f3mina</button>
+      </div>
+    </div>
+    <div class="fram-subnav-wrap">
+      <div class="fram-subnav fram-subnav-sub" id="fram-subtabs-cosecha">
+        <button class="fram-tab active" id="fst-cosecha-reg" onclick="framTab('nuevo', true)">Registro</button>
+        <button class="fram-tab" id="fst-cosecha-hist" onclick="framTab('hist')">Historial</button>
+      </div>
+      <div class="fram-subnav fram-subnav-sub" id="fram-subtabs-finanzas" style="display:none">
+        <button class="fram-tab active" id="fst-fin-reg" onclick="framTab('fin', true)">Registro</button>
+        <button class="fram-tab" id="fst-fin-hist" onclick="framTab('finhist')">Historial</button>
+      </div>
+      <div class="fram-subnav fram-subnav-sub" id="fram-subtabs-nomina" style="display:none">
+        <button class="fram-tab active" id="fst-nomina-reg" onclick="framTab('nomina', true)">Registro</button>
+        <button class="fram-tab" id="fst-nomina-hist" onclick="framTab('nominahist')">Historial</button>
       </div>
     </div>
 
@@ -1379,6 +1394,16 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"></path></svg>
         Guardar nomina de la semana
       </button>
+    </div>
+
+    <!-- HISTORIAL NOMINA -->
+    <div id="fram-nominahist-sec" style="display:none">
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <select id="fn-fil-ciclo" onchange="renderFramNominaHist()" style="flex:1;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center;padding-right:28px">
+          <option value="todos">Todos los ciclos</option>
+        </select>
+      </div>
+      <div id="fram-nominahist-list"><div class="empty"><div class="empty-icon">👷</div><div class="empty-text">Sin nominas de cosechadores registradas aun.</div></div></div>
     </div>
 
     <!-- HISTORIAL FRAMBUESA -->
@@ -5432,16 +5457,8 @@ function guardarFramNomina(){
 function editarFramFin(id){
   var reg = framFinanzas.find(function(f){return f.id===id;});
   if(!reg) return;
-  document.getElementById('ft-nuevo').classList.remove('active');
-  document.getElementById('ft-fin').classList.add('active');
-  document.getElementById('ft-nomina').classList.remove('active');
-  document.getElementById('ft-hist').classList.remove('active');
-  document.getElementById('ft-finhist').classList.remove('active');
-  document.getElementById('fram-form-sec').style.display = 'none';
-  document.getElementById('fram-fin-sec').style.display = 'block';
-  document.getElementById('fram-nomina-sec').style.display = 'none';
-  document.getElementById('fram-hist-sec').style.display = 'none';
-  document.getElementById('fram-finhist-sec').style.display = 'none';
+  framMainTab('finanzas');
+  framTab('fin');
   initFramFinForm(reg);
   window.scrollTo(0,0);
 }
@@ -5516,11 +5533,88 @@ function renderFramFinHist(){
         '<span class="tag general">$'+(f.precio||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'/caja</span>'+
         '<span class="tag general">Facturado $'+totalFacturado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span>'+
         (totalDescuentos?'<span class="tag camote">Descuentos $'+totalDescuentos.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span>':'')+
-        (f.nominaCosechadores?'<span class="tag fram">👷 Nomina cosechadores $'+f.nominaCosechadores.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span>':'')+
       '</div>'+
-      ((f.nominaCosechadoresDetalle && f.nominaCosechadoresDetalle.length)?
+      '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">'+
+        '<button onclick="editarFramFin('+f.id+')" style="padding:6px 12px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Editar</button>'+
+        '<button id="delbtn-ff-'+f.id+'" onclick="confirmDelFramFin('+f.id+')" style="padding:6px 12px;border-radius:var(--radius);border:1px solid var(--fram-border);background:transparent;color:var(--fram);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Eliminar</button>'+
+      '</div>';
+    list.appendChild(item);
+  });
+}
+
+function editarFramNomina(semanaKey){
+  framMainTab('nomina');
+  framTab('nomina');
+  var semSel = document.getElementById('fn-semana');
+  if(semSel) semSel.value = semanaKey;
+  onFramNominaSemanaChange();
+  window.scrollTo(0,0);
+}
+
+function confirmBorrarFramNomina(semanaKey){
+  var btn = document.getElementById('delbtn-fn-'+semanaKey);
+  if(!btn) return;
+  if(btn.dataset.confirm==='1'){
+    var reg = framFinanzas.find(function(f){return f.semanaKey===semanaKey;});
+    if(reg){
+      reg.nominaCosechadores = 0;
+      reg.nominaCosechadoresDetalle = [];
+      saveFramFinanzas();
+      sbSaveFramFinanza(reg);
+    }
+    renderFramNominaHist();
+    showToast('N\u00f3mina de esa semana borrada');
+  } else {
+    btn.dataset.confirm='1'; btn.textContent='⚠️ Confirmar';
+    setTimeout(function(){
+      if(btn){ btn.dataset.confirm=''; btn.textContent='Eliminar'; }
+    }, 2500);
+  }
+}
+
+function renderFramNominaHist(){
+  var filCic = document.getElementById('fn-fil-ciclo').value;
+
+  var ciclosEnNomina = [];
+  framFinanzas.forEach(function(f){
+    if((f.nominaCosechadores || (f.nominaCosechadoresDetalle&&f.nominaCosechadoresDetalle.length)) && f.ciclo && ciclosEnNomina.indexOf(f.ciclo)<0) ciclosEnNomina.push(f.ciclo);
+  });
+  ciclosEnNomina.sort();
+  var filSel = document.getElementById('fn-fil-ciclo');
+  filSel.innerHTML='<option value="todos">Todos los ciclos</option>';
+  ciclosEnNomina.forEach(function(c){
+    var o=document.createElement('option'); o.value=c; o.textContent=c;
+    if(c===filCic) o.selected=true;
+    filSel.appendChild(o);
+  });
+
+  var data = framFinanzas.filter(function(f){
+    var tieneNomina = (f.nominaCosechadores>0) || (f.nominaCosechadoresDetalle && f.nominaCosechadoresDetalle.length>0);
+    return tieneNomina && (filCic==='todos' || f.ciclo===filCic);
+  }).slice().sort(function(a,b){return a.semanaKey<b.semanaKey?1:-1;});
+
+  var list = document.getElementById('fram-nominahist-list');
+  if(!data.length){
+    list.innerHTML='<div class="empty"><div class="empty-icon">👷</div><div class="empty-text">Sin nominas para este filtro.</div></div>';
+    return;
+  }
+  list.innerHTML='';
+  data.forEach(function(f){
+    var semLbl = f.semanaKey ? ('Semana '+String(rfrWeekNum(f.semanaKey)).padStart(2,'0')+' \u00b7 '+rfrSemanaLbl(f.semanaKey)) : '\u2014';
+    var numTrab = (f.nominaCosechadoresDetalle||[]).length;
+    var item = document.createElement('div');
+    item.className='fram-hist-item';
+    item.innerHTML=
+      '<div class="fram-hist-header">'+
+        '<div>'+
+          '<div class="fram-hist-fecha">'+semLbl+'</div>'+
+          '<div style="font-size:12px;color:var(--text3);margin-top:2px">'+(f.ciclo||'')+'</div>'+
+        '</div>'+
+        '<div class="fram-hist-cubetas">$'+(f.nominaCosechadores||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>'+
+      '</div>'+
+      (numTrab?
         '<details style="margin-bottom:6px">'+
-          '<summary style="cursor:pointer;font-size:12px;color:var(--text3);font-weight:600">Ver desglose de cosechadores ('+f.nominaCosechadoresDetalle.length+')</summary>'+
+          '<summary style="cursor:pointer;font-size:12px;color:var(--text3);font-weight:600">Ver desglose ('+numTrab+' cosechadores)</summary>'+
           '<div style="margin-top:8px;background:var(--surface2);border-radius:var(--radius);padding:10px 12px">'+
             f.nominaCosechadoresDetalle.map(function(t){
               return '<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0">'+
@@ -5530,10 +5624,10 @@ function renderFramFinHist(){
             }).join('')+
           '</div>'+
         '</details>'
-        : '')+
+        : '<div style="font-size:12px;color:var(--text3);margin-bottom:6px">Solo el total, sin desglose por trabajador todav\u00eda</div>')+
       '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">'+
-        '<button onclick="editarFramFin('+f.id+')" style="padding:6px 12px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Editar</button>'+
-        '<button id="delbtn-ff-'+f.id+'" onclick="confirmDelFramFin('+f.id+')" style="padding:6px 12px;border-radius:var(--radius);border:1px solid var(--fram-border);background:transparent;color:var(--fram);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Eliminar</button>'+
+        '<button onclick="editarFramNomina(\''+f.semanaKey+'\')" style="padding:6px 12px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Editar</button>'+
+        '<button id="delbtn-fn-'+f.semanaKey+'" onclick="confirmBorrarFramNomina(\''+f.semanaKey+'\')" style="padding:6px 12px;border-radius:var(--radius);border:1px solid var(--fram-border);background:transparent;color:var(--fram);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Eliminar</button>'+
       '</div>';
     list.appendChild(item);
   });
@@ -6031,37 +6125,44 @@ function guardarRegistroFram(){
   }, 1200);
 }
 
+function framMainTab(main){
+  document.getElementById('fmt-cosecha').classList.toggle('active', main==='cosecha');
+  document.getElementById('fmt-finanzas').classList.toggle('active', main==='finanzas');
+  document.getElementById('fmt-nomina').classList.toggle('active', main==='nomina');
+  document.getElementById('fram-subtabs-cosecha').style.display = main==='cosecha'?'flex':'none';
+  document.getElementById('fram-subtabs-finanzas').style.display = main==='finanzas'?'flex':'none';
+  document.getElementById('fram-subtabs-nomina').style.display = main==='nomina'?'flex':'none';
+  if(main==='cosecha') framTab('nuevo', true);
+  if(main==='finanzas') framTab('fin', true);
+  if(main==='nomina') framTab('nomina', true);
+}
+
 function framTab(t, forceNew){
-  document.getElementById('ft-nuevo').classList.toggle('active', t==='nuevo');
-  document.getElementById('ft-fin').classList.toggle('active', t==='fin');
-  document.getElementById('ft-nomina').classList.toggle('active', t==='nomina');
-  document.getElementById('ft-hist').classList.toggle('active', t==='hist');
-  document.getElementById('ft-finhist').classList.toggle('active', t==='finhist');
+  document.getElementById('fst-cosecha-reg').classList.toggle('active', t==='nuevo');
+  document.getElementById('fst-cosecha-hist').classList.toggle('active', t==='hist');
+  document.getElementById('fst-fin-reg').classList.toggle('active', t==='fin');
+  document.getElementById('fst-fin-hist').classList.toggle('active', t==='finhist');
+  document.getElementById('fst-nomina-reg').classList.toggle('active', t==='nomina');
+  document.getElementById('fst-nomina-hist').classList.toggle('active', t==='nominahist');
   document.getElementById('fram-form-sec').style.display = t==='nuevo'?'block':'none';
   document.getElementById('fram-fin-sec').style.display = t==='fin'?'block':'none';
   document.getElementById('fram-nomina-sec').style.display = t==='nomina'?'block':'none';
   document.getElementById('fram-hist-sec').style.display = t==='hist'?'block':'none';
   document.getElementById('fram-finhist-sec').style.display = t==='finhist'?'block':'none';
+  document.getElementById('fram-nominahist-sec').style.display = t==='nominahist'?'block':'none';
   if(t==='nuevo' && (!framEditId || forceNew)){ framEditId=null; initFramForm(); }
   if(t==='fin' && (!framFinEditId || forceNew)){ framFinEditId=null; initFramFinForm(); }
   if(t==='nomina' && forceNew){ initFramNominaForm(); }
   if(t==='hist') renderFramHist();
   if(t==='finhist') renderFramFinHist();
+  if(t==='nominahist') renderFramNominaHist();
 }
 
 function editarFramRegistro(id){
   var reg = framRegistros.find(function(r){return r.id===id;});
   if(!reg) return;
-  document.getElementById('ft-nuevo').classList.add('active');
-  document.getElementById('ft-fin').classList.remove('active');
-  document.getElementById('ft-nomina').classList.remove('active');
-  document.getElementById('ft-hist').classList.remove('active');
-  document.getElementById('ft-finhist').classList.remove('active');
-  document.getElementById('fram-form-sec').style.display = 'block';
-  document.getElementById('fram-fin-sec').style.display = 'none';
-  document.getElementById('fram-nomina-sec').style.display = 'none';
-  document.getElementById('fram-hist-sec').style.display = 'none';
-  document.getElementById('fram-finhist-sec').style.display = 'none';
+  framMainTab('cosecha');
+  framTab('nuevo');
   initFramForm(reg);
   window.scrollTo(0,0);
 }
