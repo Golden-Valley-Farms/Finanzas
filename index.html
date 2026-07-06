@@ -514,6 +514,19 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div>
         <select id="his-fil-ciclo" onchange="filtroCiclo=this.value;renderHis()" style="width:100%;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center;padding-right:30px"><option value="todos">Ciclo: Todos</option></select>
       </div>
+      <div>
+        <select id="his-fil-cultivo" onchange="filtroCultivo=this.value;renderHis()" style="width:100%;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center;padding-right:30px">
+          <option value="todas">Actividad: Todas</option>
+          <option value="camote">Camote</option>
+          <option value="fram">Frambuesa</option>
+          <option value="general">General Terreno</option>
+          <option value="ofic">Oficina</option>
+          <option value="com">Comercial.</option>
+        </select>
+      </div>
+      <div>
+        <select id="his-fil-cat" onchange="filtroCat=this.value;renderHis()" style="width:100%;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center;padding-right:30px"><option value="todas">Categor\u00eda: Todas</option></select>
+      </div>
     </div>
     <div class="his-sel-bar" id="his-sel-bar">
   <button class="his-sel-toggle" id="his-sel-toggle" onclick="toggleSelMode()">☑ Seleccionar</button>
@@ -1889,6 +1902,8 @@ function registrar(){
 // ---- Historial ----
 var filtroNeg = 'todas';
 var filtroCiclo = 'todos';
+var filtroCultivo = 'todas';
+var filtroCat = 'todas';
 
 var selMode=false, selIds=new Set();
 
@@ -1985,16 +2000,33 @@ function renderHis(){
   });
   // sync neg select
   document.getElementById('his-fil-neg').value = filtroNeg;
+  document.getElementById('his-fil-cultivo').value = filtroCultivo;
+
+  // poblar categorías disponibles dinámicamente
+  var selCat = document.getElementById('his-fil-cat');
+  var catsEnGastos = [];
+  gastos.forEach(function(g){ if(g.cat && catsEnGastos.indexOf(g.cat)<0) catsEnGastos.push(g.cat); });
+  catsEnGastos.sort(function(a,b){return a.localeCompare(b,'es');});
+  selCat.innerHTML = '<option value="todas">Categor\u00eda: Todas</option>';
+  catsEnGastos.forEach(function(c){
+    var o = document.createElement('option');
+    o.value = c; o.textContent = c;
+    if(c === filtroCat) o.selected = true;
+    selCat.appendChild(o);
+  });
 
   var list=document.getElementById('his-list');
   var data = gastos.filter(function(g){
     var negOk = filtroNeg==='todas' || g.loc===filtroNeg;
     var cicloOk = filtroCiclo==='todos' || g.ciclo===filtroCiclo;
-    return negOk && cicloOk;
+    var cultivoOk = filtroCultivo==='todas' || g.cultivo===filtroCultivo;
+    var catOk = filtroCat==='todas' || g.cat===filtroCat;
+    return negOk && cicloOk && cultivoOk && catOk;
   });
 
   if(!data.length){
-    list.innerHTML='<div class="empty"><div class="empty-icon">&#127807;</div><div class="empty-text">Sin gastos registrados aun.</div></div>'; return;
+    var msg = gastos.length ? 'Sin gastos para este filtro.' : 'Sin gastos registrados aun.';
+    list.innerHTML='<div class="empty"><div class="empty-icon">&#127807;</div><div class="empty-text">'+msg+'</div></div>'; return;
   }
 
   // Group by day
