@@ -3380,6 +3380,8 @@ function renderRfrResumen(data){
       var axisYCfg = JSON.parse(JSON.stringify(yCfg));
       cfg.options.scales.y.ticks = Object.assign({}, cfg.options.scales.y.ticks, {display:false});
       cfg.options.scales.y.border = {display:false};
+      cfg.options.scales.y.afterFit = function(scale){ scale.width = 2; };
+      if(!cfg.options.layout) cfg.options.layout={padding:{left:0,right:4,top:8,bottom:0}};
 
       mkRfrChart(mainId, cfg);
 
@@ -3392,7 +3394,7 @@ function renderRfrResumen(data){
         options:{
           responsive:true, maintainAspectRatio:false,
           plugins:{legend:{display:false}, tooltip:{enabled:false}},
-          layout:{padding:0},
+          layout:{padding:{left:0,right:0,top:8,bottom:0}},
           scales:{
             x:{display:false},
             y: Object.assign({}, axisYCfg, {
@@ -3565,7 +3567,7 @@ function renderRfrResumen(data){
         scales:{
           x:{grid:{display:false},ticks:{color:textMuted,font:{size:11}}},
           y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:11}},beginAtZero:true,
-             suggestedMax:(function(){var vs=facturadoPorSemana.filter(function(v){return v!==null;});var m=vs.length?Math.max.apply(null,vs):0;return m+Math.ceil(m*0.18)+1;})(),
+             suggestedMax:(function(){var vs=facturadoPorSemana.filter(function(v){return v!==null;});var m=vs.length?Math.max.apply(null,vs):0;return m+Math.ceil(m*0.32)+1;})(),
              title:{display:true,text:'Total facturado',color:textMuted,font:{size:11}}}
         }
       }
