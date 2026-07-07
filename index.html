@@ -1327,17 +1327,13 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
       <div class="step-label">Resumen</div>
       <div class="card" style="margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0">
-          <span style="color:var(--text2)">Total facturado</span>
-          <span id="ff-total-facturado" style="font-family:var(--mono);color:var(--fram);font-weight:600">$0.00</span>
+        <div style="display:flex;justify-content:space-between;font-size:14px;padding:4px 0">
+          <span style="color:var(--text);font-weight:600">Total facturado (ingreso)</span>
+          <span id="ff-total-facturado" style="font-family:var(--mono);color:var(--fram);font-weight:700;font-size:16px">$0.00</span>
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0">
-          <span style="color:var(--text2)">Total descuentos</span>
-          <span id="ff-total-descuentos" style="font-family:var(--mono);color:var(--camote);font-weight:600">$0.00</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:14px;padding:8px 0 0;margin-top:4px;border-top:1px solid var(--border)">
-          <span style="color:var(--text);font-weight:600">Neto a recibir</span>
-          <span id="ff-neto" style="font-family:var(--mono);color:var(--text);font-weight:700;font-size:16px">$0.00</span>
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0 0;margin-top:4px;border-top:1px solid var(--border)">
+          <span style="color:var(--text3)">Descuentos (se registran aparte como gasto)</span>
+          <span id="ff-total-descuentos" style="font-family:var(--mono);color:var(--text3);font-weight:600">$0.00</span>
         </div>
       </div>
 
@@ -5246,10 +5242,8 @@ function recalcFramFin(){
   var dInocuidad = parseFloat(document.getElementById('ff-desc-inocuidad').value)||0;
   var totalFacturado = cajas*precio;
   var totalDescuentos = dPrestamo+dIntereses+dPlanta+dInocuidad;
-  var neto = totalFacturado-totalDescuentos;
   document.getElementById('ff-total-facturado').textContent = '$'+totalFacturado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
   document.getElementById('ff-total-descuentos').textContent = '$'+totalDescuentos.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
-  document.getElementById('ff-neto').textContent = '$'+neto.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 
 function guardarRegistroFinanzasFram(){
@@ -5538,7 +5532,6 @@ function renderFramFinHist(){
   data.forEach(function(f){
     var totalFacturado = (f.cajas||0)*(f.precio||0);
     var totalDescuentos = (f.descPrestamo||0)+(f.descIntereses||0)+(f.descPlanta||0)+(f.descInocuidad||0);
-    var neto = totalFacturado-totalDescuentos;
     var semLbl = f.semanaKey ? ('Semana '+String(rfrWeekNum(f.semanaKey)).padStart(2,'0')+' \u00b7 '+rfrSemanaLbl(f.semanaKey)) : '\u2014';
     var item = document.createElement('div');
     item.className='fram-hist-item';
@@ -5548,7 +5541,7 @@ function renderFramFinHist(){
           '<div class="fram-hist-fecha">'+semLbl+'</div>'+
           '<div style="font-size:12px;color:var(--text3);margin-top:2px">'+(f.ciclo||'')+(f.cliente?' \u00b7 '+f.cliente:'')+'</div>'+
         '</div>'+
-        '<div class="fram-hist-cubetas">$'+neto.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>'+
+        '<div class="fram-hist-cubetas">$'+totalFacturado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>'+
       '</div>'+
       '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">'+
         '<span class="tag fram">📦 '+(f.cajas||0)+' cajas</span>'+
