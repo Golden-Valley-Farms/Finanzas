@@ -1087,7 +1087,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="fram-subnav" id="fram-maintabs">
         <button class="fram-tab active" id="fmt-cosecha" onclick="framMainTab('cosecha')">Cosecha</button>
         <button class="fram-tab" id="fmt-finanzas" onclick="framMainTab('finanzas')">Finanzas</button>
-        <button class="fram-tab" id="fmt-nomina" onclick="framMainTab('nomina')">N\u00f3mina</button>
+        <button class="fram-tab" id="fmt-nomina" onclick="framMainTab('nomina')">Nomina</button>
       </div>
     </div>
     <div class="fram-subnav-wrap">
@@ -5378,9 +5378,28 @@ function onFramNominaSemanaChange(){
   renderFramNominaRows();
 }
 
+function cosechadoresDeSemanaFram(semanaKey){
+  var nombres = [];
+  framRegistros.forEach(function(r){
+    if(rfrSemanaKey(r.fecha)===semanaKey){
+      (r.trabajadores||[]).forEach(function(t){
+        var nom = rfrNombreNorm(t.nombre);
+        if(nombres.indexOf(nom)<0) nombres.push(nom);
+      });
+    }
+  });
+  nombres.sort(function(a,b){return a.localeCompare(b,'es');});
+  return nombres;
+}
+
 function cargarFramNominaExistente(semanaKey){
   var reg = framFinanzas.find(function(f){return f.semanaKey===semanaKey;});
-  fnTrabTemp = (reg && reg.nominaCosechadoresDetalle) ? reg.nominaCosechadoresDetalle.map(function(t){return {nombre:t.nombre, sueldo:t.sueldo};}) : [];
+  if(reg && reg.nominaCosechadoresDetalle && reg.nominaCosechadoresDetalle.length){
+    fnTrabTemp = reg.nominaCosechadoresDetalle.map(function(t){return {nombre:t.nombre, sueldo:t.sueldo};});
+  } else {
+    var nombres = cosechadoresDeSemanaFram(semanaKey);
+    fnTrabTemp = nombres.map(function(n){return {nombre:n, sueldo:0};});
+  }
 }
 
 function renderFramNominaRows(){
