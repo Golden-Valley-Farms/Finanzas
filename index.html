@@ -1151,7 +1151,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             style="width:28px;height:28px;border-radius:50%;border:none;background:var(--fram);color:#fff;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">+</button>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
-          <span style="font-size:12px;color:var(--text2);font-weight:500">Total cubetas (cosecha + proceso)</span>
+          <span style="font-size:12px;color:var(--text2);font-weight:500">Total de cubetas</span>
           <span id="fr-total-cubetas" style="font-size:18px;font-weight:700;color:var(--fram);font-family:var(--mono)">0</span>
         </div>
       </div>
@@ -5877,13 +5877,18 @@ function renderTrabajadoresRows(){
   var cont = document.getElementById('fr-trabajadores-list');
   cont.innerHTML = '';
   trabsTemp.forEach(function(t, idx){
-    var total = (parseFloat(t.cubetas)||0)+(parseFloat(t.proceso)||0);
     var row = document.createElement('div');
     row.style.cssText = 'display:grid;grid-template-columns:1fr 62px 62px 28px;gap:6px;align-items:center;margin-bottom:6px';
     row.innerHTML =
       '<input type="text" value="'+t.nombre+'" readonly style="width:100%;padding:9px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:500;color:var(--text);outline:none">'+
-      '<input type="text" value="'+total+'" readonly title="Cubetas ('+(t.cubetas||0)+') + Proceso ('+(t.proceso||0)+')" style="width:100%;padding:9px 4px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:600;color:var(--fram);font-family:var(--mono);text-align:center;outline:none;cursor:default">'+
-      '<input type="text" value="'+(t.proceso||0)+'" readonly style="width:100%;padding:9px 4px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:500;color:var(--camote);font-family:var(--mono);text-align:center;outline:none;cursor:default">'+
+      '<input type="number" value="'+(t.cubetas||'')+'" placeholder="0" min="0" step="1"'+
+      ' oninput="trabsTemp['+idx+'].cubetas=parseFloat(this.value)||0;actualizarTotalCubetas();recalcMermaProceso();"'+
+      ' onchange="trabsTemp['+idx+'].cubetas=parseFloat(this.value)||0;actualizarTotalCubetas();recalcMermaProceso();"'+
+      ' style="width:100%;padding:9px 4px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:600;color:var(--fram);font-family:var(--mono);text-align:center;outline:none">'+
+      '<input type="number" value="'+(t.proceso||'')+'" placeholder="0" min="0" step="1"'+
+      ' oninput="trabsTemp['+idx+'].proceso=parseFloat(this.value)||0;actualizarTotalCubetas();recalcMermaProceso();"'+
+      ' onchange="trabsTemp['+idx+'].proceso=parseFloat(this.value)||0;actualizarTotalCubetas();recalcMermaProceso();"'+
+      ' style="width:100%;padding:9px 4px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:600;color:var(--camote);font-family:var(--mono);text-align:center;outline:none">'+
       '<button onclick="removeTrab('+idx+')" title="Eliminar"'+
       ' style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:none;cursor:pointer;color:var(--text3);font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0">×</button>';
     cont.appendChild(row);
@@ -5921,8 +5926,7 @@ function onFrTrabSelectChange(){
     sel.value = '';
     abrirModalNuevoTrabajador();
   } else if(sel.value){
-    var cub = document.getElementById('fr-trab-cubetas-input');
-    if(cub) cub.focus();
+    agregarTrabajadorRow();
   }
 }
 
