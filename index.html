@@ -1142,7 +1142,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <option value="">— Selecciona trabajador —</option>
           </select>
           <input type="number" id="fr-trab-cubetas-input" placeholder="0" min="0" step="1"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();agregarTrabajadorRow();}"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('fr-trab-proceso-input').focus();}"
             style="width:100%;padding:10px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:600;color:var(--fram);font-family:var(--mono);text-align:center;outline:none">
           <input type="number" id="fr-trab-proceso-input" placeholder="0" min="0" step="1"
             onkeydown="if(event.key==='Enter'){event.preventDefault();agregarTrabajadorRow();}"
@@ -5926,7 +5926,8 @@ function onFrTrabSelectChange(){
     sel.value = '';
     abrirModalNuevoTrabajador();
   } else if(sel.value){
-    agregarTrabajadorRow();
+    var cub = document.getElementById('fr-trab-cubetas-input');
+    if(cub) cub.focus();
   }
 }
 
