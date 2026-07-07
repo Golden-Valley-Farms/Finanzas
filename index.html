@@ -2786,20 +2786,20 @@ function renderRfrSemDetalle(){
         '<div class="kpi-val" style="color:var(--camote);font-size:28px;line-height:1.1">'+(costoCubetaCosechadores===null?'\u2014':'$'+costoCubetaCosechadores.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
-        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
+        '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Precio por caja</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:28px;line-height:1.1">'+(precioCajaSem===null?'\u2014':'$'+precioCajaSem.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+        '<div class="kpi-val" style="color:var(--camote);font-size:28px;line-height:1.1">'+(precioCajaSem===null?'\u2014':'$'+precioCajaSem.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
-        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
+        '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Total facturado</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:28px;line-height:1.1">'+(totalFacturadoSem===null?'\u2014':'$'+totalFacturadoSem.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+        '<div class="kpi-val" style="color:var(--camote);font-size:28px;line-height:1.1">'+(totalFacturadoSem===null?'\u2014':'$'+totalFacturadoSem.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
     '</div>'+
     // ── Fila 2: cuatro tarjetas independientes en grid 2x2 ──
     '<div class="rfr-dia-grid">'+
       '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
-        '<div class="dash-card-title">Cubetas por trabajador \u2014 semana</div>'+
+        '<div class="dash-card-title">Promedio de cubetas por trabajador</div>'+
         '<div class="dash-card-sub">'+trabArr.length+' trabajadores \u00b7 promedio por d\u00eda</div>'+
         '<div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text3)">'+
           '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#e34948;display:inline-block"></span>&lt; 20</span>'+
@@ -3113,12 +3113,13 @@ function renderRfrResumen(data){
   var costoCosechadoresPonderado = sumCubetasConNominaCosech>0 ? (sumNominaCosech/sumCubetasConNominaCosech) : null;
 
   // Precio por caja (ponderado) y Total facturado, usando Registro Finanzas de cada semana
-  var sumFacturado=0, sumCajasFacturadas=0;
+  var sumFacturado=0, sumCajasFacturadas=0, semanasConFinanzas=0;
   var precioPorSemana=semKeys.map(function(sk){
     var finReg=framFinanzas.find(function(f){return f.semanaKey===sk;});
     if(!finReg) return null;
     sumFacturado += (finReg.cajas||0)*(finReg.precio||0);
     sumCajasFacturadas += (finReg.cajas||0);
+    semanasConFinanzas++;
     return Math.round((finReg.precio||0)*100)/100;
   });
   var facturadoPorSemana=semKeys.map(function(sk){
@@ -3126,7 +3127,7 @@ function renderRfrResumen(data){
     return finReg ? Math.round((finReg.cajas||0)*(finReg.precio||0)*100)/100 : null;
   });
   var precioCajaPonderado = sumCajasFacturadas>0 ? (sumFacturado/sumCajasFacturadas) : null;
-  var totalFacturadoCiclo = sumFacturado;
+  var facturadoPonderado = semanasConFinanzas>0 ? (sumFacturado/semanasConFinanzas) : null;
 
   cont.innerHTML=
     // ── Fila 1: KPIs (4) ──
@@ -3165,14 +3166,14 @@ function renderRfrResumen(data){
         '<div class="kpi-val" style="color:var(--camote);font-size:24px;line-height:1.1">'+(costoCosechadoresPonderado===null?'\u2014':'$'+costoCosechadoresPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
-        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
+        '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Precio por caja (ponderado)</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:24px;line-height:1.1">'+(precioCajaPonderado===null?'\u2014':'$'+precioCajaPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+        '<div class="kpi-val" style="color:var(--camote);font-size:24px;line-height:1.1">'+(precioCajaPonderado===null?'\u2014':'$'+precioCajaPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
-        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
-        '<div class="kpi-lbl">Total facturado</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:24px;line-height:1.1">'+(totalFacturadoCiclo===0?'\u2014':'$'+totalFacturadoCiclo.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+        '<div class="kpi-accent" style="background:var(--camote)"></div>'+
+        '<div class="kpi-lbl">Total facturado (ponderado)</div>'+
+        '<div class="kpi-val" style="color:var(--camote);font-size:24px;line-height:1.1">'+(facturadoPonderado===null?'\u2014':'$'+facturadoPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
     '</div>'+
     // ── Fila 2: tarjetas independientes (trabajador ocupa las 2 filas a la izquierda) ──
@@ -3210,7 +3211,6 @@ function renderRfrResumen(data){
     // ── Fila 3: Kg cosechados vs Kg de proceso por semana (ancho completo) ──
     '<div class="dash-card rfr-dia-full" style="margin-bottom:0;margin-top:10px;display:flex;flex-direction:column">'+
       '<div class="dash-card-title">Kg cosechados vs. Kg de proceso</div>'+
-      '<div class="dash-card-sub">Por semana del ciclo</div>'+
       '<div style="display:flex;gap:14px;margin:8px 0;font-size:11px;color:var(--text3)">'+
         '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:var(--fram);vertical-align:middle"></span>Kg cosechados</span>'+
         '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:#e34948;vertical-align:middle"></span>Kg de proceso</span>'+
@@ -3221,28 +3221,24 @@ function renderRfrResumen(data){
     // ── Fila 4: Costo por cubeta general (ancho completo) ──
     '<div class="dash-card rfr-dia-full" style="margin-bottom:0;margin-top:10px;display:flex;flex-direction:column">'+
       '<div class="dash-card-title">Costo por cubeta \u2014 general</div>'+
-      '<div class="dash-card-sub">Nómina operativa \u00f7 cubetas totales, por semana</div>'+
       '<div style="position:relative;width:100%;flex:1;min-height:220px;margin-top:8px"><canvas id="rfr-res-costo-general-chart" role="img" aria-label="Costo por cubeta general por semana">Costo por cubeta general.</canvas></div>'+
       '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
     '</div>'+
     // ── Fila 5: Costo por cubeta cosechadores (ancho completo) ──
     '<div class="dash-card rfr-dia-full" style="margin-bottom:0;margin-top:10px;display:flex;flex-direction:column">'+
       '<div class="dash-card-title">Costo por cubeta \u2014 cosechadores</div>'+
-      '<div class="dash-card-sub">N\u00f3mina de cosechadores \u00f7 cubetas totales, por semana</div>'+
       '<div style="position:relative;width:100%;flex:1;min-height:220px;margin-top:8px"><canvas id="rfr-res-costo-cosechadores-chart" role="img" aria-label="Costo por cubeta cosechadores por semana">Costo por cubeta cosechadores.</canvas></div>'+
       '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
     '</div>'+
     // ── Fila 6: Precio por caja (ancho completo) ──
     '<div class="dash-card rfr-dia-full" style="margin-bottom:0;margin-top:10px;display:flex;flex-direction:column">'+
       '<div class="dash-card-title">Precio por caja</div>'+
-      '<div class="dash-card-sub">Seg\u00fan Registro Finanzas, por semana</div>'+
       '<div style="position:relative;width:100%;flex:1;min-height:220px;margin-top:8px"><canvas id="rfr-res-precio-chart" role="img" aria-label="Precio por caja por semana">Precio por caja.</canvas></div>'+
       '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
     '</div>'+
     // ── Fila 7: Total facturado (ancho completo) ──
     '<div class="dash-card rfr-dia-full" style="margin-bottom:0;margin-top:10px;display:flex;flex-direction:column">'+
       '<div class="dash-card-title">Total facturado</div>'+
-      '<div class="dash-card-sub">Seg\u00fan Registro Finanzas, por semana</div>'+
       '<div style="position:relative;width:100%;flex:1;min-height:220px;margin-top:8px"><canvas id="rfr-res-facturado-chart" role="img" aria-label="Total facturado por semana">Total facturado.</canvas></div>'+
       '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
     '</div>';
@@ -3309,13 +3305,31 @@ function renderRfrResumen(data){
         tooltip:{callbacks:{label:function(c){return ' '+c.raw+' cajas ('+Math.round((secSum>0?c.raw/secSum*100:0))+'%)';}}}},
         scales:{x:{grid:{display:false},ticks:{color:textMuted,font:{size:12}}},y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:10}},beginAtZero:true,suggestedMax:(function(){var m=Math.max.apply(null,secVals.concat([1]));return m+Math.ceil(m*0.15)+1;})()}}}});
 
+    var kgLineLabelPlugin = {
+      id:'kgLineLabelsCiclo',
+      afterDatasetsDraw:function(chart){
+        var ctx=chart.ctx;
+        chart.data.datasets.forEach(function(ds,dsIdx){
+          var meta=chart.getDatasetMeta(dsIdx);
+          meta.data.forEach(function(pt,i){
+            var v=ds.data[i]; if(v===null||v===undefined||!pt) return;
+            ctx.save();
+            ctx.fillStyle='#1a7a4a'; ctx.font='bold 10px monospace';
+            ctx.textAlign='center'; ctx.textBaseline='bottom';
+            ctx.fillText(v, pt.x, pt.y-6);
+            ctx.restore();
+          });
+        });
+      }
+    };
     mkRfrChart('rfr-res-linea-chart',{
       type:'line',
+      plugins:[kgLineLabelPlugin],
       data:{
         labels:semNumLbls,
         datasets:[
-          {label:'Kg cosechados',data:semKgVals,borderColor:'#D6336C',backgroundColor:'rgba(214,51,108,0.08)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#D6336C',fill:true,tension:0.3},
-          {label:'Kg de proceso',data:semMermaVals,borderColor:'#e34948',backgroundColor:'rgba(227,73,72,0.08)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#e34948',fill:true,tension:0.3}
+          {label:'Kg cosechados',data:semKgVals,borderColor:'#D6336C',backgroundColor:'rgba(214,51,108,0.08)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#D6336C',fill:true,tension:0.3,spanGaps:true},
+          {label:'Kg de proceso',data:semMermaVals,borderColor:'#e34948',backgroundColor:'rgba(227,73,72,0.08)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#e34948',fill:true,tension:0.3,spanGaps:true}
         ]
       },
       options:{
@@ -3325,6 +3339,7 @@ function renderRfrResumen(data){
         scales:{
           x:{grid:{display:false},ticks:{color:textMuted,font:{size:11}}},
           y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:11}},beginAtZero:true,
+             suggestedMax:(function(){var vs=semKgVals.concat(semMermaVals).filter(function(v){return v!==null&&v!==undefined;});var m=vs.length?Math.max.apply(null,vs):0;return m+Math.ceil(m*0.15)+1;})(),
              title:{display:true,text:'Kg',color:textMuted,font:{size:11}}}
         }
       }
@@ -3358,7 +3373,8 @@ function renderRfrResumen(data){
         scales:{
           x:{grid:{display:false},ticks:{color:textMuted,font:{size:11}}},
           y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:11}},beginAtZero:true,
-             title:{display:true,text:'$/cubeta',color:textMuted,font:{size:11}}}
+             suggestedMax:(function(){var vs=costoGeneralPorSemana.filter(function(v){return v!==null;});var m=vs.length?Math.max.apply(null,vs):0;return m+Math.ceil(m*0.18)+1;})(),
+             title:{display:true,text:'Costo por cubeta',color:textMuted,font:{size:11}}}
         }
       }
     });
@@ -3376,8 +3392,8 @@ function renderRfrResumen(data){
           tooltip:{callbacks:{label:function(c){return c.raw===null?' Sin datos':' $'+c.raw.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});}}}},
         scales:{
           x:{grid:{display:false},ticks:{color:textMuted,font:{size:11}}},
-          y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:11}},beginAtZero:true,
-             title:{display:true,text:'$',color:textMuted,font:{size:11}}}
+          y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:11}},beginAtZero:true,suggestedMax:(function(){var vs=costoCosechadoresPorSemana.filter(function(v){return v!==null;});var m=vs.length?Math.max.apply(null,vs):0;return m+Math.ceil(m*0.18)+1;})(),
+             title:{display:true,text:'Costo por cubeta',color:textMuted,font:{size:11}}}
         }
       }
     });
@@ -3395,15 +3411,30 @@ function renderRfrResumen(data){
           tooltip:{callbacks:{label:function(c){return c.raw===null?' Sin datos':' $'+c.raw.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'/caja';}}}},
         scales:{
           x:{grid:{display:false},ticks:{color:textMuted,font:{size:11}}},
-          y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:11}},beginAtZero:true,
-             title:{display:true,text:'$/caja',color:textMuted,font:{size:11}}}
+          y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:11}},beginAtZero:true,suggestedMax:(function(){var vs=precioPorSemana.filter(function(v){return v!==null;});var m=vs.length?Math.max.apply(null,vs):0;return m+Math.ceil(m*0.18)+1;})(),
+             title:{display:true,text:'Precio por caja',color:textMuted,font:{size:11}}}
         }
       }
     });
 
+    var facturadoLineLabelPlugin = {
+      id:'facturadoLineLabels',
+      afterDatasetsDraw:function(chart){
+        var ctx=chart.ctx; var ds=chart.data.datasets[0]; var meta=chart.getDatasetMeta(0);
+        meta.data.forEach(function(pt,i){
+          if(i%2!==0) return; // solo un dato sí, uno no
+          var v=ds.data[i]; if(v===null||v===undefined||!pt) return;
+          ctx.save();
+          ctx.fillStyle='#1a7a4a'; ctx.font='bold 11px monospace';
+          ctx.textAlign='center'; ctx.textBaseline='bottom';
+          ctx.fillText('$'+v.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}), pt.x, pt.y-8);
+          ctx.restore();
+        });
+      }
+    };
     mkRfrChart('rfr-res-facturado-chart',{
       type:'line',
-      plugins:[costoLineLabelPlugin],
+      plugins:[facturadoLineLabelPlugin],
       data:{
         labels:semNumLbls,
         datasets:[{label:'Total facturado',data:facturadoPorSemana,borderColor:'#1baf7a',backgroundColor:'rgba(27,175,122,0.1)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#1baf7a',fill:true,tension:0.3,spanGaps:true}]
@@ -3415,7 +3446,8 @@ function renderRfrResumen(data){
         scales:{
           x:{grid:{display:false},ticks:{color:textMuted,font:{size:11}}},
           y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:11}},beginAtZero:true,
-             title:{display:true,text:'$',color:textMuted,font:{size:11}}}
+             suggestedMax:(function(){var vs=facturadoPorSemana.filter(function(v){return v!==null;});var m=vs.length?Math.max.apply(null,vs):0;return m+Math.ceil(m*0.18)+1;})(),
+             title:{display:true,text:'Total facturado',color:textMuted,font:{size:11}}}
         }
       }
     });
