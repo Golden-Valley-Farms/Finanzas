@@ -2744,9 +2744,14 @@ function renderRfrSemDetalle(){
     return reg?(reg.merma||0):null;
   });
 
+  var finRegSem = framFinanzas.find(function(f){return f.semanaKey===sk;});
+  var precioCajaSem = finRegSem ? (finRegSem.precio||0) : null;
+  var totalFacturadoSem = finRegSem ? (finRegSem.cajas||0)*(finRegSem.precio||0) : null;
+
   document.getElementById('rfr-sem-detalle').innerHTML=
     // ── Fila 1: KPIs ──
-    '<div class="rfr-dia-kpis" style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:10px">'+
+    // ── Fila 1: KPIs (4) ──
+    '<div class="rfr-dia-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px">'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Cubetas cosechadas</div>'+
@@ -2767,6 +2772,9 @@ function renderRfrSemDetalle(){
         '<div class="kpi-lbl">Merma</div>'+
         '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+(pctKgMerma===null?'\u2014':pctKgMerma+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
       '</div>'+
+    '</div>'+
+    // ── Fila 2: KPIs (4) ──
+    '<div class="rfr-dia-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px">'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Costo/cubeta general</div>'+
@@ -2776,6 +2784,16 @@ function renderRfrSemDetalle(){
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Costo/cubeta cosechadores</div>'+
         '<div class="kpi-val" style="color:var(--camote);font-size:28px;line-height:1.1">'+(costoCubetaCosechadores===null?'\u2014':'$'+costoCubetaCosechadores.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+      '</div>'+
+      '<div class="kpi-card" style="padding:8px 12px">'+
+        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
+        '<div class="kpi-lbl">Precio por caja</div>'+
+        '<div class="kpi-val" style="color:var(--fram);font-size:28px;line-height:1.1">'+(precioCajaSem===null?'\u2014':'$'+precioCajaSem.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+      '</div>'+
+      '<div class="kpi-card" style="padding:8px 12px">'+
+        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
+        '<div class="kpi-lbl">Total facturado</div>'+
+        '<div class="kpi-val" style="color:var(--fram);font-size:28px;line-height:1.1">'+(totalFacturadoSem===null?'\u2014':'$'+totalFacturadoSem.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
     '</div>'+
     // ── Fila 2: cuatro tarjetas independientes en grid 2x2 ──
@@ -3094,9 +3112,30 @@ function renderRfrResumen(data){
   var costoGeneralPonderado = sumCubetasPonderado>0 ? (sumNomina/sumCubetasPonderado) : null;
   var costoCosechadoresPonderado = sumCubetasConNominaCosech>0 ? (sumNominaCosech/sumCubetasConNominaCosech) : null;
 
+  // Precio por caja (ponderado) y Total facturado, usando Registro Finanzas de cada semana
+  var sumFacturado=0, sumCajasFacturadas=0;
+  var precioPorSemana=semKeys.map(function(sk){
+    var finReg=framFinanzas.find(function(f){return f.semanaKey===sk;});
+    if(!finReg) return null;
+    sumFacturado += (finReg.cajas||0)*(finReg.precio||0);
+    sumCajasFacturadas += (finReg.cajas||0);
+    return Math.round((finReg.precio||0)*100)/100;
+  });
+  var facturadoPorSemana=semKeys.map(function(sk){
+    var finReg=framFinanzas.find(function(f){return f.semanaKey===sk;});
+    return finReg ? Math.round((finReg.cajas||0)*(finReg.precio||0)*100)/100 : null;
+  });
+  var precioCajaPonderado = sumCajasFacturadas>0 ? (sumFacturado/sumCajasFacturadas) : null;
+  var totalFacturadoCiclo = sumFacturado;
+
   cont.innerHTML=
-    // ── Fila 1: KPIs ──
-    '<div class="rfr-dia-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px">'+
+    // ── Fila 1: KPIs (4) ──
+    '<div class="rfr-dia-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px">'+
+      '<div class="kpi-card" style="padding:8px 12px">'+
+        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
+        '<div class="kpi-lbl">Cubetas cosechadas</div>'+
+        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+totalCubetas.toLocaleString('es-MX')+'</div>'+
+      '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Total cajas</div>'+
@@ -3112,15 +3151,28 @@ function renderRfrResumen(data){
         '<div class="kpi-lbl">Merma</div>'+
         '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+(pctKgMerma===null?'\u2014':pctKgMerma+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
       '</div>'+
+    '</div>'+
+    // ── Fila 2: KPIs (4, promedios ponderados) ──
+    '<div class="rfr-dia-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px">'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Costo/cubeta general (ponderado)</div>'+
-        '<div class="kpi-val" style="color:var(--camote);font-size:26px;line-height:1.1">'+(costoGeneralPonderado===null?'\u2014':'$'+costoGeneralPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+        '<div class="kpi-val" style="color:var(--camote);font-size:24px;line-height:1.1">'+(costoGeneralPonderado===null?'\u2014':'$'+costoGeneralPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Costo/cubeta cosechadores (ponderado)</div>'+
-        '<div class="kpi-val" style="color:var(--camote);font-size:26px;line-height:1.1">'+(costoCosechadoresPonderado===null?'\u2014':'$'+costoCosechadoresPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+        '<div class="kpi-val" style="color:var(--camote);font-size:24px;line-height:1.1">'+(costoCosechadoresPonderado===null?'\u2014':'$'+costoCosechadoresPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+      '</div>'+
+      '<div class="kpi-card" style="padding:8px 12px">'+
+        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
+        '<div class="kpi-lbl">Precio por caja (ponderado)</div>'+
+        '<div class="kpi-val" style="color:var(--fram);font-size:24px;line-height:1.1">'+(precioCajaPonderado===null?'\u2014':'$'+precioCajaPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+      '</div>'+
+      '<div class="kpi-card" style="padding:8px 12px">'+
+        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
+        '<div class="kpi-lbl">Total facturado</div>'+
+        '<div class="kpi-val" style="color:var(--fram);font-size:24px;line-height:1.1">'+(totalFacturadoCiclo===0?'\u2014':'$'+totalFacturadoCiclo.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
     '</div>'+
     // ── Fila 2: tarjetas independientes (trabajador ocupa las 2 filas a la izquierda) ──
@@ -3178,6 +3230,20 @@ function renderRfrResumen(data){
       '<div class="dash-card-title">Costo por cubeta \u2014 cosechadores</div>'+
       '<div class="dash-card-sub">N\u00f3mina de cosechadores \u00f7 cubetas totales, por semana</div>'+
       '<div style="position:relative;width:100%;flex:1;min-height:220px;margin-top:8px"><canvas id="rfr-res-costo-cosechadores-chart" role="img" aria-label="Costo por cubeta cosechadores por semana">Costo por cubeta cosechadores.</canvas></div>'+
+      '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
+    '</div>'+
+    // ── Fila 6: Precio por caja (ancho completo) ──
+    '<div class="dash-card rfr-dia-full" style="margin-bottom:0;margin-top:10px;display:flex;flex-direction:column">'+
+      '<div class="dash-card-title">Precio por caja</div>'+
+      '<div class="dash-card-sub">Seg\u00fan Registro Finanzas, por semana</div>'+
+      '<div style="position:relative;width:100%;flex:1;min-height:220px;margin-top:8px"><canvas id="rfr-res-precio-chart" role="img" aria-label="Precio por caja por semana">Precio por caja.</canvas></div>'+
+      '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
+    '</div>'+
+    // ── Fila 7: Total facturado (ancho completo) ──
+    '<div class="dash-card rfr-dia-full" style="margin-bottom:0;margin-top:10px;display:flex;flex-direction:column">'+
+      '<div class="dash-card-title">Total facturado</div>'+
+      '<div class="dash-card-sub">Seg\u00fan Registro Finanzas, por semana</div>'+
+      '<div style="position:relative;width:100%;flex:1;min-height:220px;margin-top:8px"><canvas id="rfr-res-facturado-chart" role="img" aria-label="Total facturado por semana">Total facturado.</canvas></div>'+
       '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
     '</div>';
 
@@ -3303,6 +3369,44 @@ function renderRfrResumen(data){
       data:{
         labels:semNumLbls,
         datasets:[{label:'Costo/cubeta cosechadores',data:costoCosechadoresPorSemana,borderColor:'#8B5CF6',backgroundColor:'rgba(139,92,246,0.1)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#8B5CF6',fill:true,tension:0.3,spanGaps:true}]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},
+          tooltip:{callbacks:{label:function(c){return c.raw===null?' Sin datos':' $'+c.raw.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});}}}},
+        scales:{
+          x:{grid:{display:false},ticks:{color:textMuted,font:{size:11}}},
+          y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:11}},beginAtZero:true,
+             title:{display:true,text:'$',color:textMuted,font:{size:11}}}
+        }
+      }
+    });
+
+    mkRfrChart('rfr-res-precio-chart',{
+      type:'line',
+      plugins:[costoLineLabelPlugin],
+      data:{
+        labels:semNumLbls,
+        datasets:[{label:'Precio/caja',data:precioPorSemana,borderColor:'#D6336C',backgroundColor:'rgba(214,51,108,0.1)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#D6336C',fill:true,tension:0.3,spanGaps:true}]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},
+          tooltip:{callbacks:{label:function(c){return c.raw===null?' Sin datos':' $'+c.raw.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'/caja';}}}},
+        scales:{
+          x:{grid:{display:false},ticks:{color:textMuted,font:{size:11}}},
+          y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:11}},beginAtZero:true,
+             title:{display:true,text:'$/caja',color:textMuted,font:{size:11}}}
+        }
+      }
+    });
+
+    mkRfrChart('rfr-res-facturado-chart',{
+      type:'line',
+      plugins:[costoLineLabelPlugin],
+      data:{
+        labels:semNumLbls,
+        datasets:[{label:'Total facturado',data:facturadoPorSemana,borderColor:'#1baf7a',backgroundColor:'rgba(27,175,122,0.1)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#1baf7a',fill:true,tension:0.3,spanGaps:true}]
       },
       options:{
         responsive:true,maintainAspectRatio:false,
