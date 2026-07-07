@@ -2711,11 +2711,11 @@ function renderRfrSemDetalle(){
   var nominaCosechSemana = nominaCosechadoresFramSemana(sk);
   var costoCubetaCosechadores = (s.cubetas>0 && nominaCosechSemana!==null) ? (nominaCosechSemana/s.cubetas) : null;
 
-  // Cajas por día (lunes a sábado) de la semana seleccionada
-  var diaLbls=['Lun','Mar','Mi\u00e9','Jue','Vie','S\u00e1b'];
+  // Cajas por día (domingo a sábado) de la semana seleccionada
+  var diaLbls=['Dom','Lun','Mar','Mi\u00e9','Jue','Vie','S\u00e1b'];
   var sunDate=new Date(sk+'T12:00:00');
   var cajasPorDia=diaLbls.map(function(_,i){
-    var d=new Date(sunDate); d.setDate(sunDate.getDate()+1+i);
+    var d=new Date(sunDate); d.setDate(sunDate.getDate()+i);
     var fechaStr=d.toISOString().slice(0,10);
     var reg=s.registros.find(function(r){return r.fecha===fechaStr;});
     return reg?reg.totalCajas:null;
@@ -2732,14 +2732,14 @@ function renderRfrSemDetalle(){
   var pctKgMerma=(kgCosechados+s.merma)>0?Math.round((s.merma/(kgCosechados+s.merma))*100):null;
 
   var kgPorDia=diaLbls.map(function(_,i){
-    var d=new Date(sunDate); d.setDate(sunDate.getDate()+1+i);
+    var d=new Date(sunDate); d.setDate(sunDate.getDate()+i);
     var fechaStr=d.toISOString().slice(0,10);
     var reg=s.registros.find(function(r){return r.fecha===fechaStr;});
     if(!reg) return null;
     return (reg.totalKg!==undefined&&reg.totalKg!==null)?reg.totalKg:Math.round((reg.totalCajas||0)*(typeof KG_POR_CAJA!=='undefined'?KG_POR_CAJA:2.4)*100)/100;
   });
   var mermaPorDia=diaLbls.map(function(_,i){
-    var d=new Date(sunDate); d.setDate(sunDate.getDate()+1+i);
+    var d=new Date(sunDate); d.setDate(sunDate.getDate()+i);
     var fechaStr=d.toISOString().slice(0,10);
     var reg=s.registros.find(function(r){return r.fecha===fechaStr;});
     return reg?(reg.merma||0):null;
@@ -2836,7 +2836,7 @@ function renderRfrSemDetalle(){
     // ── Fila 3: Kg cosechados vs Kg de proceso por día (ancho completo) ──
     '<div class="dash-card rfr-dia-full" style="margin-bottom:0;margin-top:10px;display:flex;flex-direction:column">'+
       '<div class="dash-card-title">Kg cosechados vs. Kg de proceso</div>'+
-      '<div class="dash-card-sub">Lunes a s\u00e1bado de la semana</div>'+
+      '<div class="dash-card-sub">Domingo a s\u00e1bado de la semana</div>'+
       '<div style="display:flex;gap:14px;margin:8px 0;font-size:11px;color:var(--text3)">'+
         '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:#D6336C;vertical-align:middle"></span>Kg cosechados</span>'+
         '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:#e34948;vertical-align:middle"></span>Kg de proceso</span>'+
@@ -3025,7 +3025,7 @@ function renderRfrResumen(data){
   var trabs={};
   var secMap={};
   var defMap={sobremadura:0,irregular:0,desgrane:0,deforme:0,hongos:0};
-  var cajasPorDiaSemana=[0,0,0,0,0,0]; // Lun..Sáb
+  var cajasPorDiaSemana=[0,0,0,0,0,0,0]; // Dom..Sáb
   var semKg={};
   var semCubetas={};
   var semTrab={};
@@ -3047,7 +3047,7 @@ function renderRfrResumen(data){
     });
     Object.keys(defMap).forEach(function(k){defMap[k]+=((r.defectos&&r.defectos[k])||0);});
     var d=new Date(r.fecha+'T12:00:00'); var dow=d.getDay();
-    if(dow>=1&&dow<=6) cajasPorDiaSemana[dow-1]+=(r.totalCajas||0);
+    if(dow>=0&&dow<=6) cajasPorDiaSemana[dow]+=(r.totalCajas||0);
     var kgReg=(r.totalKg!==undefined&&r.totalKg!==null)?r.totalKg:Math.round((r.totalCajas||0)*(typeof KG_POR_CAJA!=='undefined'?KG_POR_CAJA:2.4)*100)/100;
     totalKgCosechados+=kgReg;
     if(!semKg[sk]) semKg[sk]={kg:0,merma:0};
@@ -3082,7 +3082,7 @@ function renderRfrResumen(data){
   }).sort(function(a,b){return b.prom-a.prom;});
   var maxProm=trabArr.length?trabArr[0].prom:1;
 
-  var diaLbls=['Lun','Mar','Mi\u00e9','Jue','Vie','S\u00e1b'];
+  var diaLbls=['Dom','Lun','Mar','Mi\u00e9','Jue','Vie','S\u00e1b'];
   var cajasPorDia=cajasPorDiaSemana;
   var maxCajasDia=Math.max.apply(null,cajasPorDia.concat([1]));
 
