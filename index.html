@@ -1127,31 +1127,31 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="step-label">2. Cubetas por trabajador</div>
       <div class="card" style="margin-bottom:12px">
         <!-- Cabecera de columnas -->
-        <div style="display:grid;grid-template-columns:1fr 80px 28px;gap:8px;margin-bottom:6px;padding:0 2px">
+        <div style="display:grid;grid-template-columns:1fr 62px 62px 28px;gap:6px;margin-bottom:6px;padding:0 2px">
           <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Trabajador</span>
           <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;text-align:center">Cubetas</span>
+          <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;text-align:center">Proceso</span>
           <span></span>
         </div>
         <!-- Filas de trabajadores -->
         <div id="fr-trabajadores-list"></div>
         <!-- Fila para agregar nuevo -->
-        <div style="display:grid;grid-template-columns:1fr 80px 28px;gap:8px;align-items:center;margin-top:6px">
-          <div style="position:relative">
-            <input type="text" id="fr-trab-input" placeholder="Nombre del trabajador" autocomplete="off"
-              oninput="onTrabajadorInput()" onclick="showTrabajadorDropdown()"
-              onkeydown="onTrabKeydown(event)"
-              onblur="setTimeout(function(){ hideTrabajadorDropdown(); var v=document.getElementById('fr-trab-input').value.trim(); if(v) agregarTrabajadorRow(); },150)"
-              style="width:100%">
-            <div id="trab-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:180px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
-          </div>
+        <div style="display:grid;grid-template-columns:1fr 62px 62px 28px;gap:6px;align-items:center;margin-top:6px">
+          <select id="fr-trab-select" onchange="onFrTrabSelectChange()"
+            style="width:100%;padding:10px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:24px">
+            <option value="">— Selecciona trabajador —</option>
+          </select>
           <input type="number" id="fr-trab-cubetas-input" placeholder="0" min="0" step="1"
             onkeydown="if(event.key==='Enter'){event.preventDefault();agregarTrabajadorRow();}"
-            style="width:100%;padding:10px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:600;color:var(--fram);font-family:var(--mono);text-align:center;outline:none">
+            style="width:100%;padding:10px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:600;color:var(--fram);font-family:var(--mono);text-align:center;outline:none">
+          <input type="number" id="fr-trab-proceso-input" placeholder="0" min="0" step="1"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();agregarTrabajadorRow();}"
+            style="width:100%;padding:10px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:600;color:var(--camote);font-family:var(--mono);text-align:center;outline:none">
           <button onclick="agregarTrabajadorRow()" title="Agregar"
             style="width:28px;height:28px;border-radius:50%;border:none;background:var(--fram);color:#fff;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">+</button>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
-          <span style="font-size:12px;color:var(--text2);font-weight:500">Total cubetas</span>
+          <span style="font-size:12px;color:var(--text2);font-weight:500">Total cubetas (cosecha + proceso)</span>
           <span id="fr-total-cubetas" style="font-size:18px;font-weight:700;color:var(--fram);font-family:var(--mono)">0</span>
         </div>
       </div>
@@ -1203,7 +1203,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <div class="field">
             <label>Proceso (kg)</label>
             <div class="monto-wrap">
-              <input type="number" id="fr-merma" placeholder="0.00" min="0" step="0.01" oninput="recalcDefectos()">
+              <input type="number" id="fr-merma" placeholder="0.00" min="0" step="0.01" readonly
+                style="background:var(--surface2);color:var(--text3);cursor:default">
             </div>
           </div>
           <div class="field">
@@ -2444,7 +2445,7 @@ function renderRfrDiaDetalle(){
   (r.trabajadores||[]).forEach(function(t){
     var nom=rfrNombreNorm(t.nombre);
     if(!trabsMapDia[nom]) trabsMapDia[nom]=0;
-    trabsMapDia[nom]+=t.cubetas||0;
+    trabsMapDia[nom]+=(t.cubetas||0)+(t.proceso||0);
   });
   var trabsSorted=Object.keys(trabsMapDia).map(function(n){return{nombre:n,cubetas:trabsMapDia[n]};}).sort(function(a,b){return b.cubetas-a.cubetas;});
   var maxCub=trabsSorted.length?trabsSorted[0].cubetas:1;
@@ -2667,7 +2668,7 @@ function rfrSemanaAcum(s,r){
   (r.trabajadores||[]).forEach(function(t){
     var nom=rfrNombreNorm(t.nombre);
     if(!s.trabs[nom]) s.trabs[nom]={cubetas:0,dias:0};
-    s.trabs[nom].cubetas+=t.cubetas||0; s.trabs[nom].dias++;
+    s.trabs[nom].cubetas+=(t.cubetas||0)+(t.proceso||0); s.trabs[nom].dias++;
   });
   Object.keys(s.defMap).forEach(function(k){ s.defMap[k]+=((r.defectos&&r.defectos[k])||0); });
 }
@@ -3037,7 +3038,7 @@ function renderRfrResumen(data){
     (r.trabajadores||[]).forEach(function(t){
       var nom=rfrNombreNorm(t.nombre);
       if(!trabs[nom]) trabs[nom]={cubetas:0,dias:0};
-      trabs[nom].cubetas+=(t.cubetas||0);
+      trabs[nom].cubetas+=(t.cubetas||0)+(t.proceso||0);
       trabs[nom].dias+=1;
       semTrab[sk][nom]=1;
     });
@@ -5835,7 +5836,7 @@ function initFramForm(editReg){
   var iso;
   if(editReg){
     iso = editReg.fecha;
-    trabsTemp = (editReg.trabajadores||[]).map(function(t){return {nombre:t.nombre, cubetas:t.cubetas};});
+    trabsTemp = (editReg.trabajadores||[]).map(function(t){return {nombre:t.nombre, cubetas:t.cubetas, proceso:t.proceso||0};});
     cajasTemp = (editReg.cajas||[]).map(function(c){return {presentacion:c.presentacion, sector:c.sector, cantidad:c.cantidad};});
   } else {
     var hoy = new Date();
@@ -5858,8 +5859,9 @@ function initFramForm(editReg){
     document.getElementById('fr-p-'+d).textContent = '—';
   });
   document.getElementById('fr-defectos-resumen').style.display = 'none';
-  document.getElementById('fr-trab-input').value = '';
+  poblarFrTrabSelect();
   var tci=document.getElementById('fr-trab-cubetas-input'); if(tci) tci.value='';
+  var tpi=document.getElementById('fr-trab-proceso-input'); if(tpi) tpi.value='';
   var ci=document.getElementById('fr-caja-input'); if(ci) ci.value='';
   var cqi=document.getElementById('fr-caja-cantidad-input'); if(cqi) cqi.value='';
   renderTrabajadoresRows();
@@ -5875,48 +5877,94 @@ function renderTrabajadoresRows(){
   var cont = document.getElementById('fr-trabajadores-list');
   cont.innerHTML = '';
   trabsTemp.forEach(function(t, idx){
+    var total = (parseFloat(t.cubetas)||0)+(parseFloat(t.proceso)||0);
     var row = document.createElement('div');
-    row.style.cssText = 'display:grid;grid-template-columns:1fr 80px 28px;gap:8px;align-items:center;margin-bottom:6px';
+    row.style.cssText = 'display:grid;grid-template-columns:1fr 62px 62px 28px;gap:6px;align-items:center;margin-bottom:6px';
     row.innerHTML =
-      '<input type="text" value="'+t.nombre+'" readonly style="width:100%;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:500;color:var(--text);outline:none">'+
-      '<input type="number" value="'+(t.cubetas||'')+'" placeholder="0" min="0" step="1"'+
-      ' oninput="trabsTemp['+idx+'].cubetas=parseFloat(this.value)||0;actualizarTotalCubetas()"'+
-      ' onchange="trabsTemp['+idx+'].cubetas=parseFloat(this.value)||0;actualizarTotalCubetas()"'+
-      ' onblur="trabsTemp['+idx+'].cubetas=parseFloat(this.value)||0;actualizarTotalCubetas()"'+
-      ' style="width:100%;padding:9px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:600;color:var(--fram);font-family:var(--mono);text-align:center;outline:none">'+
+      '<input type="text" value="'+t.nombre+'" readonly style="width:100%;padding:9px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:500;color:var(--text);outline:none">'+
+      '<input type="text" value="'+total+'" readonly title="Cubetas ('+(t.cubetas||0)+') + Proceso ('+(t.proceso||0)+')" style="width:100%;padding:9px 4px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:600;color:var(--fram);font-family:var(--mono);text-align:center;outline:none;cursor:default">'+
+      '<input type="text" value="'+(t.proceso||0)+'" readonly style="width:100%;padding:9px 4px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:500;color:var(--camote);font-family:var(--mono);text-align:center;outline:none;cursor:default">'+
       '<button onclick="removeTrab('+idx+')" title="Eliminar"'+
       ' style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:none;cursor:pointer;color:var(--text3);font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0">×</button>';
     cont.appendChild(row);
   });
   actualizarTotalCubetas();
+  recalcMermaProceso();
 }
 function actualizarTotalCubetas(){
-  var inputs = document.querySelectorAll('#fr-trabajadores-list input[type="number"]');
-  var tot = 0;
-  inputs.forEach(function(inp, idx){
-    var v = parseFloat(inp.value)||0;
-    if(trabsTemp[idx]) trabsTemp[idx].cubetas = v;
-    tot += v;
-  });
+  var tot = trabsTemp.reduce(function(a,t){return a+(parseFloat(t.cubetas)||0)+(parseFloat(t.proceso)||0);},0);
   document.getElementById('fr-total-cubetas').textContent = tot % 1 === 0 ? tot : tot.toFixed(1);
 }
-function agregarTrabajadorRow(){
-  var inp = document.getElementById('fr-trab-input');
-  var cubInp = document.getElementById('fr-trab-cubetas-input');
+function recalcMermaProceso(){
+  var sumProceso = trabsTemp.reduce(function(a,t){return a+(parseFloat(t.proceso)||0);},0);
+  if(sumProceso>0){
+    document.getElementById('fr-merma').value = (sumProceso*1.2).toFixed(2);
+  }
+}
+function poblarFrTrabSelect(seleccionar){
+  var sel = document.getElementById('fr-trab-select');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">— Selecciona trabajador —</option>';
+  trabajadores.forEach(function(n){
+    var o=document.createElement('option'); o.value=n; o.textContent=n;
+    sel.appendChild(o);
+  });
+  var optNuevo=document.createElement('option');
+  optNuevo.value='__nuevo__'; optNuevo.textContent='+ Agregar nuevo trabajador...';
+  sel.appendChild(optNuevo);
+  sel.value = seleccionar || '';
+}
+
+function onFrTrabSelectChange(){
+  var sel = document.getElementById('fr-trab-select');
+  if(sel.value==='__nuevo__'){
+    sel.value = '';
+    abrirModalNuevoTrabajador();
+  } else if(sel.value){
+    var cub = document.getElementById('fr-trab-cubetas-input');
+    if(cub) cub.focus();
+  }
+}
+
+function abrirModalNuevoTrabajador(){
+  document.getElementById('mo-title').innerHTML = '➕ Nuevo trabajador';
+  document.getElementById('mo-body').innerHTML =
+    '<div class="field" style="margin-bottom:14px"><label>Nombre del trabajador</label>'+
+    '<input type="text" id="nuevo-trab-nombre-input" placeholder="Nombre" style="width:100%" onkeydown="if(event.key===\'Enter\'){event.preventDefault();confirmarNuevoTrabajador();}"></div>'+
+    '<button class="btn-main" style="background:var(--fram)" onclick="confirmarNuevoTrabajador()">Agregar trabajador</button>';
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(function(){ var inp=document.getElementById('nuevo-trab-nombre-input'); if(inp) inp.focus(); }, 100);
+}
+
+function confirmarNuevoTrabajador(){
+  var inp = document.getElementById('nuevo-trab-nombre-input');
   var nom = inp.value.trim();
-  if(!nom){ showToast('Escribe el nombre del trabajador'); return; }
+  if(!nom){ showToast('Escribe un nombre'); return; }
+  if(trabajadores.indexOf(nom)>=0){ showToast('Ese trabajador ya existe'); return; }
+  agregarTrabajadorSiNuevo(nom);
+  closeModal();
+  poblarFrTrabSelect(nom);
+  var cub = document.getElementById('fr-trab-cubetas-input'); if(cub) cub.focus();
+  showToast('Trabajador agregado');
+}
+
+function agregarTrabajadorRow(){
+  var sel = document.getElementById('fr-trab-select');
+  var cubInp = document.getElementById('fr-trab-cubetas-input');
+  var procInp = document.getElementById('fr-trab-proceso-input');
+  var nom = sel.value;
+  if(!nom || nom==='__nuevo__'){ showToast('Selecciona un trabajador'); return; }
   if(trabsTemp.find(function(t){return t.nombre===nom;})){
-    showToast('Ya está en la lista'); inp.value=''; if(cubInp) cubInp.value=''; return;
+    showToast('Ya está en la lista'); sel.value=''; if(cubInp) cubInp.value=''; if(procInp) procInp.value=''; return;
   }
   var cubetas = cubInp ? (parseFloat(cubInp.value)||0) : 0;
-  trabsTemp.push({nombre:nom, cubetas:cubetas});
-  agregarTrabajadorSiNuevo(nom);
-  inp.value='';
+  var proceso = procInp ? (parseFloat(procInp.value)||0) : 0;
+  trabsTemp.push({nombre:nom, cubetas:cubetas, proceso:proceso});
+  sel.value='';
   if(cubInp) cubInp.value='';
-  hideTrabajadorDropdown();
+  if(procInp) procInp.value='';
   renderTrabajadoresRows();
-  // focus back to name input for quick consecutive entry
-  setTimeout(function(){ inp.focus(); }, 50);
+  setTimeout(function(){ sel.focus(); }, 50);
 }
 function removeTrab(idx){
   trabsTemp.splice(idx,1);
@@ -6221,7 +6269,7 @@ function guardarRegistroFram(){
   var fecha = document.getElementById('fr-fecha').value;
   if(!fecha){ showToast('Selecciona una fecha'); return; }
   if(!trabsTemp.length){ showToast('Agrega al menos un trabajador'); return; }
-  var totalCubetas = trabsTemp.reduce(function(a,t){return a+(parseFloat(t.cubetas)||0);},0);
+  var totalCubetas = trabsTemp.reduce(function(a,t){return a+(parseFloat(t.cubetas)||0)+(parseFloat(t.proceso)||0);},0);
   var totalCajas = cajasTemp.reduce(function(a,c){return a+(parseFloat(c.cantidad)||0);},0);
   var merma = parseFloat(document.getElementById('fr-merma').value)||0;
   var muestra = parseFloat(document.getElementById('fr-muestra').value)||0; // auto-computed from params
@@ -6243,7 +6291,7 @@ function guardarRegistroFram(){
     fecha: fecha, fechaLbl: fechaLbl,
     sector: sectorPrincipal,
     ciclo: ciclo,
-    trabajadores: trabsTemp.map(function(t){return {nombre:t.nombre, cubetas:t.cubetas};}),
+    trabajadores: trabsTemp.map(function(t){return {nombre:t.nombre, cubetas:t.cubetas, proceso:t.proceso||0};}),
     cajas: cajasTemp.map(function(c){return {presentacion:c.presentacion, sector:c.sector, cantidad:c.cantidad};}),
     totalCubetas: totalCubetas,
     totalCajas: totalCajas,
