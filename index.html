@@ -2778,22 +2778,22 @@ function renderRfrSemDetalle(){
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Costo/cubeta general</div>'+
-        '<div class="kpi-val" style="color:var(--camote);font-size:28px;line-height:1.1">'+(costoCubetaGeneral===null?'\u2014':'$'+costoCubetaGeneral.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+        '<div class="kpi-val" style="color:var(--camote);font-size:34px;line-height:1.1">'+(costoCubetaGeneral===null?'\u2014':'$'+costoCubetaGeneral.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Costo/cubeta cosechadores</div>'+
-        '<div class="kpi-val" style="color:var(--camote);font-size:28px;line-height:1.1">'+(costoCubetaCosechadores===null?'\u2014':'$'+costoCubetaCosechadores.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+        '<div class="kpi-val" style="color:var(--camote);font-size:34px;line-height:1.1">'+(costoCubetaCosechadores===null?'\u2014':'$'+costoCubetaCosechadores.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Precio por caja</div>'+
-        '<div class="kpi-val" style="color:var(--camote);font-size:28px;line-height:1.1">'+(precioCajaSem===null?'\u2014':'$'+precioCajaSem.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+        '<div class="kpi-val" style="color:var(--camote);font-size:34px;line-height:1.1">'+(precioCajaSem===null?'\u2014':'$'+precioCajaSem.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Total facturado</div>'+
-        '<div class="kpi-val" style="color:var(--camote);font-size:28px;line-height:1.1">'+(totalFacturadoSem===null?'\u2014':'$'+totalFacturadoSem.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+        '<div class="kpi-val" style="color:var(--camote);font-size:34px;line-height:1.1">'+(totalFacturadoSem===null?'\u2014':'$'+totalFacturadoSem.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
     '</div>'+
     // ── Fila 2: cuatro tarjetas independientes en grid 2x2 ──
@@ -3157,23 +3157,23 @@ function renderRfrResumen(data){
     '<div class="rfr-dia-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px">'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
-        '<div class="kpi-lbl">Costo/cubeta general (ponderado)</div>'+
-        '<div class="kpi-val" style="color:var(--camote);font-size:24px;line-height:1.1">'+(costoGeneralPonderado===null?'\u2014':'$'+costoGeneralPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+        '<div class="kpi-lbl">Promedio costo/cubeta general</div>'+
+        '<div class="kpi-val" style="color:var(--camote);font-size:34px;line-height:1.1">'+(costoGeneralPonderado===null?'\u2014':'$'+costoGeneralPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
-        '<div class="kpi-lbl">Costo/cubeta cosechadores (ponderado)</div>'+
-        '<div class="kpi-val" style="color:var(--camote);font-size:24px;line-height:1.1">'+(costoCosechadoresPonderado===null?'\u2014':'$'+costoCosechadoresPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+        '<div class="kpi-lbl">Promedio costo/cubeta cosechadores</div>'+
+        '<div class="kpi-val" style="color:var(--camote);font-size:34px;line-height:1.1">'+(costoCosechadoresPonderado===null?'\u2014':'$'+costoCosechadoresPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
-        '<div class="kpi-lbl">Precio por caja (ponderado)</div>'+
-        '<div class="kpi-val" style="color:var(--camote);font-size:24px;line-height:1.1">'+(precioCajaPonderado===null?'\u2014':'$'+precioCajaPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+        '<div class="kpi-lbl">Promedio costo/caja</div>'+
+        '<div class="kpi-val" style="color:var(--camote);font-size:34px;line-height:1.1">'+(precioCajaPonderado===null?'\u2014':'$'+precioCajaPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
       '<div class="kpi-card" style="padding:8px 12px">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
-        '<div class="kpi-lbl">Total facturado (ponderado)</div>'+
-        '<div class="kpi-val" style="color:var(--camote);font-size:24px;line-height:1.1">'+(facturadoPonderado===null?'\u2014':'$'+facturadoPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+        '<div class="kpi-lbl">Promedio facturado</div>'+
+        '<div class="kpi-val" style="color:var(--camote);font-size:34px;line-height:1.1">'+(facturadoPonderado===null?'\u2014':'$'+facturadoPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
     '</div>'+
     // ── Fila 2: tarjetas independientes (trabajador ocupa las 2 filas a la izquierda) ──
