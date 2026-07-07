@@ -3216,69 +3216,84 @@ function renderRfrResumen(data){
         '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Sectores</div>'+
       '</div>'+
     '</div>'+
-    // ── Fila 3: Kg cosechados vs Kg de proceso por semana (ancho completo) ──
-    '<div class="dash-card rfr-dia-full" style="margin-bottom:0;margin-top:10px;display:flex;flex-direction:column">'+
-      '<div class="dash-card-title">Kg cosechados vs. Kg de proceso</div>'+
-      '<div style="display:flex;gap:14px;margin:8px 0;font-size:11px;color:var(--text3)">'+
-        '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:var(--fram);vertical-align:middle"></span>Kg cosechados</span>'+
-        '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:#e34948;vertical-align:middle"></span>Kg de proceso</span>'+
-      '</div>'+
-      '<div style="position:relative;width:100%;flex:1;min-height:260px;min-width:0;overflow-x:auto;overflow-y:hidden">'+
-        '<div style="position:relative;height:100%;min-width:'+Math.max(700,semKeys.length*60)+'px">'+
-          '<canvas id="rfr-res-linea-chart" role="img" aria-label="Kg cosechados vs kg de proceso por semana">L\u00ednea semanal.</canvas>'+
+    // ── Filas 3-7: gráficas de línea, 2 por fila, con eje Y fijo ──
+    '<div class="rfr-dia-grid" style="margin-top:10px">'+
+      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
+        '<div class="dash-card-title">Kg cosechados vs. Kg de proceso</div>'+
+        '<div style="display:flex;gap:14px;margin:8px 0;font-size:11px;color:var(--text3)">'+
+          '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:var(--fram);vertical-align:middle"></span>Kg cosechados</span>'+
+          '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:#e34948;vertical-align:middle"></span>Kg de proceso</span>'+
         '</div>'+
-      '</div>'+
-      '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
-    '</div>'+
-    // ── Fila 3.5: Cajas por semana (ancho completo) ──
-    '<div class="dash-card rfr-dia-full" style="margin-bottom:0;margin-top:10px;display:flex;flex-direction:column">'+
-      '<div class="dash-card-title">Cajas por semana</div>'+
-      '<div style="position:relative;width:100%;flex:1;min-height:220px;margin-top:8px;min-width:0;overflow-x:auto;overflow-y:hidden">'+
-        '<div style="position:relative;height:100%;min-width:'+Math.max(700,semKeys.length*60)+'px">'+
-          '<canvas id="rfr-res-cajas-semana-chart" role="img" aria-label="Cajas por semana">Cajas por semana.</canvas>'+
+        '<div style="display:flex;width:100%;flex:1;min-height:260px">'+
+          '<div style="width:40px;flex-shrink:0;position:relative"><canvas id="rfr-res-linea-chart-axis"></canvas></div>'+
+          '<div id="rfr-res-linea-chart-wrap" style="position:relative;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden">'+
+            '<div style="position:relative;height:100%;min-width:'+Math.max(500,semKeys.length*60)+'px">'+
+              '<canvas id="rfr-res-linea-chart" role="img" aria-label="Kg cosechados vs kg de proceso por semana">L\u00ednea semanal.</canvas>'+
+            '</div>'+
+          '</div>'+
         '</div>'+
+        '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
       '</div>'+
-      '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
-    '</div>'+
-    // ── Fila 4: Costo por cubeta general (ancho completo) ──
-    '<div class="dash-card rfr-dia-full" style="margin-bottom:0;margin-top:10px;display:flex;flex-direction:column">'+
-      '<div class="dash-card-title">Costo por cubeta \u2014 general</div>'+
-      '<div style="position:relative;width:100%;flex:1;min-height:220px;margin-top:8px;min-width:0;overflow-x:auto;overflow-y:hidden">'+
-        '<div style="position:relative;height:100%;min-width:'+Math.max(700,semKeys.length*60)+'px">'+
-          '<canvas id="rfr-res-costo-general-chart" role="img" aria-label="Costo por cubeta general por semana">Costo por cubeta general.</canvas>'+
+      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
+        '<div class="dash-card-title">Cajas por semana</div>'+
+        '<div style="display:flex;width:100%;flex:1;min-height:220px;margin-top:8px">'+
+          '<div style="width:40px;flex-shrink:0;position:relative"><canvas id="rfr-res-cajas-semana-chart-axis"></canvas></div>'+
+          '<div id="rfr-res-cajas-semana-chart-wrap" style="position:relative;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden">'+
+            '<div style="position:relative;height:100%;min-width:'+Math.max(500,semKeys.length*60)+'px">'+
+              '<canvas id="rfr-res-cajas-semana-chart" role="img" aria-label="Cajas por semana">Cajas por semana.</canvas>'+
+            '</div>'+
+          '</div>'+
         '</div>'+
+        '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
       '</div>'+
-      '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
-    '</div>'+
-    // ── Fila 5: Costo por cubeta cosechadores (ancho completo) ──
-    '<div class="dash-card rfr-dia-full" style="margin-bottom:0;margin-top:10px;display:flex;flex-direction:column">'+
-      '<div class="dash-card-title">Costo por cubeta \u2014 cosechadores</div>'+
-      '<div style="position:relative;width:100%;flex:1;min-height:220px;margin-top:8px;min-width:0;overflow-x:auto;overflow-y:hidden">'+
-        '<div style="position:relative;height:100%;min-width:'+Math.max(700,semKeys.length*60)+'px">'+
-          '<canvas id="rfr-res-costo-cosechadores-chart" role="img" aria-label="Costo por cubeta cosechadores por semana">Costo por cubeta cosechadores.</canvas>'+
+      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
+        '<div class="dash-card-title">Costo por cubeta \u2014 general</div>'+
+        '<div style="display:flex;width:100%;flex:1;min-height:220px;margin-top:8px">'+
+          '<div style="width:40px;flex-shrink:0;position:relative"><canvas id="rfr-res-costo-general-chart-axis"></canvas></div>'+
+          '<div id="rfr-res-costo-general-chart-wrap" style="position:relative;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden">'+
+            '<div style="position:relative;height:100%;min-width:'+Math.max(500,semKeys.length*60)+'px">'+
+              '<canvas id="rfr-res-costo-general-chart" role="img" aria-label="Costo por cubeta general por semana">Costo por cubeta general.</canvas>'+
+            '</div>'+
+          '</div>'+
         '</div>'+
+        '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
       '</div>'+
-      '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
-    '</div>'+
-    // ── Fila 6: Precio por caja (ancho completo) ──
-    '<div class="dash-card rfr-dia-full" style="margin-bottom:0;margin-top:10px;display:flex;flex-direction:column">'+
-      '<div class="dash-card-title">Precio por caja</div>'+
-      '<div style="position:relative;width:100%;flex:1;min-height:220px;margin-top:8px;min-width:0;overflow-x:auto;overflow-y:hidden">'+
-        '<div style="position:relative;height:100%;min-width:'+Math.max(700,semKeys.length*60)+'px">'+
-          '<canvas id="rfr-res-precio-chart" role="img" aria-label="Precio por caja por semana">Precio por caja.</canvas>'+
+      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
+        '<div class="dash-card-title">Costo por cubeta \u2014 cosechadores</div>'+
+        '<div style="display:flex;width:100%;flex:1;min-height:220px;margin-top:8px">'+
+          '<div style="width:40px;flex-shrink:0;position:relative"><canvas id="rfr-res-costo-cosechadores-chart-axis"></canvas></div>'+
+          '<div id="rfr-res-costo-cosechadores-chart-wrap" style="position:relative;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden">'+
+            '<div style="position:relative;height:100%;min-width:'+Math.max(500,semKeys.length*60)+'px">'+
+              '<canvas id="rfr-res-costo-cosechadores-chart" role="img" aria-label="Costo por cubeta cosechadores por semana">Costo por cubeta cosechadores.</canvas>'+
+            '</div>'+
+          '</div>'+
         '</div>'+
+        '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
       '</div>'+
-      '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
-    '</div>'+
-    // ── Fila 7: Total facturado (ancho completo) ──
-    '<div class="dash-card rfr-dia-full" style="margin-bottom:0;margin-top:10px;display:flex;flex-direction:column">'+
-      '<div class="dash-card-title">Total facturado</div>'+
-      '<div style="position:relative;width:100%;flex:1;min-height:220px;margin-top:8px;min-width:0;overflow-x:auto;overflow-y:hidden">'+
-        '<div style="position:relative;height:100%;min-width:'+Math.max(700,semKeys.length*60)+'px">'+
-          '<canvas id="rfr-res-facturado-chart" role="img" aria-label="Total facturado por semana">Total facturado.</canvas>'+
+      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
+        '<div class="dash-card-title">Precio por caja</div>'+
+        '<div style="display:flex;width:100%;flex:1;min-height:220px;margin-top:8px">'+
+          '<div style="width:40px;flex-shrink:0;position:relative"><canvas id="rfr-res-precio-chart-axis"></canvas></div>'+
+          '<div id="rfr-res-precio-chart-wrap" style="position:relative;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden">'+
+            '<div style="position:relative;height:100%;min-width:'+Math.max(500,semKeys.length*60)+'px">'+
+              '<canvas id="rfr-res-precio-chart" role="img" aria-label="Precio por caja por semana">Precio por caja.</canvas>'+
+            '</div>'+
+          '</div>'+
         '</div>'+
+        '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
       '</div>'+
-      '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
+      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
+        '<div class="dash-card-title">Total facturado</div>'+
+        '<div style="display:flex;width:100%;flex:1;min-height:220px;margin-top:8px">'+
+          '<div style="width:40px;flex-shrink:0;position:relative"><canvas id="rfr-res-facturado-chart-axis"></canvas></div>'+
+          '<div id="rfr-res-facturado-chart-wrap" style="position:relative;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden">'+
+            '<div style="position:relative;height:100%;min-width:'+Math.max(500,semKeys.length*60)+'px">'+
+              '<canvas id="rfr-res-facturado-chart" role="img" aria-label="Total facturado por semana">Total facturado.</canvas>'+
+            '</div>'+
+          '</div>'+
+        '</div>'+
+        '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
+      '</div>'+
     '</div>';
 
   var gridCol=rfrGridCol(); var textMuted='#898781';
@@ -3360,7 +3375,41 @@ function renderRfrResumen(data){
         });
       }
     };
-    mkRfrChart('rfr-res-linea-chart',{
+    function mkFrozenAxisLineChart(mainId, cfg){
+      var yCfg = cfg.options.scales.y;
+      var axisYCfg = JSON.parse(JSON.stringify(yCfg));
+      cfg.options.scales.y.ticks = Object.assign({}, cfg.options.scales.y.ticks, {display:false});
+      cfg.options.scales.y.border = {display:false};
+
+      mkRfrChart(mainId, cfg);
+
+      var axisData = {labels:[''], datasets:(cfg.data.datasets||[]).map(function(){
+        return {data:[null], borderColor:'transparent', backgroundColor:'transparent', pointRadius:0, borderWidth:0};
+      })};
+      mkRfrChart(mainId+'-axis', {
+        type:'line',
+        data: axisData,
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{legend:{display:false}, tooltip:{enabled:false}},
+          layout:{padding:0},
+          scales:{
+            x:{display:false},
+            y: Object.assign({}, axisYCfg, {
+              ticks: Object.assign({}, axisYCfg.ticks, {display:true}),
+              grid:{display:false}, border:{display:false}
+            })
+          }
+        }
+      });
+
+      setTimeout(function(){
+        var wrap=document.getElementById(mainId+'-wrap');
+        if(wrap) wrap.scrollLeft = wrap.scrollWidth;
+      }, 80);
+    }
+
+    mkFrozenAxisLineChart('rfr-res-linea-chart',{
       type:'line',
       plugins:[kgLineLabelPlugin],
       data:{
@@ -3396,7 +3445,7 @@ function renderRfrResumen(data){
         });
       }
     };
-    mkRfrChart('rfr-res-cajas-semana-chart',{
+    mkFrozenAxisLineChart('rfr-res-cajas-semana-chart',{
       type:'line',
       plugins:[cajasSemanaLabelPlugin],
       data:{
@@ -3430,7 +3479,7 @@ function renderRfrResumen(data){
       }
     };
 
-    mkRfrChart('rfr-res-costo-general-chart',{
+    mkFrozenAxisLineChart('rfr-res-costo-general-chart',{
       type:'line',
       plugins:[costoLineLabelPlugin],
       data:{
@@ -3450,7 +3499,7 @@ function renderRfrResumen(data){
       }
     });
 
-    mkRfrChart('rfr-res-costo-cosechadores-chart',{
+    mkFrozenAxisLineChart('rfr-res-costo-cosechadores-chart',{
       type:'line',
       plugins:[costoLineLabelPlugin],
       data:{
@@ -3469,7 +3518,7 @@ function renderRfrResumen(data){
       }
     });
 
-    mkRfrChart('rfr-res-precio-chart',{
+    mkFrozenAxisLineChart('rfr-res-precio-chart',{
       type:'line',
       plugins:[costoLineLabelPlugin],
       data:{
@@ -3503,7 +3552,7 @@ function renderRfrResumen(data){
         });
       }
     };
-    mkRfrChart('rfr-res-facturado-chart',{
+    mkFrozenAxisLineChart('rfr-res-facturado-chart',{
       type:'line',
       plugins:[facturadoLineLabelPlugin],
       data:{
