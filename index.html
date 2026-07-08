@@ -559,17 +559,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <!-- ============ SUB-TAB: FINANCIERO (Power BI style) ============ -->
     <div id="rep-fin-sec">
 
-      <!-- Fila 1: Ciclo -->
-      <div class="rep-subnav-wrap">
-        <div style="display:flex;align-items:center;gap:8px;width:100%;max-width:700px">
-          <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Ciclo</span>
-          <select id="fin-anio-select" onchange="onFinAnioChange()" style="flex:1;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);font-weight:600;outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;padding-right:32px">
-            <option value="todos">Todos los ciclos</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Fila 2: Negocios -->
       <div class="rep-subnav-wrap">
         <div class="rep-subnav" id="fin-neg-subnav">
           <button class="rep-tab active" data-neg="todos" onclick="finNegTab('todos')">Todos</button>
@@ -582,39 +571,24 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </div>
       </div>
 
-      <!-- Fila 3: Por día / Por semana / Por ciclo (no aplica a General) -->
-      <div class="rep-subnav-wrap" id="fin-subtabs-wrap">
-        <div class="rep-subnav" style="width:100%;max-width:500px">
-          <button class="rep-tab active" id="fin-st-ciclo" onclick="finSubTab('ciclo')" style="flex:1">Por ciclo</button>
-          <button class="rep-tab" id="fin-st-sem" onclick="finSubTab('sem')" style="flex:1">Por semana</button>
-          <button class="rep-tab" id="fin-st-dia" onclick="finSubTab('dia')" style="flex:1">Por día</button>
-        </div>
-      </div>
+      <div id="fin-dashboard-body">
 
-      <!-- Selector de semana (solo pestaña "Por semana") -->
-      <div class="rep-subnav-wrap" id="fin-sem-select-wrap" style="display:none">
-        <div style="display:flex;align-items:center;gap:8px;width:100%;max-width:700px">
+      <div class="fin-periodo-row" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:120px">
+          <span id="fin-periodo-lbl" style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Año</span>
+          <select id="fin-anio-select" onchange="onFinAnioChange()" style="flex:1;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
+            <option value="todos">Todos</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:140px">
           <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Semana</span>
-          <select id="fin-sem-select" onchange="onFinSemanaChange()" style="flex:1;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);font-weight:600;outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;padding-right:32px">
-            <option value="todas">— Selecciona una semana —</option>
+          <select id="fin-sem-select" onchange="onFinSemanaChange()" style="flex:1;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
+            <option value="todas">Todas</option>
           </select>
         </div>
       </div>
 
-      <!-- Vista "Por día" (contenido nuevo y simple) -->
-      <div id="fin-dia-body" style="display:none">
-        <div class="rep-subnav-wrap">
-          <div style="display:flex;align-items:center;gap:8px;width:100%;max-width:700px">
-            <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">D\u00eda</span>
-            <select id="fin-dia-select" onchange="renderFinDia()" style="flex:1;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);font-weight:600;outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;padding-right:32px">
-              <option value="">— Selecciona un d\u00eda —</option>
-            </select>
-          </div>
-        </div>
-        <div id="fin-dia-detalle" style="max-width:700px;margin:0 auto"></div>
-      </div>
-
-      <div id="fin-dashboard-body">      <div class="kpi-grid">
+      <div class="kpi-grid">
         <div class="kpi-card" style="background:linear-gradient(135deg,var(--fram-bg),var(--surface))">
           <div class="kpi-accent" style="background:var(--fram)"></div>
           <div class="kpi-icon-row"><div class="kpi-icon" style="background:var(--fram-bg);color:var(--fram)">🧾</div></div>
@@ -1930,7 +1904,7 @@ function goSc(s){
     document.getElementById('nav-'+x).classList.toggle('active',x===s);
   });
   if(s==='his') renderHis();
-  if(s==='rep') repTab('fin');
+  if(s==='rep') renderFinanciero();
   if(s==='ven'){ venTab('lista'); }
   if(s==='fram'){ framTab('nuevo'); }
   window.scrollTo(0,0);
@@ -3673,124 +3647,35 @@ function finGastosFiltrados(negKey, soloEsteNeg){
   });
 }
 
-var finSubTabActual = 'ciclo';
-
-function populateFinDiaSelect(forceReciente){
-  var sel = document.getElementById('fin-dia-select');
-  if(!sel) return;
-  var data = finGastosFiltrados(finNegSel, finNegSel!=='todos');
-  if(finAnioSel!=='todos'){
-    data = data.filter(function(g){ return (g.ciclo||cicloFromFecha(g.fechaVal))===finAnioSel; });
-  }
-  var fechasSet = {};
-  data.forEach(function(g){ if(g.fechaVal) fechasSet[g.fechaVal]=true; });
-  var fechas = Object.keys(fechasSet).sort().reverse();
-  var prevVal = sel.value;
-  sel.innerHTML = '<option value="">— Selecciona un d\u00eda —</option>';
-  fechas.forEach(function(f){
-    var o = document.createElement('option');
-    o.value = f;
-    var d = new Date(f+'T12:00:00');
-    o.textContent = d.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
-    sel.appendChild(o);
-  });
-  if(!forceReciente && fechas.indexOf(prevVal)>=0){
-    sel.value = prevVal;
-  } else if(fechas.length){
-    sel.value = fechas[0];
-  }
-}
-
-function renderFinDia(){
-  var sel = document.getElementById('fin-dia-select');
-  var cont = document.getElementById('fin-dia-detalle');
-  if(!sel || !cont) return;
-  var fecha = sel.value;
-  if(!fecha){ cont.innerHTML=''; return; }
-  var data = finGastosFiltrados(finNegSel, finNegSel!=='todos').filter(function(g){return g.fechaVal===fecha;});
-  var total = data.reduce(function(a,g){return a+(g.monto||0);},0);
-  var html = '<div class="dash-card" style="margin-bottom:12px">'+
-    '<div style="display:flex;justify-content:space-between;align-items:center">'+
-      '<div class="dash-card-title" style="margin-bottom:0">Total del d\u00eda</div>'+
-      '<div style="font-family:var(--mono);font-size:22px;font-weight:700;color:var(--fram)">$'+total.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>'+
-    '</div>'+
-    '<div style="font-size:12px;color:var(--text3);margin-top:4px">'+data.length+' registro'+(data.length!==1?'s':'')+'</div>'+
-  '</div>';
-  if(!data.length){
-    html += '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Sin gastos ese d\u00eda.</div></div>';
-  } else {
-    data = data.slice().sort(function(a,b){return (b.monto||0)-(a.monto||0);});
-    html += '<div class="dash-card">';
-    data.forEach(function(g,i){
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0'+(i<data.length-1?';border-bottom:0.5px solid var(--border)':'')+'">'+
-        '<div>'+
-          '<div style="font-size:13px;color:var(--text);font-weight:500">'+(g.cat||'')+'</div>'+
-          '<div style="font-size:11px;color:var(--text3)">'+(g.desc||'')+'</div>'+
-        '</div>'+
-        '<div style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--fram)">$'+(g.monto||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>'+
-      '</div>';
-    });
-    html += '</div>';
-  }
-  cont.innerHTML = html;
-}
-
-
 function finNegTab(neg){
   finNegSel = neg;
   document.querySelectorAll('#fin-neg-subnav .rep-tab').forEach(function(btn){
     btn.classList.toggle('active', btn.dataset.neg===neg);
   });
   if(neg==='general'){
-    document.getElementById('fin-subtabs-wrap').style.display = 'none';
-    document.getElementById('fin-sem-select-wrap').style.display = 'none';
-    document.getElementById('fin-dia-body').style.display = 'none';
     document.getElementById('fin-dashboard-body').style.display = 'none';
     document.getElementById('rep-gen-sec').style.display = 'block';
     renderRep();
     return;
   }
-  document.getElementById('fin-subtabs-wrap').style.display = 'flex';
+  document.getElementById('fin-dashboard-body').style.display = 'block';
   document.getElementById('rep-gen-sec').style.display = 'none';
   document.getElementById('fin-card-negocio').style.display = neg==='todos' ? 'block' : 'none';
   document.getElementById('fin-cat-title').textContent = neg==='todos' ? 'Gastos x Sub-Concepto' : 'Gastos x Sub-Concepto — '+FIN_NEG_MAP[neg].label;
   populateFinAnioSelect(true);
-  finSubTab(finSubTabActual||'ciclo');
-}
-
-function finSubTab(t){
-  finSubTabActual = t;
-  document.getElementById('fin-st-ciclo').classList.toggle('active', t==='ciclo');
-  document.getElementById('fin-st-sem').classList.toggle('active', t==='sem');
-  document.getElementById('fin-st-dia').classList.toggle('active', t==='dia');
-  document.getElementById('fin-sem-select-wrap').style.display = t==='sem' ? 'flex' : 'none';
-  document.getElementById('fin-dia-body').style.display = t==='dia' ? 'block' : 'none';
-  document.getElementById('fin-dashboard-body').style.display = (t==='ciclo'||t==='sem') ? 'block' : 'none';
-  if(t==='ciclo'){
-    finSemSel = 'todas';
-    renderFinanciero();
-  } else if(t==='sem'){
-    populateFinSemanaSelect(true);
-    renderFinanciero();
-  } else if(t==='dia'){
-    populateFinDiaSelect(true);
-    renderFinDia();
-  }
+  populateFinSemanaSelect(true);
+  renderFinanciero();
 }
 
 function onFinAnioChange(){
   finAnioSel = document.getElementById('fin-anio-select').value;
   if(finAnioSel==='todos'){
     finSemSel = 'todas';
-  }
-  if(finSubTabActual==='dia'){
-    populateFinDiaSelect(true);
-    renderFinDia();
+    populateFinSemanaSelect();
   } else {
-    if(finAnioSel==='todos') populateFinSemanaSelect();
-    else populateFinSemanaSelect(true);
-    renderFinanciero();
+    populateFinSemanaSelect(true);
   }
+  renderFinanciero();
 }
 
 function onFinSemanaChange(){
@@ -4026,7 +3911,7 @@ function finSerieSemanal(data){
 
 // ---- Periodo: ciclo agrícola para jal/nay/fram, año calendario para ofic/com/todos ----
 function finUsaCiclo(neg){
-  return true;
+  return neg==='jal' || neg==='nay' || neg==='fram';
 }
 
 // Periodo anterior (ciclo previo o año previo) a partir de un valor de periodo dado
