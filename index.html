@@ -3380,7 +3380,7 @@ function renderRfrResumen(data){
       var axisYCfg = JSON.parse(JSON.stringify(yCfg));
       cfg.options.scales.y.ticks = Object.assign({}, cfg.options.scales.y.ticks, {display:false});
       cfg.options.scales.y.border = {display:false};
-      cfg.options.scales.y.afterFit = function(scale){ scale.width = 2; };
+      cfg.options.scales.y.ticks.padding = 0;
       if(!cfg.options.layout) cfg.options.layout={padding:{left:0,right:4,top:8,bottom:0}};
 
       mkRfrChart(mainId, cfg);
@@ -3399,7 +3399,8 @@ function renderRfrResumen(data){
             x:{display:false},
             y: Object.assign({}, axisYCfg, {
               ticks: Object.assign({}, axisYCfg.ticks, {display:true, font:{size:9.5}, padding:2}),
-              grid:{display:false}, border:{display:false}
+              grid:{display:false}, border:{display:false},
+              title: Object.assign({}, axisYCfg.title, {padding:{top:0,bottom:10}})
             })
           }
         }
