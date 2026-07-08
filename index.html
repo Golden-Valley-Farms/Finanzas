@@ -341,8 +341,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   }
   #rep-fin-sec .fin-charts-grid .dash-card{margin-bottom:0}
   #rep-fin-sec .fin-chart-full{grid-column:1/-1}
-  #rep-fin-sec .rep-subnav-wrap{max-width:700px;margin-left:auto;margin-right:auto}
-  #rep-fin-sec .fin-periodo-row{max-width:600px;margin-left:auto;margin-right:auto}
+  #rep-fin-sec .rep-subnav-wrap{max-width:1400px;margin-left:auto;margin-right:auto}
+  #rep-fin-sec .fin-periodo-row{max-width:400px;margin-left:auto;margin-right:auto}
 
   /* Frambuesa breakout igual que financiero */
   #rep-fram-sec{
@@ -559,27 +559,32 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <!-- ============ SUB-TAB: FINANCIERO (Power BI style) ============ -->
     <div id="rep-fin-sec">
 
+      <!-- Fila 1: Ciclo -->
       <div class="rep-subnav-wrap">
-        <div class="rep-subnav" id="fin-neg-subnav">
-          <button class="rep-tab active" data-neg="todos" onclick="finNegTab('todos')">Todos</button>
-          <button class="rep-tab" data-neg="general" onclick="finNegTab('general')">General</button>
-          <button class="rep-tab" data-neg="jal" onclick="finNegTab('jal')">Camote Jalisco</button>
-          <button class="rep-tab" data-neg="nay" onclick="finNegTab('nay')">Camote Nayarit</button>
-          <button class="rep-tab" data-neg="ofic" onclick="finNegTab('ofic')">Oficina</button>
-          <button class="rep-tab" data-neg="fram" onclick="finNegTab('fram')">Frambuesa</button>
-          <button class="rep-tab" data-neg="com" onclick="finNegTab('com')">Comercial.</button>
+        <div id="fin-ciclo-row" style="display:flex;align-items:center;gap:8px;width:100%">
+          <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Ciclo</span>
+          <select id="fin-anio-select" onchange="onFinAnioChange()" style="flex:1;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);font-weight:600;outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;padding-right:32px">
+            <option value="todos">Todos los ciclos</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Fila 2: Negocios, todos en una sola fila -->
+      <div class="rep-subnav-wrap">
+        <div class="rep-subnav" id="fin-neg-subnav" style="width:100%;flex-wrap:nowrap;overflow-x:auto">
+          <button class="rep-tab active" data-neg="todos" onclick="finNegTab('todos')" style="flex:1">Todos</button>
+          <button class="rep-tab" data-neg="general" onclick="finNegTab('general')" style="flex:1">General</button>
+          <button class="rep-tab" data-neg="jal" onclick="finNegTab('jal')" style="flex:1">Camote Jalisco</button>
+          <button class="rep-tab" data-neg="nay" onclick="finNegTab('nay')" style="flex:1">Camote Nayarit</button>
+          <button class="rep-tab" data-neg="ofic" onclick="finNegTab('ofic')" style="flex:1">Oficina</button>
+          <button class="rep-tab" data-neg="fram" onclick="finNegTab('fram')" style="flex:1">Frambuesa</button>
+          <button class="rep-tab" data-neg="com" onclick="finNegTab('com')" style="flex:1">Comercial.</button>
         </div>
       </div>
 
       <div id="fin-dashboard-body">
 
       <div class="fin-periodo-row" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-        <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:120px">
-          <span id="fin-periodo-lbl" style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Año</span>
-          <select id="fin-anio-select" onchange="onFinAnioChange()" style="flex:1;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
-            <option value="todos">Todos</option>
-          </select>
-        </div>
         <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:140px">
           <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Semana</span>
           <select id="fin-sem-select" onchange="onFinSemanaChange()" style="flex:1;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
@@ -1904,7 +1909,7 @@ function goSc(s){
     document.getElementById('nav-'+x).classList.toggle('active',x===s);
   });
   if(s==='his') renderHis();
-  if(s==='rep') renderFinanciero();
+  if(s==='rep') repTab('fin');
   if(s==='ven'){ venTab('lista'); }
   if(s==='fram'){ framTab('nuevo'); }
   window.scrollTo(0,0);
@@ -3911,7 +3916,7 @@ function finSerieSemanal(data){
 
 // ---- Periodo: ciclo agrícola para jal/nay/fram, año calendario para ofic/com/todos ----
 function finUsaCiclo(neg){
-  return neg==='jal' || neg==='nay' || neg==='fram';
+  return true;
 }
 
 // Periodo anterior (ciclo previo o año previo) a partir de un valor de periodo dado
