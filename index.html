@@ -3186,7 +3186,7 @@ function renderRfrResumen(data){
     '</div>'+
     // ── Fila 2: tarjetas independientes (trabajador ocupa las 2 filas a la izquierda) ──
     '<div class="rfr-dia-grid">'+
-      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column;grid-row:span 2;min-width:0">'+
+      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column;min-width:0">'+
         '<div class="dash-card-title">Promedio de cubetas por trabajador</div>'+
         '<div class="dash-card-sub">'+trabArr.length+' trabajadores \u00b7 promedio por d\u00eda</div>'+
         '<div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text3)">'+
@@ -3194,7 +3194,7 @@ function renderRfrResumen(data){
           '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#eda100;display:inline-block"></span>20\u201325</span>'+
           '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1baf7a;display:inline-block"></span>&gt; 25</span>'+
         '</div>'+
-        '<div style="position:relative;width:100%;flex:1;min-height:460px;min-width:0;overflow-x:auto;overflow-y:hidden">'+
+        '<div style="position:relative;width:100%;flex:1;min-height:230px;min-width:0;overflow-x:auto;overflow-y:hidden">'+
           '<div style="position:relative;height:100%;min-width:'+Math.max(700,trabArr.length*42)+'px">'+
             '<canvas id="rfr-res-trab-chart" role="img" aria-label="Promedio de cubetas por trabajador">Trabajadores.</canvas>'+
           '</div>'+
@@ -3210,7 +3210,7 @@ function renderRfrResumen(data){
           '</div>':
           '<div style="text-align:center;padding:16px 0;color:var(--text3);font-size:13px">Sin datos de calidad este ciclo</div>')+
       '</div>'+
-      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
+      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column;grid-column:1/-1">'+
         '<div class="dash-card-title">Cajas por sector</div>'+
         '<div style="position:relative;width:100%;flex:1;min-height:220px;margin-top:8px"><canvas id="rfr-res-sec-chart" role="img" aria-label="Cajas por sector">Sectores.</canvas></div>'+
         '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Sectores</div>'+
