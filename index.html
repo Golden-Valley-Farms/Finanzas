@@ -395,6 +395,13 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </button>
   </div>
 
+  <div class="rep-subnav-wrap" id="fin-maintabs-wrap" style="margin:10px 16px 14px">
+    <div class="rep-subnav" style="width:100%;max-width:400px">
+      <button class="rep-tab active" id="fin-mt-reg" onclick="goSc('reg')" style="flex:1">Registrar</button>
+      <button class="rep-tab" id="fin-mt-his" onclick="goSc('his')" style="flex:1">Historial</button>
+    </div>
+  </div>
+
   <!-- REGISTRAR -->
   <div id="sc-reg" class="screen active">
 
@@ -1440,13 +1447,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 </div>
 
 <div class="bottom-nav">
-  <button class="nav-item active" id="nav-reg" onclick="goSc('reg')">
+  <button class="nav-item active" id="nav-fin" onclick="goSc('reg')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"></path></svg>
-    Registrar
-  </button>
-  <button class="nav-item" id="nav-his" onclick="goSc('his')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"></path></svg>
-    Historial
+    Finanzas
   </button>
   <button class="nav-item" id="nav-ven" onclick="goSc('ven')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
@@ -1901,8 +1904,16 @@ function selLoc(l){
 function goSc(s){
   ['reg','his','rep','ven','fram'].forEach(function(x){
     document.getElementById('sc-'+x).classList.toggle('active',x===s);
-    document.getElementById('nav-'+x).classList.toggle('active',x===s);
   });
+  document.getElementById('nav-fin').classList.toggle('active', s==='reg'||s==='his');
+  document.getElementById('nav-ven').classList.toggle('active', s==='ven');
+  document.getElementById('nav-fram').classList.toggle('active', s==='fram');
+  document.getElementById('nav-rep').classList.toggle('active', s==='rep');
+  document.getElementById('fin-maintabs-wrap').style.display = (s==='reg'||s==='his') ? 'flex' : 'none';
+  if(s==='reg'||s==='his'){
+    document.getElementById('fin-mt-reg').classList.toggle('active', s==='reg');
+    document.getElementById('fin-mt-his').classList.toggle('active', s==='his');
+  }
   if(s==='his') renderHis();
   if(s==='rep') repTab('fin');
   if(s==='ven'){ venTab('lista'); }
