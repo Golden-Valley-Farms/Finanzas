@@ -490,10 +490,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
       <div class="field">
         <label>Banco <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(opcional)</span></label>
-        <div style="position:relative">
-          <input type="text" id="f-banco" placeholder="Ej: BBVA, Banorte..." autocomplete="off" oninput="onBancoInput()" onclick="showBancoDropdown()" onblur="setTimeout(hideBancoDropdown,150)" style="width:100%">
-          <div id="banco-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:200px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
-        </div>
+        <select id="f-banco" onchange="onFBancoSelectChange()" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;padding-right:32px">
+          <option value="">— Sin banco —</option>
+        </select>
       </div>
     </div>
 
@@ -1970,7 +1969,7 @@ function registrar(){
     showToast('✅ Gasto actualizado');
     document.getElementById('f-monto').value='';
     document.getElementById('f-desc').value='';
-    document.getElementById('f-banco').value='';
+    poblarFBancoSelect();
     document.getElementById('f-proveedor').value='';
     sectoresSel=[];
     goSc('his');
@@ -1990,7 +1989,7 @@ function registrar(){
   gastos.unshift(g); save(); updateHeader(); sbSaveGasto(g);
   document.getElementById('f-monto').value='';
   document.getElementById('f-desc').value='';
-  document.getElementById('f-banco').value='';
+  poblarFBancoSelect();
   document.getElementById('f-proveedor').value='';
   sectoresSel=[];
   if(document.getElementById('sector-sec').classList.contains('visible')) buildSectorGrid();
@@ -2282,7 +2281,7 @@ function editarGasto(id){
     document.getElementById('f-cat').value = g.cat;
     document.getElementById('f-monto').value = g.monto;
     document.getElementById('f-desc').value = g.desc||'';
-    document.getElementById('f-banco').value = g.banco||'';
+    poblarFBancoSelect(g.banco||'');
     document.getElementById('f-proveedor').value = g.proveedor||'';
   },50);
   // Change button label
@@ -4926,11 +4925,55 @@ try{
     bancos=Object.keys(seen).sort(function(a,b){return a.localeCompare(b,'es');});
   }
 }catch(e){}
+poblarFBancoSelect();
 function saveBancos(){try{localStorage.setItem('cc_bancos',JSON.stringify(bancos));}catch(e){}}
 function agregarBancoSiNuevo(nombre){
   if(!nombre) return;
   var nom=nombre.trim(); if(!nom) return;
   if(bancos.indexOf(nom)<0){bancos.push(nom);bancos.sort(function(a,b){return a.localeCompare(b,'es');});saveBancos();sbSaveBanco(nom);}
+}
+
+function poblarFBancoSelect(seleccionar){
+  var sel = document.getElementById('f-banco');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">— Sin banco —</option>';
+  bancos.forEach(function(n){
+    var o=document.createElement('option'); o.value=n; o.textContent=n;
+    sel.appendChild(o);
+  });
+  var optNuevo=document.createElement('option');
+  optNuevo.value='__nuevo__'; optNuevo.textContent='+ Agregar nuevo banco...';
+  sel.appendChild(optNuevo);
+  sel.value = seleccionar || '';
+}
+
+function onFBancoSelectChange(){
+  var sel = document.getElementById('f-banco');
+  if(sel.value==='__nuevo__'){
+    sel.value = '';
+    abrirModalNuevoBanco();
+  }
+}
+
+function abrirModalNuevoBanco(){
+  document.getElementById('mo-title').innerHTML = '🏦 Nuevo banco';
+  document.getElementById('mo-body').innerHTML =
+    '<div class="field" style="margin-bottom:14px"><label>Nombre del banco</label>'+
+    '<input type="text" id="nuevo-banco-nombre-input" placeholder="Ej: BBVA" style="width:100%" onkeydown="if(event.key===\'Enter\'){event.preventDefault();confirmarNuevoBanco();}"></div>'+
+    '<button class="btn-main" onclick="confirmarNuevoBanco()">Agregar banco</button>';
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(function(){ var inp=document.getElementById('nuevo-banco-nombre-input'); if(inp) inp.focus(); }, 100);
+}
+
+function confirmarNuevoBanco(){
+  var inp = document.getElementById('nuevo-banco-nombre-input');
+  var nom = inp.value.trim();
+  if(!nom){ showToast('Escribe un nombre'); return; }
+  if(bancos.indexOf(nom)>=0){ showToast('Ese banco ya existe'); return; }
+  agregarBancoSiNuevo(nom);
+  closeModal();
+  poblarFBancoSelect(nom);
+  showToast('Banco agregado');
 }
 
 // ---- CLIENTE DROPDOWN ----
