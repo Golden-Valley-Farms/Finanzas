@@ -1447,7 +1447,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 </div>
 
 <div class="bottom-nav">
-  <button class="nav-item active" id="nav-fin" onclick="goSc('reg')">
+  <button class="nav-item active" id="nav-fin" onclick="goFin()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"></path></svg>
     Finanzas
   </button>
@@ -1913,6 +1913,7 @@ function goSc(s){
   if(s==='reg'||s==='his'){
     document.getElementById('fin-mt-reg').classList.toggle('active', s==='reg');
     document.getElementById('fin-mt-his').classList.toggle('active', s==='his');
+    lastFinSc = s;
   }
   if(s==='his') renderHis();
   if(s==='rep') repTab('fin');
@@ -1920,6 +1921,8 @@ function goSc(s){
   if(s==='fram'){ framTab('nuevo'); }
   window.scrollTo(0,0);
 }
+var lastFinSc = 'reg';
+function goFin(){ goSc(lastFinSc); }
 
 function showToast(msg){
   var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
