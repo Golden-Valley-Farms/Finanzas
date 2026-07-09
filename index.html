@@ -389,10 +389,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="header-date" id="hdr-date">vie, 12 de junio de 2026</div>
       </div>
     </div>
-    <button onclick="guardarHTML()" style="padding: 7px 13px; border-radius: 20px; border-color: var(--green); border-top-style: ; border-top-width: ; border-right-style: ; border-right-width: ; border-bottom-style: ; border-bottom-width: ; border-left-style: ; border-left-width: ; border-image-source: ; border-image-slice: ; border-image-width: ; border-image-outset: ; border-image-repeat: ; background: var(--surface); color: var(--green); font-size: 12px; font-weight: 500; cursor: pointer; font-family: var(--font); display: flex; align-items: center; gap: 5px; transition: 0.15s;" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px;height:14px;stroke-width:2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-      Guardar
-    </button>
   </div>
 
   <div class="rep-subnav-wrap" id="fin-maintabs-wrap" style="margin:10px 16px 14px">
@@ -560,7 +556,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
     <div class="rep-subnav-wrap">
       <div class="rep-subnav">
-        <button class="rep-tab active" id="rt-fin" onclick="repTab('fin')">Financiero</button>
+        <button class="rep-tab active" id="rt-fin" onclick="repTab('fin')">Gastos</button>
         <button class="rep-tab" id="rt-fram" onclick="repTab('fram')">🍇 Frambuesa</button>
       </div>
     </div>
@@ -568,17 +564,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <!-- ============ SUB-TAB: FINANCIERO (Power BI style) ============ -->
     <div id="rep-fin-sec">
 
-      <!-- Fila 1: Ciclo -->
-      <div class="rep-subnav-wrap">
-        <div id="fin-ciclo-row" style="display:flex;align-items:center;gap:8px;width:100%">
-          <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Ciclo</span>
-          <select id="fin-anio-select" onchange="onFinAnioChange()" style="flex:1;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);font-weight:600;outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;padding-right:32px">
-            <option value="todos">Todos los ciclos</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Fila 2: Negocios, todos en una sola fila -->
+      <!-- Fila 1: Negocios, todos en una sola fila -->
       <div class="rep-subnav-wrap">
         <div class="rep-subnav" id="fin-neg-subnav" style="width:100%;flex-wrap:nowrap;overflow-x:auto">
           <button class="rep-tab active" data-neg="todos" onclick="finNegTab('todos')" style="flex:1">Todos</button>
@@ -594,6 +580,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div id="fin-dashboard-body">
 
       <div class="fin-periodo-row" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:140px">
+          <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap" id="fin-periodo-lbl">Año</span>
+          <select id="fin-anio-select" onchange="onFinAnioChange()" style="flex:1;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
+            <option value="todos">Todos los años</option>
+          </select>
+        </div>
         <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:140px">
           <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Semana</span>
           <select id="fin-sem-select" onchange="onFinSemanaChange()" style="flex:1;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
@@ -650,11 +642,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
     <!-- ============ SUB-TAB: GENERAL ============ -->
     <div id="rep-gen-sec" style="display:none">
-
-      <button onclick="exportarExcel()" style="width:100%;margin-bottom:14px;padding:12px;border-radius:var(--radius);border:1.5px solid var(--green-border);background:var(--green-bg);color:var(--green);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:17px;height:17px;stroke-width:2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-        Exportar a CSV (Excel)
-      </button>
 
       <div class="section-hd">Resumen general</div>
       <div class="stats-grid" style="margin-bottom:8px">
@@ -4864,46 +4851,6 @@ function confirmarBorrarCliente(nombre){
 // Init datalist on load
 (function(){ updateClientesDatalist(); })();
 
-function guardarHTML(){
-  var currentGastos = gastos;
-  try { var sv=localStorage.getItem('cc_gastos3'); if(sv) currentGastos=JSON.parse(sv); } catch(e){}
-  var currentEnvios = envios;
-  try { var sve=localStorage.getItem('cc_envios'); if(sve) currentEnvios=JSON.parse(sve); } catch(e){}
-  var h = document.documentElement.outerHTML;
-  var newData = 'var DATOS_IMPORTADOS = ' + JSON.stringify(currentGastos) + ';';
-  h = h.replace(/var DATOS_IMPORTADOS\s*=\s*\[[\s\S]*?\];/, newData);
-  var newEnvios = 'var ENVIOS_IMPORTADOS = ' + JSON.stringify(currentEnvios) + ';';
-  h = h.replace(/var ENVIOS_IMPORTADOS\s*=\s*\[[\s\S]*?\];/, newEnvios);
-  var currentClientes = clientes;
-  try { var svc2=localStorage.getItem('cc_clientes'); if(svc2) currentClientes=JSON.parse(svc2); } catch(e){}
-  var newClientes = 'var CLIENTES_IMPORTADOS = ' + JSON.stringify(currentClientes) + ';';
-  h = h.replace(/var CLIENTES_IMPORTADOS\s*=\s*\[[\s\S]*?\];/, newClientes);
-  var fecha = new Date().toISOString().slice(0,10);
-  var nombre = 'cosecha-y-cuentas-' + fecha + '.html';
-  try {
-    // Método moderno: File System Access API (sin pantalla en blanco)
-    if(window.showSaveFilePicker){
-      window.showSaveFilePicker({
-        suggestedName: nombre,
-        types:[{description:'HTML',accept:{'text/html':['.html']}}]
-      }).then(function(fileHandle){
-        return fileHandle.createWritable();
-      }).then(function(writable){
-        writable.write(h);
-        return writable.close();
-      }).then(function(){
-        showToast('✅ Archivo guardado con todos los datos');
-      }).catch(function(err){
-        if(err.name !== 'AbortError') fallbackDescarga(h, nombre);
-      });
-    } else {
-      fallbackDescarga(h, nombre);
-    }
-  } catch(e){
-    fallbackDescarga(h, nombre);
-  }
-}
-
 // ---- VARIEDADES ----
 var VARIEDADES = ['Blanco Criollo','Amarillo Covington','Morado Criollo','Amarillo Nylon'];
 
@@ -5341,53 +5288,6 @@ function guardarOperacionComer(){
   venTab('lista');
 }
 
-// ---- EXPORTAR CSV ----
-function csvEscape(v){
-  if(v===null||v===undefined) return '';
-  var s=String(v);
-  if(s.indexOf(',')>=0||s.indexOf('"')>=0||s.indexOf('\n')>=0) return '"'+s.replace(/"/g,'""')+'"';
-  return s;
-}
-function csvRow(arr){return arr.map(csvEscape).join(',');}
-
-function exportarExcel(){
-  var fecha=new Date().toISOString().slice(0,10);
-  var locLbl={jal:'Jalisco',nay:'Nayarit',ofic:'Oficina',com:'Comercializadora'};
-  var rows=[];
-  rows.push(['GASTOS','','','','','','','']);
-  rows.push(['Fecha','Negocio','Actividad','Categoria','Sector','Descripcion','Monto','Ciclo']);
-  gastos.forEach(function(g){
-    rows.push([g.fechaVal||'',locLbl[g.loc]||g.loc||'',g.cultivo||'',g.cat||'',g.sector||'',g.desc||'',g.monto||0,g.ciclo||'']);
-  });
-  rows.push(['','','','','','','','']);
-  rows.push(['ENVIOS','','','','','','','','','','','','','','']);
-  rows.push(['N Envio','Folio','Fecha','Negocio','Cliente','Ciclo','Variedad','Sector','Hectareas','Peso Neto kg','Toneladas','Precio x kg','Total Variedad','Flete','Total Envio']);
-  envios.forEach(function(e){
-    var totalEnvio=envioTotal(e);
-    if(!e.partidas||!e.partidas.length){
-      rows.push([e.num||'',e.folio||'',e.fecha||'',locLbl[e.loc]||'',e.cliente||'',e.ciclo||'','','','','','','','',e.flete||0,totalEnvio]);
-    } else {
-      e.partidas.forEach(function(p,pi){
-        var kg=e.esComer?parseFloat(p.kgRecibidos||0):parseFloat(p.pesoNeto||0);
-        var pv=e.esComer?parseFloat(p.precioVenta||0):parseFloat(p.precio||0);
-        rows.push([pi===0?e.num||'':'',pi===0?e.folio||'':'',pi===0?e.fecha||'':'',
-          pi===0?locLbl[e.loc]||'':'',pi===0?e.cliente||'':'',pi===0?e.ciclo||'':'',
-          p.variedad||'',p.sector||'',p.hectareas||'',kg,p.toneladas||'',pv,kg*pv,
-          pi===0?e.flete||0:'',pi===0?totalEnvio:'']);
-      });
-    }
-  });
-  var csv=rows.map(csvRow).join('\r\n');
-  var enc=encodeURIComponent(csv);
-  document.getElementById('mo-title').textContent='Descargar CSV';
-  document.getElementById('mo-body').innerHTML=
-    '<p style="font-size:13px;color:var(--text2);margin-bottom:16px">Haz clic para descargar el archivo CSV.</p>'+
-    '<a href="data:text/csv;charset=utf-8,'+enc+'" download="cosecha-y-cuentas-'+fecha+'.csv" '+
-    'style="display:block;text-align:center;padding:14px;background:var(--green);color:#fff;border-radius:var(--radius);font-weight:600;font-size:14px;text-decoration:none">'+
-    '⬇️ Descargar cosecha-y-cuentas-'+fecha+'.csv</a>';
-  document.getElementById('overlay').classList.add('open');
-}
-
 // ---- REPORTES INGRESOS ----
 function renderIngresosRep(){
   if(!document.getElementById('r-ing-tot')) return;
@@ -5458,20 +5358,6 @@ function renderIngresosRep(){
 }
 
 
-function fallbackDescarga(h, nombre){
-  try {
-    var blob = new Blob([h], {type:'text/html;charset=utf-8'});
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = nombre;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 1000);
-    showToast('✅ Archivo guardado con todos los datos');
-  } catch(e){
-    showToast('❌ Error al guardar: ' + e.message);
-  }
-}
 // ============================================================
 // ---- FRAMBUESA MODULE ----
 // ============================================================
