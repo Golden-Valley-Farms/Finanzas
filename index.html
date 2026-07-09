@@ -378,7 +378,37 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   #rep-fram-sec .rfr-dia-grid .dash-card:last-of-type{margin-bottom:0}
   #rep-fram-sec .rfr-dia-full{max-width:1400px;margin:10px auto 0}
   #rep-fram-sec .rfr-topbar{max-width:1400px;margin-left:auto;margin-right:auto}
+
+  /* Camote: mismo breakout de ancho que Gastos y Frambuesa */
+  #rep-cam-sec{
+    width:100vw;
+    position:relative;
+    left:50%;
+    margin-left:-50vw;
+    padding:0 24px;
+    box-sizing:border-box;
+  }
+  #rep-cam-sec .rcm-neg-grid{max-width:1400px;margin:0 auto 14px}
+  #rep-cam-sec .kpi-grid{
+    max-width:1400px;margin:0 auto 14px;
+    grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  }
+  #rep-cam-sec .fin-charts-grid{
+    max-width:1400px;margin:0 auto;
+    display:grid;grid-template-columns:repeat(2,1fr);gap:12px;
+  }
+  #rep-cam-sec .fin-charts-grid .dash-card{margin-bottom:0}
+  #rep-cam-sec .fin-chart-full{grid-column:1/-1}
+  #rep-cam-sec .rfr-topbar{max-width:1400px;margin-left:auto;margin-right:auto}
 }
+.rcm-neg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.rcm-neg-card{
+  background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-lg);
+  padding:14px;text-align:center;cursor:pointer;transition:.15s;
+}
+.rcm-neg-card-title{font-size:13px;font-weight:600;color:var(--text2)}
+.rcm-neg-card.active{border-color:var(--camote);background:var(--camote-bg)}
+.rcm-neg-card.active .rcm-neg-card-title{color:var(--camote)}
 .rfr-chart-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-top:14px;box-shadow:0 1px 3px rgba(0,0,0,0.15)}
 .rfr-chart-box:first-child{margin-top:0}
 </style>
@@ -561,6 +591,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div class="rep-subnav-wrap">
       <div class="rep-subnav">
         <button class="rep-tab active" id="rt-fin" onclick="repTab('fin')">Gastos</button>
+        <button class="rep-tab" id="rt-cam" onclick="repTab('cam')">🍠 Camote</button>
         <button class="rep-tab" id="rt-fram" onclick="repTab('fram')">🍇 Frambuesa</button>
       </div>
     </div>
@@ -779,6 +810,34 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div id="rfr-sec-res" style="display:none">
         <div id="rfr-res-detalle"></div>
       </div>
+
+    </div>
+
+    <!-- ============ SUB-TAB: CAMOTE ============ -->
+    <div id="rep-cam-sec" style="display:none">
+
+      <!-- Selector de negocio: 3 tarjetas -->
+      <div class="rcm-neg-grid">
+        <div class="rcm-neg-card active" data-neg="jal" onclick="rcmNegTab('jal')">
+          <div class="rcm-neg-card-title">Jalisco</div>
+        </div>
+        <div class="rcm-neg-card" data-neg="nay" onclick="rcmNegTab('nay')">
+          <div class="rcm-neg-card-title">Nayarit</div>
+        </div>
+        <div class="rcm-neg-card" data-neg="com" onclick="rcmNegTab('com')">
+          <div class="rcm-neg-card-title">Comercializadora</div>
+        </div>
+      </div>
+
+      <!-- Selector de Ciclo -->
+      <div class="rfr-topbar" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Ciclo</span>
+        <select id="rcm-ciclo" onchange="renderRepCam()" style="flex:1;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);font-weight:600;outline:none">
+          <option value="todos">Todos los ciclos</option>
+        </select>
+      </div>
+
+      <div id="rcm-content"></div>
 
     </div>
   </div>
@@ -2357,10 +2416,13 @@ function attachDashTooltips(cont, ttId){
 
 function repTab(t){
   document.getElementById('rt-fin').classList.toggle('active', t==='fin');
+  document.getElementById('rt-cam').classList.toggle('active', t==='cam');
   document.getElementById('rt-fram').classList.toggle('active', t==='fram');
   document.getElementById('rep-fin-sec').style.display = t==='fin' ? 'block' : 'none';
+  document.getElementById('rep-cam-sec').style.display = t==='cam' ? 'block' : 'none';
   document.getElementById('rep-fram-sec').style.display = t==='fram' ? 'block' : 'none';
   if(t==='fin') finNegTab(finNegSel||'todos');
+  if(t==='cam') renderRepCam();
   if(t==='fram') renderRepFram();
 }
 
@@ -3610,6 +3672,187 @@ function renderRfrResumen(data){
     }, 28);
   },30);
   setTimeout(function(){ window.dispatchEvent(new Event('resize')); },150);
+}
+
+// ============================================================
+// ---- REPORTE CAMOTE ----
+// ============================================================
+var rcmNegSel = 'jal';
+var rcmCharts = {};
+var SEC_COLS_RCM = ['#2a78d6','#1baf7a','#eda100','#4a3aa7','#e34948','#9B59B6','#00B8D9','#C45B0A'];
+
+function mkRcmChart(id, cfg){
+  if(rcmCharts[id]){ rcmCharts[id].destroy(); delete rcmCharts[id]; }
+  var el=document.getElementById(id); if(!el) return;
+  rcmCharts[id]=new Chart(el, cfg);
+}
+
+function rcmNegTab(neg){
+  rcmNegSel = neg;
+  document.querySelectorAll('.rcm-neg-card').forEach(function(c){
+    c.classList.toggle('active', c.dataset.neg===neg);
+  });
+  renderRepCam();
+}
+
+function renderRepCam(){
+  // Poblar selector de ciclos según los envíos del negocio activo
+  var cicloSel = document.getElementById('rcm-ciclo');
+  if(cicloSel){
+    var ciclosPresentes = [];
+    envios.filter(function(e){return e.loc===rcmNegSel;}).forEach(function(e){
+      if(e.ciclo && ciclosPresentes.indexOf(e.ciclo)<0) ciclosPresentes.push(e.ciclo);
+    });
+    ciclosPresentes.sort().reverse();
+    var prevVal = cicloSel.value;
+    cicloSel.innerHTML = '<option value="todos">Todos los ciclos</option>';
+    ciclosPresentes.forEach(function(c){ var o=document.createElement('option'); o.value=c; o.textContent=c; cicloSel.appendChild(o); });
+    if(prevVal && cicloSel.querySelector('option[value="'+prevVal+'"]')) cicloSel.value = prevVal;
+  }
+  var filtroCiclo = cicloSel ? cicloSel.value : 'todos';
+
+  var cont = document.getElementById('rcm-content');
+  if(!cont) return;
+
+  if(rcmNegSel!=='nay'){
+    var lbl = rcmNegSel==='jal' ? 'Jalisco' : 'Comercializadora';
+    cont.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--text3);font-size:13px">'+lbl+' — próximamente</div>';
+    return;
+  }
+
+  var envs = envios.filter(function(e){
+    return e.loc==='nay' && (filtroCiclo==='todos' || e.ciclo===filtroCiclo);
+  });
+
+  renderRcmNayarit(envs);
+}
+
+function renderRcmNayarit(envs){
+  var cont = document.getElementById('rcm-content');
+
+  var totalTon = 0, totalHa = 0;
+  var tonPorSector = {}, haPorSector = {};
+  envs.forEach(function(e){
+    (e.partidas||[]).forEach(function(p){
+      var ton = parseFloat(p.toneladas)||0;
+      var ha = parseFloat(p.hectareas)||0;
+      if(!ton && !ha) return;
+      totalTon += ton; totalHa += ha;
+      var sec = p.sector || '—';
+      tonPorSector[sec] = (tonPorSector[sec]||0) + ton;
+      haPorSector[sec] = (haPorSector[sec]||0) + ha;
+    });
+  });
+
+  if(!totalTon && !totalHa){
+    cont.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--text3);font-size:13px">Sin registros de cosecha para este ciclo</div>';
+    return;
+  }
+
+  var promTonHa = totalHa>0 ? totalTon/totalHa : 0;
+
+  var sectores = Object.keys(tonPorSector).sort(function(a,b){
+    var na=parseFloat(a), nb=parseFloat(b);
+    if(!isNaN(na)&&!isNaN(nb)) return na-nb;
+    return String(a).localeCompare(String(b));
+  });
+  var tonVals = sectores.map(function(s){return Math.round(tonPorSector[s]*100)/100;});
+  var haVals = sectores.map(function(s){return Math.round((haPorSector[s]||0)*100)/100;});
+  var tonHaVals = sectores.map(function(s,i){return haVals[i]>0 ? Math.round((tonVals[i]/haVals[i])*100)/100 : 0;});
+  var secLbls = sectores.map(function(s){return 'Sector '+s;});
+  var secCols = sectores.map(function(s,i){return SEC_COLS_RCM[i%SEC_COLS_RCM.length];});
+
+  cont.innerHTML =
+    '<div class="kpi-grid">'+
+      '<div class="kpi-card">'+
+        '<div class="kpi-accent" style="background:var(--camote)"></div>'+
+        '<div class="kpi-lbl">Toneladas cosechadas</div>'+
+        '<div class="kpi-val" style="color:var(--camote)">'+(Math.round(totalTon*100)/100).toLocaleString('es-MX')+'</div>'+
+      '</div>'+
+      '<div class="kpi-card">'+
+        '<div class="kpi-accent" style="background:var(--camote)"></div>'+
+        '<div class="kpi-lbl">Hectáreas cosechadas</div>'+
+        '<div class="kpi-val" style="color:var(--camote)">'+(Math.round(totalHa*100)/100).toLocaleString('es-MX')+'</div>'+
+      '</div>'+
+      '<div class="kpi-card">'+
+        '<div class="kpi-accent" style="background:var(--camote)"></div>'+
+        '<div class="kpi-lbl">Promedio Ton/Ha</div>'+
+        '<div class="kpi-val" style="color:var(--camote)">'+(Math.round(promTonHa*100)/100).toLocaleString('es-MX')+'</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="fin-charts-grid">'+
+      '<div class="dash-card">'+
+        '<div class="dash-card-title">Toneladas cosechadas por sector</div>'+
+        '<div style="position:relative;height:240px;margin-top:8px"><canvas id="rcm-nay-ton-sec-chart"></canvas></div>'+
+      '</div>'+
+      '<div class="dash-card">'+
+        '<div class="dash-card-title">Hectáreas cosechadas por sector</div>'+
+        '<div style="position:relative;height:240px;margin-top:8px"><canvas id="rcm-nay-ha-sec-chart"></canvas></div>'+
+      '</div>'+
+      '<div class="dash-card fin-chart-full">'+
+        '<div class="dash-card-title">Toneladas x Hectárea por sector</div>'+
+        '<div style="position:relative;height:240px;margin-top:8px"><canvas id="rcm-nay-tonha-sec-chart"></canvas></div>'+
+      '</div>'+
+    '</div>';
+
+  var gridCol = rfrGridCol(); var textMuted = '#898781';
+
+  var barLabelPlugin = function(suffix){
+    return {
+      id:'rcmBarLabels'+suffix,
+      afterDatasetsDraw:function(chart){
+        var ctx=chart.ctx; var ds=chart.data.datasets[0]; var meta=chart.getDatasetMeta(0);
+        meta.data.forEach(function(bar,i){
+          var v=ds.data[i]; if(!v) return;
+          ctx.save(); ctx.fillStyle='#1a7a4a'; ctx.font='bold 11px monospace';
+          ctx.textAlign='center'; ctx.textBaseline='bottom';
+          ctx.fillText(v, bar.x, bar.y-4); ctx.restore();
+        });
+      }
+    };
+  };
+
+  mkRcmChart('rcm-nay-ton-sec-chart', {
+    type:'bar',
+    plugins:[barLabelPlugin('Ton')],
+    data:{labels:secLbls, datasets:[{data:tonVals, backgroundColor:secCols, borderRadius:3}]},
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+c.raw+' ton';}}}},
+      scales:{
+        x:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}},
+        y:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:10}}, beginAtZero:true,
+           suggestedMax:(function(){var m=Math.max.apply(null,tonVals.concat([1])); return m+Math.ceil(m*0.15)+1;})()}
+      }
+    }
+  });
+
+  mkRcmChart('rcm-nay-ha-sec-chart', {
+    type:'bar',
+    plugins:[barLabelPlugin('Ha')],
+    data:{labels:secLbls, datasets:[{data:haVals, backgroundColor:secCols, borderRadius:3}]},
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+c.raw+' ha';}}}},
+      scales:{
+        x:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}},
+        y:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:10}}, beginAtZero:true,
+           suggestedMax:(function(){var m=Math.max.apply(null,haVals.concat([1])); return m+Math.ceil(m*0.15)+1;})()}
+      }
+    }
+  });
+
+  mkRcmChart('rcm-nay-tonha-sec-chart', {
+    type:'bar',
+    plugins:[barLabelPlugin('TonHa')],
+    data:{labels:secLbls, datasets:[{data:tonHaVals, backgroundColor:secCols, borderRadius:3}]},
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+c.raw+' ton/ha';}}}},
+      scales:{
+        x:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}},
+        y:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:10}}, beginAtZero:true,
+           suggestedMax:(function(){var m=Math.max.apply(null,tonHaVals.concat([1])); return m+Math.ceil(m*0.15)+1;})()}
+      }
+    }
+  });
 }
 
 // ============================================================
