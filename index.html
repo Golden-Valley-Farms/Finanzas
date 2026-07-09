@@ -320,6 +320,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .kpi-lbl{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px}
 .kpi-val{font-size:22px;font-weight:700;color:var(--text);font-family:var(--mono);letter-spacing:-0.02em}
 .kpi-sub{font-size:11px;color:var(--text3);margin-top:3px}
+#rep-fin-sec .kpi-lbl{font-size:13px}
+#rep-fin-sec .kpi-val{font-size:30px}
+#rep-fin-sec .kpi-sub{font-size:12px}
 /* ---- Financiero: full-width breakout en pantallas grandes ---- */
 @media (min-width: 700px){
   #rep-fin-sec{
@@ -597,21 +600,19 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="kpi-grid">
         <div class="kpi-card" style="background:linear-gradient(135deg,var(--fram-bg),var(--surface))">
           <div class="kpi-accent" style="background:var(--fram)"></div>
-          <div class="kpi-icon-row"><div class="kpi-icon" style="background:var(--fram-bg);color:var(--fram)">🧾</div></div>
           <div class="kpi-lbl" id="fin-kpi1-lbl">Gasto Total</div>
           <div class="kpi-val" id="fin-kpi1" style="color:var(--fram)">$0</div>
           <div class="kpi-sub">Según el filtro activo</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-accent" style="background:var(--fram)"></div>
-          <div class="kpi-icon-row"><div class="kpi-icon" style="background:var(--surface2);color:var(--text2)">📅</div><span class="kpi-trend flat" id="fin-kpi-mes-trend"></span></div>
+          <div style="display:flex;justify-content:flex-end;margin-bottom:8px"><span class="kpi-trend flat" id="fin-kpi-mes-trend"></span></div>
           <div class="kpi-lbl">Gasto del Mes</div>
           <div class="kpi-val" id="fin-kpi-mes" style="color:var(--fram)">$0</div>
           <div class="kpi-sub" id="fin-kpi-mes-sub">Mes en curso</div>
         </div>
         <div class="kpi-card span2">
           <div class="kpi-accent" style="background:var(--fram)"></div>
-          <div class="kpi-icon-row"><div class="kpi-icon" style="background:var(--surface2);color:var(--text2)">📊</div></div>
           <div class="kpi-lbl" id="fin-kpi2-lbl">Gasto Promedio</div>
           <div class="kpi-val" id="fin-kpi2" style="color:var(--fram)">$0</div>
         </div>
@@ -3750,7 +3751,8 @@ function populateFinSemanaSelect(forceReciente){
     semSet[s] = true;
     if(fechaMax===null || g.fechaVal>fechaMax){ fechaMax = g.fechaVal; semMax = s; }
   });
-  var semanas = Object.keys(semSet).map(Number).sort(function(a,b){return a-b;});
+  var semanas = [];
+  for(var s=1;s<=53;s++) semanas.push(s);
   var prevVal = finSemSel;
   sel.innerHTML = '<option value="todas">Todas las semanas</option>';
   semanas.forEach(function(s){
