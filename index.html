@@ -606,13 +606,13 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </div>
         <div class="kpi-card">
           <div class="kpi-accent" style="background:var(--fram)"></div>
-          <div class="kpi-lbl">Gasto del Mes</div>
-          <div class="kpi-val" id="fin-kpi-mes" style="color:var(--fram)">$0</div>
+          <div class="kpi-lbl" id="fin-kpi2-lbl">Gasto Promedio</div>
+          <div class="kpi-val" id="fin-kpi2" style="color:var(--fram)">$0</div>
         </div>
         <div class="kpi-card span2">
           <div class="kpi-accent" style="background:var(--fram)"></div>
-          <div class="kpi-lbl" id="fin-kpi2-lbl">Gasto Promedio</div>
-          <div class="kpi-val" id="fin-kpi2" style="color:var(--fram)">$0</div>
+          <div class="kpi-lbl">Gasto del Mes</div>
+          <div class="kpi-val" id="fin-kpi-mes" style="color:var(--fram)">$0</div>
         </div>
       </div>
 
@@ -3915,7 +3915,7 @@ function finSerieSemanal(data){
   var keys = Object.keys(bySemKey).sort();
   return keys.map(function(k){
     var v = bySemKey[k];
-    var lbl = finAnioSel==='todos' ? v.anio+' S'+(v.sem<10?'0'+v.sem:v.sem) : 'S'+(v.sem<10?'0'+v.sem:v.sem);
+    var lbl = finAnioSel==='todos' ? v.anio+' SEMANA '+(v.sem<10?'0'+v.sem:v.sem) : 'SEMANA '+(v.sem<10?'0'+v.sem:v.sem);
     return {label:lbl, total:v.total};
   });
 }
@@ -4067,7 +4067,7 @@ function renderFinLineaSemana(){
   }
 
   var maxV = Math.max.apply(null, puntos.map(function(p){return p.total;}).concat([1]));
-  var W = 680, H = 190, padL = 50, padR = 14, padT = 16, padB = 30;
+  var W = 680, H = 210, padL = 50, padR = 14, padT = 16, padB = 46;
   var plotW = W-padL-padR, plotH = H-padT-padB;
   var n = puntos.length;
   var stepX = n>1 ? plotW/(n-1) : 0;
@@ -4089,7 +4089,7 @@ function renderFinLineaSemana(){
     var x = xAt(i), y = yAt(p.total);
     pathD += (i===0?'M':'L')+x.toFixed(1)+','+y.toFixed(1)+' ';
     points += '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="2.8" fill="var(--fram)" stroke="var(--surface)" stroke-width="1.3" class="dash-pt" data-val="'+p.total+'" data-lbl="'+p.label+'"/>';
-    if(i%2===0 || n<=10) labels += '<text x="'+x.toFixed(1)+'" y="'+(H-10)+'" font-size="7.5" fill="'+dashTextColor()+'" text-anchor="middle">'+p.label+'</text>';
+    labels += '<text x="'+x.toFixed(1)+'" y="'+(H-10)+'" font-size="7" fill="'+dashTextColor()+'" text-anchor="end" transform="rotate(-45 '+x.toFixed(1)+' '+(H-10)+')">'+p.label+'</text>';
   });
 
   var svg = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">'+
@@ -4115,7 +4115,7 @@ function finSerieSemanalMes(mesKey){
   });
   var keys = Object.keys(bySem).map(Number).sort(function(a,b){return a-b;});
   return keys.map(function(s){
-    return {label:'S'+(s<10?'0'+s:s), total:bySem[s]};
+    return {label:'SEMANA '+(s<10?'0'+s:s), total:bySem[s]};
   });
 }
 
@@ -4134,7 +4134,7 @@ function renderFinLineaMesSemana(){
   }
 
   var maxV = Math.max.apply(null, puntos.map(function(p){return p.total;}).concat([1]));
-  var W = 680, H = 190, padL = 50, padR = 14, padT = 16, padB = 30;
+  var W = 680, H = 210, padL = 50, padR = 14, padT = 16, padB = 46;
   var plotW = W-padL-padR, plotH = H-padT-padB;
   var n = puntos.length;
   var stepX = n>1 ? plotW/(n-1) : 0;
@@ -4156,7 +4156,7 @@ function renderFinLineaMesSemana(){
     var x = xAt(i), y = yAt(p.total);
     pathD += (i===0?'M':'L')+x.toFixed(1)+','+y.toFixed(1)+' ';
     points += '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="2.8" fill="var(--fram)" stroke="var(--surface)" stroke-width="1.3" class="dash-pt" data-val="'+p.total+'" data-lbl="'+p.label+'"/>';
-    labels += '<text x="'+x.toFixed(1)+'" y="'+(H-10)+'" font-size="7.5" fill="'+dashTextColor()+'" text-anchor="middle">'+p.label+'</text>';
+    labels += '<text x="'+x.toFixed(1)+'" y="'+(H-10)+'" font-size="7" fill="'+dashTextColor()+'" text-anchor="end" transform="rotate(-45 '+x.toFixed(1)+' '+(H-10)+')">'+p.label+'</text>';
   });
 
   var svg = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">'+
