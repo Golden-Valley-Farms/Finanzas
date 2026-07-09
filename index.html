@@ -323,6 +323,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 #rep-fin-sec .kpi-lbl{font-size:13px}
 #rep-fin-sec .kpi-val{font-size:30px}
 #rep-fin-sec .kpi-sub{font-size:12px}
+#rep-fin-sec .kpi-card{padding:12px 14px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
 /* ---- Financiero: full-width breakout en pantallas grandes ---- */
 @media (min-width: 700px){
   #rep-fin-sec{
@@ -602,14 +603,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <div class="kpi-accent" style="background:var(--fram)"></div>
           <div class="kpi-lbl" id="fin-kpi1-lbl">Gasto Total</div>
           <div class="kpi-val" id="fin-kpi1" style="color:var(--fram)">$0</div>
-          <div class="kpi-sub">Según el filtro activo</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-accent" style="background:var(--fram)"></div>
-          <div style="display:flex;justify-content:flex-end;margin-bottom:8px"><span class="kpi-trend flat" id="fin-kpi-mes-trend"></span></div>
           <div class="kpi-lbl">Gasto del Mes</div>
           <div class="kpi-val" id="fin-kpi-mes" style="color:var(--fram)">$0</div>
-          <div class="kpi-sub" id="fin-kpi-mes-sub">Mes en curso</div>
         </div>
         <div class="kpi-card span2">
           <div class="kpi-accent" style="background:var(--fram)"></div>
@@ -628,6 +626,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="dash-card" id="fin-card-negocio">
           <div class="dash-card-title">Gastos x Negocio</div>
           <div id="fin-barras-todos-negocios" style="position:relative"></div>
+        </div>
+
+        <div class="dash-card fin-chart-full" id="fin-card-mes-semana">
+          <div class="dash-card-title" id="fin-mes-semana-title">Gastos del Mes por Semana</div>
+          <div id="fin-linea-mes-semana" style="position:relative"></div>
         </div>
 
         <div class="dash-card fin-chart-full" id="fin-card-semana">
@@ -3666,6 +3669,8 @@ function finNegTab(neg){
   document.getElementById('rep-gen-sec').style.display = 'none';
   document.getElementById('fin-card-negocio').style.display = neg==='todos' ? 'block' : 'none';
   document.getElementById('fin-card-semana').style.display = neg==='todos' ? 'none' : 'block';
+  var cardMesSemana = document.getElementById('fin-card-mes-semana');
+  if(cardMesSemana) cardMesSemana.style.display = neg==='todos' ? 'block' : 'none';
   document.getElementById('fin-cat-title').textContent = neg==='todos' ? 'Gastos x Sub-Concepto' : 'Gastos x Sub-Concepto — '+FIN_NEG_MAP[neg].label;
   populateFinAnioSelect(true);
   populateFinSemanaSelect(true);
@@ -4097,6 +4102,73 @@ function renderFinLineaSemana(){
   attachDashTooltips(cont, 'dash-tt-finsem');
 }
 
+// ---- Serie semanal restringida al mes calendario actual ----
+function finSerieSemanalMes(mesKey){
+  var data = finGastosFiltrados(finNegSel, finNegSel!=='todos').filter(function(g){
+    return g.fechaVal && g.fechaVal.substring(0,7)===mesKey;
+  });
+  var bySem = {};
+  data.forEach(function(g){
+    var sem = semanaISO(g.fechaVal);
+    if(!bySem[sem]) bySem[sem] = 0;
+    bySem[sem] += (parseFloat(g.monto)||0);
+  });
+  var keys = Object.keys(bySem).map(Number).sort(function(a,b){return a-b;});
+  return keys.map(function(s){
+    return {label:'S'+(s<10?'0'+s:s), total:bySem[s]};
+  });
+}
+
+// ---- Línea: Gastos del Mes por Semana (solo pestaña "Todos") ----
+function renderFinLineaMesSemana(){
+  var cont = document.getElementById('fin-linea-mes-semana');
+  if(!cont) return;
+  var mesActual = finMesKey(0);
+  var titleEl = document.getElementById('fin-mes-semana-title');
+  if(titleEl) titleEl.textContent = 'Gastos de ' + finMesLabel(mesActual) + ' por Semana';
+  var puntos = finSerieSemanalMes(mesActual);
+
+  if(!puntos.length){
+    cont.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:20px 0">Sin datos aún</div>';
+    return;
+  }
+
+  var maxV = Math.max.apply(null, puntos.map(function(p){return p.total;}).concat([1]));
+  var W = 680, H = 190, padL = 50, padR = 14, padT = 16, padB = 30;
+  var plotW = W-padL-padR, plotH = H-padT-padB;
+  var n = puntos.length;
+  var stepX = n>1 ? plotW/(n-1) : 0;
+
+  function xAt(i){ return padL + i*stepX; }
+  function yAt(v){ return padT + plotH - (maxV>0 ? (v/maxV*plotH) : 0); }
+
+  var gridLines = '';
+  var nGrid = 4;
+  for(var g=0; g<=nGrid; g++){
+    var gy = padT + plotH - (g/nGrid*plotH);
+    var gv = Math.round(maxV*g/nGrid);
+    gridLines += '<line x1="'+padL+'" y1="'+gy+'" x2="'+(padL+plotW)+'" y2="'+gy+'" stroke="'+dashGridColor()+'" stroke-width="1"/>';
+    gridLines += '<text x="'+(padL-6)+'" y="'+(gy+3)+'" font-size="8" fill="'+dashTextColor()+'" text-anchor="end" font-family="var(--mono)">'+fmtCompact(gv)+'</text>';
+  }
+
+  var pathD = '', points = '', labels = '';
+  puntos.forEach(function(p,i){
+    var x = xAt(i), y = yAt(p.total);
+    pathD += (i===0?'M':'L')+x.toFixed(1)+','+y.toFixed(1)+' ';
+    points += '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="2.8" fill="var(--fram)" stroke="var(--surface)" stroke-width="1.3" class="dash-pt" data-val="'+p.total+'" data-lbl="'+p.label+'"/>';
+    labels += '<text x="'+x.toFixed(1)+'" y="'+(H-10)+'" font-size="7.5" fill="'+dashTextColor()+'" text-anchor="middle">'+p.label+'</text>';
+  });
+
+  var svg = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">'+
+    gridLines+
+    '<path d="'+pathD+'" fill="none" stroke="var(--fram)" stroke-width="2"/>'+
+    points+labels+
+    '</svg>';
+
+  cont.innerHTML = svg + '<div class="dash-tooltip" id="dash-tt-finmessem"></div>';
+  attachDashTooltips(cont, 'dash-tt-finmessem');
+}
+
 function renderFinanciero(){
   if(document.getElementById('fin-anio-select').options.length<=1){
     populateFinAnioSelect(true);
@@ -4106,6 +4178,7 @@ function renderFinanciero(){
   renderFinBarrasCategoria();
   renderFinBarrasTodosNegocios();
   renderFinLineaSemana();
+  renderFinLineaMesSemana();
   renderFinInsights();
 }
 
