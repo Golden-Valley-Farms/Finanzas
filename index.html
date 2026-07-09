@@ -575,9 +575,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <button class="rep-tab" data-neg="jal" onclick="finNegTab('jal')" style="flex:1">Camote Jalisco</button>
           <button class="rep-tab" data-neg="nay" onclick="finNegTab('nay')" style="flex:1">Camote Nayarit</button>
           <button class="rep-tab" data-neg="fram" onclick="finNegTab('fram')" style="flex:1">Frambuesa</button>
+          <button class="rep-tab" data-neg="genjal" onclick="finNegTab('genjal')" style="flex:1">General Jalisco</button>
           <button class="rep-tab" data-neg="ofic" onclick="finNegTab('ofic')" style="flex:1">Oficina</button>
           <button class="rep-tab" data-neg="com" onclick="finNegTab('com')" style="flex:1">Comercial.</button>
-          <button class="rep-tab" data-neg="general" onclick="finNegTab('general')" style="flex:1">General</button>
         </div>
       </div>
 
@@ -628,9 +628,20 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <div id="fin-barras-todos-negocios" style="position:relative"></div>
         </div>
 
-        <div class="dash-card fin-chart-full" id="fin-card-mes-semana">
-          <div class="dash-card-title" id="fin-mes-semana-title">Gastos del Mes por Semana</div>
-          <div id="fin-linea-mes-semana" style="position:relative"></div>
+        <div class="dash-card fin-chart-full" id="fin-card-mes-semana" style="display:flex;flex-direction:column">
+          <div class="dash-card-title" id="fin-mes-semana-title">Gastos x Semana</div>
+          <div style="display:flex;width:100%;flex:1;min-height:220px;margin-top:8px">
+            <div style="width:70px;flex-shrink:0;display:flex;align-items:stretch;gap:4px">
+              <div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:10px;color:var(--text3);white-space:nowrap;display:flex;align-items:center;justify-content:center;padding:0 2px">Gasto ($)</div>
+              <div style="position:relative;flex:1"><canvas id="fin-mes-semana-chart-axis"></canvas></div>
+            </div>
+            <div id="fin-mes-semana-chart-wrap" style="position:relative;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden">
+              <div id="fin-mes-semana-chart-inner" style="position:relative;height:100%;min-width:500px">
+                <canvas id="fin-mes-semana-chart" role="img" aria-label="Gastos por semana">Gastos por semana.</canvas>
+              </div>
+            </div>
+          </div>
+          <div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>
         </div>
 
         <div class="dash-card fin-chart-full" id="fin-card-semana">
@@ -3621,6 +3632,7 @@ var FIN_NEG_MAP = {
   nay:  {locs:['nay'], cultivo:'camote', label:'Camote Nayarit', color:'#D98A4A'},
   ofic: {locs:['ofic'], cultivo:null, label:'Oficina', color:'#9E9E9E'},
   fram: {locs:['jal','nay'], cultivo:'fram', label:'Frambuesa', color:'#D6336C'},
+  genjal: {locs:['jal'], cultivo:'general', label:'General Jalisco', color:'#8C7B54'},
   com:  {locs:['com'], cultivo:null, label:'Comercializadora', color:'#3CB87A'}
 };
 
@@ -3659,12 +3671,6 @@ function finNegTab(neg){
   document.querySelectorAll('#fin-neg-subnav .rep-tab').forEach(function(btn){
     btn.classList.toggle('active', btn.dataset.neg===neg);
   });
-  if(neg==='general'){
-    document.getElementById('fin-dashboard-body').style.display = 'none';
-    document.getElementById('rep-gen-sec').style.display = 'block';
-    renderRep();
-    return;
-  }
   document.getElementById('fin-dashboard-body').style.display = 'block';
   document.getElementById('rep-gen-sec').style.display = 'none';
   document.getElementById('fin-card-negocio').style.display = neg==='todos' ? 'block' : 'none';
@@ -3901,7 +3907,15 @@ function renderFinBarrasTodosNegocios(){
   attachDashTooltips(cont, 'dash-tt-finneg');
 }
 
-// Construye serie continua de puntos por semana (1-53), incluyendo semanas sin gastos
+// Semana ISO y año calendario de hoy — para no mostrar semanas futuras sin datos
+function semanaActualISO(){
+  var hoy = new Date();
+  var iso = hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0')+'-'+String(hoy.getDate()).padStart(2,'0');
+  return semanaISO(iso);
+}
+function anioActualISO(){ return new Date().getFullYear(); }
+
+// Construye serie continua de puntos por semana (1 hasta la semana actual), incluyendo semanas sin gastos
 function finSerieSemanal(data){
   var bySemKey = {};
   data.forEach(function(g){
@@ -3922,9 +3936,11 @@ function finSerieSemanal(data){
     if(!anios.length) anios = [new Date().getFullYear()];
   }
 
+  var anioActual = anioActualISO(), semActual = semanaActualISO();
   var puntos = [];
   anios.forEach(function(anio){
-    for(var s=1; s<=53; s++){
+    var maxSem = anio===anioActual ? semActual : (anio>anioActual ? 0 : 53);
+    for(var s=1; s<=maxSem; s++){
       var key = anio+'-'+(s<10?'0'+s:s);
       var total = bySemKey[key]||0;
       var lbl = finAnioSel==='todos' ? anio+' SEMANA '+(s<10?'0'+s:s) : 'SEMANA '+(s<10?'0'+s:s);
@@ -4137,6 +4153,50 @@ function buildFinLineChartSVG(puntos){
   return scrollMode ? '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">'+svg+'</div>' : svg;
 }
 
+// ---- Registro de gráficas Chart.js del dashboard de Gastos (eje Y fijo + scroll horizontal) ----
+var finCharts = {};
+function mkFinChart(id, cfg){
+  if(finCharts[id]){ finCharts[id].destroy(); delete finCharts[id]; }
+  var el=document.getElementById(id); if(!el) return;
+  finCharts[id]=new Chart(el, cfg);
+}
+function mkFinFrozenAxisLineChart(mainId, cfg){
+  var yCfg = cfg.options.scales.y;
+  var axisYCfg = JSON.parse(JSON.stringify(yCfg));
+  cfg.options.scales.y.ticks = Object.assign({}, cfg.options.scales.y.ticks, {display:false});
+  cfg.options.scales.y.border = {display:false};
+  cfg.options.scales.y.ticks.padding = 0;
+  if(!cfg.options.layout) cfg.options.layout={padding:{left:0,right:4,top:8,bottom:0}};
+
+  mkFinChart(mainId, cfg);
+
+  var axisData = {labels:[''], datasets:(cfg.data.datasets||[]).map(function(){
+    return {data:[null], borderColor:'transparent', backgroundColor:'transparent', pointRadius:0, borderWidth:0};
+  })};
+  mkFinChart(mainId+'-axis', {
+    type:'line',
+    data: axisData,
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{enabled:false}},
+      layout:{padding:{left:0,right:0,top:8,bottom:0}},
+      scales:{
+        x:{display:false},
+        y: Object.assign({}, axisYCfg, {
+          ticks: Object.assign({}, axisYCfg.ticks, {display:true, font:{size:9.5}, padding:2}),
+          grid:{display:false}, border:{display:false},
+          title:{display:false}
+        })
+      }
+    }
+  });
+
+  setTimeout(function(){
+    var wrap=document.getElementById(mainId+'-wrap');
+    if(wrap) wrap.scrollLeft = wrap.scrollWidth;
+  }, 80);
+}
+
 // ---- Línea: Gastos x Semana (del negocio/filtro activo) ----
 function renderFinLineaSemana(){
   var cont = document.getElementById('fin-linea-semana');
@@ -4150,49 +4210,68 @@ function renderFinLineaSemana(){
   attachDashTooltips(cont, 'dash-tt-finsem');
 }
 
-// Devuelve las semanas ISO que toca un mes calendario, en orden
-function semanasEnMes(mesKey){
-  var p = mesKey.split('-');
-  var anio = parseInt(p[0],10), mes = parseInt(p[1],10);
-  var first = new Date(anio, mes-1, 1);
-  var last = new Date(anio, mes, 0);
-  var semanas = [], seen = {};
-  var d = new Date(first);
-  while(d <= last){
-    var iso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    var s = semanaISO(iso);
-    if(!seen[s]){ seen[s]=true; semanas.push(s); }
-    d.setDate(d.getDate()+1);
-  }
-  return semanas;
-}
-
-// ---- Serie semanal restringida al mes calendario actual (incluye semanas sin gastos) ----
-function finSerieSemanalMes(mesKey){
-  var data = finGastosFiltrados(finNegSel, finNegSel!=='todos').filter(function(g){
-    return g.fechaVal && g.fechaVal.substring(0,7)===mesKey;
-  });
-  var bySem = {};
-  data.forEach(function(g){
-    var sem = semanaISO(g.fechaVal);
-    bySem[sem] = (bySem[sem]||0) + (parseFloat(g.monto)||0);
-  });
-  var semanas = semanasEnMes(mesKey);
-  return semanas.map(function(s){
-    return {label:'SEMANA '+(s<10?'0'+s:s), total:bySem[s]||0};
-  });
-}
-
-// ---- Línea: Gastos del Mes por Semana (solo pestaña "Todos") ----
+// ---- Línea: Gastos x Semana en formato Chart.js con eje fijo (pestaña "Todos") ----
 function renderFinLineaMesSemana(){
-  var cont = document.getElementById('fin-linea-mes-semana');
-  if(!cont) return;
-  var mesActual = finMesKey(0);
-  var titleEl = document.getElementById('fin-mes-semana-title');
-  if(titleEl) titleEl.textContent = 'Gastos de ' + finMesLabel(mesActual) + ' por Semana';
-  var puntos = finSerieSemanalMes(mesActual);
-  cont.innerHTML = buildFinLineChartSVG(puntos) + '<div class="dash-tooltip" id="dash-tt-finmessem"></div>';
-  attachDashTooltips(cont, 'dash-tt-finmessem');
+  var wrapEl = document.getElementById('fin-mes-semana-chart-wrap');
+  if(!wrapEl) return;
+
+  var data = finGastosFiltrados(finNegSel, finNegSel!=='todos');
+  if(finAnioSel!=='todos'){
+    data = data.filter(function(g){return g.fechaVal && anioDeFecha(g.fechaVal)===Number(finAnioSel);});
+  }
+  var puntos = finSerieSemanal(data);
+
+  var innerEl = document.getElementById('fin-mes-semana-chart-inner');
+  if(!puntos.length){
+    if(innerEl) innerEl.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--text3);font-size:13px">Sin datos aún</div>';
+    return;
+  }
+  if(innerEl && !document.getElementById('fin-mes-semana-chart')){
+    innerEl.innerHTML = '<canvas id="fin-mes-semana-chart" role="img" aria-label="Gastos por semana">Gastos por semana.</canvas>';
+  }
+  if(innerEl) innerEl.style.minWidth = Math.max(500, puntos.length*60)+'px';
+
+  var semNumLbls = puntos.map(function(p){
+    var m = p.label.match(/(\d+)$/);
+    return m ? String(Number(m[1])) : p.label;
+  });
+  var montos = puntos.map(function(p){return Math.round(p.total);});
+
+  var gridCol = rfrGridCol(); var textMuted = '#898781';
+
+  var gastoSemLabelPlugin = {
+    id: 'gastoSemLabels',
+    afterDatasetsDraw: function(chart){
+      var ctx = chart.ctx; var ds = chart.data.datasets[0]; var meta = chart.getDatasetMeta(0);
+      meta.data.forEach(function(pt,i){
+        var v = ds.data[i]; if(v===null||v===undefined||!pt) return;
+        ctx.save(); ctx.fillStyle='#1a7a4a'; ctx.font='bold 10px monospace';
+        ctx.textAlign='center'; ctx.textBaseline='bottom';
+        ctx.fillText(fmtCompact(v), pt.x, pt.y-8);
+        ctx.restore();
+      });
+    }
+  };
+
+  mkFinFrozenAxisLineChart('fin-mes-semana-chart', {
+    type:'line',
+    plugins:[gastoSemLabelPlugin],
+    data:{
+      labels:semNumLbls,
+      datasets:[{label:'Gasto', data:montos, borderColor:'var(--fram)', backgroundColor:'rgba(214,51,108,0.1)', borderWidth:2, pointRadius:3, pointBackgroundColor:'#D6336C', fill:true, tension:0.3}]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:function(c){return ' '+fmt(c.raw);}}}},
+      scales:{
+        x:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}},
+        y:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:11}}, beginAtZero:true,
+           suggestedMax:(function(){var m=Math.max.apply(null, montos.concat([1])); return m+Math.ceil(m*0.15)+1;})(),
+           title:{display:true, text:'Gasto ($)', color:textMuted, font:{size:11}}}
+      }
+    }
+  });
 }
 
 function renderFinanciero(){
