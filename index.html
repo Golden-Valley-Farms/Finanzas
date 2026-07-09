@@ -3771,6 +3771,38 @@ function renderRcmCosecha(envs){
   var secLbls = sectores.map(function(s){return 'Sector '+s;});
   var secCols = sectores.map(function(s,i){return SEC_COLS_RCM[i%SEC_COLS_RCM.length];});
 
+  // Dispersión: Ton/Ha (x) vs Ingreso/Ha (y), un punto por partida
+  var scatterPts = [];
+  envs.forEach(function(e){
+    (e.partidas||[]).forEach(function(p){
+      var ha = parseFloat(p.hectareas)||0;
+      var ton = parseFloat(p.toneladas)||0;
+      var ingreso = p.total!=null ? parseFloat(p.total)||0 : (parseFloat(p.pesoNeto)||0)*(parseFloat(p.precio)||0);
+      if(ha<=0) return;
+      scatterPts.push({
+        x: Math.round((ton/ha)*100)/100,
+        y: Math.round((ingreso/ha)*100)/100,
+        lbl: (p.variedad||'')+' · Sector '+(p.sector||'—')
+      });
+    });
+  });
+
+  // Variedades: % cosechado (toneladas) por variedad
+  var tonPorVariedad = {};
+  envs.forEach(function(e){
+    (e.partidas||[]).forEach(function(p){
+      var ton = parseFloat(p.toneladas)||0;
+      if(!ton) return;
+      var v = p.variedad || 'Sin variedad';
+      tonPorVariedad[v] = (tonPorVariedad[v]||0) + ton;
+    });
+  });
+  var variedades = Object.keys(tonPorVariedad).sort(function(a,b){return tonPorVariedad[b]-tonPorVariedad[a];});
+  var variedadVals = variedades.map(function(v){return Math.round(tonPorVariedad[v]*100)/100;});
+  var variedadSum = variedadVals.reduce(function(a,v){return a+v;},0);
+  var VARIEDAD_COLS = {'Blanco Criollo':'#5BA3E0','Amarillo Covington':'#C45B0A','Morado Criollo':'#9B59B6'};
+  var variedadCols = variedades.map(function(v,i){return VARIEDAD_COLS[v]||SEC_COLS_RCM[i%SEC_COLS_RCM.length];});
+
   cont.innerHTML =
     '<div class="kpi-grid">'+
       '<div class="kpi-card">'+
@@ -3801,6 +3833,16 @@ function renderRcmCosecha(envs){
       '<div class="dash-card rcm-ha-card">'+
         '<div class="dash-card-title">Hectareas x Sector</div>'+
         '<div class="rcm-chart-wrap" style="margin-top:8px"><canvas id="rcm-ha-sec-chart"></canvas></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="fin-charts-grid" style="margin-top:12px">'+
+      '<div class="dash-card">'+
+        '<div class="dash-card-title">Ingreso x Hectarea vs Toneladas x Hectarea</div>'+
+        '<div style="position:relative;height:260px;margin-top:8px"><canvas id="rcm-scatter-chart"></canvas></div>'+
+      '</div>'+
+      '<div class="dash-card">'+
+        '<div class="dash-card-title">Variedades cosechadas</div>'+
+        '<div style="position:relative;height:260px;margin-top:8px"><canvas id="rcm-variedad-pie-chart"></canvas></div>'+
       '</div>'+
     '</div>';
 
@@ -3865,6 +3907,42 @@ function renderRcmCosecha(envs){
         y:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:10}}, beginAtZero:true,
            suggestedMax:(function(){var m=Math.max.apply(null,tonHaVals.concat([1])); return m+Math.ceil(m*0.15)+1;})()}
       }
+    }
+  });
+
+  mkRcmChart('rcm-scatter-chart', {
+    type:'scatter',
+    data:{datasets:[{
+      data:scatterPts,
+      backgroundColor:'#00B8D9',
+      pointRadius:5,
+      pointHoverRadius:7
+    }]},
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{
+          title:function(items){return items.length ? scatterPts[items[0].dataIndex].lbl : '';},
+          label:function(c){return ' Ton/Ha: '+c.parsed.x+' · Ingreso/Ha: '+fmt(c.parsed.y);}
+        }}},
+      scales:{
+        x:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:11}}, title:{display:true, text:'Toneladas x Hectarea', color:textMuted, font:{size:11}}},
+        y:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:11}}, beginAtZero:true, title:{display:true, text:'Ingreso x Hectarea', color:textMuted, font:{size:11}}}
+      }
+    }
+  });
+
+  mkRcmChart('rcm-variedad-pie-chart', {
+    type:'pie',
+    data:{
+      labels:variedades,
+      datasets:[{data:variedadVals, backgroundColor:variedadCols, hoverOffset:6}]
+    },
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:true, position:'bottom', labels:{color:textMuted, font:{size:11}, boxWidth:10, padding:14}},
+        tooltip:{callbacks:{label:function(c){return ' '+c.label+': '+(variedadSum>0?Math.round(c.raw/variedadSum*100):0)+'% ('+c.raw+' ton)';}}}
+      },
+      layout:{padding:{top:8}}
     }
   });
 }
