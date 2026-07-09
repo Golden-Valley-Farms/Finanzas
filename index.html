@@ -628,25 +628,20 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <div id="fin-barras-todos-negocios" style="position:relative"></div>
         </div>
 
-        <div class="dash-card fin-chart-full" id="fin-card-mes-semana" style="display:flex;flex-direction:column">
-          <div class="dash-card-title" id="fin-mes-semana-title">Gastos x Semana</div>
-          <div style="display:flex;width:100%;flex:1;min-height:220px;margin-top:8px">
+        <div class="dash-card fin-chart-full" id="fin-card-semana" style="display:flex;flex-direction:column">
+          <div class="dash-card-title" id="fin-semana-chart-title">Gastos x Semana</div>
+          <div style="display:flex;width:100%;flex:1;min-height:275px;margin-top:8px">
             <div style="width:70px;flex-shrink:0;display:flex;align-items:stretch;gap:4px">
               <div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:10px;color:var(--text3);white-space:nowrap;display:flex;align-items:center;justify-content:center;padding:0 2px">Gasto ($)</div>
-              <div style="position:relative;flex:1"><canvas id="fin-mes-semana-chart-axis"></canvas></div>
+              <div style="position:relative;flex:1"><canvas id="fin-semana-chart-axis"></canvas></div>
             </div>
-            <div id="fin-mes-semana-chart-wrap" style="position:relative;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden">
-              <div id="fin-mes-semana-chart-inner" style="position:relative;height:100%;min-width:500px">
-                <canvas id="fin-mes-semana-chart" role="img" aria-label="Gastos por semana">Gastos por semana.</canvas>
+            <div id="fin-semana-chart-wrap" style="position:relative;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden">
+              <div id="fin-semana-chart-inner" style="position:relative;height:100%;min-width:500px">
+                <canvas id="fin-semana-chart" role="img" aria-label="Gastos por semana">Gastos por semana.</canvas>
               </div>
             </div>
           </div>
           <div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>
-        </div>
-
-        <div class="dash-card fin-chart-full" id="fin-card-semana">
-          <div class="dash-card-title">Gastos x Semana</div>
-          <div id="fin-linea-semana" style="position:relative"></div>
         </div>
 
       </div>
@@ -3674,9 +3669,6 @@ function finNegTab(neg){
   document.getElementById('fin-dashboard-body').style.display = 'block';
   document.getElementById('rep-gen-sec').style.display = 'none';
   document.getElementById('fin-card-negocio').style.display = neg==='todos' ? 'block' : 'none';
-  document.getElementById('fin-card-semana').style.display = neg==='todos' ? 'none' : 'block';
-  var cardMesSemana = document.getElementById('fin-card-mes-semana');
-  if(cardMesSemana) cardMesSemana.style.display = neg==='todos' ? 'block' : 'none';
   document.getElementById('fin-cat-title').textContent = neg==='todos' ? 'Gastos x Sub-Concepto' : 'Gastos x Sub-Concepto — '+FIN_NEG_MAP[neg].label;
   populateFinAnioSelect(true);
   populateFinSemanaSelect(true);
@@ -4083,76 +4075,6 @@ function renderFinInsights(){
 
 // ---- Línea: Gastos x Semana (del negocio/filtro activo) ----
 // Calcula un paso de eje Y "redondo" (1/2/5 x potencia de 10) para que las líneas de grid sean proporcionales
-function niceAxisStep(maxVal, targetTicks){
-  if(!maxVal || maxVal<=0) return {step:1, top:1};
-  var rawStep = maxVal/targetTicks;
-  var mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
-  var norm = rawStep/mag;
-  var niceNorm = norm<=1 ? 1 : (norm<=2 ? 2 : (norm<=5 ? 5 : 10));
-  var step = niceNorm*mag;
-  var top = Math.ceil(maxVal/step)*step;
-  return {step:step, top:top};
-}
-
-// Construye el SVG (+ wrapper con scroll horizontal si hay muchos puntos) para una gráfica de línea de gastos por semana
-function buildFinLineChartSVG(puntos){
-  if(!puntos.length){
-    return '<div style="font-size:12px;color:var(--text3);text-align:center;padding:20px 0">Sin datos aún</div>';
-  }
-
-  var maxV = Math.max.apply(null, puntos.map(function(p){return p.total;}).concat([1]));
-  var axis = niceAxisStep(maxV, 4);
-  var axisTop = axis.top, axisStep = axis.step;
-  var n = puntos.length;
-  var scrollMode = n > 15;
-
-  var padL = 54, padR = 16, padT = 22, padB = 56, H = 220;
-  var plotH = H-padT-padB;
-  var W, plotW, stepX;
-  if(scrollMode){
-    var perPoint = 30;
-    plotW = (n-1)*perPoint;
-    W = padL+plotW+padR;
-    stepX = perPoint;
-  } else {
-    W = 680;
-    plotW = W-padL-padR;
-    stepX = n>1 ? plotW/(n-1) : 0;
-  }
-
-  function xAt(i){ return padL + i*stepX; }
-  function yAt(v){ return padT + plotH - (axisTop>0 ? (v/axisTop*plotH) : 0); }
-
-  var gridLines = '';
-  var nTicks = axisStep>0 ? Math.round(axisTop/axisStep) : 0;
-  for(var g=0; g<=nTicks; g++){
-    var gv = g*axisStep;
-    var gy = yAt(gv);
-    gridLines += '<line x1="'+padL+'" y1="'+gy+'" x2="'+(padL+plotW)+'" y2="'+gy+'" stroke="'+dashGridColor()+'" stroke-width="1"/>';
-    gridLines += '<text x="'+(padL-6)+'" y="'+(gy+3)+'" font-size="8" fill="'+dashTextColor()+'" text-anchor="end" font-family="var(--mono)">'+fmtCompact(gv)+'</text>';
-  }
-
-  var pathD = '', points = '', labels = '', valueLabels = '';
-  var labelY = H-padB+18;
-  puntos.forEach(function(p,i){
-    var x = xAt(i), y = yAt(p.total);
-    pathD += (i===0?'M':'L')+x.toFixed(1)+','+y.toFixed(1)+' ';
-    points += '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="2.8" fill="var(--fram)" stroke="var(--surface)" stroke-width="1.3" class="dash-pt" data-val="'+p.total+'" data-lbl="'+p.label+'"/>';
-    labels += '<text x="'+x.toFixed(1)+'" y="'+labelY+'" font-size="8" fill="'+dashTextColor()+'" text-anchor="end" transform="rotate(-45 '+x.toFixed(1)+' '+labelY+')">'+p.label+'</text>';
-    if(p.total>0){
-      valueLabels += '<text x="'+x.toFixed(1)+'" y="'+(y-8)+'" font-size="7.5" fill="'+dashTextColor2()+'" text-anchor="middle" font-family="var(--mono)">'+fmtCompact(p.total)+'</text>';
-    }
-  });
-
-  var svg = '<svg viewBox="0 0 '+W+' '+H+'" style="width:'+(scrollMode?W+'px':'100%')+';height:auto;display:block">'+
-    gridLines+
-    '<path d="'+pathD+'" fill="none" stroke="var(--fram)" stroke-width="2"/>'+
-    points+valueLabels+labels+
-    '</svg>';
-
-  return scrollMode ? '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">'+svg+'</div>' : svg;
-}
-
 // ---- Registro de gráficas Chart.js del dashboard de Gastos (eje Y fijo + scroll horizontal) ----
 var finCharts = {};
 function mkFinChart(id, cfg){
@@ -4197,37 +4119,28 @@ function mkFinFrozenAxisLineChart(mainId, cfg){
   }, 80);
 }
 
-// ---- Línea: Gastos x Semana (del negocio/filtro activo) ----
+// ---- Línea: Gastos x Semana — mismo formato en todas las pestañas de negocio ----
+var FIN_SEMANA_COLOR = '#00B8D9';
 function renderFinLineaSemana(){
-  var cont = document.getElementById('fin-linea-semana');
-  if(!cont) return;
-  var data = finGastosFiltrados(finNegSel, finNegSel!=='todos');
-  if(finAnioSel!=='todos'){
-    data = data.filter(function(g){return g.fechaVal && anioDeFecha(g.fechaVal)===Number(finAnioSel);});
-  }
-  var puntos = finSerieSemanal(data);
-  cont.innerHTML = buildFinLineChartSVG(puntos) + '<div class="dash-tooltip" id="dash-tt-finsem"></div>';
-  attachDashTooltips(cont, 'dash-tt-finsem');
-}
-
-// ---- Línea: Gastos x Semana en formato Chart.js con eje fijo (pestaña "Todos") ----
-function renderFinLineaMesSemana(){
-  var wrapEl = document.getElementById('fin-mes-semana-chart-wrap');
+  var wrapEl = document.getElementById('fin-semana-chart-wrap');
   if(!wrapEl) return;
 
+  var titleEl = document.getElementById('fin-semana-chart-title');
+  if(titleEl) titleEl.textContent = finNegSel==='todos' ? 'Gastos x Semana' : 'Gastos x Semana — '+FIN_NEG_MAP[finNegSel].label;
+
   var data = finGastosFiltrados(finNegSel, finNegSel!=='todos');
   if(finAnioSel!=='todos'){
     data = data.filter(function(g){return g.fechaVal && anioDeFecha(g.fechaVal)===Number(finAnioSel);});
   }
   var puntos = finSerieSemanal(data);
 
-  var innerEl = document.getElementById('fin-mes-semana-chart-inner');
+  var innerEl = document.getElementById('fin-semana-chart-inner');
   if(!puntos.length){
     if(innerEl) innerEl.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--text3);font-size:13px">Sin datos aún</div>';
     return;
   }
-  if(innerEl && !document.getElementById('fin-mes-semana-chart')){
-    innerEl.innerHTML = '<canvas id="fin-mes-semana-chart" role="img" aria-label="Gastos por semana">Gastos por semana.</canvas>';
+  if(innerEl && !document.getElementById('fin-semana-chart')){
+    innerEl.innerHTML = '<canvas id="fin-semana-chart" role="img" aria-label="Gastos por semana">Gastos por semana.</canvas>';
   }
   if(innerEl) innerEl.style.minWidth = Math.max(500, puntos.length*60)+'px';
 
@@ -4245,7 +4158,7 @@ function renderFinLineaMesSemana(){
       var ctx = chart.ctx; var ds = chart.data.datasets[0]; var meta = chart.getDatasetMeta(0);
       meta.data.forEach(function(pt,i){
         var v = ds.data[i]; if(v===null||v===undefined||!pt) return;
-        ctx.save(); ctx.fillStyle='#1a7a4a'; ctx.font='bold 10px monospace';
+        ctx.save(); ctx.fillStyle=FIN_SEMANA_COLOR; ctx.font='bold 10px monospace';
         ctx.textAlign='center'; ctx.textBaseline='bottom';
         ctx.fillText(fmtCompact(v), pt.x, pt.y-8);
         ctx.restore();
@@ -4253,12 +4166,12 @@ function renderFinLineaMesSemana(){
     }
   };
 
-  mkFinFrozenAxisLineChart('fin-mes-semana-chart', {
+  mkFinFrozenAxisLineChart('fin-semana-chart', {
     type:'line',
     plugins:[gastoSemLabelPlugin],
     data:{
       labels:semNumLbls,
-      datasets:[{label:'Gasto', data:montos, borderColor:'var(--fram)', backgroundColor:'rgba(214,51,108,0.1)', borderWidth:2, pointRadius:3, pointBackgroundColor:'#D6336C', fill:true, tension:0.3}]
+      datasets:[{label:'Gasto', data:montos, borderColor:FIN_SEMANA_COLOR, backgroundColor:'rgba(0,184,217,0.12)', borderWidth:2.5, pointRadius:3, pointBackgroundColor:FIN_SEMANA_COLOR, fill:true, tension:0.3}]
     },
     options:{
       responsive:true, maintainAspectRatio:false,
@@ -4283,7 +4196,6 @@ function renderFinanciero(){
   renderFinBarrasCategoria();
   renderFinBarrasTodosNegocios();
   renderFinLineaSemana();
-  renderFinLineaMesSemana();
   renderFinInsights();
 }
 
