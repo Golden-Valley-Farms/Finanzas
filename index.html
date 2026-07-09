@@ -3724,20 +3724,19 @@ function renderRepCam(){
   var cont = document.getElementById('rcm-content');
   if(!cont) return;
 
-  if(rcmNegSel!=='nay'){
-    var lbl = rcmNegSel==='jal' ? 'Jalisco' : 'Comercializadora';
-    cont.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--text3);font-size:13px">'+lbl+' — próximamente</div>';
+  if(rcmNegSel==='com'){
+    cont.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--text3);font-size:13px">Comercializadora — próximamente</div>';
     return;
   }
 
   var envs = envios.filter(function(e){
-    return e.loc==='nay' && (filtroCiclo==='todos' || e.ciclo===filtroCiclo);
+    return e.loc===rcmNegSel && (filtroCiclo==='todos' || e.ciclo===filtroCiclo);
   });
 
-  renderRcmNayarit(envs);
+  renderRcmCosecha(envs);
 }
 
-function renderRcmNayarit(envs){
+function renderRcmCosecha(envs){
   var cont = document.getElementById('rcm-content');
 
   var totalTon = 0, totalHa = 0;
@@ -3793,15 +3792,15 @@ function renderRcmNayarit(envs){
     '<div class="rcm-nay-charts-grid">'+
       '<div class="dash-card rcm-tonha-card">'+
         '<div class="dash-card-title">Promedio de Toneladas x Hectarea</div>'+
-        '<div class="rcm-chart-wrap" style="margin-top:8px"><canvas id="rcm-nay-tonha-sec-chart"></canvas></div>'+
+        '<div class="rcm-chart-wrap" style="margin-top:8px"><canvas id="rcm-tonha-sec-chart"></canvas></div>'+
       '</div>'+
       '<div class="dash-card rcm-ton-card">'+
         '<div class="dash-card-title">Toneladas x Sector</div>'+
-        '<div class="rcm-chart-wrap" style="margin-top:8px"><canvas id="rcm-nay-ton-sec-chart"></canvas></div>'+
+        '<div class="rcm-chart-wrap" style="margin-top:8px"><canvas id="rcm-ton-sec-chart"></canvas></div>'+
       '</div>'+
       '<div class="dash-card rcm-ha-card">'+
         '<div class="dash-card-title">Hectareas x Sector</div>'+
-        '<div class="rcm-chart-wrap" style="margin-top:8px"><canvas id="rcm-nay-ha-sec-chart"></canvas></div>'+
+        '<div class="rcm-chart-wrap" style="margin-top:8px"><canvas id="rcm-ha-sec-chart"></canvas></div>'+
       '</div>'+
     '</div>';
 
@@ -3822,7 +3821,12 @@ function renderRcmNayarit(envs){
     };
   };
 
-  mkRcmChart('rcm-nay-ton-sec-chart', {
+  // Redondea hacia arriba al siguiente múltiplo de "step", con un escalón extra de aire
+  function proximoMultiploConAire(m, step){
+    return Math.ceil(m/step)*step + step;
+  }
+
+  mkRcmChart('rcm-ton-sec-chart', {
     type:'bar',
     plugins:[barLabelPlugin('Ton')],
     data:{labels:secLbls, datasets:[{data:tonVals, backgroundColor:secCols, borderRadius:3}]},
@@ -3836,7 +3840,7 @@ function renderRcmNayarit(envs){
     }
   });
 
-  mkRcmChart('rcm-nay-ha-sec-chart', {
+  mkRcmChart('rcm-ha-sec-chart', {
     type:'bar',
     plugins:[barLabelPlugin('Ha')],
     data:{labels:secLbls, datasets:[{data:haVals, backgroundColor:secCols, borderRadius:3}]},
@@ -3844,13 +3848,13 @@ function renderRcmNayarit(envs){
       plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+c.raw+' ha';}}}},
       scales:{
         x:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}},
-        y:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:10}}, beginAtZero:true,
-           suggestedMax:(function(){var m=Math.max.apply(null,haVals.concat([1])); return m+Math.ceil(m*0.15)+1;})()}
+        y:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:10}, stepSize:0.5}, beginAtZero:true,
+           suggestedMax:(function(){var m=Math.max.apply(null,haVals.concat([1])); return proximoMultiploConAire(m,0.5);})()}
       }
     }
   });
 
-  mkRcmChart('rcm-nay-tonha-sec-chart', {
+  mkRcmChart('rcm-tonha-sec-chart', {
     type:'bar',
     plugins:[barLabelPlugin('TonHa')],
     data:{labels:secLbls, datasets:[{data:tonHaVals, backgroundColor:secCols, borderRadius:3}]},
