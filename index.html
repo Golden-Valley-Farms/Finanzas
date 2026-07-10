@@ -1632,7 +1632,9 @@ async function cargarDesdeSB(){
     gastos = gData.map(function(g){
       return {id:g.id, fechaVal:g.fecha_val, fecha:g.fecha_lbl, semLbl:gastoSemLbl(g.fecha_val)||g.fecha_lbl,
         loc:g.loc, cultivo:g.cultivo, cat:g.cat, desc:g.descripcion,
-        monto:parseFloat(g.monto||0), ciclo:g.ciclo, sector:g.sector,
+        monto:parseFloat(g.monto||0), ciclo:g.ciclo,
+        sectores:g.sector ? String(g.sector).split(',').filter(Boolean) : [],
+        tipoCamote:(g.cultivo==='camote' && g.cat && ['Arado','Cosecha','Desvarada','Flete Cosecha','Plantacion','Plantación'].indexOf(g.cat)>=0) ? 'cosecha' : 'general',
         banco:g.banco, proveedor:g.proveedor||'', autoGen:g.auto_gen};
     });
     localStorage.setItem('cc_gastos3', JSON.stringify(gastos));
@@ -1704,7 +1706,8 @@ async function sbSaveGasto(g){
     id:g.id, fecha_val:g.fechaVal||'', fecha_lbl:g.fechaLbl||'',
     loc:g.loc||'', cultivo:g.cultivo||'', cat:g.cat||'',
     descripcion:g.desc||'', monto:g.monto||0, ciclo:g.ciclo||'',
-    sector:g.sector||'', banco:g.banco||'', proveedor:g.proveedor||'', auto_gen:g.autoGen||false
+    sector:(g.sectores&&g.sectores.length)?g.sectores.join(','):'',
+    banco:g.banco||'', proveedor:g.proveedor||'', auto_gen:g.autoGen||false
   });
 }
 
@@ -2369,6 +2372,11 @@ function editarGasto(id){
     if(cultReal==='camote'){
       var tipo=g.tipoCamote||'general';
       selTipo(tipo);
+      if(tipo==='cosecha'){
+        sectoresSel = (g.sectores&&g.sectores.length) ? [parseInt(g.sectores[0])] : [];
+        var secSel=document.getElementById('sector-select');
+        if(secSel) secSel.value = sectoresSel.length ? sectoresSel[0] : '';
+      }
     }
   }
   // Set ciclo dropdown if visible
