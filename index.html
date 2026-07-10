@@ -847,6 +847,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </select>
       </div>
 
+      <!-- Sub-tabs: Cosecha / Financiero -->
+      <div class="rfr-topbar" id="rcm-subtabs" style="display:flex;gap:4px;margin-bottom:14px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
+        <button class="ven-tab active" data-tab="cosecha" onclick="rcmSubTab('cosecha')" style="flex:1;font-size:12px">Cosecha</button>
+        <button class="ven-tab" data-tab="fin" onclick="rcmSubTab('fin')" style="flex:1;font-size:12px">Financiero</button>
+      </div>
+
       <div id="rcm-content"></div>
 
     </div>
@@ -3705,6 +3711,15 @@ function rcmNegTab(neg){
   renderRepCam();
 }
 
+var rcmSubTabSel = 'cosecha';
+function rcmSubTab(tab){
+  rcmSubTabSel = tab;
+  document.querySelectorAll('#rcm-subtabs .ven-tab').forEach(function(b){
+    b.classList.toggle('active', b.dataset.tab===tab);
+  });
+  renderRepCam();
+}
+
 function renderRepCam(){
   // Poblar selector de ciclos según los envíos del negocio activo
   var cicloSel = document.getElementById('rcm-ciclo');
@@ -3722,18 +3737,111 @@ function renderRepCam(){
   var filtroCiclo = cicloSel ? cicloSel.value : 'todos';
 
   var cont = document.getElementById('rcm-content');
+  var subtabsEl = document.getElementById('rcm-subtabs');
   if(!cont) return;
 
   if(rcmNegSel==='com'){
+    if(subtabsEl) subtabsEl.style.display = 'none';
     cont.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--text3);font-size:13px">Comercializadora — próximamente</div>';
     return;
   }
+  if(subtabsEl) subtabsEl.style.display = 'flex';
 
   var envs = envios.filter(function(e){
     return e.loc===rcmNegSel && (filtroCiclo==='todos' || e.ciclo===filtroCiclo);
   });
 
-  renderRcmCosecha(envs);
+  if(rcmSubTabSel==='fin') renderRcmFinanciero(envs, filtroCiclo);
+  else renderRcmCosecha(envs);
+}
+
+function renderRcmFinanciero(envs, filtroCiclo){
+  var cont = document.getElementById('rcm-content');
+
+  var ingresos = envs.reduce(function(a,e){return a+envioTotal(e);},0);
+
+  var gastosNeg = gastos.filter(function(g){
+    return g.loc===rcmNegSel && g.cultivo==='camote' &&
+      (filtroCiclo==='todos' || (g.ciclo||cicloFromFecha(g.fechaVal))===filtroCiclo);
+  });
+  var costo = gastosNeg.reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0);
+
+  var ingresoPorSector = {};
+  var sectoresSet = {};
+  envs.forEach(function(e){
+    (e.partidas||[]).forEach(function(p){
+      var sec = p.sector || '—';
+      sectoresSet[sec] = true;
+      var ingreso = p.total!=null ? parseFloat(p.total)||0 :
+        (e.esComer||p.kgRecibidos!==undefined ? (parseFloat(p.kgRecibidos||0)*parseFloat(p.precioVenta||0)) : (parseFloat(p.pesoNeto||0)*parseFloat(p.precio||0)));
+      ingresoPorSector[sec] = (ingresoPorSector[sec]||0) + ingreso;
+    });
+  });
+  var numSectores = Object.keys(sectoresSet).length;
+  var costoPorSector = numSectores>0 ? costo/numSectores : 0;
+  var ganancia = ingresos - costo;
+
+  if(!ingresos && !costo){
+    cont.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--text3);font-size:13px">Sin registros financieros para este ciclo</div>';
+    return;
+  }
+
+  var sectoresOrd = Object.keys(ingresoPorSector).sort(function(a,b){
+    var na=parseFloat(a), nb=parseFloat(b);
+    if(!isNaN(na)&&!isNaN(nb)) return na-nb;
+    return String(a).localeCompare(String(b));
+  });
+  var secLbls = sectoresOrd.map(function(s){return 'Sector '+s;});
+  var secVals = sectoresOrd.map(function(s){return Math.round(ingresoPorSector[s]);});
+  var secCols = sectoresOrd.map(function(s,i){return SEC_COLS_RCM[i%SEC_COLS_RCM.length];});
+
+  cont.innerHTML =
+    '<div class="kpi-grid">'+
+      '<div class="kpi-card">'+
+        '<div class="kpi-accent" style="background:var(--green)"></div>'+
+        '<div class="kpi-lbl">Ingresos</div>'+
+        '<div class="kpi-val" style="color:var(--green)">'+fmt(ingresos)+'</div>'+
+      '</div>'+
+      '<div class="kpi-card">'+
+        '<div class="kpi-accent" style="background:var(--camote)"></div>'+
+        '<div class="kpi-lbl">Costo</div>'+
+        '<div class="kpi-val" style="color:var(--camote)">'+fmt(costo)+'</div>'+
+      '</div>'+
+      '<div class="kpi-card">'+
+        '<div class="kpi-accent" style="background:var(--camote)"></div>'+
+        '<div class="kpi-lbl">Costo x Sector</div>'+
+        '<div class="kpi-val" style="color:var(--camote)">'+fmt(costoPorSector)+'</div>'+
+      '</div>'+
+      '<div class="kpi-card">'+
+        '<div class="kpi-accent" style="background:'+(ganancia>=0?'var(--green)':'#D64545')+'"></div>'+
+        '<div class="kpi-lbl">Ganancia</div>'+
+        '<div class="kpi-val" style="color:'+(ganancia>=0?'var(--green)':'#D64545')+'">'+fmt(ganancia)+'</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="fin-charts-grid">'+
+      '<div class="dash-card fin-chart-full">'+
+        '<div class="dash-card-title">Ingreso x Sector</div>'+
+        '<div style="position:relative;height:'+Math.max(200, secLbls.length*46)+'px;margin-top:8px"><canvas id="rcm-ingreso-sec-chart"></canvas></div>'+
+      '</div>'+
+    '</div>';
+
+  if(!secLbls.length) return;
+
+  var gridCol = rfrGridCol(); var textMuted = '#898781';
+
+  mkRcmChart('rcm-ingreso-sec-chart', {
+    type:'bar',
+    data:{labels:secLbls, datasets:[{data:secVals, backgroundColor:secCols, borderRadius:3}]},
+    options:{
+      indexAxis:'y',
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+fmt(c.raw);}}}},
+      scales:{
+        x:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:11}, callback:function(v){return fmtCompact(v);}}, beginAtZero:true},
+        y:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}}
+      }
+    }
+  });
 }
 
 function renderRcmCosecha(envs){
