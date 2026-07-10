@@ -4937,6 +4937,10 @@ function editarEnvio(e){
 }
 
 function venTab(t){
+  // Si estaba editando un envío y cambia a otra pestaña (que no sea "nuevo"), cancelar la edición
+  if(editandoEnvioId && t!=='nuevo'){
+    cancelarEdicionEnvio();
+  }
   ['lista','nuevo','comer','alm'].forEach(function(tab){
     var btn=document.getElementById('vt-'+tab);
     if(btn) btn.classList.toggle('active',tab===t);
@@ -4957,6 +4961,25 @@ function venTab(t){
   if(t==='nuevo'){ renderPartidas(); updateVarSelect(); if(!editandoEnvioId) initNuevoEnvioForm(); else onTipoEnvioChange(); }
   if(t==='comer') initComerForm();
   if(t==='alm'){ almTab('lista'); }
+}
+
+// Cancela una edición de envío en curso y deja el formulario listo para un envío nuevo
+function cancelarEdicionEnvio(){
+  editandoEnvioId = null;
+  document.getElementById('btn-ven-guardar').innerHTML=
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"/></svg> Guardar envio';
+  var lbl = document.getElementById('ven-form-sec').querySelector('.step-label');
+  if(lbl) lbl.textContent='Encabezado del envio';
+  document.getElementById('vf-folio').value='';
+  document.getElementById('vf-cliente').value='';
+  document.getElementById('vf-flete').value='';
+  if(document.getElementById('vf-flete-compra')) document.getElementById('vf-flete-compra').value='';
+  document.getElementById('vf-factura').value='';
+  if(document.getElementById('vf-gc-cosecha')) document.getElementById('vf-gc-cosecha').value='';
+  if(document.getElementById('vf-gc-arado')) document.getElementById('vf-gc-arado').value='';
+  if(document.getElementById('vf-gc-desvarada')) document.getElementById('vf-gc-desvarada').value='';
+  poblarVfGcBanco('');
+  partidasTemp = initPartidas();
 }
 
 function renderPartidas(){
