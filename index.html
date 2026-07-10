@@ -543,6 +543,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <button type="button" onclick="mostrarBorrarBanco()" title="Administrar bancos" style="width:38px;height:38px;flex-shrink:0;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px">🗑</button>
         </div>
       </div>
+      <div class="field">
+        <label>Factura <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(opcional)</span></label>
+        <input type="text" id="f-factura" placeholder="Ej: A-1023...">
+      </div>
     </div>
 
     <button class="btn-main" id="btn-reg" onclick="registrar()">
@@ -1640,8 +1644,8 @@ async function cargarDesdeSB(){
         loc:g.loc, cultivo:g.cultivo, cat:g.cat, desc:g.descripcion,
         monto:parseFloat(g.monto||0), ciclo:g.ciclo,
         sectores:g.sector ? String(g.sector).split(',').filter(Boolean) : [],
-        tipoCamote: g.cultivo==='camote' ? ((g.cat && ['Arado','Cosecha','Desvarada','Flete Cosecha','Plantacion','Plantación'].indexOf(g.cat)>=0) ? 'cosecha' : 'general') : null,
-        banco:g.banco, proveedor:g.proveedor||'', autoGen:g.auto_gen};
+        tipoCamote: g.tipo_camote || (g.cultivo==='camote' ? ((g.cat && ['Arado','Cosecha','Desvarada','Flete Cosecha','Plantacion','Plantación'].indexOf(g.cat)>=0) ? 'cosecha' : 'general') : null),
+        banco:g.banco, proveedor:g.proveedor||'', factura:g.factura||'', autoGen:g.auto_gen};
     });
     localStorage.setItem('cc_gastos3', JSON.stringify(gastos));
   }
@@ -1713,7 +1717,8 @@ async function sbSaveGasto(g){
     loc:g.loc||'', cultivo:g.cultivo||'', cat:g.cat||'',
     descripcion:g.desc||'', monto:g.monto||0, ciclo:g.ciclo||'',
     sector:(g.sectores&&g.sectores.length)?g.sectores.join(','):'',
-    banco:g.banco||'', proveedor:g.proveedor||'', auto_gen:g.autoGen||false
+    banco:g.banco||'', proveedor:g.proveedor||'', auto_gen:g.autoGen||false,
+    tipo_camote:g.tipoCamote||'', factura:g.factura||''
   });
 }
 
@@ -2073,6 +2078,7 @@ function registrar(){
         desc:document.getElementById('f-desc').value.trim(),
         banco:document.getElementById('f-banco').value.trim(),
         proveedor:document.getElementById('f-proveedor').value.trim(),
+        factura:document.getElementById('f-factura').value.trim(),
         fechaVal:fechaVal, fecha:fechaLbl, semKey:semKey, semLbl:gastoSemLbl(fechaVal)
       });
     }
@@ -2085,6 +2091,7 @@ function registrar(){
     document.getElementById('f-desc').value='';
     poblarFBancoSelect();
     document.getElementById('f-proveedor').value='';
+    document.getElementById('f-factura').value='';
     sectoresSel=[];
     goSc('his');
     return;
@@ -2098,6 +2105,7 @@ function registrar(){
     monto:monto, desc:document.getElementById('f-desc').value.trim(),
     banco:document.getElementById('f-banco').value.trim(),
     proveedor:document.getElementById('f-proveedor').value.trim(),
+    factura:document.getElementById('f-factura').value.trim(),
     fechaVal:fechaVal, fecha:fechaLbl, semKey:semKey, semLbl:gastoSemLbl(fechaVal)
   };
   gastos.unshift(g); save(); updateHeader(); sbSaveGasto(g);
@@ -2105,6 +2113,7 @@ function registrar(){
   document.getElementById('f-desc').value='';
   poblarFBancoSelect();
   document.getElementById('f-proveedor').value='';
+  document.getElementById('f-factura').value='';
   sectoresSel=[];
   if(document.getElementById('sector-sec').classList.contains('visible')) buildSectorGrid();
   var locNames={jal:'Jalisco',nay:'Nayarit',ofic:'Oficina'};
@@ -2341,6 +2350,7 @@ function verDet(g){
   var descVal = g.desc || '';
   var clienteVal = g.proveedor || '';
   var bancoVal = g.banco || '';
+  var facturaVal = g.factura || '';
 
   document.getElementById('mo-body').innerHTML=
     '<div class="modal-row"><span class="modal-key">Negocio</span><span class="modal-val">'+negocioVal+'</span></div>'+
@@ -2355,6 +2365,7 @@ function verDet(g){
     '<div class="modal-row"><span class="modal-key">Descripción</span><span class="modal-val">'+descVal+'</span></div>'+
     '<div class="modal-row"><span class="modal-key">Cliente / Proveedor</span><span class="modal-val">'+clienteVal+'</span></div>'+
     '<div class="modal-row"><span class="modal-key">Banco</span><span class="modal-val">'+bancoVal+'</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Factura</span><span class="modal-val">'+facturaVal+'</span></div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px">'+
       '<button onclick="editarGasto(\''+g.id+'\')" style="padding:10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">✏️ Editar</button>'+
       '<button id="del-modal-btn" onclick="delGastoModal(\''+g.id+'\')" style="padding:10px;border-radius:var(--radius);border:1px solid #f87171;background:transparent;color:#f87171;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">🗑 Eliminar</button>'+
@@ -2417,6 +2428,7 @@ function editarGasto(id){
     document.getElementById('f-desc').value = g.desc||'';
     poblarFBancoSelect(g.banco||'');
     document.getElementById('f-proveedor').value = g.proveedor||'';
+    document.getElementById('f-factura').value = g.factura||'';
   },50);
   // Change button label
   var btn=document.getElementById('btn-reg');
