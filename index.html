@@ -955,6 +955,31 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </div>
       </div>
 
+      <div class="step-label" id="vf-gc-label" style="display:none">Gastos de cosecha</div>
+      <div class="card" id="vf-gastos-cosecha-card" style="margin-bottom:12px;display:none">
+        <div class="field">
+          <label>Banco <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(opcional)</span></label>
+          <select id="vf-gc-banco" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;padding-right:32px">
+            <option value="">— Sin banco —</option>
+          </select>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Cosecha ($)</label>
+            <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="vf-gc-cosecha" placeholder="0" min="0" step="0.01"></div>
+          </div>
+          <div class="field">
+            <label>Arado ($)</label>
+            <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="vf-gc-arado" placeholder="0" min="0" step="0.01"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Desvarada ($)</label>
+          <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="vf-gc-desvarada" placeholder="0" min="0" step="0.01"></div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;line-height:1.4">El flete de compra, cosecha, arado y desvarada se prorratean por sector según las hectáreas de cada partida y se registran automáticamente en Historial de gastos. No afectan el total del envío.</div>
+      </div>
+
       <div class="step-label">Partidas de variedad</div>
       <div id="vf-partidas"></div>
 
@@ -4887,7 +4912,13 @@ function editarEnvio(e){
   document.getElementById('vf-cliente').value = e.cliente||'';
   document.getElementById('vf-ciclo').value = e.ciclo||'';
   document.getElementById('vf-flete').value = e.flete||'';
+  if(document.getElementById('vf-flete-compra')) document.getElementById('vf-flete-compra').value = e.fleteCompra||'';
   document.getElementById('vf-factura').value = e.factura||'';
+  var gc = e.gastosCosechaTotales||{};
+  poblarVfGcBanco(gc.banco||'');
+  if(document.getElementById('vf-gc-cosecha')) document.getElementById('vf-gc-cosecha').value = gc.cosecha||'';
+  if(document.getElementById('vf-gc-arado')) document.getElementById('vf-gc-arado').value = gc.arado||'';
+  if(document.getElementById('vf-gc-desvarada')) document.getElementById('vf-gc-desvarada').value = gc.desvarada||'';
   // poblar partidas: solo las que venían en el envío guardado
   partidasTemp = e.partidas.filter(function(p){ return p.pesoNeto||p.precio||p.hectareas||p.sector; }).map(function(p){
     return {
@@ -5045,11 +5076,36 @@ function guardarEnvio(){
   var totalConFlete=totalVenta+(flete||0);
   var fechaLbl=new Date(fecha+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
 
+  // Capturar los IDs de gastos de cosecha ya generados en una edición previa, antes de sobreescribir el envío
+  var prevGastoIds = {};
+  if(editandoEnvioId){
+    var prevEnvio = envios.find(function(e){return e.id===editandoEnvioId;});
+    if(prevEnvio && prevEnvio.gastoCosechaIds) prevGastoIds = prevEnvio.gastoCosechaIds;
+  }
+
   var envioObj={
     num:num, folio:folio, fecha:fecha, fechaLbl:fechaLbl,
     cliente:cliente, loc:loc, ciclo:cicloV,
     flete:flete, fleteCompra:fleteCompraEnvio, factura:factura, partidas:partidas, totalVenta:totalVenta, total:totalConFlete
   };
+
+  if(loc==='jal' || loc==='nay'){
+    var gcVals = {
+      fleteCompra: fleteCompraEnvio,
+      cosecha: parseFloat(document.getElementById('vf-gc-cosecha')?document.getElementById('vf-gc-cosecha').value||0:0)||0,
+      arado: parseFloat(document.getElementById('vf-gc-arado')?document.getElementById('vf-gc-arado').value||0:0)||0,
+      desvarada: parseFloat(document.getElementById('vf-gc-desvarada')?document.getElementById('vf-gc-desvarada').value||0:0)||0
+    };
+    var gcBanco = document.getElementById('vf-gc-banco') ? document.getElementById('vf-gc-banco').value : '';
+    envioObj.gastosCosechaTotales = {fleteCompra:gcVals.fleteCompra, cosecha:gcVals.cosecha, arado:gcVals.arado, desvarada:gcVals.desvarada, banco:gcBanco};
+    envioObj.gastoCosechaIds = generarGastosCosechaDesdeEnvio(envioObj, gcVals, gcBanco, prevGastoIds);
+  } else if(fleteCompraEnvio>0){
+    // Comercializadora u otros: comportamiento anterior, gasto único sin prorratear
+    var gFC={id:Date.now()+10,fechaVal:fecha,fechaLbl:fechaLbl||fecha,
+      loc:loc,cultivo:'general',cat:'Fletes',desc:'Flete compra envio '+num,
+      monto:fleteCompraEnvio,ciclo:cicloV||'',sector:'',autoGen:true};
+    gastos.unshift(gFC); save(); sbSaveGasto(gFC);
+  }
 
   if(editandoEnvioId){
     envioObj.id=editandoEnvioId;
@@ -5063,12 +5119,6 @@ function guardarEnvio(){
   }
   saveEnvios();
   sbSaveEnvio(envioObj);
-  if(fleteCompraEnvio>0){
-    var gFC={id:Date.now()+10,fechaVal:fecha,fechaLbl:fechaLbl||fecha,
-      loc:loc,cultivo:'general',cat:'Fletes',desc:'Flete compra envio '+num,
-      monto:fleteCompraEnvio,ciclo:cicloV||'',sector:'',autoGen:true};
-    gastos.unshift(gFC); save(); sbSaveGasto(gFC);
-  }
 
   // reset form
   editandoEnvioId = null;
@@ -5077,10 +5127,79 @@ function guardarEnvio(){
   document.getElementById('vf-flete').value='';
   if(document.getElementById('vf-flete-compra')) document.getElementById('vf-flete-compra').value='';
   document.getElementById('vf-factura').value='';
+  if(document.getElementById('vf-gc-cosecha')) document.getElementById('vf-gc-cosecha').value='';
+  if(document.getElementById('vf-gc-arado')) document.getElementById('vf-gc-arado').value='';
+  if(document.getElementById('vf-gc-desvarada')) document.getElementById('vf-gc-desvarada').value='';
+  poblarVfGcBanco('');
   partidasTemp=initPartidas();
   renderPartidas();
   showToast('Envio guardado: '+fmt(totalVenta));
   venTab('lista');
+}
+
+// Genera/actualiza/elimina los gastos de cosecha (Flete Cosecha, Cosecha, Arado, Desvarada)
+// prorrateados por sector según las hectáreas de cada partida del envío.
+function generarGastosCosechaDesdeEnvio(envioObj, vals, banco, prevIds){
+  var LOC_LBL_GC = {jal:'Jalisco', nay:'Nayarit'};
+  var locLbl = LOC_LBL_GC[envioObj.loc] || envioObj.loc;
+
+  var haPorSector = {};
+  var totalHa = 0;
+  (envioObj.partidas||[]).forEach(function(p){
+    var ha = parseFloat(p.hectareas)||0;
+    if(ha<=0) return;
+    var sec = p.sector || '—';
+    haPorSector[sec] = (haPorSector[sec]||0) + ha;
+    totalHa += ha;
+  });
+  var sectores = Object.keys(haPorSector);
+
+  var CATS_GC = [
+    {key:'flete', cat:'Flete Cosecha', monto:vals.fleteCompra, lbl:'Flete Cosecha'},
+    {key:'cosecha', cat:'Cosecha', monto:vals.cosecha, lbl:'Cosecha'},
+    {key:'arado', cat:'Arado', monto:vals.arado, lbl:'Arado'},
+    {key:'desvarada', cat:'Desvarada', monto:vals.desvarada, lbl:'Desvarada'}
+  ];
+
+  var newIds = {};
+  var fechaLbl = envioObj.fechaLbl || envioObj.fecha;
+
+  CATS_GC.forEach(function(c){
+    sectores.forEach(function(sec){
+      var prop = totalHa>0 ? haPorSector[sec]/totalHa : 0;
+      var monto = Math.round(c.monto*prop);
+      var key = sec+'_'+c.key;
+      var existingId = prevIds[key];
+
+      if(c.monto>0 && monto>0){
+        var gasto = existingId ? gastos.find(function(g){return g.id===existingId;}) : null;
+        var desc = c.lbl+' Camote '+locLbl+' Sector '+sec;
+        if(gasto){
+          gasto.loc=envioObj.loc; gasto.cultivo='camote'; gasto.tipoCamote='cosecha'; gasto.cat=c.cat;
+          gasto.sectores=[sec]; gasto.monto=monto; gasto.desc=desc; gasto.banco=banco||'';
+          gasto.proveedor=envioObj.cliente; gasto.ciclo=envioObj.ciclo;
+          gasto.fechaVal=envioObj.fecha; gasto.fecha=fechaLbl; gasto.semLbl=gastoSemLbl(envioObj.fecha);
+        } else {
+          gasto = {
+            id: Date.now()+Math.floor(Math.random()*100000),
+            fechaVal:envioObj.fecha, fecha:fechaLbl, semKey:'', semLbl:gastoSemLbl(envioObj.fecha),
+            loc:envioObj.loc, cultivo:'camote', tipoCamote:'cosecha', cat:c.cat,
+            sectores:[sec], desc:desc, monto:monto, ciclo:envioObj.ciclo,
+            banco:banco||'', proveedor:envioObj.cliente, autoGen:true
+          };
+          gastos.unshift(gasto);
+        }
+        newIds[key] = gasto.id;
+        sbSaveGasto(gasto);
+      } else if(existingId){
+        gastos = gastos.filter(function(g){return g.id!==existingId;});
+        sbDeleteGasto(existingId);
+      }
+    });
+  });
+
+  save();
+  return newIds;
 }
 
 function renderEnvios(){
@@ -5360,6 +5479,11 @@ function onTipoEnvioChange(){
     var seq = getNextNumEnvio(tipo, anio, null);
     document.getElementById('vf-num').value = buildNumEnvio(tipo, anio, seq);
   }
+  var mostrarGC = (tipo==='jal'||tipo==='nay');
+  var gcCard = document.getElementById('vf-gastos-cosecha-card');
+  var gcLbl = document.getElementById('vf-gc-label');
+  if(gcCard) gcCard.style.display = mostrarGC ? 'block' : 'none';
+  if(gcLbl) gcLbl.style.display = mostrarGC ? 'block' : 'none';
 }
 
 function initNuevoEnvioForm(){
@@ -5375,6 +5499,18 @@ function initNuevoEnvioForm(){
   var anio = getAnioFromFecha(displayStr);
   var seq = getNextNumEnvio(tipo, anio, null);
   document.getElementById('vf-num').value = buildNumEnvio(tipo, anio, seq);
+  poblarVfGcBanco();
+  onTipoEnvioChange();
+}
+
+function poblarVfGcBanco(seleccionar){
+  var sel = document.getElementById('vf-gc-banco');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">— Sin banco —</option>';
+  bancos.forEach(function(b){
+    var o = document.createElement('option'); o.value = b; o.textContent = b; sel.appendChild(o);
+  });
+  if(seleccionar!==undefined) sel.value = seleccionar||'';
 }
 
 // ---- CLIENTES ----
