@@ -497,9 +497,15 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <!-- Detalle -->
     <div class="step-label" id="step-detalle-lbl">3. Detalle</div>
     <div class="card">
-      <div class="field">
-        <label>Fecha</label>
-        <input type="date" id="f-fecha" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none">
+      <div class="field-row">
+        <div class="field">
+          <label>Fecha</label>
+          <input type="date" id="f-fecha" oninput="onFFechaChange()" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none">
+        </div>
+        <div class="field">
+          <label>Semana</label>
+          <input type="text" id="f-semana-preview" readonly disabled placeholder="—" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text3);outline:none;cursor:default">
+        </div>
       </div>
       <div class="field-row">
         <div class="field">
@@ -1634,7 +1640,7 @@ async function cargarDesdeSB(){
         loc:g.loc, cultivo:g.cultivo, cat:g.cat, desc:g.descripcion,
         monto:parseFloat(g.monto||0), ciclo:g.ciclo,
         sectores:g.sector ? String(g.sector).split(',').filter(Boolean) : [],
-        tipoCamote:(g.cultivo==='camote' && g.cat && ['Arado','Cosecha','Desvarada','Flete Cosecha','Plantacion','Plantación'].indexOf(g.cat)>=0) ? 'cosecha' : 'general',
+        tipoCamote: g.cultivo==='camote' ? ((g.cat && ['Arado','Cosecha','Desvarada','Flete Cosecha','Plantacion','Plantación'].indexOf(g.cat)>=0) ? 'cosecha' : 'general') : null,
         banco:g.banco, proveedor:g.proveedor||'', autoGen:g.auto_gen};
     });
     localStorage.setItem('cc_gastos3', JSON.stringify(gastos));
@@ -1703,7 +1709,7 @@ async function cargarDesdeSB(){
 async function sbSaveGasto(g){
   if(!sbOnline||!sb) return;
   await sb.from('gastos').upsert({
-    id:g.id, fecha_val:g.fechaVal||'', fecha_lbl:g.fechaLbl||'',
+    id:g.id, fecha_val:g.fechaVal||'', fecha_lbl:g.fecha||'',
     loc:g.loc||'', cultivo:g.cultivo||'', cat:g.cat||'',
     descripcion:g.desc||'', monto:g.monto||0, ciclo:g.ciclo||'',
     sector:(g.sectores&&g.sectores.length)?g.sectores.join(','):'',
@@ -1841,6 +1847,11 @@ function save(){try{localStorage.setItem('cc_gastos3',JSON.stringify(gastos));}c
 function gastoSemLbl(fechaValStr){
   if(!fechaValStr) return '';
   try{ return 'Semana '+String(rfrWeekNum(rfrSemanaKey(fechaValStr))).padStart(2,'0'); }catch(e){ return ''; }
+}
+function onFFechaChange(){
+  var fechaVal = document.getElementById('f-fecha').value;
+  var prev = document.getElementById('f-semana-preview');
+  if(prev) prev.value = gastoSemLbl(fechaVal);
 }
 function nominaFramSemana(semanaKey){
   var total=0;
@@ -2314,22 +2325,35 @@ var editandoGastoId = null;
 
 function verDet(g){
   var locNames={jal:'Jalisco',nay:'Nayarit',ofic:'Oficina',com:'Comercializadora'};
-  var cultNames={camote:'Camote',fram:'Frambuesa',general:'General Terreno',ofic:'Oficina',com:'Comercializadora'};
+  var cultNames={camote:'Camote',fram:'Frambuesa',general:'General',ofic:'Oficina',com:'Comercializadora'};
   document.getElementById('mo-title').innerHTML=g.cat+'&nbsp;<span class="chip '+g.loc+'">'+locNames[g.loc]+'</span>';
-  var tipoRow='';
-  if(g.tipoCamote) tipoRow='<div class="modal-row"><span class="modal-key">Tipo</span><span class="modal-val">'+(g.tipoCamote==='cosecha'?'Cosecha':'General')+'</span></div>';
-  var secRow=g.sectores&&g.sectores.length?'<div class="modal-row"><span class="modal-key">Sectores</span><span class="modal-val">'+g.sectores.map(function(n){return n;}).join(', ')+'</span></div>':'';
+
+  var esCamote = g.cultivo==='camote';
+  var esCosecha = esCamote && g.tipoCamote==='cosecha';
+
+  var negocioVal = locNames[g.loc] || '-';
+  var actividadVal = cultNames[g.cultivo] || '-';
+  var tipoVal = esCamote ? (g.tipoCamote==='cosecha'?'Cosecha':'General') : '-';
+  var sectorVal = (esCosecha && g.sectores && g.sectores.length) ? g.sectores.join(', ') : '-';
+  var fechaVal = g.fecha || (g.fechaVal ? new Date(g.fechaVal+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : '-');
+  var semanaVal = g.semLbl || (g.fechaVal ? gastoSemLbl(g.fechaVal) : '') || '-';
+  var cicloVal = g.ciclo || '';
+  var descVal = g.desc || '';
+  var clienteVal = g.proveedor || '';
+  var bancoVal = g.banco || '';
+
   document.getElementById('mo-body').innerHTML=
+    '<div class="modal-row"><span class="modal-key">Negocio</span><span class="modal-val">'+negocioVal+'</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Actividad</span><span class="modal-val">'+actividadVal+'</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Tipo de Gasto</span><span class="modal-val">'+tipoVal+'</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Sector</span><span class="modal-val">'+sectorVal+'</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Fecha</span><span class="modal-val">'+fechaVal+'</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Semana</span><span class="modal-val">'+semanaVal+'</span></div>'+
     '<div class="modal-row"><span class="modal-key">Monto</span><span class="modal-val" style="font-family:var(--mono);font-size:18px">'+fmt(g.monto)+'</span></div>'+
-    '<div class="modal-row"><span class="modal-key">Ubicacion</span><span class="modal-val">'+locNames[g.loc]+'</span></div>'+
-    (g.ciclo?'<div class="modal-row"><span class="modal-key">Ciclo</span><span class="modal-val">'+g.ciclo+'</span></div>':'')+
-    (g.loc!=='ofic'?'<div class="modal-row"><span class="modal-key">Cultivo</span><span class="modal-val">'+cultNames[g.cultivo]+'</span></div>':'')+
-    tipoRow+secRow+
-    '<div class="modal-row"><span class="modal-key">Semana</span><span class="modal-val">'+g.semLbl+'</span></div>'+
-    '<div class="modal-row"><span class="modal-key">Fecha</span><span class="modal-val">'+g.fecha+'</span></div>'+
-    (g.desc?'<div style="margin-top:10px"><div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">Descripción</div><div class="modal-note">'+g.desc+'</div></div>':'')+
-    (g.banco?'<div class="modal-row" style="margin-top:8px"><span class="modal-key">Banco</span><span class="modal-val">'+g.banco+'</span></div>':'')+
-    (g.proveedor?'<div class="modal-row"><span class="modal-key">Cliente / Proveedor</span><span class="modal-val">'+g.proveedor+'</span></div>':'')+
+    '<div class="modal-row"><span class="modal-key">Ciclo</span><span class="modal-val">'+cicloVal+'</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Descripción</span><span class="modal-val">'+descVal+'</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Cliente / Proveedor</span><span class="modal-val">'+clienteVal+'</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Banco</span><span class="modal-val">'+bancoVal+'</span></div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px">'+
       '<button onclick="editarGasto(\''+g.id+'\')" style="padding:10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">✏️ Editar</button>'+
       '<button id="del-modal-btn" onclick="delGastoModal(\''+g.id+'\')" style="padding:10px;border-radius:var(--radius);border:1px solid #f87171;background:transparent;color:#f87171;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">🗑 Eliminar</button>'+
@@ -2384,6 +2408,7 @@ function editarGasto(id){
   if(cicloSel) cicloSel.value=g.ciclo||'';
   // Set form fields
   document.getElementById('f-fecha').value = g.fechaVal||'';
+  onFFechaChange();
   updateCatSelect();
   setTimeout(function(){
     document.getElementById('f-cat').value = g.cat;
@@ -4835,6 +4860,7 @@ updateStepNumbers();
   var tz=hoy.getTimezoneOffset()*60000;
   var todayStr=new Date(hoy-tz).toISOString().slice(0,10);
   fi.value=todayStr;
+  onFFechaChange();
   // Populate ciclo select in detalle form
   (function(){
     var s=document.getElementById('f-ciclo');
