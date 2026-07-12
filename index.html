@@ -1251,10 +1251,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div id="fr-trabajadores-list"></div>
         <!-- Fila para agregar nuevo -->
         <div style="display:grid;grid-template-columns:1fr 62px 62px 28px;gap:6px;align-items:center;margin-top:6px">
-          <select id="fr-trab-select" onchange="onFrTrabSelectChange()"
-            style="width:100%;padding:10px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:24px">
-            <option value="">— Selecciona trabajador —</option>
-          </select>
+          <div style="position:relative">
+            <input type="text" id="fr-trab-select" readonly placeholder="Trabajador..." autocomplete="off"
+              style="width:100%;cursor:pointer;padding:10px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none"
+              onclick="showTrabDropdown()" onblur="setTimeout(hideTrabDropdown,150)">
+            <div id="trab-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:200px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
+          </div>
           <input type="number" id="fr-trab-cubetas-input" placeholder="0" min="0" step="1"
             onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('fr-trab-proceso-input').focus();}"
             style="width:100%;padding:10px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:600;color:var(--fram);font-family:var(--mono);text-align:center;outline:none">
@@ -5588,10 +5590,6 @@ function updateClientesDatalist(){
   });
 }
 
-function onClienteInput(){
-  // noop - datalist handles suggestions natively
-}
-
 function agregarClienteSiNuevo(nombre){
   if(!nombre) return;
   var nom = nombre.trim();
@@ -5736,7 +5734,6 @@ function renderClienteDropdown(){
   var q=(document.getElementById('vf-cliente').value||'').toLowerCase();
   var filtered=clientes.filter(function(c){return c.toLowerCase().indexOf(q)>=0;});
   dd.innerHTML='';
-  if(!filtered.length){dd.style.display='none';return;}
   filtered.forEach(function(c){
     var row=document.createElement('div');
     row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px';
@@ -5756,11 +5753,37 @@ function renderClienteDropdown(){
       showToast('Cliente eliminado');};
     row.appendChild(name); row.appendChild(btn); dd.appendChild(row);
   });
+  var addRow=document.createElement('div');
+  addRow.style.cssText='padding:10px 12px;cursor:pointer;font-size:13px;color:var(--green);font-weight:600';
+  addRow.textContent='+ Agregar nuevo...';
+  addRow.onmouseenter=function(){this.style.background='var(--green-bg)';};
+  addRow.onmouseleave=function(){this.style.background='';};
+  addRow.onmousedown=function(e){e.preventDefault();hideClienteDropdown();abrirModalNuevoCliente();};
+  dd.appendChild(addRow);
   dd.style.display='block';
 }
 function showClienteDropdown(){renderClienteDropdown();}
 function hideClienteDropdown(){var dd=document.getElementById('cliente-dropdown');if(dd)dd.style.display='none';}
-function onClienteInput(){renderClienteDropdown();var dd=document.getElementById('cliente-dropdown');if(dd&&dd.children.length)dd.style.display='block';}
+function onClienteInput(){renderClienteDropdown();}
+
+function abrirModalNuevoCliente(){
+  document.getElementById('mo-title').innerHTML = '👤 Nuevo cliente';
+  document.getElementById('mo-body').innerHTML =
+    '<div class="field" style="margin-bottom:14px"><label>Nombre del cliente</label>'+
+    '<input type="text" id="nuevo-cliente-nombre-input" placeholder="Nombre" style="width:100%" onkeydown="if(event.key===\'Enter\'){event.preventDefault();confirmarNuevoCliente();}"></div>'+
+    '<button class="btn-main" onclick="confirmarNuevoCliente()">Agregar cliente</button>';
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(function(){ var inp=document.getElementById('nuevo-cliente-nombre-input'); if(inp) inp.focus(); }, 100);
+}
+function confirmarNuevoCliente(){
+  var inp = document.getElementById('nuevo-cliente-nombre-input');
+  var nom = inp.value.trim();
+  if(!nom){ showToast('Escribe un nombre'); return; }
+  agregarClienteSiNuevo(nom);
+  closeModal();
+  document.getElementById('vf-cliente').value = nom;
+  showToast('Cliente agregado');
+}
 
 // ---- BANCO DROPDOWN ----
 function renderBancoDropdown(){
@@ -5768,7 +5791,6 @@ function renderBancoDropdown(){
   var q=(document.getElementById('f-banco').value||'').toLowerCase();
   var filtered=bancos.filter(function(b){return b.toLowerCase().indexOf(q)>=0;});
   dd.innerHTML='';
-  if(!filtered.length){dd.style.display='none';return;}
   filtered.forEach(function(b){
     var row=document.createElement('div');
     row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px';
@@ -5786,11 +5808,37 @@ function renderBancoDropdown(){
       showToast('Banco eliminado');};
     row.appendChild(name); row.appendChild(btn); dd.appendChild(row);
   });
+  var addRow=document.createElement('div');
+  addRow.style.cssText='padding:10px 12px;cursor:pointer;font-size:13px;color:var(--green);font-weight:600';
+  addRow.textContent='+ Agregar nuevo...';
+  addRow.onmouseenter=function(){this.style.background='var(--green-bg)';};
+  addRow.onmouseleave=function(){this.style.background='';};
+  addRow.onmousedown=function(e){e.preventDefault();hideBancoDropdown();abrirModalNuevoBanco();};
+  dd.appendChild(addRow);
   dd.style.display='block';
 }
 function showBancoDropdown(){renderBancoDropdown();}
 function hideBancoDropdown(){var dd=document.getElementById('banco-dropdown');if(dd)dd.style.display='none';}
-function onBancoInput(){renderBancoDropdown();var dd=document.getElementById('banco-dropdown');if(dd&&dd.children.length)dd.style.display='block';}
+function onBancoInput(){renderBancoDropdown();}
+
+function abrirModalNuevoBanco(){
+  document.getElementById('mo-title').innerHTML = '🏦 Nuevo banco';
+  document.getElementById('mo-body').innerHTML =
+    '<div class="field" style="margin-bottom:14px"><label>Nombre del banco</label>'+
+    '<input type="text" id="nuevo-banco-nombre-input" placeholder="Ej: BBVA" style="width:100%" onkeydown="if(event.key===\'Enter\'){event.preventDefault();confirmarNuevoBanco();}"></div>'+
+    '<button class="btn-main" onclick="confirmarNuevoBanco()">Agregar banco</button>';
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(function(){ var inp=document.getElementById('nuevo-banco-nombre-input'); if(inp) inp.focus(); }, 100);
+}
+function confirmarNuevoBanco(){
+  var inp = document.getElementById('nuevo-banco-nombre-input');
+  var nom = inp.value.trim();
+  if(!nom){ showToast('Escribe un nombre'); return; }
+  agregarBancoSiNuevo(nom);
+  closeModal();
+  document.getElementById('f-banco').value = nom;
+  showToast('Banco agregado');
+}
 
 // ---- envioTotal ----
 function envioTotal(e){
@@ -5961,7 +6009,6 @@ function renderProveedorDropdown(){
   var q=(document.getElementById('cf-proveedor').value||'').toLowerCase();
   var filtered=proveedores.filter(function(p){return p.toLowerCase().indexOf(q)>=0;});
   dd.innerHTML='';
-  if(!filtered.length){dd.style.display='none';return;}
   filtered.forEach(function(p){
     var row=document.createElement('div');
     row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px';
@@ -5979,11 +6026,37 @@ function renderProveedorDropdown(){
       showToast('Proveedor eliminado');};
     row.appendChild(name); row.appendChild(btn); dd.appendChild(row);
   });
+  var addRow=document.createElement('div');
+  addRow.style.cssText='padding:10px 12px;cursor:pointer;font-size:13px;color:var(--green);font-weight:600';
+  addRow.textContent='+ Agregar nuevo...';
+  addRow.onmouseenter=function(){this.style.background='var(--green-bg)';};
+  addRow.onmouseleave=function(){this.style.background='';};
+  addRow.onmousedown=function(e){e.preventDefault();hideProveedorDropdown();abrirModalNuevoCfProveedor();};
+  dd.appendChild(addRow);
   dd.style.display='block';
 }
 function showProveedorDropdown(){renderProveedorDropdown();}
 function hideProveedorDropdown(){var dd=document.getElementById('proveedor-dropdown');if(dd)dd.style.display='none';}
-function onProveedorInput(){renderProveedorDropdown();var dd=document.getElementById('proveedor-dropdown');if(dd&&dd.children.length)dd.style.display='block';}
+function onProveedorInput(){renderProveedorDropdown();}
+
+function abrirModalNuevoCfProveedor(){
+  document.getElementById('mo-title').innerHTML = '👤 Nuevo proveedor';
+  document.getElementById('mo-body').innerHTML =
+    '<div class="field" style="margin-bottom:14px"><label>Nombre del proveedor</label>'+
+    '<input type="text" id="nuevo-cfproveedor-nombre-input" placeholder="Nombre" style="width:100%" onkeydown="if(event.key===\'Enter\'){event.preventDefault();confirmarNuevoCfProveedor();}"></div>'+
+    '<button class="btn-main" onclick="confirmarNuevoCfProveedor()">Agregar proveedor</button>';
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(function(){ var inp=document.getElementById('nuevo-cfproveedor-nombre-input'); if(inp) inp.focus(); }, 100);
+}
+function confirmarNuevoCfProveedor(){
+  var inp = document.getElementById('nuevo-cfproveedor-nombre-input');
+  var nom = inp.value.trim();
+  if(!nom){ showToast('Escribe un nombre'); return; }
+  agregarProveedorSiNuevo(nom);
+  closeModal();
+  document.getElementById('cf-proveedor').value = nom;
+  showToast('Proveedor agregado');
+}
 
 // ---- COMER CLIENTE DROPDOWN ----
 function renderComerClienteDropdown(){
@@ -6760,7 +6833,7 @@ function initFramForm(editReg){
     document.getElementById('fr-p-'+d).textContent = '—';
   });
   document.getElementById('fr-defectos-resumen').style.display = 'none';
-  poblarFrTrabSelect();
+  document.getElementById('fr-trab-select').value = '';
   var tci=document.getElementById('fr-trab-cubetas-input'); if(tci) tci.value='';
   var tpi=document.getElementById('fr-trab-proceso-input'); if(tpi) tpi.value='';
   var ci=document.getElementById('fr-caja-input'); if(ci) ci.value='';
@@ -6807,30 +6880,43 @@ function recalcMermaProceso(){
     document.getElementById('fr-merma').value = (sumProceso*1.2).toFixed(2);
   }
 }
-function poblarFrTrabSelect(seleccionar){
-  var sel = document.getElementById('fr-trab-select');
-  if(!sel) return;
-  sel.innerHTML = '<option value="">— Selecciona trabajador —</option>';
-  trabajadores.forEach(function(n){
-    var o=document.createElement('option'); o.value=n; o.textContent=n;
-    sel.appendChild(o);
+function renderTrabDropdown(){
+  var dd = document.getElementById('trab-dropdown');
+  if(!dd) return;
+  dd.innerHTML = '';
+  trabajadores.forEach(function(t){
+    var row=document.createElement('div');
+    row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px';
+    row.onmouseenter=function(){this.style.background='var(--green-bg)';};
+    row.onmouseleave=function(){this.style.background='';};
+    var name=document.createElement('span'); name.textContent=t; name.style.flex='1';
+    name.onmousedown=function(e){e.preventDefault();
+      document.getElementById('fr-trab-select').value=t;
+      hideTrabDropdown();
+      var cub=document.getElementById('fr-trab-cubetas-input'); if(cub) cub.focus();
+    };
+    var btn=document.createElement('button');
+    btn.textContent='×'; btn.title='Eliminar';
+    btn.style.cssText='background:none;border:none;color:var(--text3);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0';
+    btn.onmousedown=function(e){e.preventDefault();e.stopPropagation();
+      trabajadores=trabajadores.filter(function(x){return x!==t;});
+      saveTrabajadores(); sbDeleteTrabajador(t);
+      renderTrabDropdown();
+      if(document.getElementById('fr-trab-select').value===t) document.getElementById('fr-trab-select').value='';
+      showToast('Trabajador eliminado');};
+    row.appendChild(name); row.appendChild(btn); dd.appendChild(row);
   });
-  var optNuevo=document.createElement('option');
-  optNuevo.value='__nuevo__'; optNuevo.textContent='+ Agregar nuevo trabajador...';
-  sel.appendChild(optNuevo);
-  sel.value = seleccionar || '';
+  var addRow=document.createElement('div');
+  addRow.style.cssText='padding:10px 12px;cursor:pointer;font-size:13px;color:var(--green);font-weight:600';
+  addRow.textContent='+ Agregar nuevo...';
+  addRow.onmouseenter=function(){this.style.background='var(--green-bg)';};
+  addRow.onmouseleave=function(){this.style.background='';};
+  addRow.onmousedown=function(e){e.preventDefault();hideTrabDropdown();abrirModalNuevoTrabajador();};
+  dd.appendChild(addRow);
+  dd.style.display='block';
 }
-
-function onFrTrabSelectChange(){
-  var sel = document.getElementById('fr-trab-select');
-  if(sel.value==='__nuevo__'){
-    sel.value = '';
-    abrirModalNuevoTrabajador();
-  } else if(sel.value){
-    var cub = document.getElementById('fr-trab-cubetas-input');
-    if(cub) cub.focus();
-  }
-}
+function showTrabDropdown(){renderTrabDropdown();}
+function hideTrabDropdown(){var dd=document.getElementById('trab-dropdown');if(dd)dd.style.display='none';}
 
 function abrirModalNuevoTrabajador(){
   document.getElementById('mo-title').innerHTML = '➕ Nuevo trabajador';
@@ -6849,7 +6935,7 @@ function confirmarNuevoTrabajador(){
   if(trabajadores.indexOf(nom)>=0){ showToast('Ese trabajador ya existe'); return; }
   agregarTrabajadorSiNuevo(nom);
   closeModal();
-  poblarFrTrabSelect(nom);
+  document.getElementById('fr-trab-select').value = nom;
   var cub = document.getElementById('fr-trab-cubetas-input'); if(cub) cub.focus();
   showToast('Trabajador agregado');
 }
