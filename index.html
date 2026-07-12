@@ -530,18 +530,15 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <label>Descripción <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(opcional)</span></label>
         <textarea id="f-desc" placeholder="Ej: Cosecha sectores 2 y 3, 8 personas..."></textarea>
       </div>
-      <div class="field">
+      <div class="field" style="position:relative">
         <label>Cliente / Proveedor <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(opcional)</span></label>
-        <input type="text" id="f-proveedor" placeholder="Ej: IMSS, Proveedor ABC...">
+        <input type="text" id="f-proveedor" placeholder="Toca para elegir..." autocomplete="off" readonly style="width:100%;cursor:pointer" onclick="showFProveedorDropdown()" onblur="setTimeout(hideFProveedorDropdown,150)">
+        <div id="f-proveedor-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:220px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
       </div>
-      <div class="field">
+      <div class="field" style="position:relative">
         <label>Banco <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(opcional)</span></label>
-        <div style="display:flex;gap:6px;align-items:center">
-          <select id="f-banco" onchange="onFBancoSelectChange()" style="flex:1;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;padding-right:32px">
-            <option value="">— Sin banco —</option>
-          </select>
-          <button type="button" onclick="mostrarBorrarBanco()" title="Administrar bancos" style="width:38px;height:38px;flex-shrink:0;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px">🗑</button>
-        </div>
+        <input type="text" id="f-banco" placeholder="Buscar o escribir banco..." autocomplete="off" style="width:100%" oninput="onBancoInput()" onclick="showBancoDropdown()" onblur="setTimeout(hideBancoDropdown,150)">
+        <div id="banco-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:220px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
       </div>
       <div class="field">
         <label>Factura <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(opcional)</span></label>
@@ -980,12 +977,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <label>Desvarada ($)</label>
             <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="vf-gc-desvarada" placeholder="0" min="0" step="0.01"></div>
           </div>
-        </div>
-        <div class="field">
-          <label>Banco <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(opcional)</span></label>
-          <select id="vf-gc-banco" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;padding-right:32px">
-            <option value="">— Sin banco —</option>
-          </select>
         </div>
         <div style="font-size:11px;color:var(--text3);margin-top:4px;line-height:1.4">El flete de compra, cosecha, arado y desvarada se prorratean por sector según las hectáreas de cada partida y se registran automáticamente en Historial de gastos. No afectan el total del envío.</div>
       </div>
@@ -2068,16 +2059,20 @@ function registrar(){
     var idx=gastos.findIndex(function(x){return x.id==editandoGastoId;});
     if(idx>=0){
       var orig=gastos[idx];
+      var bancoVal=document.getElementById('f-banco').value.trim();
+      var provVal=document.getElementById('f-proveedor').value.trim();
+      if(bancoVal) agregarBancoSiNuevo(bancoVal);
+      if(provVal) agregarProveedorSiNuevo(provVal);
       gastos[idx]=Object.assign({},orig,{
-        loc:loc, cultivo:(loc==='ofic'||loc==='com')?loc:cultivo,
+        loc:loc, cultivo:(loc==='ofic'||loc==='com')?null:cultivo,
         ciclo: (function(){ var v=document.getElementById('f-ciclo').value; return v||null; })(),
         tipoCamote:cultivo==='camote'?tipoCamote:null,
         cat:cat,
         sectores:(cultivo==='camote'&&tipoCamote==='cosecha')?sectoresSel.slice():[],
         monto:monto,
         desc:document.getElementById('f-desc').value.trim(),
-        banco:document.getElementById('f-banco').value.trim(),
-        proveedor:document.getElementById('f-proveedor').value.trim(),
+        banco:bancoVal,
+        proveedor:provVal,
         factura:document.getElementById('f-factura').value.trim(),
         fechaVal:fechaVal, fecha:fechaLbl, semKey:semKey, semLbl:gastoSemLbl(fechaVal)
       });
@@ -2089,7 +2084,7 @@ function registrar(){
     showToast('✅ Gasto actualizado');
     document.getElementById('f-monto').value='';
     document.getElementById('f-desc').value='';
-    poblarFBancoSelect();
+    document.getElementById('f-banco').value='';
     document.getElementById('f-proveedor').value='';
     document.getElementById('f-factura').value='';
     sectoresSel=[];
@@ -2097,21 +2092,26 @@ function registrar(){
     return;
   }
 
+  var bancoNuevoVal=document.getElementById('f-banco').value.trim();
+  var provNuevoVal=document.getElementById('f-proveedor').value.trim();
+  if(bancoNuevoVal) agregarBancoSiNuevo(bancoNuevoVal);
+  if(provNuevoVal) agregarProveedorSiNuevo(provNuevoVal);
+
   var g={
-    id:Date.now(), loc:loc, cultivo:(loc==='ofic'||loc==='com')?loc:cultivo,
+    id:Date.now(), loc:loc, cultivo:(loc==='ofic'||loc==='com')?null:cultivo,
     ciclo: (function(){ var v=document.getElementById('f-ciclo').value; return v||null; })(),
     tipoCamote: cultivo==='camote' ? tipoCamote : null,
     cat:cat, sectores: (cultivo==='camote' && tipoCamote==='cosecha') ? sectoresSel.slice() : [],
     monto:monto, desc:document.getElementById('f-desc').value.trim(),
-    banco:document.getElementById('f-banco').value.trim(),
-    proveedor:document.getElementById('f-proveedor').value.trim(),
+    banco:bancoNuevoVal,
+    proveedor:provNuevoVal,
     factura:document.getElementById('f-factura').value.trim(),
     fechaVal:fechaVal, fecha:fechaLbl, semKey:semKey, semLbl:gastoSemLbl(fechaVal)
   };
   gastos.unshift(g); save(); updateHeader(); sbSaveGasto(g);
   document.getElementById('f-monto').value='';
   document.getElementById('f-desc').value='';
-  poblarFBancoSelect();
+  document.getElementById('f-banco').value='';
   document.getElementById('f-proveedor').value='';
   document.getElementById('f-factura').value='';
   sectoresSel=[];
@@ -2290,7 +2290,7 @@ function renderHis(){
       it.dataset.gid=String(g.id);
       var locTag='<span class="tag '+g.loc+'">'+locNames[g.loc]+'</span>';
       var cicloTag=g.ciclo?'<span class="tag general">'+g.ciclo+'</span>':'';
-      var cultTag=g.loc!=='ofic'?'<span class="tag '+g.cultivo+'">'+cultNames[g.cultivo]+'</span>':'';
+      var cultTag=(g.loc!=='ofic'&&g.loc!=='com'&&g.cultivo)?'<span class="tag '+g.cultivo+'">'+(cultNames[g.cultivo]||g.cultivo)+'</span>':'';
       var tipoTag=g.tipoCamote?'<span class="tag '+(g.tipoCamote==='cosecha'?'camote':'general')+'">'+(g.tipoCamote==='cosecha'?'Cosecha':'General')+'</span>':'';
       var secTag=g.sectores&&g.sectores.length?'<span class="tag sector">'+g.sectores.map(function(n){return n;}).join(', ')+'</span>':'';
       var checkHtml=selMode?'<div class="gasto-check'+(selIds.has(String(g.id))?' checked':'')+'"></div>':'';
@@ -2341,7 +2341,7 @@ function verDet(g){
   var esCosecha = esCamote && g.tipoCamote==='cosecha';
 
   var negocioVal = locNames[g.loc] || '-';
-  var actividadVal = cultNames[g.cultivo] || '-';
+  var actividadVal = (g.loc==='ofic'||g.loc==='com') ? '-' : (cultNames[g.cultivo] || '-');
   var tipoVal = esCamote ? (g.tipoCamote==='cosecha'?'Cosecha':'General') : '-';
   var sectorVal = (esCosecha && g.sectores && g.sectores.length) ? g.sectores.join(', ') : '-';
   var fechaVal = g.fecha || (g.fechaVal ? new Date(g.fechaVal+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : '-');
@@ -2426,7 +2426,7 @@ function editarGasto(id){
     document.getElementById('f-cat').value = g.cat;
     document.getElementById('f-monto').value = g.monto;
     document.getElementById('f-desc').value = g.desc||'';
-    poblarFBancoSelect(g.banco||'');
+    document.getElementById('f-banco').value = g.banco||'';
     document.getElementById('f-proveedor').value = g.proveedor||'';
     document.getElementById('f-factura').value = g.factura||'';
   },50);
@@ -4962,7 +4962,6 @@ function editarEnvio(e){
   if(document.getElementById('vf-flete-compra')) document.getElementById('vf-flete-compra').value = e.fleteCompra||'';
   document.getElementById('vf-factura').value = e.factura||'';
   var gc = e.gastosCosechaTotales||{};
-  poblarVfGcBanco(gc.banco||'');
   if(document.getElementById('vf-gc-cosecha')) document.getElementById('vf-gc-cosecha').value = gc.cosecha||'';
   if(document.getElementById('vf-gc-arado')) document.getElementById('vf-gc-arado').value = gc.arado||'';
   if(document.getElementById('vf-gc-desvarada')) document.getElementById('vf-gc-desvarada').value = gc.desvarada||'';
@@ -5025,7 +5024,6 @@ function cancelarEdicionEnvio(){
   if(document.getElementById('vf-gc-cosecha')) document.getElementById('vf-gc-cosecha').value='';
   if(document.getElementById('vf-gc-arado')) document.getElementById('vf-gc-arado').value='';
   if(document.getElementById('vf-gc-desvarada')) document.getElementById('vf-gc-desvarada').value='';
-  poblarVfGcBanco('');
   partidasTemp = initPartidas();
 }
 
@@ -5166,8 +5164,8 @@ function guardarEnvio(){
       arado: parseFloat(document.getElementById('vf-gc-arado')?document.getElementById('vf-gc-arado').value||0:0)||0,
       desvarada: parseFloat(document.getElementById('vf-gc-desvarada')?document.getElementById('vf-gc-desvarada').value||0:0)||0
     };
-    var gcBanco = document.getElementById('vf-gc-banco') ? document.getElementById('vf-gc-banco').value : '';
-    envioObj.gastosCosechaTotales = {fleteCompra:gcVals.fleteCompra, cosecha:gcVals.cosecha, arado:gcVals.arado, desvarada:gcVals.desvarada, banco:gcBanco};
+    var gcBanco = '';
+    envioObj.gastosCosechaTotales = {fleteCompra:gcVals.fleteCompra, cosecha:gcVals.cosecha, arado:gcVals.arado, desvarada:gcVals.desvarada};
     envioObj.gastoCosechaIds = generarGastosCosechaDesdeEnvio(envioObj, gcVals, gcBanco, prevGastoIds);
   } else if(fleteCompraEnvio>0){
     // Comercializadora u otros: comportamiento anterior, gasto único sin prorratear
@@ -5200,7 +5198,6 @@ function guardarEnvio(){
   if(document.getElementById('vf-gc-cosecha')) document.getElementById('vf-gc-cosecha').value='';
   if(document.getElementById('vf-gc-arado')) document.getElementById('vf-gc-arado').value='';
   if(document.getElementById('vf-gc-desvarada')) document.getElementById('vf-gc-desvarada').value='';
-  poblarVfGcBanco('');
   partidasTemp=initPartidas();
   renderPartidas();
   showToast('Envio guardado: '+fmt(totalVenta));
@@ -5569,18 +5566,7 @@ function initNuevoEnvioForm(){
   var anio = getAnioFromFecha(displayStr);
   var seq = getNextNumEnvio(tipo, anio, null);
   document.getElementById('vf-num').value = buildNumEnvio(tipo, anio, seq);
-  poblarVfGcBanco();
   onTipoEnvioChange();
-}
-
-function poblarVfGcBanco(seleccionar){
-  var sel = document.getElementById('vf-gc-banco');
-  if(!sel) return;
-  sel.innerHTML = '<option value="">— Sin banco —</option>';
-  bancos.forEach(function(b){
-    var o = document.createElement('option'); o.value = b; o.textContent = b; sel.appendChild(o);
-  });
-  if(seleccionar!==undefined) sel.value = seleccionar||'';
 }
 
 // ---- CLIENTES ----
@@ -5666,6 +5652,65 @@ function agregarProveedorSiNuevo(nombre){
   if(proveedores.indexOf(nom)<0){proveedores.push(nom);proveedores.sort(function(a,b){return a.localeCompare(b,'es');});saveProveedores();sbSaveProveedor(nom);}
 }
 
+// ---- CLIENTE/PROVEEDOR DROPDOWN (selección forzada, Finanzas-Registrar) ----
+function renderFProveedorDropdown(){
+  var dd=document.getElementById('f-proveedor-dropdown'); if(!dd) return;
+  dd.innerHTML='';
+  if(!proveedores.length){
+    var vacio=document.createElement('div');
+    vacio.style.cssText='padding:10px 12px;font-size:12px;color:var(--text3)';
+    vacio.textContent='Aún no hay clientes/proveedores guardados';
+    dd.appendChild(vacio);
+  }
+  proveedores.forEach(function(p){
+    var row=document.createElement('div');
+    row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px';
+    row.onmouseenter=function(){this.style.background='var(--green-bg)';};
+    row.onmouseleave=function(){this.style.background='';};
+    var name=document.createElement('span'); name.textContent=p; name.style.flex='1';
+    name.onmousedown=function(e){e.preventDefault();document.getElementById('f-proveedor').value=p;hideFProveedorDropdown();};
+    var btn=document.createElement('button');
+    btn.textContent='×'; btn.title='Eliminar';
+    btn.style.cssText='background:none;border:none;color:var(--text3);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0';
+    btn.onmousedown=function(e){e.preventDefault();e.stopPropagation();
+      proveedores=proveedores.filter(function(x){return x!==p;});
+      saveProveedores(); sbDeleteProveedor(p);
+      renderFProveedorDropdown();
+      if(document.getElementById('f-proveedor').value===p) document.getElementById('f-proveedor').value='';
+      showToast('Cliente/Proveedor eliminado');};
+    row.appendChild(name); row.appendChild(btn); dd.appendChild(row);
+  });
+  var addRow=document.createElement('div');
+  addRow.style.cssText='padding:10px 12px;cursor:pointer;font-size:13px;color:var(--green);font-weight:600';
+  addRow.textContent='+ Agregar nuevo...';
+  addRow.onmouseenter=function(){this.style.background='var(--green-bg)';};
+  addRow.onmouseleave=function(){this.style.background='';};
+  addRow.onmousedown=function(e){e.preventDefault();hideFProveedorDropdown();abrirModalNuevoFProveedor();};
+  dd.appendChild(addRow);
+  dd.style.display='block';
+}
+function showFProveedorDropdown(){renderFProveedorDropdown();}
+function hideFProveedorDropdown(){var dd=document.getElementById('f-proveedor-dropdown');if(dd)dd.style.display='none';}
+
+function abrirModalNuevoFProveedor(){
+  document.getElementById('mo-title').innerHTML = '👤 Nuevo cliente/proveedor';
+  document.getElementById('mo-body').innerHTML =
+    '<div class="field" style="margin-bottom:14px"><label>Nombre</label>'+
+    '<input type="text" id="nuevo-fproveedor-nombre-input" placeholder="Ej: IMSS" style="width:100%" onkeydown="if(event.key===\'Enter\'){event.preventDefault();confirmarNuevoFProveedor();}"></div>'+
+    '<button class="btn-main" onclick="confirmarNuevoFProveedor()">Agregar</button>';
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(function(){ var inp=document.getElementById('nuevo-fproveedor-nombre-input'); if(inp) inp.focus(); }, 100);
+}
+function confirmarNuevoFProveedor(){
+  var inp = document.getElementById('nuevo-fproveedor-nombre-input');
+  var nom = inp.value.trim();
+  if(!nom){ showToast('Escribe un nombre'); return; }
+  agregarProveedorSiNuevo(nom);
+  closeModal();
+  document.getElementById('f-proveedor').value = nom;
+  showToast('Agregado');
+}
+
 // ---- BANCOS ----
 var bancos = [];
 try{
@@ -5677,84 +5722,11 @@ try{
     bancos=Object.keys(seen).sort(function(a,b){return a.localeCompare(b,'es');});
   }
 }catch(e){}
-poblarFBancoSelect();
 function saveBancos(){try{localStorage.setItem('cc_bancos',JSON.stringify(bancos));}catch(e){}}
 function agregarBancoSiNuevo(nombre){
   if(!nombre) return;
   var nom=nombre.trim(); if(!nom) return;
   if(bancos.indexOf(nom)<0){bancos.push(nom);bancos.sort(function(a,b){return a.localeCompare(b,'es');});saveBancos();sbSaveBanco(nom);}
-}
-
-function mostrarBorrarBanco(){
-  var body = '<div style="margin-bottom:12px;font-size:13px;color:var(--text2)">Toca la × para eliminar un banco de la lista:</div>';
-  if(!bancos.length){
-    body += '<div style="color:var(--text3);font-size:13px;text-align:center;padding:16px 0">No hay bancos guardados a\u00fan</div>';
-  } else {
-    body += '<div style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto">';
-    bancos.forEach(function(b){
-      var safe = b.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-      body += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border)">'
-        + '<span style="font-size:13px">' + safe + '</span>'
-        + '<button onclick="confirmarBorrarBanco(this.dataset.nom)" data-nom="' + safe + '" title="Eliminar" style="background:none;border:1px solid var(--border);color:var(--text3);border-radius:50%;width:26px;height:26px;font-size:15px;cursor:pointer;font-family:var(--font);line-height:1">\u00d7</button>'
-        + '</div>';
-    });
-    body += '</div>';
-  }
-  document.getElementById('mo-title').textContent = 'Administrar bancos';
-  document.getElementById('mo-body').innerHTML = body;
-  document.getElementById('overlay').classList.add('open');
-}
-function confirmarBorrarBanco(nombre){
-  bancos = bancos.filter(function(b){return b !== nombre;});
-  saveBancos();
-  sbDeleteBanco(nombre);
-  poblarFBancoSelect(document.getElementById('f-banco').value===nombre ? '' : document.getElementById('f-banco').value);
-  showToast('Banco eliminado');
-  mostrarBorrarBanco(); // refrescar modal
-}
-
-
-function poblarFBancoSelect(seleccionar){
-  var sel = document.getElementById('f-banco');
-  if(!sel) return;
-  sel.innerHTML = '<option value="">— Sin banco —</option>';
-  bancos.forEach(function(n){
-    var o=document.createElement('option'); o.value=n; o.textContent=n;
-    sel.appendChild(o);
-  });
-  var optNuevo=document.createElement('option');
-  optNuevo.value='__nuevo__'; optNuevo.textContent='+ Agregar nuevo banco...';
-  sel.appendChild(optNuevo);
-  sel.value = seleccionar || '';
-}
-
-function onFBancoSelectChange(){
-  var sel = document.getElementById('f-banco');
-  if(sel.value==='__nuevo__'){
-    sel.value = '';
-    abrirModalNuevoBanco();
-  }
-}
-
-function abrirModalNuevoBanco(){
-  document.getElementById('mo-title').innerHTML = '🏦 Nuevo banco';
-  document.getElementById('mo-body').innerHTML =
-    '<div class="field" style="margin-bottom:14px"><label>Nombre del banco</label>'+
-    '<input type="text" id="nuevo-banco-nombre-input" placeholder="Ej: BBVA" style="width:100%" onkeydown="if(event.key===\'Enter\'){event.preventDefault();confirmarNuevoBanco();}"></div>'+
-    '<button class="btn-main" onclick="confirmarNuevoBanco()">Agregar banco</button>';
-  document.getElementById('overlay').classList.add('open');
-  setTimeout(function(){ var inp=document.getElementById('nuevo-banco-nombre-input'); if(inp) inp.focus(); }, 100);
-}
-
-function confirmarNuevoBanco(){
-  var inp = document.getElementById('nuevo-banco-nombre-input');
-  var nom = inp.value.trim();
-  if(!nom){ showToast('Escribe un nombre'); return; }
-  if(bancos.indexOf(nom)>=0){ showToast('Ese banco ya existe'); return; }
-  agregarBancoSiNuevo(nom);
-  closeModal();
-  poblarFBancoSelect(nom);
-  showToast('Banco agregado');
 }
 
 // ---- CLIENTE DROPDOWN ----
