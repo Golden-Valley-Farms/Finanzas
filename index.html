@@ -153,6 +153,18 @@ input[type=number],input[type=text],input[type=date],select,textarea{
 input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(26,122,87,.12)}
 textarea{resize:none;height:68px;line-height:1.5}
 select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
+
+/* Selects con buscador */
+.ssel-wrap{position:relative;min-width:0}
+.ssel-input{width:100%;cursor:pointer;padding-right:30px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.ssel-input:focus{cursor:text}
+.ssel-input::placeholder{color:var(--text);opacity:.85}
+.ssel-input:focus::placeholder{color:var(--text3);opacity:1}
+.ssel-panel{display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:200;max-height:220px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)}
+.ssel-opt{padding:9px 12px;font-size:13px;color:var(--text);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ssel-opt.hl{background:var(--surface)}
+.ssel-opt.sel{font-weight:700;color:var(--green)}
+.ssel-empty{padding:9px 12px;font-size:12px;color:var(--text3)}
 .monto-wrap{position:relative}
 .monto-prefix{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;font-family:var(--mono)}
 .monto-wrap input{padding-left:24px;font-family:var(--mono)}
@@ -1889,6 +1901,139 @@ function fmtDec(n){
   var tieneCentavos = Math.round(v*100)%100!==0;
   return '$'+v.toLocaleString('es-MX',{minimumFractionDigits:tieneCentavos?2:0,maximumFractionDigits:2});
 }
+
+// ---- Selects con buscador (escribe para filtrar, solo permite elegir de la lista) ----
+function sselNorm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
+
+function sselEnhance(sel){
+  if(sel.dataset.sselOn || sel.classList.contains('no-ssel') || sel.multiple) return;
+  sel.dataset.sselOn='1';
+
+  var wrap=document.createElement('div');
+  wrap.className='ssel-wrap';
+  // heredar dimensiones del select original (flex:1 o width inline)
+  if(sel.style.flex) wrap.style.flex=sel.style.flex;
+  if(sel.style.width) wrap.style.width=sel.style.width;
+
+  sel.parentNode.insertBefore(wrap,sel);
+  wrap.appendChild(sel);
+  sel.style.display='none';
+
+  var inp=document.createElement('input');
+  inp.type='text'; inp.className='ssel-input'; inp.autocomplete='off'; inp.spellcheck=false;
+  if(sel.style.fontWeight) inp.style.fontWeight=sel.style.fontWeight;
+  if(sel.style.fontSize) inp.style.fontSize=sel.style.fontSize;
+  var panel=document.createElement('div');
+  panel.className='ssel-panel';
+  wrap.appendChild(inp); wrap.appendChild(panel);
+
+  var open=false, hlIdx=-1, filtered=[];
+
+  function sync(){
+    var o=sel.options[sel.selectedIndex];
+    inp.value = o ? o.text : '';
+  }
+  sel._sselSync=sync;
+
+  function render(q){
+    var opts=Array.from(sel.options).map(function(o){return {value:o.value,text:o.text};});
+    var nq=sselNorm(q);
+    filtered = nq ? opts.filter(function(o){return sselNorm(o.text).indexOf(nq)>=0;}) : opts;
+    panel.innerHTML='';
+    if(!filtered.length){
+      panel.innerHTML='<div class="ssel-empty">Sin resultados</div>';
+      hlIdx=-1; return;
+    }
+    if(nq){ hlIdx=0; }
+    else{
+      var cur=filtered.findIndex(function(o){return o.value===sel.value;});
+      hlIdx = cur>=0 ? cur : 0;
+    }
+    filtered.forEach(function(o,i){
+      var d=document.createElement('div');
+      d.className='ssel-opt'+(i===hlIdx?' hl':'')+(o.value===sel.value?' sel':'');
+      d.textContent=o.text;
+      d.onmousedown=function(e){e.preventDefault();pick(i);};
+      panel.appendChild(d);
+    });
+    var hlEl=panel.children[hlIdx];
+    if(hlEl&&hlEl.scrollIntoView) hlEl.scrollIntoView({block:'nearest'});
+  }
+  function setHl(i){
+    if(!filtered.length) return;
+    hlIdx=Math.max(0,Math.min(filtered.length-1,i));
+    Array.from(panel.children).forEach(function(el,j){el.classList.toggle('hl',j===hlIdx);});
+    var el=panel.children[hlIdx]; if(el&&el.scrollIntoView) el.scrollIntoView({block:'nearest'});
+  }
+  function openPanel(){
+    if(open) return;
+    open=true;
+    inp.placeholder = inp.value || 'Buscar...';
+    inp.value='';
+    render('');
+    panel.style.display='block';
+  }
+  function closePanel(revert){
+    open=false;
+    panel.style.display='none';
+    if(revert!==false) sync();
+  }
+  function pick(i){
+    var o=filtered[i]; if(!o) return;
+    var changed = sel.value!==o.value;
+    sel.value=o.value;
+    closePanel(false); sync();
+    if(changed) sel.dispatchEvent(new Event('change',{bubbles:true}));
+    inp.blur();
+  }
+
+  inp.addEventListener('focus',openPanel);
+  inp.addEventListener('click',openPanel);
+  inp.addEventListener('input',function(){
+    if(!open){ open=true; panel.style.display='block'; }
+    render(inp.value);
+  });
+  inp.addEventListener('keydown',function(e){
+    if(e.key==='ArrowDown'){ e.preventDefault(); if(!open) openPanel(); else setHl(hlIdx+1); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); setHl(hlIdx-1); }
+    else if(e.key==='Enter'){ e.preventDefault(); if(open&&hlIdx>=0) pick(hlIdx); }
+    else if(e.key==='Escape'){ closePanel(true); inp.blur(); }
+    else if(e.key==='Tab'){ closePanel(true); }
+  });
+  inp.addEventListener('blur',function(){ setTimeout(function(){ closePanel(true); },120); });
+
+  // si el código reconstruye las opciones (innerHTML), resincronizar
+  new MutationObserver(function(){ sync(); if(open) render(inp.value); }).observe(sel,{childList:true});
+
+  sync();
+}
+
+// hook: cuando el código asigna select.value o selectedIndex, actualizar la caja visible
+(function(){
+  ['value','selectedIndex'].forEach(function(prop){
+    var d=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,prop);
+    if(!d || !d.set) return;
+    Object.defineProperty(HTMLSelectElement.prototype,prop,{
+      get:d.get,
+      set:function(v){ d.set.call(this,v); if(this._sselSync) this._sselSync(); },
+      configurable:true
+    });
+  });
+})();
+
+window.addEventListener('load',function(){
+  document.querySelectorAll('select').forEach(sselEnhance);
+  // selects creados dinámicamente (filas de partidas, cajas de despacho, etc.)
+  new MutationObserver(function(muts){
+    muts.forEach(function(m){
+      m.addedNodes.forEach(function(n){
+        if(n.nodeType!==1) return;
+        if(n.tagName==='SELECT') sselEnhance(n);
+        else if(n.querySelectorAll) n.querySelectorAll('select').forEach(sselEnhance);
+      });
+    });
+  }).observe(document.body,{childList:true,subtree:true});
+});
 function save(){try{localStorage.setItem('cc_gastos3',JSON.stringify(gastos));}catch(e){}}
 function gastoSemLbl(fechaValStr){
   if(!fechaValStr) return '';
