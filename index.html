@@ -1841,6 +1841,11 @@ try{
 })();
 
 function fmt(n){return '$'+Number(n).toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function fmtDec(n){
+  var v=Number(n)||0;
+  var tieneCentavos = Math.round(v*100)%100!==0;
+  return '$'+v.toLocaleString('es-MX',{minimumFractionDigits:tieneCentavos?2:0,maximumFractionDigits:2});
+}
 function save(){try{localStorage.setItem('cc_gastos3',JSON.stringify(gastos));}catch(e){}}
 function gastoSemLbl(fechaValStr){
   if(!fechaValStr) return '';
@@ -2121,7 +2126,7 @@ function registrar(){
   var locNames={jal:'Jalisco',nay:'Nayarit',ofic:'Oficina'};
   var secTxt=g.sectores.length?' ('+g.sectores.map(function(n){return n+',';}).join(', ')+')':'';
   var tipoTxt=g.tipoCamote?' - '+( g.tipoCamote==='cosecha'?'Cosecha':'General'):'';
-  showToast('Guardado: '+fmt(monto)+' - '+locNames[loc]+tipoTxt+secTxt);
+  showToast('Guardado: '+fmtDec(monto)+' - '+locNames[loc]+tipoTxt+secTxt);
   var btn=document.getElementById('btn-reg');
   btn.textContent='Registrado'; btn.classList.add('success');
   setTimeout(function(){
@@ -2285,7 +2290,7 @@ function renderHis(){
     })();
     var tot=gs.reduce(function(a,g){return a+g.monto;},0);
     var wb=document.createElement('div'); wb.className='week-block';
-    wb.innerHTML='<div class="week-header"><span class="week-title" style="text-transform:capitalize">'+dayLbl+'</span><span class="week-total">'+fmt(tot)+'</span></div>';
+    wb.innerHTML='<div class="week-header"><span class="week-title" style="text-transform:capitalize">'+dayLbl+'</span><span class="week-total">'+fmtDec(tot)+'</span></div>';
     gs.forEach(function(g){
       var it=document.createElement('div');
       it.className='gasto-item'+(selMode?' sel-mode':'')+(selIds.has(String(g.id))?' selected':'');
@@ -2304,7 +2309,7 @@ function renderHis(){
           '<div class="gasto-tags">'+locTag+cicloTag+cultTag+tipoTag+secTag+'</div>'+
           (g.desc?'<div class="gasto-desc">'+g.desc+'</div>':'')+
         '</div>'+
-        '<div class="gasto-right"><span class="gasto-monto">'+fmt(g.monto)+'</span>'+delHtml+'</div>';
+        '<div class="gasto-right"><span class="gasto-monto">'+fmtDec(g.monto)+'</span>'+delHtml+'</div>';
       if(selMode){
         it.addEventListener('click',function(){
           var gid=it.dataset.gid;
@@ -2362,7 +2367,7 @@ function verDet(g){
     '<div class="modal-row"><span class="modal-key">Fecha</span><span class="modal-val">'+fechaVal+'</span></div>'+
     '<div class="modal-row"><span class="modal-key">Semana</span><span class="modal-val">'+semanaVal+'</span></div>'+
     '<div class="modal-row"><span class="modal-key">Categoría</span><span class="modal-val">'+(g.cat||'-')+'</span></div>'+
-    '<div class="modal-row"><span class="modal-key">Monto</span><span class="modal-val" style="font-family:var(--mono);font-size:18px">'+fmt(g.monto)+'</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Monto</span><span class="modal-val" style="font-family:var(--mono);font-size:18px">'+fmtDec(g.monto)+'</span></div>'+
     '<div class="modal-row"><span class="modal-key">Ciclo</span><span class="modal-val">'+cicloVal+'</span></div>'+
     '<div class="modal-row"><span class="modal-key">Descripción</span><span class="modal-val">'+descVal+'</span></div>'+
     '<div class="modal-row"><span class="modal-key">Cliente / Proveedor</span><span class="modal-val">'+clienteVal+'</span></div>'+
