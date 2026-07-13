@@ -1780,6 +1780,49 @@ var CATS = {
   ofic:             ['Combustible','Contabilidad','Impuestos','IMSS','Intereses Operativos','Manejo de Cuenta','Nóminas Administrativas','Otros Gastos','Seguros','Servicios','Viáticos'],
   com:              ['Compra Mercancia','Fletes']
 };
+
+// ---- Colores por categoría (punto izquierdo de las tarjetas de gasto) ----
+var CAT_COLORS = {
+  'compra insumos':               '#3CB87A',
+  'compra insumos agroquimicos':  '#8FBF3F',
+  'compra insumos riego':         '#35A8C9',
+  'compra mercancia':             '#B07B4F',
+  'nominas operativas':           '#5B8DEF',
+  'nominas administrativas':      '#7B6FE0',
+  'arado':                        '#D9A521',
+  'cosecha':                      '#E8803A',
+  'desvarada':                    '#A8A83C',
+  'flete cosecha':                '#E0564B',
+  'plantacion':                   '#57C785',
+  'inocuidad':                    '#0E9AA7',
+  'intereses operativos':         '#D65BB4',
+  'pago prestamo':                '#E05252',
+  'planta':                       '#C77DBA',
+  'adquisicion de maquinaria':    '#8A97A8',
+  'combustible':                  '#FFB020',
+  'fletes':                       '#F07860',
+  'mantenimiento equipo':         '#9B8AC4',
+  'otros gastos':                 '#9E9E9E',
+  'servicios':                    '#14B8A6',
+  'viaticos':                     '#FF7A9E',
+  'contabilidad':                 '#4C9AFF',
+  'impuestos':                    '#E05252',
+  'imss':                         '#57C785',
+  'manejo de cuenta':             '#B07B4F',
+  'seguros':                      '#8FBF3F'
+};
+var CAT_PALETTE = ['#E05252','#F2994A','#FFB020','#8FBF3F','#57C785','#14B8A6','#35A8C9','#4C9AFF','#7B6FE0','#B08BE0','#D65BB4','#FF7A9E','#B07B4F','#8A97A8'];
+function normCat(c){
+  return String(c||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+}
+function catColor(cat){
+  var k = normCat(cat);
+  if(CAT_COLORS[k]) return CAT_COLORS[k];
+  // categorías nuevas/desconocidas: color estable derivado del nombre
+  var h=0;
+  for(var i=0;i<k.length;i++){ h=(h*31+k.charCodeAt(i))>>>0; }
+  return CAT_PALETTE[h%CAT_PALETTE.length];
+}
 var CULTIVOS_BY_LOC = {
   jal: [{key:'general',lbl:'&#127807; General'},{key:'camote',lbl:'&#127808; Camote'},{key:'fram',lbl:'&#127815; Frambuesa'}],
   nay: [{key:'general',lbl:'&#127807; General'},{key:'camote',lbl:'&#127808; Camote'}],
@@ -2303,7 +2346,7 @@ function renderHis(){
       var checkHtml=selMode?'<div class="gasto-check'+(selIds.has(String(g.id))?' checked':'')+'"></div>':'';
       var delHtml=selMode?'':'<button class="del-btn" title="Eliminar">&#215;</button>';
       it.innerHTML=checkHtml+
-        '<div class="gasto-dot '+g.loc+'"></div>'+
+        '<div class="gasto-dot" style="background:'+catColor(g.cat)+'"></div>'+
         '<div class="gasto-body">'+
           '<div class="gasto-cat">'+g.cat+'</div>'+
           '<div class="gasto-tags">'+locTag+cicloTag+cultTag+tipoTag+secTag+'</div>'+
