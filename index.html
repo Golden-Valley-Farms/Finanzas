@@ -544,7 +544,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
       <div class="field" style="position:relative">
         <label>Cliente / Proveedor <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(opcional)</span></label>
-        <input type="text" id="f-proveedor" placeholder="Toca para elegir..." autocomplete="off" readonly style="width:100%;cursor:pointer" onclick="showFProveedorDropdown()" onblur="setTimeout(hideFProveedorDropdown,150)">
+        <input type="text" id="f-proveedor" placeholder="Buscar o elegir..." autocomplete="off" style="width:100%" onclick="showFProveedorDropdown()" onfocus="showFProveedorDropdown()" oninput="onFProveedorInput()" onkeydown="onFProveedorKeydown(event)" onblur="setTimeout(hideFProveedorDropdown,150)">
         <div id="f-proveedor-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:220px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
       </div>
       <div class="field" style="position:relative">
@@ -2255,7 +2255,7 @@ function registrar(){
     if(idx>=0){
       var orig=gastos[idx];
       var bancoVal=document.getElementById('f-banco').value.trim();
-      var provVal=document.getElementById('f-proveedor').value.trim();
+      var provVal=fprovValidar(document.getElementById('f-proveedor').value);
       if(bancoVal) agregarBancoSiNuevo(bancoVal);
       if(provVal) agregarProveedorSiNuevo(provVal);
       gastos[idx]=Object.assign({},orig,{
@@ -2288,7 +2288,7 @@ function registrar(){
   }
 
   var bancoNuevoVal=document.getElementById('f-banco').value.trim();
-  var provNuevoVal=document.getElementById('f-proveedor').value.trim();
+  var provNuevoVal=fprovValidar(document.getElementById('f-proveedor').value);
   if(bancoNuevoVal) agregarBancoSiNuevo(bancoNuevoVal);
   if(provNuevoVal) agregarProveedorSiNuevo(provNuevoVal);
 
@@ -5843,31 +5843,48 @@ function agregarProveedorSiNuevo(nombre){
   if(proveedores.indexOf(nom)<0){proveedores.push(nom);proveedores.sort(function(a,b){return a.localeCompare(b,'es');});saveProveedores();sbSaveProveedor(nom);}
 }
 
-// ---- CLIENTE/PROVEEDOR DROPDOWN (selección forzada, Finanzas-Registrar) ----
+// ---- CLIENTE/PROVEEDOR DROPDOWN (selección forzada con buscador, Finanzas-Registrar) ----
+function fprovValidar(v){
+  v=String(v||'').trim();
+  if(!v) return '';
+  var match=proveedores.find(function(p){return sselNorm(p)===sselNorm(v);});
+  return match||'';
+}
+var fprovOpen=false;
 function renderFProveedorDropdown(){
   var dd=document.getElementById('f-proveedor-dropdown'); if(!dd) return;
+  var inp=document.getElementById('f-proveedor');
+  var q=sselNorm(inp?inp.value:'');
+  var lista = q ? proveedores.filter(function(p){return sselNorm(p).indexOf(q)>=0;}) : proveedores;
   dd.innerHTML='';
   if(!proveedores.length){
     var vacio=document.createElement('div');
     vacio.style.cssText='padding:10px 12px;font-size:12px;color:var(--text3)';
     vacio.textContent='Aún no hay clientes/proveedores guardados';
     dd.appendChild(vacio);
+  } else if(!lista.length){
+    var sinRes=document.createElement('div');
+    sinRes.style.cssText='padding:10px 12px;font-size:12px;color:var(--text3)';
+    sinRes.textContent='Sin resultados';
+    dd.appendChild(sinRes);
   }
-  proveedores.forEach(function(p){
+  lista.forEach(function(p){
     var row=document.createElement('div');
     row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px';
     row.onmouseenter=function(){this.style.background='var(--green-bg)';};
     row.onmouseleave=function(){this.style.background='';};
     var name=document.createElement('span'); name.textContent=p; name.style.flex='1';
-    name.onmousedown=function(e){e.preventDefault();document.getElementById('f-proveedor').value=p;hideFProveedorDropdown();};
+    name.onmousedown=function(e){e.preventDefault();fprovPick(p);};
     var btn=document.createElement('button');
     btn.textContent='×'; btn.title='Eliminar';
     btn.style.cssText='background:none;border:none;color:var(--text3);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0';
     btn.onmousedown=function(e){e.preventDefault();e.stopPropagation();
       proveedores=proveedores.filter(function(x){return x!==p;});
       saveProveedores(); sbDeleteProveedor(p);
+      var inp2=document.getElementById('f-proveedor');
+      if(inp2 && inp2.dataset.prev===p) inp2.dataset.prev='';
+      if(inp2 && inp2.value===p) inp2.value='';
       renderFProveedorDropdown();
-      if(document.getElementById('f-proveedor').value===p) document.getElementById('f-proveedor').value='';
       showToast('Cliente/Proveedor eliminado');};
     row.appendChild(name); row.appendChild(btn); dd.appendChild(row);
   });
@@ -5876,21 +5893,67 @@ function renderFProveedorDropdown(){
   addRow.textContent='+ Agregar nuevo...';
   addRow.onmouseenter=function(){this.style.background='var(--green-bg)';};
   addRow.onmouseleave=function(){this.style.background='';};
-  addRow.onmousedown=function(e){e.preventDefault();hideFProveedorDropdown();abrirModalNuevoFProveedor();};
+  addRow.onmousedown=function(e){e.preventDefault();var txt=(document.getElementById('f-proveedor')||{}).value||'';fprovOpen=false;hideFProveedorDropdown();abrirModalNuevoFProveedor(txt.trim());};
   dd.appendChild(addRow);
   dd.style.display='block';
 }
-function showFProveedorDropdown(){renderFProveedorDropdown();}
-function hideFProveedorDropdown(){var dd=document.getElementById('f-proveedor-dropdown');if(dd)dd.style.display='none';}
+function fprovPick(p){
+  var inp=document.getElementById('f-proveedor');
+  fprovOpen=false;
+  inp.value=p;
+  inp.placeholder='Buscar o elegir...';
+  var dd=document.getElementById('f-proveedor-dropdown'); if(dd)dd.style.display='none';
+  inp.blur();
+}
+function showFProveedorDropdown(){
+  var inp=document.getElementById('f-proveedor');
+  if(!fprovOpen){
+    fprovOpen=true;
+    inp.dataset.prev=inp.value;
+    if(inp.value){ inp.placeholder=inp.value; inp.value=''; }
+  }
+  renderFProveedorDropdown();
+}
+function onFProveedorInput(){
+  if(!fprovOpen){
+    fprovOpen=true;
+    var inp=document.getElementById('f-proveedor');
+    inp.dataset.prev='';
+  }
+  renderFProveedorDropdown();
+}
+function onFProveedorKeydown(e){
+  if(e.key==='Enter'){
+    e.preventDefault();
+    var q=sselNorm(e.target.value);
+    var lista = q ? proveedores.filter(function(p){return sselNorm(p).indexOf(q)>=0;}) : [];
+    if(lista.length) fprovPick(lista[0]);
+  } else if(e.key==='Escape'){
+    hideFProveedorDropdown();
+    e.target.blur();
+  }
+}
+function hideFProveedorDropdown(){
+  var dd=document.getElementById('f-proveedor-dropdown');if(dd)dd.style.display='none';
+  var inp=document.getElementById('f-proveedor'); if(!inp) return;
+  if(fprovOpen){
+    fprovOpen=false;
+    var v=inp.value.trim();
+    var match = v ? proveedores.find(function(p){return sselNorm(p)===sselNorm(v);}) : null;
+    // solo se permite elegir de la lista: texto libre se revierte
+    inp.value = match || (inp.dataset.prev||'');
+    inp.placeholder='Buscar o elegir...';
+  }
+}
 
-function abrirModalNuevoFProveedor(){
+function abrirModalNuevoFProveedor(prefill){
   document.getElementById('mo-title').innerHTML = '👤 Nuevo cliente/proveedor';
   document.getElementById('mo-body').innerHTML =
     '<div class="field" style="margin-bottom:14px"><label>Nombre</label>'+
     '<input type="text" id="nuevo-fproveedor-nombre-input" placeholder="Ej: IMSS" style="width:100%" onkeydown="if(event.key===\'Enter\'){event.preventDefault();confirmarNuevoFProveedor();}"></div>'+
     '<button class="btn-main" onclick="confirmarNuevoFProveedor()">Agregar</button>';
   document.getElementById('overlay').classList.add('open');
-  setTimeout(function(){ var inp=document.getElementById('nuevo-fproveedor-nombre-input'); if(inp) inp.focus(); }, 100);
+  setTimeout(function(){ var inp=document.getElementById('nuevo-fproveedor-nombre-input'); if(inp){ if(prefill) inp.value=prefill; inp.focus(); } }, 100);
 }
 function confirmarNuevoFProveedor(){
   var inp = document.getElementById('nuevo-fproveedor-nombre-input');
