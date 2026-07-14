@@ -4113,29 +4113,28 @@ function renderRcmFinanciero(envs, filtroCiclo){
   });
   var costo = gastosNeg.reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0);
 
+  // Gastos por categoría (se muestra solo para Camote Nayarit)
+  var mostrarCatGastos = (rcmNegSel==='nay');
+  var catGastoMap = {};
+  gastosNeg.forEach(function(g){
+    var c = g.cat || 'Sin categoría';
+    catGastoMap[c] = (catGastoMap[c]||0) + (parseFloat(g.monto)||0);
+  });
+  var catGastoOrd = Object.keys(catGastoMap).sort(function(a,b){return catGastoMap[b]-catGastoMap[a];});
+  var catGastoLbls = catGastoOrd;
+  var catGastoVals = catGastoOrd.map(function(c){return Math.round(catGastoMap[c]);});
+  var catGastoCols = catGastoOrd.map(function(c){return catColor(c);});
+
   var ingresoPorSector = {};
   var sectoresSet = {};
   envs.forEach(function(e){
-    var parts = e.partidas||[];
-    // Ingreso base por partida (misma preferencia que usa la app: p.total si existe)
-    var partIng = parts.map(function(p){
-      return p.total!=null ? (parseFloat(p.total)||0) :
-        (e.esComer||p.kgRecibidos!==undefined ? (parseFloat(p.kgRecibidos||0)*parseFloat(p.precioVenta||0)) : (parseFloat(p.pesoNeto||0)*parseFloat(p.precio||0)));
-    });
-    var partSum = partIng.reduce(function(a,v){return a+v;},0);
-    // Diferencia contra el total del envío (flete y cualquier ajuste) para cuadrar con la tarjeta
-    var extra = envioTotal(e) - partSum;
-    parts.forEach(function(p,i){
+    (e.partidas||[]).forEach(function(p){
       var sec = p.sector || '—';
       sectoresSet[sec] = true;
-      var share = partSum>0 ? (partIng[i]/partSum) : (parts.length ? 1/parts.length : 0);
-      ingresoPorSector[sec] = (ingresoPorSector[sec]||0) + partIng[i] + extra*share;
+      var ingreso = p.total!=null ? parseFloat(p.total)||0 :
+        (e.esComer||p.kgRecibidos!==undefined ? (parseFloat(p.kgRecibidos||0)*parseFloat(p.precioVenta||0)) : (parseFloat(p.pesoNeto||0)*parseFloat(p.precio||0)));
+      ingresoPorSector[sec] = (ingresoPorSector[sec]||0) + ingreso;
     });
-    // Envío sin partidas pero con flete: va al grupo sin sector
-    if(!parts.length && extra){
-      sectoresSet['—'] = true;
-      ingresoPorSector['—'] = (ingresoPorSector['—']||0) + extra;
-    }
   });
   var numSectores = Object.keys(sectoresSet).length;
   var costoPorSector = numSectores>0 ? costo/numSectores : 0;
@@ -4183,6 +4182,11 @@ function renderRcmFinanciero(envs, filtroCiclo){
         '<div class="dash-card-title">Ingreso x Sector</div>'+
         '<div style="position:relative;height:'+Math.max(200, secLbls.length*46)+'px;margin-top:8px"><canvas id="rcm-ingreso-sec-chart"></canvas></div>'+
       '</div>'+
+      (mostrarCatGastos && catGastoLbls.length ?
+        '<div class="dash-card fin-chart-full">'+
+          '<div class="dash-card-title">Gastos x Categoría</div>'+
+          '<div style="position:relative;height:'+Math.max(200, catGastoLbls.length*46)+'px;margin-top:8px"><canvas id="rcm-gasto-cat-chart"></canvas></div>'+
+        '</div>' : '')+
     '</div>';
 
   if(!secLbls.length) return;
@@ -4222,6 +4226,41 @@ function renderRcmFinanciero(envs, filtroCiclo){
       }
     }
   });
+
+  if(mostrarCatGastos && catGastoLbls.length){
+    var catGastoBarLabelPlugin = {
+      id:'rcmGastoCatLabels',
+      afterDatasetsDraw:function(chart){
+        var ctx=chart.ctx; var ds=chart.data.datasets[0]; var meta=chart.getDatasetMeta(0);
+        meta.data.forEach(function(bar,i){
+          var v=ds.data[i]; if(v==null) return;
+          ctx.save();
+          ctx.fillStyle = '#C45B0A';
+          ctx.font = 'bold 11px monospace';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(fmt(v), bar.x+8, bar.y);
+          ctx.restore();
+        });
+      }
+    };
+    mkRcmChart('rcm-gasto-cat-chart', {
+      type:'bar',
+      plugins:[catGastoBarLabelPlugin],
+      data:{labels:catGastoLbls, datasets:[{data:catGastoVals, backgroundColor:catGastoCols, borderRadius:3}]},
+      options:{
+        indexAxis:'y',
+        responsive:true, maintainAspectRatio:false,
+        layout:{padding:{right:70}},
+        plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+fmt(c.raw);}}}},
+        scales:{
+          x:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:11}, callback:function(v){return fmtCompact(v);}}, beginAtZero:true,
+             suggestedMax:(function(){var m=Math.max.apply(null,catGastoVals.concat([1])); return m+Math.ceil(m*0.2)+1;})()},
+          y:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}}
+        }
+      }
+    });
+  }
 }
 
 function renderRcmCosecha(envs){
@@ -7393,6 +7432,11 @@ function onTrabKeydown(e){
     } else if(rows.length){
       trabPick(rows[0].dataset.t);
     }
+  } else if(e.key==='Tab'){
+    if(ddVisible && rows.length){
+      e.preventDefault();
+      trabPick((trabDDIdx>=0 && rows[trabDDIdx]) ? rows[trabDDIdx].dataset.t : rows[0].dataset.t);
+    }
   } else if(e.key==='Escape'){
     hideTrabDropdown();
     e.target.blur();
@@ -7458,117 +7502,6 @@ function removeTrab(idx){
   renderTrabajadoresRows();
 }
 
-// Dropdown trabajadores
-var trabDDIndex = -1; // currently highlighted dropdown item
-var trabAggregandose = false; // flag to prevent double-add on Tab+blur
-
-function renderTrabajadorDropdown(){
-  var dd = document.getElementById('trab-dropdown'); if(!dd) return;
-  var q = (document.getElementById('fr-trab-input').value||'').toLowerCase();
-  var usados = trabsTemp.map(function(t){return t.nombre;});
-  var filtered = trabajadores.filter(function(t){
-    return t.toLowerCase().indexOf(q)>=0 && usados.indexOf(t)<0;
-  });
-  dd.innerHTML='';
-  trabDDIndex = -1;
-  if(!filtered.length){ dd.style.display='none'; return; }
-  filtered.forEach(function(t, i){
-    var row = document.createElement('div');
-    row.className = 'trab-dd-row';
-    row.dataset.idx = i;
-    row.dataset.nombre = t;
-    row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px';
-    row.onmouseenter=function(){ setTrabDDHighlight(i); };
-    var name=document.createElement('span'); name.textContent=t; name.style.flex='1';
-    name.onmousedown=function(e){
-      e.preventDefault();
-      selectTrabFromDD(t);
-    };
-    var btn=document.createElement('button');
-    btn.textContent='×'; btn.title='Eliminar de lista';
-    btn.style.cssText='background:none;border:none;color:var(--text3);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0';
-    btn.onmousedown=function(e){
-      e.preventDefault(); e.stopPropagation();
-      trabajadores=trabajadores.filter(function(x){return x!==t;});
-      saveTrabajadores();
-      sbDeleteTrabajador(t);
-      renderTrabajadorDropdown();
-      showToast('Trabajador eliminado');
-    };
-    row.appendChild(name); row.appendChild(btn); dd.appendChild(row);
-  });
-  dd.style.display='block';
-}
-
-function setTrabDDHighlight(idx){
-  trabDDIndex = idx;
-  var rows = document.querySelectorAll('.trab-dd-row');
-  rows.forEach(function(r, i){
-    r.style.background = i===idx ? 'var(--fram-bg)' : '';
-    r.style.color = i===idx ? 'var(--fram)' : '';
-  });
-  // scroll into view
-  if(rows[idx]) rows[idx].scrollIntoView({block:'nearest'});
-}
-
-function selectTrabFromDD(nombre){
-  document.getElementById('fr-trab-input').value = nombre;
-  hideTrabajadorDropdown();
-  agregarTrabajadorRow();
-  setTimeout(function(){
-    var rows = document.querySelectorAll('#fr-trabajadores-list input[type="number"]');
-    if(rows.length) { rows[rows.length-1].focus(); rows[rows.length-1].select(); }
-  }, 50);
-}
-
-function onTrabKeydown(e){
-  var dd = document.getElementById('trab-dropdown');
-  var ddVisible = dd && dd.style.display !== 'none';
-  var rows = ddVisible ? document.querySelectorAll('.trab-dd-row') : [];
-
-  if(e.key === 'ArrowDown'){
-    e.preventDefault();
-    if(!ddVisible){ showTrabajadorDropdown(); return; }
-    var next = Math.min(trabDDIndex+1, rows.length-1);
-    setTrabDDHighlight(next);
-  } else if(e.key === 'ArrowUp'){
-    e.preventDefault();
-    var prev = Math.max(trabDDIndex-1, 0);
-    setTrabDDHighlight(prev);
-  } else if(e.key === 'Enter'){
-    e.preventDefault();
-    if(ddVisible && trabDDIndex >= 0 && rows[trabDDIndex]){
-      selectTrabFromDD(rows[trabDDIndex].dataset.nombre);
-    } else {
-      agregarTrabajadorRow();
-    }
-  } else if(e.key === 'Escape'){
-    hideTrabajadorDropdown();
-    trabDDIndex = -1;
-  } else if(e.key === 'Tab'){
-    // Tab selects highlighted item if any, then jumps to cubetas of last row
-    if(ddVisible && trabDDIndex >= 0 && rows[trabDDIndex]){
-      e.preventDefault();
-      selectTrabFromDD(rows[trabDDIndex].dataset.nombre);
-    } else {
-      var nom = document.getElementById('fr-trab-input').value.trim();
-      if(nom){
-        e.preventDefault();
-        trabAggregandose = true;
-        agregarTrabajadorRow();
-        setTimeout(function(){
-          trabAggregandose = false;
-          var cubInputs = document.querySelectorAll('#fr-trabajadores-list input[type="number"]');
-          if(cubInputs.length){ cubInputs[cubInputs.length-1].focus(); cubInputs[cubInputs.length-1].select(); }
-        }, 50);
-      }
-    }
-  }
-}
-
-function showTrabajadorDropdown(){ renderTrabajadorDropdown(); }
-function hideTrabajadorDropdown(){ var dd=document.getElementById('trab-dropdown'); if(dd)dd.style.display='none'; trabDDIndex=-1; }
-function onTrabajadorInput(){ trabDDIndex=-1; renderTrabajadorDropdown(); }
 
 // ---- Cajas ----
 var cajaDDIndex = -1;
