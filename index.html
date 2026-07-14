@@ -635,17 +635,20 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <!-- ============ SUB-TAB: FINANCIERO (Power BI style) ============ -->
     <div id="rep-fin-sec">
 
-      <!-- Fila 1: Negocios, todos en una sola fila -->
+      <!-- Fila 1: Negocios (nivel superior) -->
       <div class="rep-subnav-wrap">
         <div class="rep-subnav" id="fin-neg-subnav" style="width:100%;flex-wrap:nowrap;overflow-x:auto">
-          <button class="rep-tab active" data-neg="todos" onclick="finNegTab('todos')" style="flex:1">Todos</button>
-          <button class="rep-tab" data-neg="jal" onclick="finNegTab('jal')" style="flex:1">Camote Jalisco</button>
-          <button class="rep-tab" data-neg="nay" onclick="finNegTab('nay')" style="flex:1">Camote Nayarit</button>
-          <button class="rep-tab" data-neg="fram" onclick="finNegTab('fram')" style="flex:1">Frambuesa</button>
-          <button class="rep-tab" data-neg="genjal" onclick="finNegTab('genjal')" style="flex:1">General Jalisco</button>
-          <button class="rep-tab" data-neg="ofic" onclick="finNegTab('ofic')" style="flex:1">Oficina</button>
-          <button class="rep-tab" data-neg="com" onclick="finNegTab('com')" style="flex:1">Comercial.</button>
+          <button class="rep-tab active" data-parent="todos" onclick="finTopTab('todos')" style="flex:1">Todos</button>
+          <button class="rep-tab" data-parent="jal" onclick="finTopTab('jal')" style="flex:1">Jalisco</button>
+          <button class="rep-tab" data-parent="nay" onclick="finTopTab('nay')" style="flex:1">Nayarit</button>
+          <button class="rep-tab" data-parent="ofic" onclick="finTopTab('ofic')" style="flex:1">Oficina</button>
+          <button class="rep-tab" data-parent="com" onclick="finTopTab('com')" style="flex:1">Comercializadora</button>
         </div>
+      </div>
+
+      <!-- Fila 1b: Sub-pestañas (General/Camote/Frambuesa según negocio) -->
+      <div class="rep-subnav-wrap" id="fin-sub-subnav-wrap" style="display:none">
+        <div class="rep-subnav" id="fin-sub-subnav" style="width:100%;flex-wrap:nowrap;overflow-x:auto"></div>
       </div>
 
       <div id="fin-dashboard-body">
@@ -1806,7 +1809,7 @@ var hoy = new Date();
 // ---- Config ----
 var SECTORES = { jal_camote: 2, nay_camote: 10 };
 var CATS = {
-  camote_general:   ['Compra Insumos','Compra Insumos Agroquímicos','Compra Insumos Riego','Compra Mercancia','Nóminas Operativas'],
+  camote_general:   ['Compra Insumos','Compra Insumos Agroquímicos','Compra Insumos Riego','Compra Mercancia','Nóminas Operativas','Renta'],
   camote_cosecha:   ['Arado','Cosecha','Desvarada','Flete Cosecha','Plantacion'],
   fram:             ['Compra Insumos','Compra Insumos Agroquímicos','Compra Insumos Riego','Compra Mercancia','Inocuidad','Intereses Operativos','Nóminas Operativas','Pago Prestamo','Planta'],
   campo_general:    ['Adquisición de Maquinaria','Combustible','Compra Insumos','Fletes','Mantenimiento Equipo','Otros Gastos','Servicios','Viáticos'],
@@ -1842,7 +1845,8 @@ var CAT_COLORS = {
   'impuestos':                    '#E05252',
   'imss':                         '#57C785',
   'manejo de cuenta':             '#B07B4F',
-  'seguros':                      '#8FBF3F'
+  'seguros':                      '#8FBF3F',
+  'renta':                        '#6C8CD5'
 };
 var CAT_PALETTE = ['#E05252','#F2994A','#FFB020','#8FBF3F','#57C785','#14B8A6','#35A8C9','#4C9AFF','#7B6FE0','#B08BE0','#D65BB4','#FF7A9E','#B07B4F','#8A97A8'];
 function normCat(c){
@@ -4474,9 +4478,20 @@ var FIN_NEG_MAP = {
   nay:  {locs:['nay'], cultivo:'camote', label:'Camote Nayarit', color:'#D98A4A'},
   ofic: {locs:['ofic'], cultivo:null, label:'Oficina', color:'#9E9E9E'},
   fram: {locs:['jal','nay'], cultivo:'fram', label:'Frambuesa', color:'#D6336C'},
+  framjal: {locs:['jal'], cultivo:'fram', label:'Frambuesa Jalisco', color:'#D6336C'},
   genjal: {locs:['jal'], cultivo:'general', label:'General Jalisco', color:'#8C7B54'},
+  gennay: {locs:['nay'], cultivo:'general', label:'General Nayarit', color:'#B89A5E'},
   com:  {locs:['com'], cultivo:null, label:'Comercializadora', color:'#3CB87A'}
 };
+// Barras "Gastos x Negocio" (vista Todos): conjunto sin traslapes
+var FIN_BREAKDOWN_KEYS = ['jal','nay','fram','genjal','gennay','ofic','com'];
+// Sub-pestañas por negocio padre
+var FIN_PARENT_SUBS = {
+  jal: [{key:'genjal',label:'General'},{key:'jal',label:'Camote'},{key:'framjal',label:'Frambuesa'}],
+  nay: [{key:'gennay',label:'General'},{key:'nay',label:'Camote'}]
+};
+// Hoja -> negocio padre (para restaurar resaltado)
+var FIN_LEAF_PARENT = {todos:'todos', ofic:'ofic', com:'com', genjal:'jal', jal:'jal', framjal:'jal', gennay:'nay', nay:'nay'};
 
 // Semana ISO del año calendario real (1-53)
 function semanaISO(fechaStr){
@@ -4508,11 +4523,39 @@ function finGastosFiltrados(negKey, soloEsteNeg){
   });
 }
 
+function finSyncNav(leaf){
+  var parent = FIN_LEAF_PARENT[leaf] || 'todos';
+  var topNav = document.getElementById('fin-neg-subnav');
+  if(topNav) topNav.querySelectorAll('.rep-tab').forEach(function(btn){
+    btn.classList.toggle('active', btn.dataset.parent===parent);
+  });
+  var subWrap=document.getElementById('fin-sub-subnav-wrap');
+  var subNav=document.getElementById('fin-sub-subnav');
+  if(!subWrap||!subNav) return;
+  if(FIN_PARENT_SUBS[parent]){
+    subNav.innerHTML='';
+    FIN_PARENT_SUBS[parent].forEach(function(s){
+      var b=document.createElement('button');
+      b.className='rep-tab'+(s.key===leaf?' active':'');
+      b.dataset.neg=s.key; b.style.flex='1'; b.textContent=s.label;
+      b.onclick=(function(k){return function(){ finNegTab(k); };})(s.key);
+      subNav.appendChild(b);
+    });
+    subWrap.style.display='';
+  } else {
+    subWrap.style.display='none';
+    subNav.innerHTML='';
+  }
+}
+
+function finTopTab(parent){
+  var leaf = FIN_PARENT_SUBS[parent] ? FIN_PARENT_SUBS[parent][0].key : parent;
+  finNegTab(leaf);
+}
+
 function finNegTab(neg){
   finNegSel = neg;
-  document.querySelectorAll('#fin-neg-subnav .rep-tab').forEach(function(btn){
-    btn.classList.toggle('active', btn.dataset.neg===neg);
-  });
+  finSyncNav(neg);
   document.getElementById('fin-dashboard-body').style.display = 'block';
   document.getElementById('rep-gen-sec').style.display = 'none';
   document.getElementById('fin-card-negocio').style.display = neg==='todos' ? 'block' : 'none';
@@ -4699,7 +4742,7 @@ function renderFinBarrasCategoria(){
 function renderFinBarrasTodosNegocios(){
   var cont = document.getElementById('fin-barras-todos-negocios');
   if(!cont || finNegSel!=='todos') return;
-  var keys = Object.keys(FIN_NEG_MAP);
+  var keys = FIN_BREAKDOWN_KEYS;
   var rows = keys.map(function(k){
     var def = FIN_NEG_MAP[k];
     var total = gastos.filter(function(g){
