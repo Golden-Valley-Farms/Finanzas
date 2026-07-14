@@ -684,8 +684,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </div>
         <div class="kpi-card span2">
           <div class="kpi-accent" style="background:var(--fram)"></div>
-          <div class="kpi-lbl">Gasto Total Mensual</div>
-          <div class="kpi-val" id="fin-kpi-mes" style="color:var(--fram)">$0</div>
+          <div class="kpi-lbl">Gasto Total Anual</div>
+          <div class="kpi-val" id="fin-kpi-anio" style="color:var(--fram)">$0</div>
         </div>
       </div>
 
@@ -4870,14 +4870,9 @@ function renderFinKPIs(){
   document.getElementById('fin-kpi1').textContent = fmt(suma);
   document.getElementById('fin-kpi2').textContent = fmt(finPromedioSemanal());
 
-  // ---- Gasto del Mes (mes calendario actual, independiente del filtro de ciclo/año/semana) ----
-  var mesActual = finMesKey(0), mesAnterior = finMesKey(-1);
-  var gastoMesActual = finGastoDelMes(mesActual);
-  var gastoMesAnterior = finGastoDelMes(mesAnterior);
-  var mesEl = document.getElementById('fin-kpi-mes'), mesSubEl = document.getElementById('fin-kpi-mes-sub'), mesTrendEl = document.getElementById('fin-kpi-mes-trend');
-  if(mesEl) mesEl.textContent = fmt(gastoMesActual);
-  if(mesSubEl) mesSubEl.textContent = finMesLabel(mesActual);
-  if(mesTrendEl) mesTrendEl.innerHTML = trendBadge(gastoMesActual, gastoMesAnterior, true);
+  // ---- Gasto Total Anual: todo el año seleccionado, ignorando el filtro de Semana ----
+  var anioEl = document.getElementById('fin-kpi-anio');
+  if(anioEl) anioEl.textContent = fmt(finGastoDelAnio());
 }
 
 // ---- Barras horizontales: Gastos x Sub-Concepto (categoría) ----
@@ -5073,6 +5068,18 @@ function finMesLabel(mesKey){
   var d = new Date(parseInt(p[0],10), parseInt(p[1],10)-1, 1);
   var lbl = d.toLocaleDateString('es-MX',{month:'long',year:'numeric'});
   return lbl.charAt(0).toUpperCase()+lbl.slice(1);
+}
+
+// Gasto total del año seleccionado para el negocio activo (ignora el filtro de Semana).
+// Con "Todos los años" devuelve el histórico completo.
+function finGastoDelAnio(){
+  var data = finGastosFiltrados(finNegSel, finNegSel!=='todos');
+  if(finAnioSel!=='todos'){
+    data = data.filter(function(g){
+      return g.fechaVal && String(anioDeFecha(g.fechaVal))===String(finAnioSel);
+    });
+  }
+  return data.reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0);
 }
 
 function finGastoDelMes(mesKey){
