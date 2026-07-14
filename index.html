@@ -327,6 +327,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
 /* ---- Financiero: KPI cards Power BI style ---- */
 .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.fin-sem-nav{flex:0 0 auto;width:32px;height:34px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:18px;line-height:1;font-weight:700;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;transition:background .12s,border-color .12s}
+.fin-sem-nav:hover:not(:disabled){background:var(--surface);border-color:var(--fram)}
+.fin-sem-nav:active:not(:disabled){transform:scale(.94)}
+.fin-sem-nav:disabled{opacity:.35;cursor:default}
 .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;box-shadow:var(--shadow);position:relative;overflow:hidden}
 .kpi-card.span2{grid-column:span 2}
 .kpi-accent{position:absolute;top:0;left:0;width:4px;height:100%}
@@ -651,34 +655,36 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div id="fin-dashboard-body">
 
       <div class="fin-periodo-row" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-        <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:140px">
-          <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap" id="fin-periodo-lbl">Año</span>
-          <select id="fin-anio-select" onchange="onFinAnioChange()" style="flex:1;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
+        <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:150px">
+          <span style="font-size:13px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap" id="fin-periodo-lbl">Año</span>
+          <select id="fin-anio-select" onchange="onFinAnioChange()" style="flex:1;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:15px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
             <option value="todos">Todos los años</option>
           </select>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:140px">
-          <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Semana</span>
-          <select id="fin-sem-select" onchange="onFinSemanaChange()" style="flex:1;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
+        <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:180px">
+          <span style="font-size:13px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Semana</span>
+          <button type="button" class="fin-sem-nav" id="fin-sem-prev" onclick="finSemStep(-1)" aria-label="Semana anterior">‹</button>
+          <select id="fin-sem-select" onchange="onFinSemanaChange()" style="flex:1;min-width:0;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:15px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
             <option value="todas">Todas</option>
           </select>
+          <button type="button" class="fin-sem-nav" id="fin-sem-next" onclick="finSemStep(1)" aria-label="Semana siguiente">›</button>
         </div>
       </div>
 
       <div class="kpi-grid">
         <div class="kpi-card">
           <div class="kpi-accent" style="background:var(--fram)"></div>
-          <div class="kpi-lbl" id="fin-kpi1-lbl">Gasto Total</div>
+          <div class="kpi-lbl" id="fin-kpi1-lbl">Gasto Total Semanal</div>
           <div class="kpi-val" id="fin-kpi1" style="color:var(--fram)">$0</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-accent" style="background:var(--fram)"></div>
-          <div class="kpi-lbl" id="fin-kpi2-lbl">Gasto Promedio</div>
+          <div class="kpi-lbl" id="fin-kpi2-lbl">Gasto Promedio Semanal</div>
           <div class="kpi-val" id="fin-kpi2" style="color:var(--fram)">$0</div>
         </div>
         <div class="kpi-card span2">
           <div class="kpi-accent" style="background:var(--fram)"></div>
-          <div class="kpi-lbl">Gasto del Mes</div>
+          <div class="kpi-lbl">Gasto Total Mensual</div>
           <div class="kpi-val" id="fin-kpi-mes" style="color:var(--fram)">$0</div>
         </div>
       </div>
@@ -4593,7 +4599,8 @@ var FIN_NEG_MAP = {
   com:  {locs:['com'], cultivo:null, label:'Comercializadora', color:'#3CB87A'}
 };
 // Barras "Gastos x Negocio" (vista Todos): conjunto sin traslapes
-var FIN_BREAKDOWN_KEYS = ['jal','nay','fram','genjal','gennay','ofic','com'];
+// Barras "Gastos x Negocio": los gastos 'general' se reparten (ver finTotalesPorNegocio)
+var FIN_BREAKDOWN_KEYS = ['jal','nay','fram','ofic','com'];
 // Sub-pestañas por negocio padre
 var FIN_PARENT_SUBS = {
   jal: [{key:'genjal',label:'General'},{key:'jal',label:'Camote'},{key:'framjal',label:'Frambuesa'}],
@@ -4687,7 +4694,37 @@ function onFinAnioChange(){
 
 function onFinSemanaChange(){
   finSemSel = document.getElementById('fin-sem-select').value;
+  finSemNavSync();
   renderFinanciero();
+}
+
+// Avanza/retrocede una semana usando las opciones reales del select.
+// "Todas las semanas" queda fuera de la navegación: desde ahí, ‹ va a la última y › a la primera.
+function finSemStep(dir){
+  var sel = document.getElementById('fin-sem-select');
+  if(!sel) return;
+  var opts = Array.prototype.slice.call(sel.options).filter(function(o){return o.value!=='todas';});
+  if(!opts.length) return;
+  var vals = opts.map(function(o){return o.value;});
+  var idx = vals.indexOf(String(sel.value));
+  if(idx < 0){ idx = dir>0 ? -1 : vals.length; }
+  var next = idx + dir;
+  if(next < 0 || next >= vals.length) return;
+  sel.value = vals[next];
+  onFinSemanaChange();
+}
+
+// Apaga la flecha cuando ya no hay semana a la que moverse
+function finSemNavSync(){
+  var sel = document.getElementById('fin-sem-select');
+  var bPrev = document.getElementById('fin-sem-prev'), bNext = document.getElementById('fin-sem-next');
+  if(!sel || !bPrev || !bNext) return;
+  var vals = Array.prototype.slice.call(sel.options).filter(function(o){return o.value!=='todas';}).map(function(o){return o.value;});
+  if(!vals.length){ bPrev.disabled = true; bNext.disabled = true; return; }
+  var idx = vals.indexOf(String(sel.value));
+  if(idx < 0){ bPrev.disabled = false; bNext.disabled = false; return; }
+  bPrev.disabled = idx === 0;
+  bNext.disabled = idx === vals.length-1;
 }
 
 // Valores de periodo (ciclos o años, según el negocio activo) presentes en los datos, más reciente primero
@@ -4772,6 +4809,7 @@ function populateFinSemanaSelect(forceReciente){
     sel.value = 'todas';
     finSemSel = 'todas';
   }
+  finSemNavSync();
 }
 
 function finDataConSemana(){
@@ -4791,12 +4829,43 @@ function finDataConSemana(){
   return data;
 }
 
+// Número de semanas ISO que tiene un año (52 o 53)
+function finSemanasDelAnio(anio){
+  return semanaISO(anio+'-12-28');
+}
+
+// Gasto Promedio Semanal: total del año / número de semanas del año.
+// Ignora el filtro de Semana (siempre mide el año completo).
+// Año en curso -> se divide entre las semanas transcurridas, no entre las 52,
+// para que los meses que faltan no hundan el promedio.
+function finPromedioSemanal(){
+  var data = finGastosFiltrados(finNegSel, finNegSel!=='todos');
+  if(finAnioSel!=='todos'){
+    data = data.filter(function(g){
+      return g.fechaVal && String(anioDeFecha(g.fechaVal))===String(finAnioSel);
+    });
+  }
+  var suma = data.reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0);
+  var nSem;
+  if(finAnioSel==='todos'){
+    var set = {};
+    data.forEach(function(g){
+      if(g.fechaVal) set[anioDeFecha(g.fechaVal)+'-'+semanaISO(g.fechaVal)] = true;
+    });
+    nSem = Object.keys(set).length;
+  } else if(Number(finAnioSel) === anioActualISO()){
+    nSem = semanaActualISO();
+  } else {
+    nSem = finSemanasDelAnio(finAnioSel);
+  }
+  return nSem>0 ? suma/nSem : 0;
+}
+
 function renderFinKPIs(){
   var data = finDataConSemana();
   var suma = data.reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0);
-  var prom = data.length ? suma/data.length : 0;
   document.getElementById('fin-kpi1').textContent = fmt(suma);
-  document.getElementById('fin-kpi2').textContent = fmt(prom);
+  document.getElementById('fin-kpi2').textContent = fmt(finPromedioSemanal());
 
   // ---- Gasto del Mes (mes calendario actual, independiente del filtro de ciclo/año/semana) ----
   var mesActual = finMesKey(0), mesAnterior = finMesKey(-1);
@@ -4847,22 +4916,39 @@ function renderFinBarrasCategoria(){
   attachDashTooltips(cont, 'dash-tt-fincat');
 }
 
-// ---- Barras verticales: Gastos x Negocio (solo vista "todos") ----
-function renderFinBarrasTodosNegocios(){
-  var cont = document.getElementById('fin-barras-todos-negocios');
-  if(!cont || finNegSel!=='todos') return;
-  var keys = FIN_BREAKDOWN_KEYS;
-  var rows = keys.map(function(k){
+// Totales por negocio para la gráfica de barras, ya con los gastos "general" repartidos:
+//   General Nayarit -> 100% a Camote Nayarit
+//   General Jalisco -> 50% a Camote Jalisco, 50% a Frambuesa
+function finTotalesPorNegocio(){
+  function totalDe(k){
     var def = FIN_NEG_MAP[k];
-    var total = gastos.filter(function(g){
+    return gastos.filter(function(g){
       if(finAnioSel!=='todos' && (!g.fechaVal || anioDeFecha(g.fechaVal)!==Number(finAnioSel))) return false;
       if(finSemSel!=='todas' && (!g.fechaVal || semanaISO(g.fechaVal)!==Number(finSemSel))) return false;
       if(def.locs.indexOf(g.loc)<0) return false;
       if(def.cultivo===null) return true;
       return g.cultivo===def.cultivo;
     }).reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0);
-    return {key:k, label:def.label, total:total, color:def.color};
+  }
+  var genJal = totalDe('genjal'), genNay = totalDe('gennay');
+  var extra = {
+    jal:  genJal/2,
+    fram: genJal/2,
+    nay:  genNay,
+    ofic: 0,
+    com:  0
+  };
+  return FIN_BREAKDOWN_KEYS.map(function(k){
+    var def = FIN_NEG_MAP[k];
+    return {key:k, label:def.label, total: totalDe(k) + (extra[k]||0), color:def.color};
   });
+}
+
+// ---- Barras verticales: Gastos x Negocio (solo vista "todos") ----
+function renderFinBarrasTodosNegocios(){
+  var cont = document.getElementById('fin-barras-todos-negocios');
+  if(!cont || finNegSel!=='todos') return;
+  var rows = finTotalesPorNegocio();
   rows.sort(function(a,b){return b.total-a.total;});
 
   var maxV = Math.max.apply(null, rows.map(function(r){return r.total;}).concat([1]));
