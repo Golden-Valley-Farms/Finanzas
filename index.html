@@ -4116,13 +4116,26 @@ function renderRcmFinanciero(envs, filtroCiclo){
   var ingresoPorSector = {};
   var sectoresSet = {};
   envs.forEach(function(e){
-    (e.partidas||[]).forEach(function(p){
+    var parts = e.partidas||[];
+    // Ingreso base por partida (misma preferencia que usa la app: p.total si existe)
+    var partIng = parts.map(function(p){
+      return p.total!=null ? (parseFloat(p.total)||0) :
+        (e.esComer||p.kgRecibidos!==undefined ? (parseFloat(p.kgRecibidos||0)*parseFloat(p.precioVenta||0)) : (parseFloat(p.pesoNeto||0)*parseFloat(p.precio||0)));
+    });
+    var partSum = partIng.reduce(function(a,v){return a+v;},0);
+    // Diferencia contra el total del envío (flete y cualquier ajuste) para cuadrar con la tarjeta
+    var extra = envioTotal(e) - partSum;
+    parts.forEach(function(p,i){
       var sec = p.sector || '—';
       sectoresSet[sec] = true;
-      var ingreso = p.total!=null ? parseFloat(p.total)||0 :
-        (e.esComer||p.kgRecibidos!==undefined ? (parseFloat(p.kgRecibidos||0)*parseFloat(p.precioVenta||0)) : (parseFloat(p.pesoNeto||0)*parseFloat(p.precio||0)));
-      ingresoPorSector[sec] = (ingresoPorSector[sec]||0) + ingreso;
+      var share = partSum>0 ? (partIng[i]/partSum) : (parts.length ? 1/parts.length : 0);
+      ingresoPorSector[sec] = (ingresoPorSector[sec]||0) + partIng[i] + extra*share;
     });
+    // Envío sin partidas pero con flete: va al grupo sin sector
+    if(!parts.length && extra){
+      sectoresSet['—'] = true;
+      ingresoPorSector['—'] = (ingresoPorSector['—']||0) + extra;
+    }
   });
   var numSectores = Object.keys(sectoresSet).length;
   var costoPorSector = numSectores>0 ? costo/numSectores : 0;
