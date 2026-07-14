@@ -661,10 +661,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <option value="todos">Todos los años</option>
           </select>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:180px">
+        <div style="display:flex;align-items:center;gap:6px;flex:1.6 1 auto;min-width:250px">
           <span style="font-size:13px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Semana</span>
           <button type="button" class="fin-sem-nav" id="fin-sem-prev" onclick="finSemStep(-1)" aria-label="Semana anterior">‹</button>
-          <select id="fin-sem-select" onchange="onFinSemanaChange()" style="flex:1;min-width:0;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:15px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
+          <select id="fin-sem-select" onchange="onFinSemanaChange()" style="flex:1;min-width:112px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:15px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
             <option value="todas">Todas</option>
           </select>
           <button type="button" class="fin-sem-nav" id="fin-sem-next" onclick="finSemStep(1)" aria-label="Semana siguiente">›</button>
@@ -4829,36 +4829,39 @@ function finDataConSemana(){
   return data;
 }
 
-// Número de semanas ISO que tiene un año (52 o 53)
-function finSemanasDelAnio(anio){
-  return semanaISO(anio+'-12-28');
-}
-
-// Gasto Promedio Semanal: total del año / número de semanas del año.
-// Ignora el filtro de Semana (siempre mide el año completo).
-// Año en curso -> se divide entre las semanas transcurridas, no entre las 52,
-// para que los meses que faltan no hundan el promedio.
-function finPromedioSemanal(){
+// Totales por semana, solo de las semanas que sí tuvieron gasto registrado,
+// del año seleccionado (ignora el filtro de Semana), en orden cronológico.
+function finSemanasConGasto(){
   var data = finGastosFiltrados(finNegSel, finNegSel!=='todos');
   if(finAnioSel!=='todos'){
     data = data.filter(function(g){
       return g.fechaVal && String(anioDeFecha(g.fechaVal))===String(finAnioSel);
     });
   }
-  var suma = data.reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0);
-  var nSem;
-  if(finAnioSel==='todos'){
-    var set = {};
-    data.forEach(function(g){
-      if(g.fechaVal) set[anioDeFecha(g.fechaVal)+'-'+semanaISO(g.fechaVal)] = true;
-    });
-    nSem = Object.keys(set).length;
-  } else if(Number(finAnioSel) === anioActualISO()){
-    nSem = semanaActualISO();
-  } else {
-    nSem = finSemanasDelAnio(finAnioSel);
-  }
-  return nSem>0 ? suma/nSem : 0;
+  var por = {};
+  data.forEach(function(g){
+    if(!g.fechaVal) return;
+    var sem = semanaISO(g.fechaVal);
+    var key = anioDeFecha(g.fechaVal)+'-'+(sem<10?'0'+sem:sem);
+    por[key] = (por[key]||0) + (parseFloat(g.monto)||0);
+  });
+  return Object.keys(por).sort().map(function(k){return {key:k, total:por[k]};});
+}
+
+// Gasto Promedio Semanal (ponderado):
+//  - solo cuentan las semanas con gasto registrado; las vacías no diluyen el promedio
+//  - las semanas recientes pesan más: peso lineal 1..n en orden cronológico,
+//    así el número refleja el ritmo de gasto actual y no el de enero
+function finPromedioSemanal(){
+  var sem = finSemanasConGasto();
+  if(!sem.length) return 0;
+  var num = 0, den = 0;
+  sem.forEach(function(s, i){
+    var w = i+1;
+    num += w * s.total;
+    den += w;
+  });
+  return den>0 ? num/den : 0;
 }
 
 function renderFinKPIs(){
