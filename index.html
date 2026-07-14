@@ -339,10 +339,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .kpi-lbl{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px}
 .kpi-val{font-size:22px;font-weight:700;color:var(--text);font-family:var(--mono);letter-spacing:-0.02em}
 .kpi-sub{font-size:11px;color:var(--text3);margin-top:3px}
-#rep-fin-sec .kpi-lbl{font-size:13px}
-#rep-fin-sec .kpi-val{font-size:30px}
 #rep-fin-sec .kpi-sub{font-size:12px}
-#rep-fin-sec .kpi-card{padding:12px 14px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+#rep-fin-sec .kpi-card{padding:14px}
 /* ---- Financiero: full-width breakout en pantallas grandes ---- */
 @media (min-width: 700px){
   #rep-fin-sec{
@@ -382,11 +380,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   }
   #rep-fram-sec .fin-charts-grid .dash-card{margin-bottom:0}
   #rep-fram-sec .fin-chart-full{grid-column:1/-1}
-  #rep-fram-sec .rfr-dia-kpis{
-    max-width:1400px;margin:0 auto 10px;
-    display:grid;grid-template-columns:repeat(5,1fr);gap:8px;
+  #rep-fram-sec .kpi-grid{
+    max-width:1400px;margin:0 auto 14px;
+    grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
   }
-  #rep-fram-sec .rfr-dia-kpis .kpi-card{padding:8px 12px}
   #rep-fram-sec .rfr-dia-grid{
     max-width:1400px;margin:0 auto;
     display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:stretch;
@@ -419,7 +416,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   #rep-cam-sec .fin-charts-grid .dash-card{margin-bottom:0}
   #rep-cam-sec .fin-chart-full{grid-column:1/-1}
   #rep-cam-sec .rfr-topbar{max-width:1400px;margin-left:auto;margin-right:auto}
-  #rep-cam-sec .kpi-val{font-size:33px}
+  #rep-cam-sec .kpi-val,#rep-fin-sec .kpi-val,#rep-fram-sec .kpi-val{font-size:33px}
   #rep-cam-sec .rcm-nay-charts-grid{
     max-width:1400px;margin:0 auto;
     display:grid;grid-template-columns:3fr 2fr;grid-template-rows:260px 260px;gap:12px;
@@ -637,18 +634,18 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
       <!-- Fila 1: Negocios (nivel superior) -->
       <div class="rep-subnav-wrap">
-        <div class="rep-subnav" id="fin-neg-subnav" style="width:100%;flex-wrap:nowrap;overflow-x:auto">
-          <button class="rep-tab active" data-parent="todos" onclick="finTopTab('todos')" style="flex:1">Todos</button>
-          <button class="rep-tab" data-parent="jal" onclick="finTopTab('jal')" style="flex:1">Jalisco</button>
-          <button class="rep-tab" data-parent="nay" onclick="finTopTab('nay')" style="flex:1">Nayarit</button>
-          <button class="rep-tab" data-parent="ofic" onclick="finTopTab('ofic')" style="flex:1">Oficina</button>
-          <button class="rep-tab" data-parent="com" onclick="finTopTab('com')" style="flex:1">Comercializadora</button>
+        <div class="rep-subnav" id="fin-neg-subnav" style="width:100%">
+          <button class="rep-tab active" data-parent="todos" onclick="finTopTab('todos')" style="flex:1 1 auto">Todos</button>
+          <button class="rep-tab" data-parent="jal" onclick="finTopTab('jal')" style="flex:1 1 auto">Jalisco</button>
+          <button class="rep-tab" data-parent="nay" onclick="finTopTab('nay')" style="flex:1 1 auto">Nayarit</button>
+          <button class="rep-tab" data-parent="ofic" onclick="finTopTab('ofic')" style="flex:1 1 auto">Oficina</button>
+          <button class="rep-tab" data-parent="com" onclick="finTopTab('com')" style="flex:1 1 auto">Comercializadora</button>
         </div>
       </div>
 
       <!-- Fila 1b: Sub-pestañas (General/Camote/Frambuesa según negocio) -->
       <div class="rep-subnav-wrap" id="fin-sub-subnav-wrap" style="display:none">
-        <div class="rep-subnav" id="fin-sub-subnav" style="width:100%;flex-wrap:nowrap;overflow-x:auto"></div>
+        <div class="rep-subnav" id="fin-sub-subnav" style="width:100%"></div>
       </div>
 
       <div id="fin-dashboard-body">
@@ -669,7 +666,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
 
       <div class="kpi-grid">
-        <div class="kpi-card" style="background:linear-gradient(135deg,var(--fram-bg),var(--surface))">
+        <div class="kpi-card">
           <div class="kpi-accent" style="background:var(--fram)"></div>
           <div class="kpi-lbl" id="fin-kpi1-lbl">Gasto Total</div>
           <div class="kpi-val" id="fin-kpi1" style="color:var(--fram)">$0</div>
@@ -2887,31 +2884,31 @@ function renderRfrDiaDetalle(){
 
   document.getElementById('rfr-dia-detalle').innerHTML=
     // ── Fila 1: KPIs compactos en una sola línea ──
-    '<div class="rfr-dia-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px">'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
+    '<div class="kpi-grid rfr-dia-kpis">'+
+      '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Cubetas cosechadas</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+r.totalCubetas+'</div>'+
+        '<div class="kpi-val" style="color:var(--fram)">'+r.totalCubetas+'</div>'+
       '</div>'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
+      '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Total cajas</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+r.totalCajas+'</div>'+
+        '<div class="kpi-val" style="color:var(--fram)">'+r.totalCajas+'</div>'+
       '</div>'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
+      '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Kg cosechados</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+kgCosechados+' <span style="font-size:14px;font-weight:400;color:var(--text3)">kg</span></div>'+
+        '<div class="kpi-val" style="color:var(--fram)">'+kgCosechados+' <span style="font-size:14px;font-weight:400;color:var(--text3)">kg</span></div>'+
       '</div>'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
+      '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Proceso (merma)</div>'+
-        '<div class="kpi-val" style="color:var(--camote);font-size:34px;line-height:1.1">'+(r.merma||0)+' <span style="font-size:14px;font-weight:400;color:var(--text3)">kg</span></div>'+
+        '<div class="kpi-val" style="color:var(--camote)">'+(r.merma||0)+' <span style="font-size:14px;font-weight:400;color:var(--text3)">kg</span></div>'+
       '</div>'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
+      '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Merma</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+(pctKgMerma===null?'—':pctKgMerma+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
+        '<div class="kpi-val" style="color:var(--fram)">'+(pctKgMerma===null?'—':pctKgMerma+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
       '</div>'+
     '</div>'+
     // ── Fila 2: dos columnas de igual altura ──
@@ -3194,49 +3191,49 @@ function renderRfrSemDetalle(){
   document.getElementById('rfr-sem-detalle').innerHTML=
     // ── Fila 1: KPIs ──
     // ── Fila 1: KPIs (4) ──
-    '<div class="rfr-dia-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px">'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
+    '<div class="kpi-grid rfr-dia-kpis">'+
+      '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Cubetas cosechadas</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+s.cubetas.toLocaleString('es-MX')+'</div>'+
+        '<div class="kpi-val" style="color:var(--fram)">'+s.cubetas.toLocaleString('es-MX')+'</div>'+
       '</div>'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
+      '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Total cajas</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+s.cajas.toLocaleString('es-MX')+'</div>'+
+        '<div class="kpi-val" style="color:var(--fram)">'+s.cajas.toLocaleString('es-MX')+'</div>'+
       '</div>'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
+      '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Prom. cajas/d\u00eda</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+promCajas+'</div>'+
+        '<div class="kpi-val" style="color:var(--fram)">'+promCajas+'</div>'+
       '</div>'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
+      '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Merma</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+(pctKgMerma===null?'\u2014':pctKgMerma+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
+        '<div class="kpi-val" style="color:var(--fram)">'+(pctKgMerma===null?'\u2014':pctKgMerma+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
       '</div>'+
     '</div>'+
     // ── Fila 2: KPIs (4) ──
-    '<div class="rfr-dia-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px">'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
+    '<div class="kpi-grid rfr-dia-kpis">'+
+      '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Costo/cubeta general</div>'+
-        '<div class="kpi-val" style="color:var(--camote);font-size:34px;line-height:1.1">'+(costoCubetaGeneral===null?'\u2014':'$'+costoCubetaGeneral.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+        '<div class="kpi-val" style="color:var(--camote)">'+(costoCubetaGeneral===null?'\u2014':'$'+costoCubetaGeneral.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
+      '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Costo/cubeta cosechadores</div>'+
-        '<div class="kpi-val" style="color:var(--camote);font-size:34px;line-height:1.1">'+(costoCubetaCosechadores===null?'\u2014':'$'+costoCubetaCosechadores.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+        '<div class="kpi-val" style="color:var(--camote)">'+(costoCubetaCosechadores===null?'\u2014':'$'+costoCubetaCosechadores.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
+      '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Precio por caja</div>'+
-        '<div class="kpi-val" style="color:var(--camote);font-size:34px;line-height:1.1">'+(precioCajaSem===null?'\u2014':'$'+precioCajaSem.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+        '<div class="kpi-val" style="color:var(--camote)">'+(precioCajaSem===null?'\u2014':'$'+precioCajaSem.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
+      '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Total facturado</div>'+
-        '<div class="kpi-val" style="color:var(--camote);font-size:34px;line-height:1.1">'+(totalFacturadoSem===null?'\u2014':'$'+totalFacturadoSem.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+        '<div class="kpi-val" style="color:var(--camote)">'+(totalFacturadoSem===null?'\u2014':'$'+totalFacturadoSem.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
     '</div>'+
     // ── Fila 2: cuatro tarjetas independientes en grid 2x2 ──
@@ -3581,49 +3578,49 @@ function renderRfrResumen(data){
 
   cont.innerHTML=
     // ── Fila 1: KPIs (4) ──
-    '<div class="rfr-dia-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px">'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
+    '<div class="kpi-grid rfr-dia-kpis">'+
+      '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Total cajas</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+totalCajas.toLocaleString('es-MX')+'</div>'+
+        '<div class="kpi-val" style="color:var(--fram)">'+totalCajas.toLocaleString('es-MX')+'</div>'+
       '</div>'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
+      '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Prom. cajas/d\u00eda</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+promCajas+'</div>'+
+        '<div class="kpi-val" style="color:var(--fram)">'+promCajas+'</div>'+
       '</div>'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
+      '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Prom. cajas/semana</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+promCajasSemana+'</div>'+
+        '<div class="kpi-val" style="color:var(--fram)">'+promCajasSemana+'</div>'+
       '</div>'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
+      '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Merma</div>'+
-        '<div class="kpi-val" style="color:var(--fram);font-size:34px;line-height:1.1">'+(pctKgMerma===null?'\u2014':pctKgMerma+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
+        '<div class="kpi-val" style="color:var(--fram)">'+(pctKgMerma===null?'\u2014':pctKgMerma+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
       '</div>'+
     '</div>'+
     // ── Fila 2: KPIs (4, promedios ponderados) ──
-    '<div class="rfr-dia-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px">'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
+    '<div class="kpi-grid rfr-dia-kpis">'+
+      '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Promedio costo/cubeta general</div>'+
-        '<div class="kpi-val" style="color:var(--camote);font-size:34px;line-height:1.1">'+(costoGeneralPonderado===null?'\u2014':'$'+costoGeneralPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+        '<div class="kpi-val" style="color:var(--camote)">'+(costoGeneralPonderado===null?'\u2014':'$'+costoGeneralPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
+      '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Promedio costo/cubeta cosechadores</div>'+
-        '<div class="kpi-val" style="color:var(--camote);font-size:34px;line-height:1.1">'+(costoCosechadoresPonderado===null?'\u2014':'$'+costoCosechadoresPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+        '<div class="kpi-val" style="color:var(--camote)">'+(costoCosechadoresPonderado===null?'\u2014':'$'+costoCosechadoresPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
+      '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Promedio costo/caja</div>'+
-        '<div class="kpi-val" style="color:var(--camote);font-size:34px;line-height:1.1">'+(precioCajaPonderado===null?'\u2014':'$'+precioCajaPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+        '<div class="kpi-val" style="color:var(--camote)">'+(precioCajaPonderado===null?'\u2014':'$'+precioCajaPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
-      '<div class="kpi-card" style="padding:8px 12px">'+
+      '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Promedio facturado</div>'+
-        '<div class="kpi-val" style="color:var(--camote);font-size:34px;line-height:1.1">'+(facturadoPonderado===null?'\u2014':'$'+facturadoPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
+        '<div class="kpi-val" style="color:var(--camote)">'+(facturadoPonderado===null?'\u2014':'$'+facturadoPonderado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div>'+
       '</div>'+
     '</div>'+
     // ── Fila 2: tarjetas independientes (trabajador ocupa las 2 filas a la izquierda) ──
@@ -4649,7 +4646,7 @@ function finSyncNav(leaf){
     FIN_PARENT_SUBS[parent].forEach(function(s){
       var b=document.createElement('button');
       b.className='rep-tab'+(s.key===leaf?' active':'');
-      b.dataset.neg=s.key; b.style.flex='1'; b.textContent=s.label;
+      b.dataset.neg=s.key; b.style.flex='1 1 auto'; b.textContent=s.label;
       b.onclick=(function(k){return function(){ finNegTab(k); };})(s.key);
       subNav.appendChild(b);
     });
