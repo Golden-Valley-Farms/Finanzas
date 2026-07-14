@@ -4125,6 +4125,26 @@ function renderRcmFinanciero(envs, filtroCiclo){
   var catGastoVals = catGastoOrd.map(function(c){return Math.round(catGastoMap[c]);});
   var catGastoCols = catGastoOrd.map(function(c){return catColor(c);});
 
+  // Gastos generales (cultivo 'general') del mismo negocio — se incluyen en costo/ganancia y en su propia gráfica (solo Nayarit)
+  var gastosGen = [];
+  if(mostrarCatGastos){
+    gastosGen = gastos.filter(function(g){
+      return g.loc===rcmNegSel && g.cultivo==='general' &&
+        (filtroCiclo==='todos' || (g.ciclo||cicloFromFecha(g.fechaVal))===filtroCiclo);
+    });
+  }
+  var costoGen = gastosGen.reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0);
+  var costoTotal = costo + costoGen;
+  var catGenMap = {};
+  gastosGen.forEach(function(g){
+    var c = g.cat || 'Sin categoría';
+    catGenMap[c] = (catGenMap[c]||0) + (parseFloat(g.monto)||0);
+  });
+  var catGenOrd = Object.keys(catGenMap).sort(function(a,b){return catGenMap[b]-catGenMap[a];});
+  var catGenLbls = catGenOrd;
+  var catGenVals = catGenOrd.map(function(c){return Math.round(catGenMap[c]);});
+  var catGenCols = catGenOrd.map(function(c){return catColor(c);});
+
   var ingresoPorSector = {};
   var sectoresSet = {};
   envs.forEach(function(e){
@@ -4137,10 +4157,10 @@ function renderRcmFinanciero(envs, filtroCiclo){
     });
   });
   var numSectores = Object.keys(sectoresSet).length;
-  var costoPorSector = numSectores>0 ? costo/numSectores : 0;
-  var ganancia = ingresos - costo;
+  var costoPorSector = numSectores>0 ? costoTotal/numSectores : 0;
+  var ganancia = ingresos - costoTotal;
 
-  if(!ingresos && !costo){
+  if(!ingresos && !costoTotal){
     cont.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--text3);font-size:13px">Sin registros financieros para este ciclo</div>';
     return;
   }
@@ -4164,7 +4184,7 @@ function renderRcmFinanciero(envs, filtroCiclo){
       '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Costo</div>'+
-        '<div class="kpi-val" style="color:var(--camote)">'+fmt(costo)+'</div>'+
+        '<div class="kpi-val" style="color:var(--camote)">'+fmt(costoTotal)+'</div>'+
       '</div>'+
       '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
@@ -4187,12 +4207,16 @@ function renderRcmFinanciero(envs, filtroCiclo){
           '<div class="dash-card-title">Gastos x Categoría</div>'+
           '<div style="position:relative;height:'+Math.max(200, catGastoLbls.length*46)+'px;margin-top:8px"><canvas id="rcm-gasto-cat-chart"></canvas></div>'+
         '</div>' : '')+
+      (mostrarCatGastos && catGenLbls.length ?
+        '<div class="dash-card fin-chart-full">'+
+          '<div class="dash-card-title">Gastos Generales x Categoría</div>'+
+          '<div style="position:relative;height:'+Math.max(200, catGenLbls.length*46)+'px;margin-top:8px"><canvas id="rcm-gasto-gen-chart"></canvas></div>'+
+        '</div>' : '')+
     '</div>';
-
-  if(!secLbls.length) return;
 
   var gridCol = rfrGridCol(); var textMuted = '#898781';
 
+  if(secLbls.length){
   var ingresoBarLabelPlugin = {
     id:'rcmIngresoBarLabels',
     afterDatasetsDraw:function(chart){
@@ -4226,6 +4250,7 @@ function renderRcmFinanciero(envs, filtroCiclo){
       }
     }
   });
+  }
 
   if(mostrarCatGastos && catGastoLbls.length){
     var catGastoBarLabelPlugin = {
@@ -4256,6 +4281,41 @@ function renderRcmFinanciero(envs, filtroCiclo){
         scales:{
           x:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:11}, callback:function(v){return fmtCompact(v);}}, beginAtZero:true,
              suggestedMax:(function(){var m=Math.max.apply(null,catGastoVals.concat([1])); return m+Math.ceil(m*0.2)+1;})()},
+          y:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}}
+        }
+      }
+    });
+  }
+
+  if(mostrarCatGastos && catGenLbls.length){
+    var catGenBarLabelPlugin = {
+      id:'rcmGastoGenLabels',
+      afterDatasetsDraw:function(chart){
+        var ctx=chart.ctx; var ds=chart.data.datasets[0]; var meta=chart.getDatasetMeta(0);
+        meta.data.forEach(function(bar,i){
+          var v=ds.data[i]; if(v==null) return;
+          ctx.save();
+          ctx.fillStyle = '#C45B0A';
+          ctx.font = 'bold 11px monospace';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(fmt(v), bar.x+8, bar.y);
+          ctx.restore();
+        });
+      }
+    };
+    mkRcmChart('rcm-gasto-gen-chart', {
+      type:'bar',
+      plugins:[catGenBarLabelPlugin],
+      data:{labels:catGenLbls, datasets:[{data:catGenVals, backgroundColor:catGenCols, borderRadius:3}]},
+      options:{
+        indexAxis:'y',
+        responsive:true, maintainAspectRatio:false,
+        layout:{padding:{right:70}},
+        plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+fmt(c.raw);}}}},
+        scales:{
+          x:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:11}, callback:function(v){return fmtCompact(v);}}, beginAtZero:true,
+             suggestedMax:(function(){var m=Math.max.apply(null,catGenVals.concat([1])); return m+Math.ceil(m*0.2)+1;})()},
           y:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}}
         }
       }
