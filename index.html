@@ -166,6 +166,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .ssel-opt.hl{background:var(--green-bg);color:var(--green)}
 .ssel-opt.sel{font-weight:700;color:var(--green)}
 .ssel-empty{padding:9px 12px;font-size:12px;color:var(--text3)}
+
+/* Navegador de día/semana (reportes frambuesa) */
+.rfr-navbtn{width:40px;flex-shrink:0;padding:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:20px;font-weight:700;cursor:pointer;outline:none;display:flex;align-items:center;justify-content:center;line-height:1;transition:background .15s}
+.rfr-navbtn:hover{background:var(--surface)}
+.rfr-navbtn:active{background:var(--border)}
+.rfr-navbtn:disabled{opacity:.3;cursor:default}
 .monto-wrap{position:relative}
 .monto-prefix{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;font-family:var(--mono)}
 .monto-wrap input{padding-left:24px;font-family:var(--mono)}
@@ -818,20 +824,34 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
       <!-- ── POR DÍA ── -->
       <div id="rfr-sec-dia">
-        <div class="rfr-topbar" style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
-          <select id="rfr-sel-dia" onchange="renderRfrDiaDetalle()" style="flex:1;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);font-weight:600;outline:none">
-            <option value="">— Selecciona un día —</option>
-          </select>
+        <div class="rfr-topbar" style="display:flex;gap:8px;align-items:stretch;margin-bottom:14px;height:44px">
+          <button class="rfr-navbtn" id="rfr-dia-prev" onclick="rfrStepDia(-1)" aria-label="Día anterior">&lsaquo;</button>
+          <div style="position:relative;flex:1;min-width:0">
+            <div id="rfr-dia-display" style="height:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:15px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+            <select id="rfr-sel-dia" class="no-ssel" onchange="onRfrDiaChange()" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;font-size:16px">
+              <option value="">— Selecciona un día —</option>
+            </select>
+          </div>
+          <button class="rfr-navbtn" id="rfr-dia-next" onclick="rfrStepDia(1)" aria-label="Día siguiente">&rsaquo;</button>
         </div>
         <div id="rfr-dia-detalle"></div>
       </div>
 
       <!-- ── POR SEMANA ── -->
       <div id="rfr-sec-sem" style="display:none">
-        <div class="rfr-topbar" style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
-          <select id="rfr-sel-sem" onchange="renderRfrSemDetalle()" style="flex:1;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);font-weight:600;outline:none">
-            <option value="">— Selecciona una semana —</option>
-          </select>
+        <div class="rfr-topbar" style="display:flex;gap:8px;align-items:stretch;margin-bottom:14px;height:44px">
+          <button class="rfr-navbtn" id="rfr-sem-prev" onclick="rfrStepSem(-1)" aria-label="Semana anterior">&lsaquo;</button>
+          <div style="position:relative;flex:1;min-width:0">
+            <div id="rfr-sem-display" style="height:100%;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;padding:0 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+              <span></span>
+              <span id="rfr-sem-display-num" style="font-size:15px;font-weight:700;color:var(--text);white-space:nowrap">—</span>
+              <span id="rfr-sem-display-rng" style="justify-self:end;font-size:11px;font-weight:500;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
+            </div>
+            <select id="rfr-sel-sem" class="no-ssel" onchange="onRfrSemChange()" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;font-size:16px">
+              <option value="">— Selecciona una semana —</option>
+            </select>
+          </div>
+          <button class="rfr-navbtn" id="rfr-sem-next" onclick="rfrStepSem(1)" aria-label="Semana siguiente">&rsaquo;</button>
         </div>
         <div id="rfr-sem-detalle"></div>
       </div>
@@ -2780,6 +2800,33 @@ function renderRepFram(){
 }
 
 // ─── POR DÍA ───────────────────────────────────────────────
+function rfrFechaLarga(fechaStr){
+  var d=new Date(fechaStr+'T12:00:00');
+  var dias=['Domingo','Lunes','Martes','Mi\u00e9rcoles','Jueves','Viernes','S\u00e1bado'];
+  var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  return dias[d.getDay()]+' '+d.getDate()+' de '+meses[d.getMonth()]+' de '+d.getFullYear();
+}
+function rfrSyncDiaDisplay(){
+  var sel=document.getElementById('rfr-sel-dia'), disp=document.getElementById('rfr-dia-display');
+  if(!sel||!disp) return;
+  disp.textContent = sel.value ? rfrFechaLarga(sel.value) : '\u2014 Selecciona un d\u00eda \u2014';
+  var opts=Array.prototype.slice.call(sel.options).filter(function(o){return o.value;});
+  var i=opts.findIndex(function(o){return o.value===sel.value;});
+  var prev=document.getElementById('rfr-dia-prev'), next=document.getElementById('rfr-dia-next');
+  // opciones en orden descendente (más reciente primero): avanzar = índice menor
+  if(next) next.disabled = !(i>0);
+  if(prev) prev.disabled = !(i>=0 && i<opts.length-1);
+}
+function onRfrDiaChange(){ rfrSyncDiaDisplay(); renderRfrDiaDetalle(); }
+function rfrStepDia(dir){
+  var sel=document.getElementById('rfr-sel-dia'); if(!sel) return;
+  var opts=Array.prototype.slice.call(sel.options).filter(function(o){return o.value;});
+  if(!opts.length) return;
+  var i=opts.findIndex(function(o){return o.value===sel.value;}); if(i<0)i=0;
+  var ni = dir>0 ? i-1 : i+1; // dir>0 = avanzar (más reciente)
+  if(ni<0||ni>=opts.length) return;
+  sel.value=opts[ni].value; onRfrDiaChange();
+}
 function rfrPoblarSelectDia(){
   var sel=document.getElementById('rfr-sel-dia'); if(!sel) return;
   var prev=sel.value;
@@ -2790,6 +2837,7 @@ function rfrPoblarSelectDia(){
   });
   if(prev&&sel.querySelector('option[value="'+prev+'"]')) sel.value=prev;
   else if(fechasDesc.length) sel.value=fechasDesc[0].fecha;
+  rfrSyncDiaDisplay();
   if(sel.value) renderRfrDiaDetalle();
   else document.getElementById('rfr-dia-detalle').innerHTML='';
 }
@@ -2989,6 +3037,33 @@ function renderRfrDiaDetalle(){
 }
 
 // ─── POR SEMANA ─────────────────────────────────────────────
+function rfrSyncSemDisplay(){
+  var sel=document.getElementById('rfr-sel-sem');
+  var num=document.getElementById('rfr-sem-display-num'), rng=document.getElementById('rfr-sem-display-rng');
+  if(!sel||!num) return;
+  if(sel.value){
+    num.textContent='Semana '+String(rfrWeekNum(sel.value)).padStart(2,'0');
+    if(rng) rng.textContent=rfrSemanaLbl(sel.value);
+  } else {
+    num.textContent='\u2014 Selecciona una semana \u2014';
+    if(rng) rng.textContent='';
+  }
+  var opts=Array.prototype.slice.call(sel.options).filter(function(o){return o.value;});
+  var i=opts.findIndex(function(o){return o.value===sel.value;});
+  var prev=document.getElementById('rfr-sem-prev'), next=document.getElementById('rfr-sem-next');
+  if(next) next.disabled = !(i>0);
+  if(prev) prev.disabled = !(i>=0 && i<opts.length-1);
+}
+function onRfrSemChange(){ rfrSyncSemDisplay(); renderRfrSemDetalle(); }
+function rfrStepSem(dir){
+  var sel=document.getElementById('rfr-sel-sem'); if(!sel) return;
+  var opts=Array.prototype.slice.call(sel.options).filter(function(o){return o.value;});
+  if(!opts.length) return;
+  var i=opts.findIndex(function(o){return o.value===sel.value;}); if(i<0)i=0;
+  var ni = dir>0 ? i-1 : i+1; // dir>0 = avanzar (más reciente)
+  if(ni<0||ni>=opts.length) return;
+  sel.value=opts[ni].value; onRfrSemChange();
+}
 function rfrPoblarSelectSem(){
   var sel=document.getElementById('rfr-sel-sem'); if(!sel) return;
   var prev=sel.value;
@@ -3009,6 +3084,7 @@ function rfrPoblarSelectSem(){
   });
   if(prev&&sel.querySelector('option[value="'+prev+'"]')) sel.value=prev;
   else if(semKeysDesc.length) sel.value=semKeysDesc[0];
+  rfrSyncSemDisplay();
   if(sel.value) renderRfrSemDetalle();
   else document.getElementById('rfr-sem-detalle').innerHTML='';
 }
