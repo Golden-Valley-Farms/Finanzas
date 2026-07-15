@@ -353,6 +353,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   #rep-fram-sec .ffin-grid2,
   #rep-fram-sec .ffin-grid4,
   #rep-fram-sec .fintab-wrap{max-width:1400px;margin-left:auto;margin-right:auto}
+  #rep-fram-sec .ffin-grid2{grid-template-columns:repeat(3,1fr)}
+  #rep-fram-sec .ffin-grid2 .kpi-card.span2{grid-column:span 1}
   #rep-fram-sec .ffin-grid4{grid-template-columns:repeat(4,1fr)}
   #rep-fram-sec .ffin-grid2 .kpi-val,
   #rep-fram-sec .ffin-grid4 .kpi-val{font-size:33px}
@@ -2846,6 +2848,21 @@ function renderRepFram(){
 // Fuente: framFinanzas (Registro Finanzas → historial).
 //   Facturado = cajas × precio
 //   Pagado    = Facturado − Prestamo − Intereses − Planta − Inocuidad
+// Deuda inicial del préstamo. Cambiar aquí si el monto contratado cambia.
+var FRAM_DEUDA_INICIAL = 500000;
+// Primera semana que abona a esa deuda: Semana 39 (numeración de la app) = 21-27 sep 2025
+var FRAM_DEUDA_DESDE = '2025-09-21';
+
+// Deuda restante: descuenta TODOS los abonos históricos de Prestamo desde la Semana 39,
+// sin importar el filtro de Ciclo (es un saldo real, no un corte por ciclo).
+function framDeudaRestante(){
+  var abonos=(framFinanzas||[]).reduce(function(a,f){
+    if(!f.semanaKey || f.semanaKey < FRAM_DEUDA_DESDE) return a;
+    return a+(f.descPrestamo||0);
+  },0);
+  return FRAM_DEUDA_INICIAL - abonos;
+}
+
 function rfrFinMoney(v){
   return '$'+(v||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
@@ -2903,8 +2920,8 @@ function renderRfrFinanzas(filtroCiclo){
       (sub?'<div class="fintab-sub">'+sub+'</div>':'')+'</td>';
   }
 
-  function tarjeta(lbl, val){
-    return '<div class="kpi-card">'+
+  function tarjeta(lbl, val, ancha){
+    return '<div class="kpi-card'+(ancha?' span2':'')+'">'+
       '<div class="kpi-accent" style="background:var(--fram)"></div>'+
       '<div class="kpi-lbl">'+lbl+'</div>'+
       '<div class="kpi-val" style="color:var(--fram)">'+rfrFinMoney(val)+'</div>'+
@@ -2917,6 +2934,7 @@ function renderRfrFinanzas(filtroCiclo){
   html+='<div class="ffin-grid2">'+
     tarjeta('Total Facturado', tot.facturado)+
     tarjeta('Total Pagado', tot.pagado)+
+    tarjeta('Deuda Restante', framDeudaRestante(), true)+
   '</div>'+
   '<div class="ffin-grid4">'+
     COLS.map(function(c){ return tarjeta(c.lbl, tot[c.key]); }).join('')+
