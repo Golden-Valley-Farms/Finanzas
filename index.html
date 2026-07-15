@@ -331,7 +331,14 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .fin-sem-nav:hover:not(:disabled){background:var(--surface);border-color:var(--fram)}
 .fin-sem-nav:active:not(:disabled){transform:scale(.94)}
 .fin-sem-nav:disabled{opacity:.35;cursor:default}
-/* Tabla Finanzas (Reportes -> Frambuesa): mismo ancho que las tarjetas, alto fijo con scroll vertical */
+/* ── Finanzas (Reportes -> Frambuesa): tarjetas de total + tabla ── */
+/* Fila 1: Facturado / Pagado.  Fila 2: los cuatro descuentos. */
+.ffin-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.ffin-grid4{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.ffin-grid2 .kpi-val{font-size:17px}
+.ffin-grid4 .kpi-val{font-size:17px}
+.ffin-nota{font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5}
+/* Tabla: alto fijo con scroll vertical, encabezado pegado */
 .fintab-wrap{height:400px;overflow-y:auto;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface)}
 .fintab{border-collapse:collapse;width:100%;table-layout:fixed;font-size:10.5px}
 .fintab th,.fintab td{padding:6px 3px;text-align:right;border-bottom:1px solid var(--border)}
@@ -343,7 +350,15 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .fintab tbody tr:nth-child(even){background:var(--surface2)}
 .fintab col.c-sem{width:20%}
 .fintab col.c-num{width:13.33%}
-@media (min-width:820px){
+@media (min-width:700px){
+  /* Mismo ancho y centrado que .kpi-grid dentro de #rep-fram-sec */
+  #rep-fram-sec .ffin-grid2,
+  #rep-fram-sec .ffin-grid4,
+  #rep-fram-sec .fintab-wrap,
+  #rep-fram-sec .ffin-nota{max-width:1400px;margin-left:auto;margin-right:auto}
+  #rep-fram-sec .ffin-grid4{grid-template-columns:repeat(4,1fr)}
+  #rep-fram-sec .ffin-grid2 .kpi-val,
+  #rep-fram-sec .ffin-grid4 .kpi-val{font-size:33px}
   .fintab{font-size:13px}
   .fintab th{font-size:10.5px}
   .fintab th,.fintab td{padding:8px 10px}
@@ -2888,27 +2903,23 @@ function renderRfrFinanzas(filtroCiclo){
     return '<td class="'+cls+'">'+txt+'</td>';
   }
 
-  function tarjeta(lbl, val, ancha){
-    return '<div class="kpi-card'+(ancha?' span2':'')+'">'+
+  function tarjeta(lbl, val){
+    return '<div class="kpi-card">'+
       '<div class="kpi-accent" style="background:var(--fram)"></div>'+
       '<div class="kpi-lbl">'+lbl+'</div>'+
       '<div class="kpi-val" style="color:var(--fram)">'+rfrFinMoney(val)+'</div>'+
     '</div>';
   }
 
-  var clientes=[];
-  data.forEach(function(f){ if(f.cliente && clientes.indexOf(f.cliente)<0) clientes.push(f.cliente); });
-
   var html='';
-  if(clientes.length){
-    html+='<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px">'+clientes.join(' \u00b7 ')+'</div>';
-  }
 
-  // ── Totales como tarjetas ──
-  html+='<div class="kpi-grid">'+
-    tarjeta('Total Facturado', tot.facturado, true)+
-    COLS.map(function(c){ return tarjeta('Total '+c.lbl, tot[c.key], false); }).join('')+
-    tarjeta('Total Pagado', tot.pagado, true)+
+  // ── Totales: fila 1 Facturado/Pagado, fila 2 los cuatro descuentos ──
+  html+='<div class="ffin-grid2">'+
+    tarjeta('Total Facturado', tot.facturado)+
+    tarjeta('Total Pagado', tot.pagado)+
+  '</div>'+
+  '<div class="ffin-grid4">'+
+    COLS.map(function(c){ return tarjeta(c.lbl, tot[c.key]); }).join('')+
   '</div>';
 
   // ── Tabla: alto fijo, scroll vertical, encabezado pegado ──
@@ -2932,7 +2943,7 @@ function renderRfrFinanzas(filtroCiclo){
       '</tr>';
     }).join('')+
     '</tbody></table></div>'+
-    '<div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5">Montos en pesos redondeados. Pagado = Facturado \u2212 Prestamo \u2212 Intereses \u2212 Planta \u2212 Inocuidad.</div>';
+    '<div class="ffin-nota">Montos en pesos redondeados. Pagado = Facturado \u2212 Prestamo \u2212 Intereses \u2212 Planta \u2212 Inocuidad.</div>';
 
   cont.innerHTML=html;
 
