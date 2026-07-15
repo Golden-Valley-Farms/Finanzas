@@ -253,6 +253,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .his-sel-toggle{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font);transition:all .15s}
 .his-sel-toggle.active{background:var(--fram-bg);color:var(--fram);border-color:var(--fram-border)}
 .his-sel-all{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font);transition:all .15s;display:none}
+.his-total-card{padding:7px 12px 7px 16px;text-align:right;flex-shrink:0}
+.his-total-card .kpi-lbl{margin-bottom:1px}
+.his-total-card .kpi-val{font-size:18px}
 .his-sel-all.visible{display:block}
 .empty{text-align:center;padding:40px 20px;color:var(--text3)}
 .empty-icon{font-size:40px;margin-bottom:10px}
@@ -636,8 +639,15 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
     </div>
     <div class="his-sel-bar" id="his-sel-bar">
-  <button class="his-sel-toggle" id="his-sel-toggle" onclick="toggleSelMode()">☑ Seleccionar</button>
-  <button class="his-sel-all" id="his-sel-all" onclick="toggleSelAll()">Seleccionar todo</button>
+  <div style="display:flex;align-items:center;gap:8px">
+    <button class="his-sel-toggle" id="his-sel-toggle" onclick="toggleSelMode()">☑ Seleccionar</button>
+    <button class="his-sel-all" id="his-sel-all" onclick="toggleSelAll()">Seleccionar todo</button>
+  </div>
+  <div class="kpi-card his-total-card">
+    <div class="kpi-accent" style="background:var(--fram)"></div>
+    <div class="kpi-lbl">Total filtrado</div>
+    <div class="kpi-val" id="his-total-val" style="color:var(--fram)">$0</div>
+  </div>
 </div>
 <div id="his-list"><div class="empty"><div class="empty-icon">🌿</div><div class="empty-text">Sin gastos registrados aun.</div></div></div>
 <div class="bulk-bar" id="bulk-bar" style="display:none">
@@ -2526,6 +2536,10 @@ function renderHis(){
     var catOk = filtroCat==='todas' || g.cat===filtroCat;
     return negOk && cicloOk && cultivoOk && catOk;
   });
+
+  // Monto total de lo que dejan pasar los filtros (se actualiza aunque no haya resultados)
+  var totEl = document.getElementById('his-total-val');
+  if(totEl) totEl.textContent = fmt(data.reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0));
 
   if(!data.length){
     var msg = gastos.length ? 'Sin gastos para este filtro.' : 'Sin gastos registrados aun.';
