@@ -2880,12 +2880,13 @@ function renderRfrFinanzas(filtroCiclo){
     };
     var descuentos=d.prestamo+d.intereses+d.planta+d.inocuidad;
     var pagado=facturado-descuentos;
-    var pct=function(v){ return Math.round(v/facturado*100)+'%'; };
+    var pct=function(v){ return facturado ? Math.round(v/facturado*100)+'%' : ''; };
     return {
       semana:f.semanaKey?('Semana '+String(rfrWeekNum(f.semanaKey)).padStart(2,'0')):'\u2014',
       rango:f.semanaKey?rfrSemanaLbl(f.semanaKey):'',
       facturado:facturado, d:d, pagado:pagado,
-      subReb: facturado ? pct(descuentos) : '',
+      pct:pct,
+      subReb: facturado ? 'DESCUENTOS '+pct(descuentos) : '',
       subPag: facturado ? pct(pagado) : ''
     };
   });
@@ -2934,7 +2935,10 @@ function renderRfrFinanzas(filtroCiclo){
           (r.rango?'<div style="font-size:13.5px;color:var(--text3);font-weight:400;margin-top:1px">'+r.rango+'</div>':'')+
         '</td>'+
         celda(r.facturado,'',r.subReb)+
-        COLS.map(function(c){return celda(r.d[c.key]);}).join('')+
+        COLS.map(function(c){
+          var v=r.d[c.key];
+          return celda(v,'', v?r.pct(v):'');
+        }).join('')+
         celda(r.pagado,'pag',r.subPag)+
       '</tr>';
     }).join('')+
