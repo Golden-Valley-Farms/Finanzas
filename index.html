@@ -860,7 +860,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="rfr-topbar" style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
         <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Ciclo</span>
         <select id="rfr-ciclo" onchange="renderRepFram()" style="flex:1;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);font-weight:600;outline:none">
-          <option value="todos">Todos los ciclos</option>
         </select>
       </div>
 
@@ -948,7 +947,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="rfr-topbar" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
         <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Ciclo</span>
         <select id="rcm-ciclo" onchange="renderRepCam()" style="flex:1;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);font-weight:600;outline:none">
-          <option value="todos">Todos los ciclos</option>
         </select>
       </div>
 
@@ -2871,11 +2869,13 @@ function renderRepFram(){
     (framFinanzas||[]).forEach(function(f){ if(f.ciclo&&ciclosEnFram.indexOf(f.ciclo)<0) ciclosEnFram.push(f.ciclo); });
     ciclosEnFram.sort().reverse();
     var prevVal=cicloSel.value;
-    cicloSel.innerHTML='<option value="todos">Todos los ciclos</option>';
+    // Sin "Todos los ciclos": siempre hay que ver un ciclo concreto
+    cicloSel.innerHTML='';
     ciclosEnFram.forEach(function(c){ var o=document.createElement('option'); o.value=c; o.textContent=c; cicloSel.appendChild(o); });
     if(prevVal&&cicloSel.querySelector('option[value="'+prevVal+'"]')) cicloSel.value=prevVal;
+    else if(ciclosEnFram.length) cicloSel.value=ciclosEnFram[0]; // el más reciente
   }
-  var filtroCiclo=cicloSel?cicloSel.value:'todos';
+  var filtroCiclo=cicloSel?cicloSel.value:'';
 
   // Finanzas no depende de los registros de cosecha: se dibuja antes del guard
   if(rfrTabActual==='fac'){ renderRfrFinanzas(filtroCiclo); return; }
@@ -4420,11 +4420,13 @@ function renderRepCam(){
     });
     ciclosPresentes.sort().reverse();
     var prevVal = cicloSel.value;
-    cicloSel.innerHTML = '<option value="todos">Todos los ciclos</option>';
+    // Sin "Todos los ciclos": siempre hay que ver un ciclo concreto
+    cicloSel.innerHTML = '';
     ciclosPresentes.forEach(function(c){ var o=document.createElement('option'); o.value=c; o.textContent=c; cicloSel.appendChild(o); });
     if(prevVal && cicloSel.querySelector('option[value="'+prevVal+'"]')) cicloSel.value = prevVal;
+    else if(ciclosPresentes.length) cicloSel.value = ciclosPresentes[0]; // el más reciente
   }
-  var filtroCiclo = cicloSel ? cicloSel.value : 'todos';
+  var filtroCiclo = cicloSel ? cicloSel.value : '';
 
   var cont = document.getElementById('rcm-content');
   var subtabsEl = document.getElementById('rcm-subtabs');
