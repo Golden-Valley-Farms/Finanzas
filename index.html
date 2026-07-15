@@ -840,7 +840,13 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <!-- ============ SUB-TAB: FRAMBUESA ============ -->
     <div id="rep-fram-sec" style="display:none">
 
-      <!-- Selector de Ciclo: afecta a las 3 pestañas -->
+      <!-- Pestañas principales: Cosecha / Finanzas -->
+      <div class="rfr-topbar" id="rfr-main-tabs" style="display:flex;gap:4px;margin-bottom:10px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
+        <button class="ven-tab active" data-main="cos" onclick="rfrMainTab('cos')" style="flex:1;font-size:12px">Cosecha</button>
+        <button class="ven-tab" data-main="fin" onclick="rfrMainTab('fin')" style="flex:1;font-size:12px">Finanzas</button>
+      </div>
+
+      <!-- Selector de Ciclo: afecta a todas las pestañas -->
       <div class="rfr-topbar" style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
         <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Ciclo</span>
         <select id="rfr-ciclo" onchange="renderRepFram()" style="flex:1;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);font-weight:600;outline:none">
@@ -848,12 +854,17 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </select>
       </div>
 
-      <!-- Sub-tabs: día / semana / ciclo -->
-      <div class="rfr-topbar" style="display:flex;gap:4px;margin-bottom:14px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
+      <!-- Sub-tabs de Cosecha -->
+      <div class="rfr-topbar" id="rfr-subtabs-cos" style="display:flex;gap:4px;margin-bottom:14px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
         <button class="ven-tab active" id="rfr-tab-dia" onclick="rfrTab('dia')" style="flex:1;font-size:12px">Por día</button>
         <button class="ven-tab" id="rfr-tab-sem" onclick="rfrTab('sem')" style="flex:1;font-size:12px">Por semana</button>
         <button class="ven-tab" id="rfr-tab-res" onclick="rfrTab('res')" style="flex:1;font-size:12px">Por ciclo</button>
-        <button class="ven-tab" id="rfr-tab-fin" onclick="rfrTab('fin')" style="flex:1;font-size:12px">Finanzas</button>
+      </div>
+
+      <!-- Sub-tabs de Finanzas -->
+      <div class="rfr-topbar" id="rfr-subtabs-fin" style="display:none;gap:4px;margin-bottom:14px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
+        <button class="ven-tab active" id="rfr-tab-fac" onclick="rfrTab('fac')" style="flex:1;font-size:12px">Facturación</button>
+        <button class="ven-tab" id="rfr-tab-edr" onclick="rfrTab('edr')" style="flex:1;font-size:12px">Estado de Resultados</button>
       </div>
 
       <!-- ── POR DÍA ── -->
@@ -895,9 +906,14 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div id="rfr-res-detalle"></div>
       </div>
 
-      <!-- ── FINANZAS ── -->
-      <div id="rfr-sec-fin" style="display:none">
-        <div id="rfr-fin-detalle"></div>
+      <!-- ── FINANZAS · FACTURACIÓN ── -->
+      <div id="rfr-sec-fac" style="display:none">
+        <div id="rfr-fac-detalle"></div>
+      </div>
+
+      <!-- ── FINANZAS · ESTADO DE RESULTADOS ── -->
+      <div id="rfr-sec-edr" style="display:none">
+        <div id="rfr-edr-detalle"></div>
       </div>
 
     </div>
@@ -2788,11 +2804,26 @@ function mkRfrChart(id, cfg){
 
 function rfrGridCol(){ return window.matchMedia('(prefers-color-scheme:dark)').matches?'#2c2c2a':'#e1e0d9'; }
 
+// Pestaña principal: Cosecha (dia/sem/res) o Finanzas (fac/edr).
+// Cada grupo recuerda en qué sub-pestaña se quedó.
+var rfrMainSel='cos', rfrCosSel='dia', rfrFinSel='fac';
+
+function rfrMainTab(m){
+  rfrMainSel=m;
+  document.querySelectorAll('#rfr-main-tabs .ven-tab').forEach(function(b){
+    b.classList.toggle('active', b.getAttribute('data-main')===m);
+  });
+  document.getElementById('rfr-subtabs-cos').style.display = m==='cos'?'flex':'none';
+  document.getElementById('rfr-subtabs-fin').style.display = m==='fin'?'flex':'none';
+  rfrTab(m==='cos'?rfrCosSel:rfrFinSel);
+}
+
 function rfrTab(t){
   rfrTabActual=t;
-  ['dia','sem','res','fin'].forEach(function(x){
-    document.getElementById('rfr-tab-'+x).classList.toggle('active',x===t);
-    document.getElementById('rfr-sec-'+x).style.display=x===t?'block':'none';
+  if(t==='dia'||t==='sem'||t==='res') rfrCosSel=t; else rfrFinSel=t;
+  ['dia','sem','res','fac','edr'].forEach(function(x){
+    var b=document.getElementById('rfr-tab-'+x); if(b) b.classList.toggle('active',x===t);
+    var sec=document.getElementById('rfr-sec-'+x); if(sec) sec.style.display=x===t?'block':'none';
   });
   renderRepFram();
 }
@@ -2833,7 +2864,8 @@ function renderRepFram(){
   var filtroCiclo=cicloSel?cicloSel.value:'todos';
 
   // Finanzas no depende de los registros de cosecha: se dibuja antes del guard
-  if(rfrTabActual==='fin'){ renderRfrFinanzas(filtroCiclo); return; }
+  if(rfrTabActual==='fac'){ renderRfrFinanzas(filtroCiclo); return; }
+  if(rfrTabActual==='edr'){ renderRfrEDR(filtroCiclo); return; }
 
   if(!framRegistros||!framRegistros.length) return;
   rfrDataCache=framRegistros.filter(function(r){return filtroCiclo==='todos'||r.ciclo===filtroCiclo;})
@@ -2868,7 +2900,7 @@ function rfrFinMoney(v){
 }
 
 function renderRfrFinanzas(filtroCiclo){
-  var cont=document.getElementById('rfr-fin-detalle');
+  var cont=document.getElementById('rfr-fac-detalle');
   if(!cont) return;
 
   var data=(framFinanzas||[]).filter(function(f){
@@ -2967,6 +2999,137 @@ function renderRfrFinanzas(filtroCiclo){
   // Arrancar abajo: lo m\u00e1s reciente a la vista
   var wrap=cont.querySelector('.fintab-wrap');
   if(wrap) wrap.scrollTop=wrap.scrollHeight;
+}
+
+// ─── FINANZAS · ESTADO DE RESULTADOS ──────────────────────────
+// Ingresos = total facturado (framFinanzas)
+// Gastos   = todos los gastos de frambuesa + la mitad de los de Jalisco General
+//            (la otra mitad es de Camote Jalisco; mismo reparto que la gráfica
+//             "Gastos x Negocio" del dashboard de Gastos)
+// Utilidad = Ingresos - Gastos
+var FRAM_GEN_JAL_FACTOR = 0.5;
+
+function framEnCiclo(g, filtroCiclo){
+  return filtroCiclo==='todos' || (g.ciclo||cicloFromFecha(g.fechaVal))===filtroCiclo;
+}
+
+// Agrupa gastos por categoría y devuelve labels/valores/colores listos para la barra
+function framCatBreakdown(lista, factor){
+  var map={};
+  lista.forEach(function(g){
+    var c=g.cat||'Sin categoría';
+    map[c]=(map[c]||0)+((parseFloat(g.monto)||0)*factor);
+  });
+  var ord=Object.keys(map).sort(function(a,b){return map[b]-map[a];});
+  return {
+    lbls:ord,
+    vals:ord.map(function(c){return Math.round(map[c]);}),
+    cols:ord.map(function(c){return catColor(c);}),
+    total:ord.reduce(function(a,c){return a+map[c];},0)
+  };
+}
+
+// Barra horizontal con la etiqueta del monto al final, igual que en Camote Nayarit
+function framBarraH(id, lbls, vals, cols, colorTxt){
+  var gridCol=rfrGridCol(), textMuted='#898781';
+  var labelPlugin={
+    id:id+'-labels',
+    afterDatasetsDraw:function(chart){
+      var ctx=chart.ctx, ds=chart.data.datasets[0], meta=chart.getDatasetMeta(0);
+      meta.data.forEach(function(bar,i){
+        var v=ds.data[i]; if(v==null) return;
+        ctx.save();
+        ctx.fillStyle=colorTxt;
+        ctx.font='bold 11px monospace';
+        ctx.textAlign='left';
+        ctx.textBaseline='middle';
+        ctx.fillText(fmt(v), bar.x+8, bar.y);
+        ctx.restore();
+      });
+    }
+  };
+  mkRfrChart(id, {
+    type:'bar',
+    plugins:[labelPlugin],
+    data:{labels:lbls, datasets:[{data:vals, backgroundColor:cols, borderRadius:3}]},
+    options:{
+      indexAxis:'y',
+      responsive:true, maintainAspectRatio:false,
+      layout:{padding:{right:70}},
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+fmt(c.raw);}}}},
+      scales:{
+        x:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:11}, callback:function(v){return fmtCompact(v);}}, beginAtZero:true,
+           suggestedMax:(function(){var m=Math.max.apply(null,vals.concat([1])); return m+Math.ceil(m*0.2)+1;})()},
+        y:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}}
+      }
+    }
+  });
+}
+
+function renderRfrEDR(filtroCiclo){
+  var cont=document.getElementById('rfr-edr-detalle');
+  if(!cont) return;
+
+  // Ingresos: lo facturado en el ciclo
+  var ingresos=(framFinanzas||[]).filter(function(f){
+    return filtroCiclo==='todos' || f.ciclo===filtroCiclo;
+  }).reduce(function(a,f){ return a+((f.cajas||0)*(f.precio||0)); },0);
+
+  // Gastos propios de frambuesa (Jalisco y Nayarit)
+  var gFram=gastos.filter(function(g){
+    return g.cultivo==='fram' && ['jal','nay'].indexOf(g.loc)>=0 && framEnCiclo(g, filtroCiclo);
+  });
+  // Gastos de Jalisco General: solo la mitad le toca a frambuesa
+  var gGenJal=gastos.filter(function(g){
+    return g.cultivo==='general' && g.loc==='jal' && framEnCiclo(g, filtroCiclo);
+  });
+
+  var catFram=framCatBreakdown(gFram, 1);
+  var catGen=framCatBreakdown(gGenJal, FRAM_GEN_JAL_FACTOR);
+
+  var gastosTot=catFram.total+catGen.total;
+  var utilidad=ingresos-gastosTot;
+
+  if(!ingresos && !gastosTot){
+    cont.innerHTML='<div style="text-align:center;padding:60px 0;color:var(--text3);font-size:13px">Sin registros financieros para este ciclo</div>';
+    return;
+  }
+
+  var colUtil = utilidad>=0 ? 'var(--green)' : '#D64545';
+
+  cont.innerHTML=
+    '<div class="kpi-grid">'+
+      '<div class="kpi-card">'+
+        '<div class="kpi-accent" style="background:var(--green)"></div>'+
+        '<div class="kpi-lbl">Ingresos</div>'+
+        '<div class="kpi-val" style="color:var(--green)">'+fmt(ingresos)+'</div>'+
+      '</div>'+
+      '<div class="kpi-card">'+
+        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
+        '<div class="kpi-lbl">Gastos</div>'+
+        '<div class="kpi-val" style="color:var(--fram)">'+fmt(gastosTot)+'</div>'+
+      '</div>'+
+      '<div class="kpi-card span2">'+
+        '<div class="kpi-accent" style="background:'+colUtil+'"></div>'+
+        '<div class="kpi-lbl">Utilidad</div>'+
+        '<div class="kpi-val" style="color:'+colUtil+'">'+fmt(utilidad)+'</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="fin-charts-grid">'+
+      (catFram.lbls.length ?
+        '<div class="dash-card fin-chart-full">'+
+          '<div class="dash-card-title">Gastos x Categoría</div>'+
+          '<div style="position:relative;height:'+Math.max(200, catFram.lbls.length*46)+'px;margin-top:8px"><canvas id="rfr-edr-cat-chart"></canvas></div>'+
+        '</div>' : '')+
+      (catGen.lbls.length ?
+        '<div class="dash-card fin-chart-full">'+
+          '<div class="dash-card-title">Gastos Generales x Categoría (50% de Jalisco General)</div>'+
+          '<div style="position:relative;height:'+Math.max(200, catGen.lbls.length*46)+'px;margin-top:8px"><canvas id="rfr-edr-gen-chart"></canvas></div>'+
+        '</div>' : '')+
+    '</div>';
+
+  if(catFram.lbls.length) framBarraH('rfr-edr-cat-chart', catFram.lbls, catFram.vals, catFram.cols, '#D6336C');
+  if(catGen.lbls.length)  framBarraH('rfr-edr-gen-chart', catGen.lbls, catGen.vals, catGen.cols, '#D6336C');
 }
 
 // ─── POR DÍA ───────────────────────────────────────────────
