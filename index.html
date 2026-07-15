@@ -331,16 +331,23 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .fin-sem-nav:hover:not(:disabled){background:var(--surface);border-color:var(--fram)}
 .fin-sem-nav:active:not(:disabled){transform:scale(.94)}
 .fin-sem-nav:disabled{opacity:.35;cursor:default}
-.fintab-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface)}
-.fintab{border-collapse:collapse;width:100%;min-width:560px;font-size:12.5px}
-.fintab th,.fintab td{padding:8px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border)}
-.fintab th{font-size:10.5px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;background:var(--surface2);position:sticky;top:0}
+/* Tabla Finanzas (Reportes -> Frambuesa): mismo ancho que las tarjetas, alto fijo con scroll vertical */
+.fintab-wrap{height:400px;overflow-y:auto;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface)}
+.fintab{border-collapse:collapse;width:100%;table-layout:fixed;font-size:10.5px}
+.fintab th,.fintab td{padding:6px 3px;text-align:right;border-bottom:1px solid var(--border)}
+.fintab th{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.02em;background:var(--surface2);position:sticky;top:0;z-index:1}
 .fintab td.txt,.fintab th.txt{text-align:left}
 .fintab td.num{font-family:var(--mono)}
 .fintab td.cero{color:var(--text3)}
 .fintab td.pag{font-weight:700;color:var(--fram)}
 .fintab tbody tr:nth-child(even){background:var(--surface2)}
-.fintab tfoot td{border-top:2px solid var(--border);border-bottom:none;font-weight:700;background:var(--surface2)}
+.fintab col.c-sem{width:20%}
+.fintab col.c-num{width:13.33%}
+@media (min-width:820px){
+  .fintab{font-size:13px}
+  .fintab th{font-size:10.5px}
+  .fintab th,.fintab td{padding:8px 10px}
+}
 .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;box-shadow:var(--shadow);position:relative;overflow:hidden}
 .kpi-card.span2{grid-column:span 2}
 .kpi-accent{position:absolute;top:0;left:0;width:4px;height:100%}
@@ -2873,9 +2880,20 @@ function renderRfrFinanzas(filtroCiclo){
     COLS.forEach(function(c){ tot[c.key]+=r.d[c.key]; });
   });
 
+  // En las celdas: pesos redondeados y sin "$", para que las 7 columnas quepan
+  // en el ancho de las tarjetas. El importe exacto vive en las tarjetas de total.
   function celda(v, extra){
     var cls='num'+(extra?' '+extra:'')+(v?'':' cero');
-    return '<td class="'+cls+'">'+(v?rfrFinMoney(v):'\u2014')+'</td>';
+    var txt = v ? Math.round(v).toLocaleString('es-MX') : '\u2014';
+    return '<td class="'+cls+'">'+txt+'</td>';
+  }
+
+  function tarjeta(lbl, val, ancha){
+    return '<div class="kpi-card'+(ancha?' span2':'')+'">'+
+      '<div class="kpi-accent" style="background:var(--fram)"></div>'+
+      '<div class="kpi-lbl">'+lbl+'</div>'+
+      '<div class="kpi-val" style="color:var(--fram)">'+rfrFinMoney(val)+'</div>'+
+    '</div>';
   }
 
   var clientes=[];
@@ -2885,7 +2903,19 @@ function renderRfrFinanzas(filtroCiclo){
   if(clientes.length){
     html+='<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px">'+clientes.join(' \u00b7 ')+'</div>';
   }
+
+  // ── Totales como tarjetas ──
+  html+='<div class="kpi-grid">'+
+    tarjeta('Total Facturado', tot.facturado, true)+
+    COLS.map(function(c){ return tarjeta('Total '+c.lbl, tot[c.key], false); }).join('')+
+    tarjeta('Total Pagado', tot.pagado, true)+
+  '</div>';
+
+  // ── Tabla: alto fijo, scroll vertical, encabezado pegado ──
   html+='<div class="fintab-wrap"><table class="fintab">'+
+    '<colgroup><col class="c-sem">'+
+      new Array(6).join(',').split(',').map(function(){return '<col class="c-num">';}).join('')+
+    '</colgroup>'+
     '<thead><tr>'+
       '<th class="txt">Semana</th><th>Facturado</th>'+
       COLS.map(function(c){return '<th>'+c.lbl+'</th>';}).join('')+
@@ -2894,22 +2924,21 @@ function renderRfrFinanzas(filtroCiclo){
     filas.map(function(r){
       return '<tr>'+
         '<td class="txt">'+r.semana+
-          (r.rango?'<div style="font-size:10.5px;color:var(--text3);font-weight:400;margin-top:1px">'+r.rango+'</div>':'')+
+          (r.rango?'<div style="font-size:9px;color:var(--text3);font-weight:400;margin-top:1px">'+r.rango+'</div>':'')+
         '</td>'+
         celda(r.facturado)+
         COLS.map(function(c){return celda(r.d[c.key]);}).join('')+
         celda(r.pagado,'pag')+
       '</tr>';
     }).join('')+
-    '</tbody><tfoot><tr>'+
-      '<td class="txt">Total</td>'+
-      '<td class="num">'+rfrFinMoney(tot.facturado)+'</td>'+
-      COLS.map(function(c){return '<td class="num">'+rfrFinMoney(tot[c.key])+'</td>';}).join('')+
-      '<td class="num pag">'+rfrFinMoney(tot.pagado)+'</td>'+
-    '</tr></tfoot></table></div>'+
-    '<div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5">Pagado = Facturado \u2212 Prestamo \u2212 Intereses \u2212 Planta \u2212 Inocuidad.</div>';
+    '</tbody></table></div>'+
+    '<div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5">Montos en pesos redondeados. Pagado = Facturado \u2212 Prestamo \u2212 Intereses \u2212 Planta \u2212 Inocuidad.</div>';
 
   cont.innerHTML=html;
+
+  // Arrancar abajo: lo m\u00e1s reciente a la vista
+  var wrap=cont.querySelector('.fintab-wrap');
+  if(wrap) wrap.scrollTop=wrap.scrollHeight;
 }
 
 // ─── POR DÍA ───────────────────────────────────────────────
