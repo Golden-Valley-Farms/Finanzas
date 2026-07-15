@@ -2880,13 +2880,13 @@ function renderRfrFinanzas(filtroCiclo){
     };
     var descuentos=d.prestamo+d.intereses+d.planta+d.inocuidad;
     var pagado=facturado-descuentos;
-    var pct=function(v){ return (v/facturado*100).toFixed(1).replace('.',','); };
+    var pct=function(v){ return Math.round(v/facturado*100)+'%'; };
     return {
       semana:f.semanaKey?('Semana '+String(rfrWeekNum(f.semanaKey)).padStart(2,'0')):'\u2014',
       rango:f.semanaKey?rfrSemanaLbl(f.semanaKey):'',
       facturado:facturado, d:d, pagado:pagado,
-      subReb: facturado ? pct(descuentos)+'% rebajado' : '',
-      subPag: facturado ? pct(pagado)+'% pagado' : ''
+      subReb: facturado ? pct(descuentos) : '',
+      subPag: facturado ? pct(pagado) : ''
     };
   });
 
