@@ -331,9 +331,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 /* Pestañas principales de Reportes (Gastos / Camote / Frambuesa): más grandes que el resto */
 #rep-maintabs-wrap .rep-subnav{gap:8px;padding:6px;width:100%}
 #rep-maintabs-wrap .rep-tab{flex:1;padding:16px 20px;font-size:16px;font-weight:600;border-radius:10px}
-@media (max-width:699px){
-  #rep-maintabs-wrap .rep-subnav{flex-direction:column;flex-wrap:nowrap}
-  #rep-maintabs-wrap .rep-tab{width:100%}
+/* Celular: stepper de una tarjeta. Escritorio (700px+): las 3 en línea. */
+#rep-maintabs-mobile{display:flex}
+#rep-maintabs-wrap{display:none}
+@media (min-width:700px){
+  #rep-maintabs-mobile{display:none}
+  #rep-maintabs-wrap{display:flex}
 }
 
 /* ---- Financiero: KPI cards Power BI style ---- */
@@ -669,6 +672,20 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
   <!-- REPORTES -->
   <div id="sc-rep" class="screen">
+
+    <!-- Celular: una sola tarjeta, con lista desplegable encima y flechas a los lados -->
+    <div class="rfr-topbar" id="rep-maintabs-mobile" style="gap:8px;align-items:stretch;margin-bottom:14px;height:52px">
+      <button class="rfr-navbtn" id="rep-main-prev" onclick="repTabStep(-1)" aria-label="Reporte anterior">&lsaquo;</button>
+      <div style="position:relative;flex:1;min-width:0">
+        <div id="rep-main-display" style="height:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:16px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">💰 Gastos</div>
+        <select id="rep-main-select" class="no-ssel" onchange="repTab(this.value)" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;font-size:16px">
+          <option value="fin">💰 Gastos</option>
+          <option value="cam">🍠 Camote</option>
+          <option value="fram">🍇 Frambuesa</option>
+        </select>
+      </div>
+      <button class="rfr-navbtn" id="rep-main-next" onclick="repTabStep(1)" aria-label="Reporte siguiente">&rsaquo;</button>
+    </div>
 
     <div class="rep-subnav-wrap" id="rep-maintabs-wrap">
       <div class="rep-subnav">
@@ -2793,7 +2810,32 @@ function attachDashTooltips(cont, ttId){
 // ---- FINANCIERO: Dashboard estilo Power BI ----
 // ============================================================
 
+var REP_TABS=[{k:'fin',lbl:'💰 Gastos'},{k:'cam',lbl:'🍠 Camote'},{k:'fram',lbl:'🍇 Frambuesa'}];
+var repTabActual='fin';
+
+// Flechas del stepper de celular
+function repTabStep(dir){
+  var i=REP_TABS.map(function(x){return x.k;}).indexOf(repTabActual)+dir;
+  if(i<0||i>=REP_TABS.length) return;
+  repTab(REP_TABS[i].k);
+}
+
+// Mantiene el display, la lista y las flechas al día con la pestaña activa
+function repTabSyncMobile(t){
+  var i=REP_TABS.map(function(x){return x.k;}).indexOf(t);
+  if(i<0) return;
+  var disp=document.getElementById('rep-main-display');
+  if(disp) disp.textContent=REP_TABS[i].lbl;
+  var sel=document.getElementById('rep-main-select');
+  if(sel) sel.value=t;
+  var prev=document.getElementById('rep-main-prev'), next=document.getElementById('rep-main-next');
+  if(prev) prev.disabled = i===0;
+  if(next) next.disabled = i===REP_TABS.length-1;
+}
+
 function repTab(t){
+  repTabActual=t;
+  repTabSyncMobile(t);
   document.getElementById('rt-fin').classList.toggle('active', t==='fin');
   document.getElementById('rt-cam').classList.toggle('active', t==='cam');
   document.getElementById('rt-fram').classList.toggle('active', t==='fram');
