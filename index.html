@@ -570,9 +570,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </div>
       </div>
       <div class="field-row">
-        <div class="field">
+        <div class="field" style="position:relative">
           <label>Categoria</label>
-          <select id="f-cat" onchange="onCatChange()"><option value="Adquisición de Maquinaria">Adquisición de Maquinaria</option><option value="Combustible">Combustible</option><option value="Compra Insumos">Compra Insumos</option><option value="Fletes">Fletes</option><option value="Mantenimiento Equipo">Mantenimiento Equipo</option><option value="Otros Gastos">Otros Gastos</option><option value="Servicios">Servicios</option><option value="Viáticos">Viáticos</option></select>
+          <input type="text" id="f-cat" readonly placeholder="Elegir..." autocomplete="off" style="width:100%;cursor:pointer" onclick="showCatDropdown()" onfocus="showCatDropdown()" onblur="setTimeout(hideCatDropdown,150)">
+          <div id="f-cat-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:240px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
         </div>
         <div class="field">
           <label>Monto (MXN)</label>
@@ -1769,6 +1770,7 @@ async function cargarDesdeSB(){
   var rP = await sb.from('proveedores').select('nombre').order('nombre');
   var rB = await sb.from('bancos').select('nombre').order('nombre');
   var rT = await sb.from('trabajadores').select('nombre').order('nombre');
+  var rCat = await sb.from('categorias').select('lista,nombre').order('nombre');
 
   if(gData && gData.length){
     gastos = gData.map(function(g){
@@ -1836,6 +1838,24 @@ async function cargarDesdeSB(){
   if(rP.data) proveedores = rP.data.map(function(p){return p.nombre;});
   if(rB.data) bancos = rB.data.map(function(b){return b.nombre;});
   if(rT.data && rT.data.length){ trabajadores = rT.data.map(function(t){return t.nombre;}); saveTrabajadores(); }
+
+  // Categorías: la tabla manda. Si viene vacía es la primera vez -> se siembra con las de fábrica.
+  if(rCat && !rCat.error && rCat.data){
+    if(rCat.data.length){
+      var mCats={};
+      Object.keys(CATS_DEFAULT).forEach(function(k){ mCats[k]=[]; });
+      rCat.data.forEach(function(r){ if(!mCats[r.lista]) mCats[r.lista]=[]; mCats[r.lista].push(r.nombre); });
+      Object.keys(mCats).forEach(function(k){ mCats[k].sort(function(a,b){return a.localeCompare(b,'es');}); });
+      CATS = mCats;
+      saveCats();
+    } else {
+      var filasCat=[];
+      Object.keys(CATS_DEFAULT).forEach(function(k){
+        CATS_DEFAULT[k].forEach(function(n){ filasCat.push({lista:k, nombre:n}); });
+      });
+      await sb.from('categorias').upsert(filasCat,{onConflict:'lista,nombre'});
+    }
+  }
 
   showToast('✅ Datos sincronizados');
   renderEnvios();
@@ -1906,12 +1926,24 @@ async function sbDeleteBanco(nombre){
   await sb.from('bancos').delete().eq('nombre', nombre);
 }
 
+async function sbSaveCategoria(lista, nombre){
+  if(!sbOnline||!sb) return;
+  await sb.from('categorias').upsert({lista:lista, nombre:nombre},{onConflict:'lista,nombre'});
+}
+
+async function sbDeleteCategoria(lista, nombre){
+  if(!sbOnline||!sb) return;
+  await sb.from('categorias').delete().eq('lista', lista).eq('nombre', nombre);
+}
+
 // ---- Base ----
 var hoy = new Date();
 
 // ---- Config ----
 var SECTORES = { jal_camote: 2, nay_camote: 10 };
-var CATS = {
+// Listas de fábrica. Solo se usan la primera vez: a partir de ahí manda la tabla
+// `categorias` de Supabase (con espejo en localStorage para arrancar sin red).
+var CATS_DEFAULT = {
   camote_general:   ['Compra Insumos','Compra Insumos Agroquímicos','Compra Insumos Riego','Compra Mercancia','Nóminas Operativas','Renta'],
   camote_cosecha:   ['Arado','Cosecha','Desvarada','Flete Cosecha','Plantacion'],
   fram:             ['Compra Insumos','Compra Insumos Agroquímicos','Compra Insumos Riego','Compra Mercancia','Inocuidad','Intereses Operativos','Nóminas Operativas','Pago Prestamo','Planta'],
@@ -1919,6 +1951,31 @@ var CATS = {
   ofic:             ['Combustible','Contabilidad','Impuestos','IMSS','Intereses Operativos','Manejo de Cuenta','Nóminas Administrativas','Otros Gastos','Seguros','Servicios','Viáticos'],
   com:              ['Compra Mercancia','Fletes']
 };
+
+var CAT_LISTA_LBL = {
+  camote_general:'Camote · General', camote_cosecha:'Camote · Cosecha', fram:'Frambuesa',
+  campo_general:'General Terreno', ofic:'Oficina', com:'Comercializadora'
+};
+
+var CATS = JSON.parse(JSON.stringify(CATS_DEFAULT));
+try{
+  var svCats = localStorage.getItem('cc_cats');
+  if(svCats){
+    var oCats = JSON.parse(svCats);
+    Object.keys(CATS_DEFAULT).forEach(function(k){ if(Array.isArray(oCats[k])) CATS[k]=oCats[k]; });
+  }
+}catch(e){}
+function saveCats(){try{localStorage.setItem('cc_cats',JSON.stringify(CATS));}catch(e){}}
+
+// Qué lista de categorías toca según el negocio elegido en el formulario
+function catListaActual(){
+  if(loc==='ofic') return 'ofic';
+  if(loc==='com') return 'com';
+  if(cultivo==='camote' && tipoCamote==='cosecha') return 'camote_cosecha';
+  if(cultivo==='camote') return 'camote_general';
+  if(cultivo==='fram') return 'fram';
+  return 'campo_general';
+}
 
 // ---- Colores por categoría (punto izquierdo de las tarjetas de gasto) ----
 var CAT_COLORS = {
@@ -2198,18 +2255,79 @@ function recalcularSemanasGastos(){
 function saveGastos(){save();}
 
 // ---- Cat select ----
+// Al cambiar de negocio cambia la lista: si la categoría elegida ya no existe ahí,
+// cae a la primera de la lista nueva.
 function updateCatSelect(){
-  var sel=document.getElementById('f-cat'); sel.innerHTML='';
-  var list=[];
-  if(loc==='ofic') list=CATS.ofic;
-  else if(loc==='com') list=CATS.com;
-  else if(cultivo==='camote' && tipoCamote==='cosecha') list=CATS.camote_cosecha;
-  else if(cultivo==='camote') list=CATS.camote_general;
-  else if(cultivo==='fram') list=CATS.fram;
-  else list=CATS.campo_general;
-  for(var i=0;i<list.length;i++){
-    var op=document.createElement('option'); op.value=list[i]; op.textContent=list[i]; sel.appendChild(op);
+  var inp=document.getElementById('f-cat'); if(!inp) return;
+  var list=CATS[catListaActual()]||[];
+  if(list.indexOf(inp.value)<0) inp.value = list[0]||'';
+  hideCatDropdown();
+}
+
+function renderCatDropdown(){
+  var dd=document.getElementById('f-cat-dropdown'); if(!dd) return;
+  var lista=catListaActual();
+  var list=CATS[lista]||[];
+  dd.innerHTML='';
+  list.forEach(function(c){
+    var row=document.createElement('div');
+    row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px';
+    row.onmouseenter=function(){this.style.background='var(--green-bg)';};
+    row.onmouseleave=function(){this.style.background='';};
+    var name=document.createElement('span'); name.textContent=c; name.style.flex='1';
+    name.onmousedown=function(e){e.preventDefault();document.getElementById('f-cat').value=c;hideCatDropdown();};
+    var btn=document.createElement('button');
+    btn.textContent='×'; btn.title='Eliminar';
+    btn.style.cssText='background:none;border:none;color:var(--text3);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0';
+    btn.onmousedown=function(e){
+      e.preventDefault(); e.stopPropagation();
+      CATS[lista]=(CATS[lista]||[]).filter(function(x){return x!==c;});
+      saveCats(); sbDeleteCategoria(lista, c);
+      renderCatDropdown();
+      var inp=document.getElementById('f-cat');
+      if(inp.value===c) inp.value=(CATS[lista][0]||'');
+      showToast('Categoría eliminada');
+    };
+    row.appendChild(name); row.appendChild(btn); dd.appendChild(row);
+  });
+  var addRow=document.createElement('div');
+  addRow.style.cssText='padding:10px 12px;cursor:pointer;font-size:13px;color:var(--green);font-weight:600';
+  addRow.textContent='+ Agregar nueva...';
+  addRow.onmouseenter=function(){this.style.background='var(--green-bg)';};
+  addRow.onmouseleave=function(){this.style.background='';};
+  addRow.onmousedown=function(e){e.preventDefault();hideCatDropdown();abrirModalNuevaCategoria();};
+  dd.appendChild(addRow);
+  dd.style.display='block';
+}
+function showCatDropdown(){renderCatDropdown();}
+function hideCatDropdown(){var dd=document.getElementById('f-cat-dropdown');if(dd)dd.style.display='none';}
+
+function abrirModalNuevaCategoria(){
+  var lista=catListaActual();
+  document.getElementById('mo-title').innerHTML='🏷️ Nueva categoría';
+  document.getElementById('mo-body').innerHTML=
+    '<div style="font-size:12px;color:var(--text3);margin-bottom:12px">Se agrega a la lista de <b style="color:var(--text2)">'+(CAT_LISTA_LBL[lista]||lista)+'</b></div>'+
+    '<div class="field" style="margin-bottom:14px"><label>Nombre de la categoría</label>'+
+    '<input type="text" id="nueva-cat-nombre-input" placeholder="Ej: Empaque" style="width:100%" onkeydown="if(event.key===\'Enter\'){event.preventDefault();confirmarNuevaCategoria();}"></div>'+
+    '<button class="btn-main" onclick="confirmarNuevaCategoria()">Agregar categoría</button>';
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(function(){ var i=document.getElementById('nueva-cat-nombre-input'); if(i) i.focus(); }, 100);
+}
+
+function confirmarNuevaCategoria(){
+  var inp=document.getElementById('nueva-cat-nombre-input');
+  var nom=(inp.value||'').trim();
+  if(!nom){ showToast('Escribe un nombre'); return; }
+  var lista=catListaActual();
+  if(!CATS[lista]) CATS[lista]=[];
+  if(CATS[lista].indexOf(nom)<0){
+    CATS[lista].push(nom);
+    CATS[lista].sort(function(a,b){return a.localeCompare(b,'es');});
+    saveCats(); sbSaveCategoria(lista, nom);
   }
+  closeModal();
+  document.getElementById('f-cat').value=nom;
+  showToast('Categoría agregada');
 }
 
 function selTipo(t){
@@ -2227,8 +2345,6 @@ function selTipo(t){
   updateCatSelect();
   updateStepNumbers();
 }
-
-function onCatChange(){}  // kept for compatibility
 
 function updateStepNumbers(){
   var esCampo = loc!=='ofic' && loc!=='com';
