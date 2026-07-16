@@ -3120,7 +3120,7 @@ function framCatBreakdown(lista, factor){
 }
 
 // Barra horizontal con la etiqueta del monto al final, igual que en Camote Nayarit
-function framBarraH(id, lbls, vals, cols, colorTxt, xMax){
+function framBarraH(id, lbls, vals, cols, colorTxt, xMax, yAncho){
   var gridCol=rfrGridCol(), textMuted='#898781';
   var labelPlugin={
     id:id+'-labels',
@@ -3150,7 +3150,7 @@ function framBarraH(id, lbls, vals, cols, colorTxt, xMax){
       scales:{
         x:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:11}, callback:function(v){return fmtCompact(v);}}, beginAtZero:true,
            suggestedMax:xMax},
-        y:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}}
+        y:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}, afterFit:function(sc){ sc.width=yAncho; }}
       }
     }
   });
@@ -3218,9 +3218,10 @@ function renderRfrEDR(filtroCiclo){
         '</div>' : '')+
     '</div>';
 
-  var ejeXMax = gastoCatMaxGlobal(filtroCiclo); // mismo rango que las gráficas de Camote
-  if(catFram.lbls.length) framBarraH('rfr-edr-cat-chart', catFram.lbls, catFram.vals, catFram.cols, '#D6336C', ejeXMax);
-  if(catGen.lbls.length)  framBarraH('rfr-edr-gen-chart', catGen.lbls, catGen.vals, catGen.cols, '#D6336C', ejeXMax);
+  var ejeXMax = maxEjeXCat([catFram.vals, catGen.vals]);
+  var ejeYAncho = ejeYAnchoCat([catFram.lbls, catGen.lbls]);
+  if(catFram.lbls.length) framBarraH('rfr-edr-cat-chart', catFram.lbls, catFram.vals, catFram.cols, '#D6336C', ejeXMax, ejeYAncho);
+  if(catGen.lbls.length)  framBarraH('rfr-edr-gen-chart', catGen.lbls, catGen.vals, catGen.cols, '#D6336C', ejeXMax, ejeYAncho);
 }
 
 // ─── POR DÍA ───────────────────────────────────────────────
@@ -4524,31 +4525,21 @@ function renderRepCam(){
   else renderRcmCosecha(envs);
 }
 
-// Tope común del eje X para todas las gráficas de "Gastos x Categoría" y
-// "Gastos Generales x Categoría" (Camote Jalisco, Camote Nayarit y Frambuesa),
-// para que las barras se puedan comparar entre secciones.
-// Jalisco General va al 50%: la otra mitad es de Frambuesa.
-function gastoCatMaxGlobal(filtroCiclo){
-  function enCiclo(g){
-    return filtroCiclo==='todos' || (g.ciclo||cicloFromFecha(g.fechaVal))===filtroCiclo;
-  }
-  function maxPorCat(lista, factor){
-    var m={};
-    lista.forEach(function(g){
-      var c=g.cat||'Sin categoría';
-      m[c]=(m[c]||0)+((parseFloat(g.monto)||0)*factor);
-    });
-    return Object.keys(m).reduce(function(a,c){return Math.max(a,m[c]);},0);
-  }
-  var grupos=[
-    maxPorCat(gastos.filter(function(g){return g.loc==='jal'&&g.cultivo==='camote'&&enCiclo(g);}),1),
-    maxPorCat(gastos.filter(function(g){return g.loc==='nay'&&g.cultivo==='camote'&&enCiclo(g);}),1),
-    maxPorCat(gastos.filter(function(g){return g.cultivo==='fram'&&['jal','nay'].indexOf(g.loc)>=0&&enCiclo(g);}),1),
-    maxPorCat(gastos.filter(function(g){return g.loc==='jal'&&g.cultivo==='general'&&enCiclo(g);}),FRAM_GEN_JAL_FACTOR),
-    maxPorCat(gastos.filter(function(g){return g.loc==='nay'&&g.cultivo==='general'&&enCiclo(g);}),1)
-  ];
-  var m=Math.max.apply(null, grupos.concat([1]));
+// Tope común del eje X para el PAR de gráficas de una misma sección
+// ("Gastos x Categoría" y "Gastos Generales x Categoría"), para que las barras
+// se comparen entre sí. Cada sección tiene su propia escala.
+function maxEjeXCat(listas){
+  var m=1;
+  listas.forEach(function(l){ (l||[]).forEach(function(v){ m=Math.max(m, v||0); }); });
   return m+Math.ceil(m*0.2)+1;
+}
+
+// Ancho fijo del eje Y: las etiquetas de categoría son de largos distintos en cada
+// gráfica, así que sin esto las barras arrancarían en puntos diferentes.
+function ejeYAnchoCat(listas){
+  var max=0;
+  listas.forEach(function(l){ (l||[]).forEach(function(t){ max=Math.max(max, String(t).length); }); });
+  return Math.min(175, Math.max(80, Math.round(max*6.2)+10));
 }
 
 function renderRcmFinanciero(envs, filtroCiclo){
@@ -4666,7 +4657,9 @@ function renderRcmFinanciero(envs, filtroCiclo){
     '</div>';
 
   var gridCol = rfrGridCol(); var textMuted = '#898781';
-  var ejeXMax = gastoCatMaxGlobal(filtroCiclo); // mismo rango en Jalisco, Nayarit y Frambuesa
+  // Mismo rango y mismo arranque de barras entre las dos gráficas de esta sección
+  var ejeXMax = maxEjeXCat([catGastoVals, catGenVals]);
+  var ejeYAncho = ejeYAnchoCat([catGastoLbls, catGenLbls]);
 
   if(secLbls.length){
   var ingresoBarLabelPlugin = {
@@ -4733,7 +4726,7 @@ function renderRcmFinanciero(envs, filtroCiclo){
         scales:{
           x:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:11}, callback:function(v){return fmtCompact(v);}}, beginAtZero:true,
              suggestedMax:ejeXMax},
-          y:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}}
+          y:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}, afterFit:function(sc){ sc.width=ejeYAncho; }}
         }
       }
     });
@@ -4768,7 +4761,7 @@ function renderRcmFinanciero(envs, filtroCiclo){
         scales:{
           x:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:11}, callback:function(v){return fmtCompact(v);}}, beginAtZero:true,
              suggestedMax:ejeXMax},
-          y:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}}
+          y:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}, afterFit:function(sc){ sc.width=ejeYAncho; }}
         }
       }
     });
