@@ -3120,7 +3120,7 @@ function framCatBreakdown(lista, factor){
 }
 
 // Barra horizontal con la etiqueta del monto al final, igual que en Camote Nayarit
-function framBarraH(id, lbls, vals, cols, colorTxt){
+function framBarraH(id, lbls, vals, cols, colorTxt, xMax){
   var gridCol=rfrGridCol(), textMuted='#898781';
   var labelPlugin={
     id:id+'-labels',
@@ -3149,7 +3149,7 @@ function framBarraH(id, lbls, vals, cols, colorTxt){
       plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+fmt(c.raw);}}}},
       scales:{
         x:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:11}, callback:function(v){return fmtCompact(v);}}, beginAtZero:true,
-           suggestedMax:(function(){var m=Math.max.apply(null,vals.concat([1])); return m+Math.ceil(m*0.2)+1;})()},
+           suggestedMax:xMax},
         y:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}}
       }
     }
@@ -3218,8 +3218,9 @@ function renderRfrEDR(filtroCiclo){
         '</div>' : '')+
     '</div>';
 
-  if(catFram.lbls.length) framBarraH('rfr-edr-cat-chart', catFram.lbls, catFram.vals, catFram.cols, '#D6336C');
-  if(catGen.lbls.length)  framBarraH('rfr-edr-gen-chart', catGen.lbls, catGen.vals, catGen.cols, '#D6336C');
+  var ejeXMax = gastoCatMaxGlobal(filtroCiclo); // mismo rango que las gráficas de Camote
+  if(catFram.lbls.length) framBarraH('rfr-edr-cat-chart', catFram.lbls, catFram.vals, catFram.cols, '#D6336C', ejeXMax);
+  if(catGen.lbls.length)  framBarraH('rfr-edr-gen-chart', catGen.lbls, catGen.vals, catGen.cols, '#D6336C', ejeXMax);
 }
 
 // ─── POR DÍA ───────────────────────────────────────────────
@@ -4523,6 +4524,33 @@ function renderRepCam(){
   else renderRcmCosecha(envs);
 }
 
+// Tope común del eje X para todas las gráficas de "Gastos x Categoría" y
+// "Gastos Generales x Categoría" (Camote Jalisco, Camote Nayarit y Frambuesa),
+// para que las barras se puedan comparar entre secciones.
+// Jalisco General va al 50%: la otra mitad es de Frambuesa.
+function gastoCatMaxGlobal(filtroCiclo){
+  function enCiclo(g){
+    return filtroCiclo==='todos' || (g.ciclo||cicloFromFecha(g.fechaVal))===filtroCiclo;
+  }
+  function maxPorCat(lista, factor){
+    var m={};
+    lista.forEach(function(g){
+      var c=g.cat||'Sin categoría';
+      m[c]=(m[c]||0)+((parseFloat(g.monto)||0)*factor);
+    });
+    return Object.keys(m).reduce(function(a,c){return Math.max(a,m[c]);},0);
+  }
+  var grupos=[
+    maxPorCat(gastos.filter(function(g){return g.loc==='jal'&&g.cultivo==='camote'&&enCiclo(g);}),1),
+    maxPorCat(gastos.filter(function(g){return g.loc==='nay'&&g.cultivo==='camote'&&enCiclo(g);}),1),
+    maxPorCat(gastos.filter(function(g){return g.cultivo==='fram'&&['jal','nay'].indexOf(g.loc)>=0&&enCiclo(g);}),1),
+    maxPorCat(gastos.filter(function(g){return g.loc==='jal'&&g.cultivo==='general'&&enCiclo(g);}),FRAM_GEN_JAL_FACTOR),
+    maxPorCat(gastos.filter(function(g){return g.loc==='nay'&&g.cultivo==='general'&&enCiclo(g);}),1)
+  ];
+  var m=Math.max.apply(null, grupos.concat([1]));
+  return m+Math.ceil(m*0.2)+1;
+}
+
 function renderRcmFinanciero(envs, filtroCiclo){
   var cont = document.getElementById('rcm-content');
 
@@ -4534,8 +4562,10 @@ function renderRcmFinanciero(envs, filtroCiclo){
   });
   var costo = gastosNeg.reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0);
 
-  // Gastos por categoría (se muestra solo para Camote Nayarit)
-  var mostrarCatGastos = (rcmNegSel==='nay');
+  // Gastos por categoría (Camote Nayarit y Camote Jalisco)
+  var mostrarCatGastos = (rcmNegSel==='nay' || rcmNegSel==='jal');
+  // Jalisco General se reparte 50/50 con Frambuesa; Nayarit General es todo de camote
+  var genFactor = (rcmNegSel==='jal') ? FRAM_GEN_JAL_FACTOR : 1;
   var catGastoMap = {};
   gastosNeg.forEach(function(g){
     var c = g.cat || 'Sin categoría';
@@ -4546,7 +4576,7 @@ function renderRcmFinanciero(envs, filtroCiclo){
   var catGastoVals = catGastoOrd.map(function(c){return Math.round(catGastoMap[c]);});
   var catGastoCols = catGastoOrd.map(function(c){return catColor(c);});
 
-  // Gastos generales (cultivo 'general') del mismo negocio — se incluyen en costo/ganancia y en su propia gráfica (solo Nayarit)
+  // Gastos generales (cultivo 'general') del mismo negocio — se incluyen en costo/ganancia y en su propia gráfica
   var gastosGen = [];
   if(mostrarCatGastos){
     gastosGen = gastos.filter(function(g){
@@ -4554,12 +4584,12 @@ function renderRcmFinanciero(envs, filtroCiclo){
         (filtroCiclo==='todos' || (g.ciclo||cicloFromFecha(g.fechaVal))===filtroCiclo);
     });
   }
-  var costoGen = gastosGen.reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0);
+  var costoGen = gastosGen.reduce(function(a,g){return a+((parseFloat(g.monto)||0)*genFactor);},0);
   var costoTotal = costo + costoGen;
   var catGenMap = {};
   gastosGen.forEach(function(g){
     var c = g.cat || 'Sin categoría';
-    catGenMap[c] = (catGenMap[c]||0) + (parseFloat(g.monto)||0);
+    catGenMap[c] = (catGenMap[c]||0) + ((parseFloat(g.monto)||0)*genFactor);
   });
   var catGenOrd = Object.keys(catGenMap).sort(function(a,b){return catGenMap[b]-catGenMap[a];});
   var catGenLbls = catGenOrd;
@@ -4636,6 +4666,7 @@ function renderRcmFinanciero(envs, filtroCiclo){
     '</div>';
 
   var gridCol = rfrGridCol(); var textMuted = '#898781';
+  var ejeXMax = gastoCatMaxGlobal(filtroCiclo); // mismo rango en Jalisco, Nayarit y Frambuesa
 
   if(secLbls.length){
   var ingresoBarLabelPlugin = {
@@ -4701,7 +4732,7 @@ function renderRcmFinanciero(envs, filtroCiclo){
         plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+fmt(c.raw);}}}},
         scales:{
           x:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:11}, callback:function(v){return fmtCompact(v);}}, beginAtZero:true,
-             suggestedMax:(function(){var m=Math.max.apply(null,catGastoVals.concat([1])); return m+Math.ceil(m*0.2)+1;})()},
+             suggestedMax:ejeXMax},
           y:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}}
         }
       }
@@ -4736,7 +4767,7 @@ function renderRcmFinanciero(envs, filtroCiclo){
         plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+fmt(c.raw);}}}},
         scales:{
           x:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:11}, callback:function(v){return fmtCompact(v);}}, beginAtZero:true,
-             suggestedMax:(function(){var m=Math.max.apply(null,catGenVals.concat([1])); return m+Math.ceil(m*0.2)+1;})()},
+             suggestedMax:ejeXMax},
           y:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}}
         }
       }
