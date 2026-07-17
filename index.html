@@ -768,6 +768,23 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <!-- ============ SUB-TAB: FINANCIERO (Power BI style) ============ -->
     <div id="rep-fin-sec">
 
+      <div class="fin-periodo-row" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:150px">
+          <span style="font-size:13px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap" id="fin-periodo-lbl">Año</span>
+          <select id="fin-anio-select" onchange="onFinAnioChange()" style="flex:1;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:15px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
+            <option value="todos">Todos los años</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex:1.6 1 auto;min-width:250px">
+          <span style="font-size:13px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Semana</span>
+          <button type="button" class="fin-sem-nav" id="fin-sem-prev" onclick="finSemStep(-1)" aria-label="Semana anterior">‹</button>
+          <select id="fin-sem-select" onchange="onFinSemanaChange()" style="flex:1;min-width:112px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:15px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
+            <option value="todas">Todas</option>
+          </select>
+          <button type="button" class="fin-sem-nav" id="fin-sem-next" onclick="finSemStep(1)" aria-label="Semana siguiente">›</button>
+        </div>
+      </div>
+
       <!-- Fila 1: Negocios (nivel superior) -->
       <!-- Celular: una sola tarjeta con lista y flechas -->
       <div class="rfr-topbar" id="fin-neg-mobile" style="gap:8px;align-items:stretch;margin-bottom:14px;height:52px">
@@ -802,23 +819,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
 
       <div id="fin-dashboard-body">
-
-      <div class="fin-periodo-row" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-        <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:150px">
-          <span style="font-size:13px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap" id="fin-periodo-lbl">Año</span>
-          <select id="fin-anio-select" onchange="onFinAnioChange()" style="flex:1;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:15px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
-            <option value="todos">Todos los años</option>
-          </select>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;flex:1.6 1 auto;min-width:250px">
-          <span style="font-size:13px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Semana</span>
-          <button type="button" class="fin-sem-nav" id="fin-sem-prev" onclick="finSemStep(-1)" aria-label="Semana anterior">‹</button>
-          <select id="fin-sem-select" onchange="onFinSemanaChange()" style="flex:1;min-width:112px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:15px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
-            <option value="todas">Todas</option>
-          </select>
-          <button type="button" class="fin-sem-nav" id="fin-sem-next" onclick="finSemStep(1)" aria-label="Semana siguiente">›</button>
-        </div>
-      </div>
 
       <div class="kpi-grid">
         <div class="kpi-card">
@@ -962,17 +962,17 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <!-- ============ SUB-TAB: FRAMBUESA ============ -->
     <div id="rep-fram-sec" style="display:none">
 
-      <!-- Pestañas principales: Cosecha / Finanzas -->
-      <div class="rfr-topbar" id="rfr-main-tabs" style="display:flex;gap:4px;margin-bottom:10px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
-        <button class="ven-tab active" data-main="cos" onclick="rfrMainTab('cos')" style="flex:1">🧺 Cosecha</button>
-        <button class="ven-tab" data-main="fin" onclick="rfrMainTab('fin')" style="flex:1">💵 Facturación</button>
-      </div>
-
       <!-- Selector de Ciclo: afecta a todas las pestañas -->
       <div class="rfr-topbar" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px">
         <span style="font-size:14px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Ciclo</span>
         <select id="rfr-ciclo" onchange="renderRepFram()" style="flex:0 0 auto;min-width:150px;padding:10px 18px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:17px;color:var(--text);font-weight:700;text-align:center;text-align-last:center;outline:none">
         </select>
+      </div>
+
+      <!-- Pestañas principales: Cosecha / Finanzas -->
+      <div class="rfr-topbar" id="rfr-main-tabs" style="display:flex;gap:4px;margin-bottom:10px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
+        <button class="ven-tab active" data-main="cos" onclick="rfrMainTab('cos')" style="flex:1">🧺 Cosecha</button>
+        <button class="ven-tab" data-main="fin" onclick="rfrMainTab('fin')" style="flex:1">💵 Facturación</button>
       </div>
 
       <!-- Sub-tabs de Cosecha -->
@@ -1032,6 +1032,13 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div id="rep-cam-sec" style="display:none">
 
       <!-- Selector de negocio: 3 tarjetas -->
+      <!-- Selector de Ciclo -->
+      <div class="rfr-topbar" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <span style="font-size:14px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Ciclo</span>
+        <select id="rcm-ciclo" onchange="renderRepCam()" style="flex:0 0 auto;min-width:150px;padding:10px 18px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:17px;color:var(--text);font-weight:700;text-align:center;text-align-last:center;outline:none">
+        </select>
+      </div>
+
       <div class="rcm-neg-grid">
         <div class="rcm-neg-card active" data-neg="jal" onclick="rcmNegTab('jal')">
           <div class="rcm-neg-card-title">Jalisco</div>
@@ -1042,13 +1049,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="rcm-neg-card" data-neg="com" onclick="rcmNegTab('com')">
           <div class="rcm-neg-card-title">Comercializadora</div>
         </div>
-      </div>
-
-      <!-- Selector de Ciclo -->
-      <div class="rfr-topbar" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-        <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Ciclo</span>
-        <select id="rcm-ciclo" onchange="renderRepCam()" style="flex:1;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);font-weight:600;outline:none">
-        </select>
       </div>
 
       <div id="rcm-content"></div>
@@ -1915,6 +1915,9 @@ async function cargarDesdeSB(){
   showToast('✅ Datos sincronizados');
   renderEnvios();
   if(typeof renderAlmLotes==='function') renderAlmLotes();
+  // Los datos llegan después de pintar: hay que re-dibujar la pantalla que esté abierta
+  if(typeof renderResultados==='function' &&
+     document.getElementById('sc-resultados').classList.contains('active')) renderResultados();
 }
 
 async function sbSaveGasto(g){
@@ -5694,44 +5697,29 @@ function populateFinAnioSelect(forceReciente){
 
 function populateFinSemanaSelect(forceReciente){
   var sel = document.getElementById('fin-sem-select');
-  var usaCiclo = finUsaCiclo(finNegSel);
-  var data = finGastosFiltrados(finNegSel, finNegSel!=='todos');
-  if(finAnioSel!=='todos'){
-    data = data.filter(function(g){
-      if(usaCiclo) return (g.ciclo||cicloFromFecha(g.fechaVal))===finAnioSel;
-      return g.fechaVal && String(anioDeFecha(g.fechaVal))===String(finAnioSel);
-    });
-  }
-  var semSet = {};
-  var fechaMax = null, semMax = null;
-  data.forEach(function(g){
-    if(!g.fechaVal) return;
-    var s = semanaISO(g.fechaVal);
-    semSet[s] = true;
-    if(fechaMax===null || g.fechaVal>fechaMax){ fechaMax = g.fechaVal; semMax = s; }
-  });
-  var semanas = [];
-  for(var s=1;s<=53;s++) semanas.push(s);
+  if(!sel) return;
   var prevVal = finSemSel;
+
   sel.innerHTML = '<option value="todas">Todas las semanas</option>';
-  semanas.forEach(function(s){
+  var semanas = [];
+  for(var n=1;n<=53;n++){
+    semanas.push(n);
     var o = document.createElement('option');
-    o.value = s; o.textContent = 'Semana '+(s<10?'0'+s:s);
+    o.value = n; o.textContent = 'Semana '+(n<10?'0'+n:n);
     sel.appendChild(o);
-  });
+  }
+
   if(!forceReciente && (semanas.indexOf(Number(prevVal))>=0 || prevVal==='todas')){
     sel.value = prevVal;
     finSemSel = prevVal;
-  } else if(semMax!==null){
-    sel.value = semMax;
-    finSemSel = semMax;
   } else {
-    sel.value = 'todas';
-    finSemSel = 'todas';
+    // Siempre arranca en la semana actual, no en la del último gasto capturado
+    var semHoy = String(semanaActualISO());
+    sel.value = semHoy;
+    finSemSel = semHoy;
   }
   finSemNavSync();
 }
-
 function finDataConSemana(){
   var data = finGastosFiltrados(finNegSel, finNegSel!=='todos');
   data = data.map(function(g){
@@ -6177,7 +6165,12 @@ function renderRep(){
 
 // ---- Init ----
 updateHeader();
-window.addEventListener('load', function(){ setTimeout(initSupabase, 300); });
+window.addEventListener('load', function(){
+  // goSc deja la pantalla lista (esconde la barra Registrar/Historial y dibuja el contenido).
+  // Sin esto, la pantalla de arranque salía a medias hasta cambiar de pestaña y volver.
+  goSc('resultados');
+  setTimeout(initSupabase, 300);
+});
 updateCultivoButtons('jal');
 updateStepNumbers();
 // set today as default date and auto-select ciclo
