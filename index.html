@@ -393,6 +393,31 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 #rep-fin-sec .kpi-card{padding:14px}
 /* ---- Financiero: full-width breakout en pantallas grandes ---- */
 @media (min-width: 700px){
+  /* Resumen: mismo breakout de ancho que las secciones de Reportes.
+     La app está capada a 480px, así que hay que romperla a 100vw y volver a centrar a 1400. */
+  #sc-resumen{
+    width:100vw;
+    position:relative;
+    left:50%;
+    margin-left:-50vw;
+    padding:16px 24px 0;
+    box-sizing:border-box;
+  }
+  #sc-resumen .kpi-grid{
+    max-width:1400px;margin:0 auto 14px;
+    grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  }
+  #sc-resumen .kpi-card.span2{grid-column:span 1}
+  #sc-resumen .kpi-val{font-size:33px}
+  #sc-resumen .fin-charts-grid{
+    max-width:1400px;margin:0 auto;
+    display:grid;grid-template-columns:repeat(2,1fr);gap:12px;
+  }
+  #sc-resumen .fin-charts-grid .dash-card{margin-bottom:0}
+  #sc-resumen .fin-chart-full{grid-column:1/-1}
+  #sc-resumen .rfr-topbar,
+  #sc-resumen .fintab-wrap{max-width:1400px;margin-left:auto;margin-right:auto}
+
   #rep-fin-sec{
     width:100vw;
     position:relative;
@@ -509,7 +534,17 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
   <!-- REGISTRAR -->
-  <div id="sc-reg" class="screen active">
+  <!-- ══════════ RESUMEN: estado de resultados de toda la empresa ══════════ -->
+  <div id="sc-resumen" class="screen active">
+    <div class="rfr-topbar" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px">
+      <span style="font-size:14px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Ciclo</span>
+      <select id="rsm-ciclo" onchange="renderRepResumen()" style="flex:0 0 auto;min-width:150px;padding:10px 18px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:17px;color:var(--text);font-weight:700;text-align:center;text-align-last:center;outline:none">
+      </select>
+    </div>
+    <div id="rsm-content"></div>
+  </div>
+
+  <div id="sc-reg" class="screen">
 
     <div class="step-label" id="step-loc-lbl">1. Negocio</div>
     <div class="loc-row">
@@ -683,9 +718,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div class="rfr-topbar" id="rep-maintabs-mobile" style="gap:8px;align-items:stretch;margin-bottom:14px;height:52px">
       <button class="rfr-navbtn" id="rep-main-prev" onclick="repTabStep(-1)" aria-label="Reporte anterior">&lsaquo;</button>
       <div style="position:relative;flex:1;min-width:0">
-        <div id="rep-main-display" style="height:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:16px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">📊 Resumen</div>
+        <div id="rep-main-display" style="height:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:16px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">💰 Gastos</div>
         <select id="rep-main-select" class="no-ssel" onchange="repTab(this.value)" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;font-size:16px">
-          <option value="resumen">📊 Resumen</option>
           <option value="fin">💰 Gastos</option>
           <option value="cam">🍠 Camote</option>
           <option value="fram">🍇 Frambuesa</option>
@@ -696,25 +730,14 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
     <div class="rep-subnav-wrap" id="rep-maintabs-wrap">
       <div class="rep-subnav">
-        <button class="rep-tab active" id="rt-resumen" onclick="repTab('resumen')">📊 Resumen</button>
-        <button class="rep-tab" id="rt-fin" onclick="repTab('fin')">💰 Gastos</button>
+        <button class="rep-tab active" id="rt-fin" onclick="repTab('fin')">💰 Gastos</button>
         <button class="rep-tab" id="rt-cam" onclick="repTab('cam')">🍠 Camote</button>
         <button class="rep-tab" id="rt-fram" onclick="repTab('fram')">🍇 Frambuesa</button>
       </div>
     </div>
 
     <!-- ============ SUB-TAB: FINANCIERO (Power BI style) ============ -->
-    <!-- ══════ RESUMEN (estado de resultados de toda la empresa) ══════ -->
-    <div id="rep-resumen-sec">
-      <div class="rfr-topbar" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px">
-        <span style="font-size:14px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Ciclo</span>
-        <select id="rsm-ciclo" onchange="renderRepResumen()" style="flex:0 0 auto;min-width:150px;padding:10px 18px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:17px;color:var(--text);font-weight:700;text-align:center;text-align-last:center;outline:none">
-        </select>
-      </div>
-      <div id="rsm-content"></div>
-    </div>
-
-    <div id="rep-fin-sec" style="display:none">
+    <div id="rep-fin-sec">
 
       <!-- Fila 1: Negocios (nivel superior) -->
       <!-- Celular: una sola tarjeta con lista y flechas -->
@@ -1705,7 +1728,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 </div>
 
 <div class="bottom-nav">
-  <button class="nav-item active" id="nav-fin" onclick="goFin()">
+  <button class="nav-item active" id="nav-resumen" onclick="goSc('resumen')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+    Resumen
+  </button>
+  <button class="nav-item" id="nav-fin" onclick="goFin()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"></path></svg>
     Finanzas
   </button>
@@ -2466,9 +2493,10 @@ function selLoc(l){
 
 // ---- Nav ----
 function goSc(s){
-  ['reg','his','rep','ven','fram'].forEach(function(x){
+  ['resumen','reg','his','rep','ven','fram'].forEach(function(x){
     document.getElementById('sc-'+x).classList.toggle('active',x===s);
   });
+  document.getElementById('nav-resumen').classList.toggle('active', s==='resumen');
   document.getElementById('nav-fin').classList.toggle('active', s==='reg'||s==='his');
   document.getElementById('nav-ven').classList.toggle('active', s==='ven');
   document.getElementById('nav-fram').classList.toggle('active', s==='fram');
@@ -2479,8 +2507,9 @@ function goSc(s){
     document.getElementById('fin-mt-his').classList.toggle('active', s==='his');
     lastFinSc = s;
   }
+  if(s==='resumen') renderRepResumen();
   if(s==='his') renderHis();
-  if(s==='rep') repTab(repTabActual||'resumen');
+  if(s==='rep') repTab(repTabActual||'fin');
   if(s==='ven'){ venTab('lista'); }
   if(s==='fram'){ framTab('nuevo'); }
   window.scrollTo(0,0);
@@ -2960,8 +2989,8 @@ function attachDashTooltips(cont, ttId){
 // ---- FINANCIERO: Dashboard estilo Power BI ----
 // ============================================================
 
-var REP_TABS=[{k:'resumen',lbl:'📊 Resumen'},{k:'fin',lbl:'💰 Gastos'},{k:'cam',lbl:'🍠 Camote'},{k:'fram',lbl:'🍇 Frambuesa'}];
-var repTabActual='resumen';
+var REP_TABS=[{k:'fin',lbl:'💰 Gastos'},{k:'cam',lbl:'🍠 Camote'},{k:'fram',lbl:'🍇 Frambuesa'}];
+var repTabActual='fin';
 
 // Flechas del stepper de celular
 function repTabStep(dir){
@@ -2986,14 +3015,12 @@ function repTabSyncMobile(t){
 function repTab(t){
   repTabActual=t;
   repTabSyncMobile(t);
-  ['resumen','fin','cam','fram'].forEach(function(x){
+  ['fin','cam','fram'].forEach(function(x){
     var b=document.getElementById('rt-'+x); if(b) b.classList.toggle('active', x===t);
   });
-  document.getElementById('rep-resumen-sec').style.display = t==='resumen' ? 'block' : 'none';
   document.getElementById('rep-fin-sec').style.display = t==='fin' ? 'block' : 'none';
   document.getElementById('rep-cam-sec').style.display = t==='cam' ? 'block' : 'none';
   document.getElementById('rep-fram-sec').style.display = t==='fram' ? 'block' : 'none';
-  if(t==='resumen') renderRepResumen();
   if(t==='fin') finNegTab(finNegSel||'todos');
   if(t==='cam') renderRepCam();
   if(t==='fram') renderRepFram();
