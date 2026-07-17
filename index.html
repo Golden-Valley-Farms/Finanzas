@@ -106,7 +106,7 @@ input,select,textarea,button{font-family:var(--font)}
 .ven-tab{flex:1;padding:8px;border:none;background:transparent;border-radius:var(--radius-md,8px);font-size:13px;cursor:pointer;color:var(--text2);font-family:var(--font);transition:all .15s;font-weight:500}
 .ven-tab.active{background:var(--surface);color:var(--text);border:0.5px solid var(--border)}
 #rfr-main-tabs .ven-tab,
-#rcm-subtabs .ven-tab{padding:13px 8px;font-size:16px;font-weight:600}
+#rslt-subtabs .ven-tab{padding:13px 8px;font-size:16px;font-weight:600}
 .ven-add-btn{width:100%;padding:10px;border:1.5px dashed var(--border);border-radius:var(--radius-lg);background:transparent;cursor:pointer;font-size:13px;color:var(--text2);font-family:var(--font);transition:all .15s;margin-bottom:4px}
 .ven-add-btn:hover{border-color:var(--green);color:var(--green)}
 .partida-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:10px;position:relative}
@@ -395,7 +395,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 @media (min-width: 700px){
   /* Resumen: mismo breakout de ancho que las secciones de Reportes.
      La app está capada a 480px, así que hay que romperla a 100vw y volver a centrar a 1400. */
-  #sc-resumen{
+  #sc-resultados{
     width:100vw;
     position:relative;
     left:50%;
@@ -403,20 +403,20 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     padding:16px 24px 0;
     box-sizing:border-box;
   }
-  #sc-resumen .kpi-grid{
+  #sc-resultados .kpi-grid{
     max-width:1400px;margin:0 auto 14px;
     grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
   }
-  #sc-resumen .kpi-card.span2{grid-column:span 1}
-  #sc-resumen .kpi-val{font-size:33px}
-  #sc-resumen .fin-charts-grid{
+  #sc-resultados .kpi-card.span2{grid-column:span 1}
+  #sc-resultados .kpi-val{font-size:33px}
+  #sc-resultados .fin-charts-grid{
     max-width:1400px;margin:0 auto;
     display:grid;grid-template-columns:repeat(2,1fr);gap:12px;
   }
-  #sc-resumen .fin-charts-grid .dash-card{margin-bottom:0}
-  #sc-resumen .fin-chart-full{grid-column:1/-1}
-  #sc-resumen .rfr-topbar,
-  #sc-resumen .fintab-wrap{max-width:1400px;margin-left:auto;margin-right:auto}
+  #sc-resultados .fin-charts-grid .dash-card{margin-bottom:0}
+  #sc-resultados .fin-chart-full{grid-column:1/-1}
+  #sc-resultados .rfr-topbar,
+  #sc-resultados .fintab-wrap{max-width:1400px;margin-left:auto;margin-right:auto}
 
   #rep-fin-sec{
     width:100vw;
@@ -534,14 +534,43 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
   <!-- REGISTRAR -->
-  <!-- ══════════ RESUMEN: estado de resultados de toda la empresa ══════════ -->
-  <div id="sc-resumen" class="screen active">
+  <!-- ══════════ RESULTADOS ══════════ -->
+  <div id="sc-resultados" class="screen active">
+    <!-- Sub-pestañas -->
+    <div class="rfr-topbar" id="rslt-subtabs" style="display:flex;gap:4px;margin-bottom:10px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
+      <button class="ven-tab active" id="rslt-tab-resumen" onclick="rsltTab('resumen')" style="flex:1">📊 Resumen</button>
+      <button class="ven-tab" id="rslt-tab-edr" onclick="rsltTab('edr')" style="flex:1">📄 Estado de Resultados</button>
+    </div>
+
+    <!-- Ciclo: compartido por las dos sub-pestañas y por los 5 negocios -->
     <div class="rfr-topbar" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px">
       <span style="font-size:14px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Ciclo</span>
-      <select id="rsm-ciclo" onchange="renderRepResumen()" style="flex:0 0 auto;min-width:150px;padding:10px 18px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:17px;color:var(--text);font-weight:700;text-align:center;text-align-last:center;outline:none">
+      <select id="rsm-ciclo" onchange="renderResultados()" style="flex:0 0 auto;min-width:150px;padding:10px 18px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:17px;color:var(--text);font-weight:700;text-align:center;text-align-last:center;outline:none">
       </select>
     </div>
-    <div id="rsm-content"></div>
+
+    <div id="rslt-sec-resumen">
+      <div id="rsm-content"></div>
+    </div>
+
+    <div id="rslt-sec-edr" style="display:none">
+      <!-- Negocio: lista desplegable con flechas -->
+      <div class="rfr-topbar" style="display:flex;gap:8px;align-items:stretch;margin-bottom:14px;height:52px">
+        <button class="rfr-navbtn" id="rslt-neg-prev" onclick="rsltNegStep(-1)" aria-label="Negocio anterior">&lsaquo;</button>
+        <div style="position:relative;flex:1;min-width:0">
+          <div id="rslt-neg-display" style="height:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:16px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Camote Jalisco</div>
+          <select id="rslt-neg-select" class="no-ssel" onchange="rsltNegTab(this.value)" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;font-size:16px">
+            <option value="camjal">Camote Jalisco</option>
+            <option value="camnay">Camote Nayarit</option>
+            <option value="com">Camote Comercializadora</option>
+            <option value="fram">Frambuesa</option>
+            <option value="ofic">Oficina</option>
+          </select>
+        </div>
+        <button class="rfr-navbtn" id="rslt-neg-next" onclick="rsltNegStep(1)" aria-label="Negocio siguiente">&rsaquo;</button>
+      </div>
+      <div id="rslt-edr-content"></div>
+    </div>
   </div>
 
   <div id="sc-reg" class="screen">
@@ -936,7 +965,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <!-- Pestañas principales: Cosecha / Finanzas -->
       <div class="rfr-topbar" id="rfr-main-tabs" style="display:flex;gap:4px;margin-bottom:10px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
         <button class="ven-tab active" data-main="cos" onclick="rfrMainTab('cos')" style="flex:1">🧺 Cosecha</button>
-        <button class="ven-tab" data-main="fin" onclick="rfrMainTab('fin')" style="flex:1">💵 Finanzas</button>
+        <button class="ven-tab" data-main="fin" onclick="rfrMainTab('fin')" style="flex:1">💵 Facturación</button>
       </div>
 
       <!-- Selector de Ciclo: afecta a todas las pestañas -->
@@ -951,12 +980,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <button class="ven-tab active" id="rfr-tab-dia" onclick="rfrTab('dia')" style="flex:1;font-size:12px">Por día</button>
         <button class="ven-tab" id="rfr-tab-sem" onclick="rfrTab('sem')" style="flex:1;font-size:12px">Por semana</button>
         <button class="ven-tab" id="rfr-tab-res" onclick="rfrTab('res')" style="flex:1;font-size:12px">Por ciclo</button>
-      </div>
-
-      <!-- Sub-tabs de Finanzas -->
-      <div class="rfr-topbar" id="rfr-subtabs-fin" style="display:none;gap:4px;margin-bottom:14px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
-        <button class="ven-tab active" id="rfr-tab-fac" onclick="rfrTab('fac')" style="flex:1;font-size:12px">Facturación</button>
-        <button class="ven-tab" id="rfr-tab-edr" onclick="rfrTab('edr')" style="flex:1;font-size:12px">Estado de Resultados</button>
       </div>
 
       <!-- ── POR DÍA ── -->
@@ -1003,11 +1026,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div id="rfr-fac-detalle"></div>
       </div>
 
-      <!-- ── FINANZAS · ESTADO DE RESULTADOS ── -->
-      <div id="rfr-sec-edr" style="display:none">
-        <div id="rfr-edr-detalle"></div>
-      </div>
-
     </div>
 
     <!-- ============ SUB-TAB: CAMOTE ============ -->
@@ -1031,12 +1049,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Ciclo</span>
         <select id="rcm-ciclo" onchange="renderRepCam()" style="flex:1;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);font-weight:600;outline:none">
         </select>
-      </div>
-
-      <!-- Sub-tabs: Cosecha / Financiero -->
-      <div class="rfr-topbar" id="rcm-subtabs" style="display:flex;gap:4px;margin-bottom:14px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
-        <button class="ven-tab active" data-tab="cosecha" onclick="rcmSubTab('cosecha')" style="flex:1">🧺 Cosecha</button>
-        <button class="ven-tab" data-tab="fin" onclick="rcmSubTab('fin')" style="flex:1">💵 Financiero</button>
       </div>
 
       <div id="rcm-content"></div>
@@ -1728,7 +1740,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 </div>
 
 <div class="bottom-nav">
-  <button class="nav-item active" id="nav-resumen" onclick="goSc('resumen')">
+  <button class="nav-item active" id="nav-resultados" onclick="goSc('resultados')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
     Resumen
   </button>
@@ -2493,10 +2505,10 @@ function selLoc(l){
 
 // ---- Nav ----
 function goSc(s){
-  ['resumen','reg','his','rep','ven','fram'].forEach(function(x){
+  ['resultados','reg','his','rep','ven','fram'].forEach(function(x){
     document.getElementById('sc-'+x).classList.toggle('active',x===s);
   });
-  document.getElementById('nav-resumen').classList.toggle('active', s==='resumen');
+  document.getElementById('nav-resultados').classList.toggle('active', s==='resultados');
   document.getElementById('nav-fin').classList.toggle('active', s==='reg'||s==='his');
   document.getElementById('nav-ven').classList.toggle('active', s==='ven');
   document.getElementById('nav-fram').classList.toggle('active', s==='fram');
@@ -2507,7 +2519,7 @@ function goSc(s){
     document.getElementById('fin-mt-his').classList.toggle('active', s==='his');
     lastFinSc = s;
   }
-  if(s==='resumen') renderRepResumen();
+  if(s==='resultados') renderResultados();
   if(s==='his') renderHis();
   if(s==='rep') repTab(repTabActual||'fin');
   if(s==='ven'){ venTab('lista'); }
@@ -3055,22 +3067,22 @@ function rfrGridCol(){ return window.matchMedia('(prefers-color-scheme:dark)').m
 
 // Pestaña principal: Cosecha (dia/sem/res) o Finanzas (fac/edr).
 // Cada grupo recuerda en qué sub-pestaña se quedó.
-var rfrMainSel='cos', rfrCosSel='dia', rfrFinSel='fac';
+var rfrMainSel='cos', rfrCosSel='dia';
 
 function rfrMainTab(m){
   rfrMainSel=m;
   document.querySelectorAll('#rfr-main-tabs .ven-tab').forEach(function(b){
     b.classList.toggle('active', b.getAttribute('data-main')===m);
   });
+  // Facturación ya no tiene sub-pestañas: va directo a la tabla
   document.getElementById('rfr-subtabs-cos').style.display = m==='cos'?'flex':'none';
-  document.getElementById('rfr-subtabs-fin').style.display = m==='fin'?'flex':'none';
-  rfrTab(m==='cos'?rfrCosSel:rfrFinSel);
+  rfrTab(m==='cos'?rfrCosSel:'fac');
 }
 
 function rfrTab(t){
   rfrTabActual=t;
-  if(t==='dia'||t==='sem'||t==='res') rfrCosSel=t; else rfrFinSel=t;
-  ['dia','sem','res','fac','edr'].forEach(function(x){
+  if(t==='dia'||t==='sem'||t==='res') rfrCosSel=t;
+  ['dia','sem','res','fac'].forEach(function(x){
     var b=document.getElementById('rfr-tab-'+x); if(b) b.classList.toggle('active',x===t);
     var sec=document.getElementById('rfr-sec-'+x); if(sec) sec.style.display=x===t?'block':'none';
   });
@@ -3116,7 +3128,6 @@ function renderRepFram(){
 
   // Finanzas no depende de los registros de cosecha: se dibuja antes del guard
   if(rfrTabActual==='fac'){ renderRfrFinanzas(filtroCiclo); return; }
-  if(rfrTabActual==='edr'){ renderRfrEDR(filtroCiclo); return; }
 
   if(!framRegistros||!framRegistros.length) return;
   rfrDataCache=framRegistros.filter(function(r){return filtroCiclo==='todos'||r.ciclo===filtroCiclo;})
@@ -3317,8 +3328,8 @@ function framBarraH(id, lbls, vals, cols, colorTxt, xMax, yAncho){
   });
 }
 
-function renderRfrEDR(filtroCiclo){
-  var cont=document.getElementById('rfr-edr-detalle');
+function renderRfrEDR(filtroCiclo, contId){
+  var cont=document.getElementById(contId||'rfr-edr-detalle');
   if(!cont) return;
 
   // Ingresos: lo facturado en el ciclo
@@ -4640,15 +4651,6 @@ function rcmNegTab(neg){
   renderRepCam();
 }
 
-var rcmSubTabSel = 'cosecha';
-function rcmSubTab(tab){
-  rcmSubTabSel = tab;
-  document.querySelectorAll('#rcm-subtabs .ven-tab').forEach(function(b){
-    b.classList.toggle('active', b.dataset.tab===tab);
-  });
-  renderRepCam();
-}
-
 // ══════════ RESUMEN: estado de resultados de toda la empresa ══════════
 // Un renglón por negocio, con el mismo reparto de los gastos "General" que ya
 // usan Camote y Frambuesa:
@@ -4712,25 +4714,117 @@ function rsmFilas(ciclo){
   });
 }
 
-function renderRepResumen(){
+// ── Sub-pestañas de Resultados y stepper de negocios ──
+var RSLT_NEGS = [
+  {k:'camjal', lbl:'Camote Jalisco'},
+  {k:'camnay', lbl:'Camote Nayarit'},
+  {k:'com',    lbl:'Camote Comercializadora'},
+  {k:'fram',   lbl:'Frambuesa'},
+  {k:'ofic',   lbl:'Oficina'}
+];
+var rsltTabSel='resumen', rsltNegSel='camjal';
+
+function rsltTab(t){
+  rsltTabSel=t;
+  ['resumen','edr'].forEach(function(x){
+    var b=document.getElementById('rslt-tab-'+x); if(b) b.classList.toggle('active', x===t);
+    var sec=document.getElementById('rslt-sec-'+x); if(sec) sec.style.display = x===t?'block':'none';
+  });
+  renderResultados();
+}
+
+function rsltNegTab(n){ rsltNegSel=n; renderResultados(); }
+
+function rsltNegStep(dir){
+  var i=RSLT_NEGS.map(function(x){return x.k;}).indexOf(rsltNegSel)+dir;
+  if(i<0||i>=RSLT_NEGS.length) return;
+  rsltNegTab(RSLT_NEGS[i].k);
+}
+
+function rsltNegSync(){
+  var i=RSLT_NEGS.map(function(x){return x.k;}).indexOf(rsltNegSel);
+  if(i<0) return;
+  var disp=document.getElementById('rslt-neg-display');
+  if(disp) disp.textContent=RSLT_NEGS[i].lbl;
+  var sel=document.getElementById('rslt-neg-select');
+  if(sel) sel.value=rsltNegSel;
+  var pv=document.getElementById('rslt-neg-prev'), nx=document.getElementById('rslt-neg-next');
+  if(pv) pv.disabled = i===0;
+  if(nx) nx.disabled = i===RSLT_NEGS.length-1;
+}
+
+// Llena el selector de Ciclo (compartido) y devuelve el ciclo elegido.
+// Como el <select> es uno solo, el ciclo sobrevive al cambiar de sub-pestaña y de negocio.
+function rsltCiclo(){
+  var sel=document.getElementById('rsm-ciclo');
+  if(!sel) return 'todos';
+  var cics=[];
+  (envios||[]).forEach(function(e){ if(e.ciclo&&cics.indexOf(e.ciclo)<0) cics.push(e.ciclo); });
+  (framFinanzas||[]).forEach(function(f){ if(f.ciclo&&cics.indexOf(f.ciclo)<0) cics.push(f.ciclo); });
+  (gastos||[]).forEach(function(g){ if(g.ciclo&&cics.indexOf(g.ciclo)<0) cics.push(g.ciclo); });
+  cics.sort().reverse();
+  var prev=sel.value;
+  sel.innerHTML='';
+  cics.forEach(function(c){ var o=document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o); });
+  if(prev && sel.querySelector('option[value="'+prev+'"]')) sel.value=prev;
+  else if(cics.length) sel.value=cics[0];
+  return sel.value || 'todos';
+}
+
+function renderResultados(){
+  var ciclo = rsltCiclo();
+  if(rsltTabSel==='edr'){ rsltNegSync(); renderRsltEDR(ciclo); }
+  else renderRepResumen(ciclo);
+}
+
+// Estado de resultados de un solo negocio. Reusa los renderers que ya existían.
+function renderRsltEDR(ciclo){
+  var cont=document.getElementById('rslt-edr-content');
+  if(!cont) return;
+
+  if(rsltNegSel==='camjal' || rsltNegSel==='camnay'){
+    var loc = rsltNegSel==='camjal' ? 'jal' : 'nay';
+    var envs = (envios||[]).filter(function(e){
+      return e.loc===loc && (ciclo==='todos' || e.ciclo===ciclo);
+    });
+    renderRcmFinanciero(envs, ciclo, loc, 'rslt-edr-content');
+    return;
+  }
+  if(rsltNegSel==='com'){
+    var envsC = (envios||[]).filter(function(e){
+      return e.loc==='com' && (ciclo==='todos' || e.ciclo===ciclo);
+    });
+    renderRcmComer(envsC, ciclo, 'rslt-edr-content');
+    return;
+  }
+  if(rsltNegSel==='fram'){
+    renderRfrEDR(ciclo, 'rslt-edr-content');
+    return;
+  }
+  // Oficina: por ahora solo el gasto
+  var gOfic = gastos.filter(function(g){
+    return g.loc==='ofic' && (ciclo==='todos' || (g.ciclo||cicloFromFecha(g.fechaVal))===ciclo);
+  }).reduce(function(a,g){ return a+(parseFloat(g.monto)||0); },0);
+
+  if(!gOfic){
+    cont.innerHTML='<div style="text-align:center;padding:60px 0;color:var(--text3);font-size:13px">Sin gastos de Oficina para este ciclo</div>';
+    return;
+  }
+  cont.innerHTML =
+    '<div class="kpi-grid">'+
+      '<div class="kpi-card">'+
+        '<div class="kpi-accent" style="background:var(--camote)"></div>'+
+        '<div class="kpi-lbl">Gastos</div>'+
+        '<div class="kpi-val" style="color:var(--camote)">'+fmt(gOfic)+'</div>'+
+      '</div>'+
+    '</div>';
+}
+
+function renderRepResumen(cicloArg){
   var cont=document.getElementById('rsm-content');
   if(!cont) return;
 
-  // Ciclos de toda la empresa: envíos, finanzas de frambuesa y gastos
-  var sel=document.getElementById('rsm-ciclo');
-  if(sel){
-    var cics=[];
-    (envios||[]).forEach(function(e){ if(e.ciclo&&cics.indexOf(e.ciclo)<0) cics.push(e.ciclo); });
-    (framFinanzas||[]).forEach(function(f){ if(f.ciclo&&cics.indexOf(f.ciclo)<0) cics.push(f.ciclo); });
-    (gastos||[]).forEach(function(g){ if(g.ciclo&&cics.indexOf(g.ciclo)<0) cics.push(g.ciclo); });
-    cics.sort().reverse();
-    var prev=sel.value;
-    sel.innerHTML='';
-    cics.forEach(function(c){ var o=document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o); });
-    if(prev && sel.querySelector('option[value="'+prev+'"]')) sel.value=prev;
-    else if(cics.length) sel.value=cics[0];
-  }
-  var ciclo = (sel && sel.value) ? sel.value : 'todos';
+  var ciclo = cicloArg || 'todos';
 
   var filas=rsmFilas(ciclo);
   var totIng=0, totGas=0;
@@ -4776,12 +4870,6 @@ function renderRepResumen(){
         '</tr>';
       }).join('')+
       '</tbody>'+
-      '<tfoot><tr>'+
-        '<td class="txt">Total</td>'+
-        '<td class="num">'+fmt(totIng)+'</td>'+
-        '<td class="num">'+fmt(totGas)+'</td>'+
-        '<td class="num '+(totUtil>=0?'pag-ok':'pag-mal')+'">'+fmt(totUtil)+'</td>'+
-      '</tr></tfoot>'+
     '</table></div>';
 
   html +=
@@ -4822,23 +4910,15 @@ function renderRepCam(){
   var filtroCiclo = cicloSel ? cicloSel.value : '';
 
   var cont = document.getElementById('rcm-content');
-  var subtabsEl = document.getElementById('rcm-subtabs');
   if(!cont) return;
 
   var envs = envios.filter(function(e){
     return e.loc===rcmNegSel && (filtroCiclo==='todos' || e.ciclo===filtroCiclo);
   });
 
-  // Comercializadora no tiene cosecha: va directo al financiero, sin sub-pestañas
-  if(rcmNegSel==='com'){
-    if(subtabsEl) subtabsEl.style.display = 'none';
-    renderRcmComer(envs, filtroCiclo);
-    return;
-  }
-  if(subtabsEl) subtabsEl.style.display = 'flex';
-
-  if(rcmSubTabSel==='fin') renderRcmFinanciero(envs, filtroCiclo);
-  else renderRcmCosecha(envs);
+  // El financiero se mudó a Resultados -> Estado de Resultados. Aquí solo queda la cosecha.
+  if(rcmNegSel==='com'){ renderRcmComer(envs, filtroCiclo, 'rcm-content'); return; }
+  renderRcmCosecha(envs);
 }
 
 // Tope común del eje X para el PAR de gráficas de una misma sección
@@ -4864,8 +4944,8 @@ function ejeYAnchoCat(listas){
 //            La app los genera sola al guardar cada operación (autoGen),
 //            así que no hay que capturarlos a mano.
 // Ganancia = Ingresos - Costos
-function renderRcmComer(envs, filtroCiclo){
-  var cont = document.getElementById('rcm-content');
+function renderRcmComer(envs, filtroCiclo, contId){
+  var cont = document.getElementById(contId||'rcm-content');
   if(!cont) return;
 
   // Ingresos: venta de la mercancía + flete de venta (envioTotal ya suma e.flete)
@@ -4909,21 +4989,50 @@ function renderRcmComer(envs, filtroCiclo){
 }
 
 
-function renderRcmFinanciero(envs, filtroCiclo){
-  var cont = document.getElementById('rcm-content');
+// Ingreso por sector a partir de los envíos. Lo usan el estado de resultados
+// (para el costo x sector) y la gráfica de la pestaña de Cosecha.
+function rcmIngresoPorSector(envs){
+  var map={}, set={};
+  envs.forEach(function(e){
+    (e.partidas||[]).forEach(function(p){
+      var sec = p.sector || '—';
+      set[sec] = true;
+      var ingreso = p.total!=null ? parseFloat(p.total)||0 :
+        (e.esComer||p.kgRecibidos!==undefined ? (parseFloat(p.kgRecibidos||0)*parseFloat(p.precioVenta||0)) : (parseFloat(p.pesoNeto||0)*parseFloat(p.precio||0)));
+      map[sec] = (map[sec]||0) + ingreso;
+    });
+  });
+  var ord = Object.keys(map).sort(function(a,b){
+    var na=parseFloat(a), nb=parseFloat(b);
+    if(!isNaN(na)&&!isNaN(nb)) return na-nb;
+    return String(a).localeCompare(String(b));
+  });
+  return {
+    num: Object.keys(set).length,
+    lbls: ord.map(function(x){return 'Sector '+x;}),
+    vals: ord.map(function(x){return Math.round(map[x]);}),
+    cols: ord.map(function(x,i){return SEC_COLS_RCM[i%SEC_COLS_RCM.length];})
+  };
+}
+
+// negKey: 'jal' o 'nay'.  contId: dónde dibujar (Resultados o Reportes).
+function renderRcmFinanciero(envs, filtroCiclo, negKey, contId){
+  var cont = document.getElementById(contId||'rcm-content');
+  if(!cont) return;
+  negKey = negKey || rcmNegSel;
 
   var ingresos = envs.reduce(function(a,e){return a+envioTotal(e);},0);
 
   var gastosNeg = gastos.filter(function(g){
-    return g.loc===rcmNegSel && g.cultivo==='camote' &&
+    return g.loc===negKey && g.cultivo==='camote' &&
       (filtroCiclo==='todos' || (g.ciclo||cicloFromFecha(g.fechaVal))===filtroCiclo);
   });
   var costo = gastosNeg.reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0);
 
   // Gastos por categoría (Camote Nayarit y Camote Jalisco)
-  var mostrarCatGastos = (rcmNegSel==='nay' || rcmNegSel==='jal');
+  var mostrarCatGastos = (negKey==='nay' || negKey==='jal');
   // Jalisco General se reparte 50/50 con Frambuesa; Nayarit General es todo de camote
-  var genFactor = (rcmNegSel==='jal') ? FRAM_GEN_JAL_FACTOR : 1;
+  var genFactor = (negKey==='jal') ? FRAM_GEN_JAL_FACTOR : 1;
   var catGastoMap = {};
   gastosNeg.forEach(function(g){
     var c = g.cat || 'Sin categoría';
@@ -4938,7 +5047,7 @@ function renderRcmFinanciero(envs, filtroCiclo){
   var gastosGen = [];
   if(mostrarCatGastos){
     gastosGen = gastos.filter(function(g){
-      return g.loc===rcmNegSel && g.cultivo==='general' &&
+      return g.loc===negKey && g.cultivo==='general' &&
         (filtroCiclo==='todos' || (g.ciclo||cicloFromFecha(g.fechaVal))===filtroCiclo);
     });
   }
@@ -4954,18 +5063,7 @@ function renderRcmFinanciero(envs, filtroCiclo){
   var catGenVals = catGenOrd.map(function(c){return Math.round(catGenMap[c]);});
   var catGenCols = catGenOrd.map(function(c){return catColor(c);});
 
-  var ingresoPorSector = {};
-  var sectoresSet = {};
-  envs.forEach(function(e){
-    (e.partidas||[]).forEach(function(p){
-      var sec = p.sector || '—';
-      sectoresSet[sec] = true;
-      var ingreso = p.total!=null ? parseFloat(p.total)||0 :
-        (e.esComer||p.kgRecibidos!==undefined ? (parseFloat(p.kgRecibidos||0)*parseFloat(p.precioVenta||0)) : (parseFloat(p.pesoNeto||0)*parseFloat(p.precio||0)));
-      ingresoPorSector[sec] = (ingresoPorSector[sec]||0) + ingreso;
-    });
-  });
-  var numSectores = Object.keys(sectoresSet).length;
+  var numSectores = rcmIngresoPorSector(envs).num;
   var costoPorSector = numSectores>0 ? costoTotal/numSectores : 0;
   var ganancia = ingresos - costoTotal;
 
@@ -4973,15 +5071,6 @@ function renderRcmFinanciero(envs, filtroCiclo){
     cont.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--text3);font-size:13px">Sin registros financieros para este ciclo</div>';
     return;
   }
-
-  var sectoresOrd = Object.keys(ingresoPorSector).sort(function(a,b){
-    var na=parseFloat(a), nb=parseFloat(b);
-    if(!isNaN(na)&&!isNaN(nb)) return na-nb;
-    return String(a).localeCompare(String(b));
-  });
-  var secLbls = sectoresOrd.map(function(s){return 'Sector '+s;});
-  var secVals = sectoresOrd.map(function(s){return Math.round(ingresoPorSector[s]);});
-  var secCols = sectoresOrd.map(function(s,i){return SEC_COLS_RCM[i%SEC_COLS_RCM.length];});
 
   cont.innerHTML =
     '<div class="kpi-grid">'+
@@ -5007,10 +5096,6 @@ function renderRcmFinanciero(envs, filtroCiclo){
       '</div>'+
     '</div>'+
     '<div class="fin-charts-grid">'+
-      '<div class="dash-card fin-chart-full">'+
-        '<div class="dash-card-title">Ingreso x Sector</div>'+
-        '<div style="position:relative;height:'+Math.max(200, secLbls.length*46)+'px;margin-top:8px"><canvas id="rcm-ingreso-sec-chart"></canvas></div>'+
-      '</div>'+
       (mostrarCatGastos && catGastoLbls.length ?
         '<div class="dash-card fin-chart-full">'+
           '<div class="dash-card-title">Gastos x Categoría</div>'+
@@ -5027,42 +5112,6 @@ function renderRcmFinanciero(envs, filtroCiclo){
   // Mismo rango y mismo arranque de barras entre las dos gráficas de esta sección
   var ejeXMax = maxEjeXCat([catGastoVals, catGenVals]);
   var ejeYAncho = ejeYAnchoCat([catGastoLbls, catGenLbls]);
-
-  if(secLbls.length){
-  var ingresoBarLabelPlugin = {
-    id:'rcmIngresoBarLabels',
-    afterDatasetsDraw:function(chart){
-      var ctx=chart.ctx; var ds=chart.data.datasets[0]; var meta=chart.getDatasetMeta(0);
-      meta.data.forEach(function(bar,i){
-        var v=ds.data[i]; if(v==null) return;
-        ctx.save();
-        ctx.fillStyle = '#1a7a4a';
-        ctx.font = 'bold 11px monospace';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(fmt(v), bar.x+8, bar.y);
-        ctx.restore();
-      });
-    }
-  };
-
-  mkRcmChart('rcm-ingreso-sec-chart', {
-    type:'bar',
-    plugins:[ingresoBarLabelPlugin],
-    data:{labels:secLbls, datasets:[{data:secVals, backgroundColor:secCols, borderRadius:3}]},
-    options:{
-      indexAxis:'y',
-      responsive:true, maintainAspectRatio:false,
-      layout:{padding:{right:60}},
-      plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+fmt(c.raw);}}}},
-      scales:{
-        x:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:11}, callback:function(v){return fmtCompact(v);}}, beginAtZero:true,
-           suggestedMax:(function(){var m=Math.max.apply(null,secVals.concat([1])); return m+Math.ceil(m*0.2)+1;})()},
-        y:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}}
-      }
-    }
-  });
-  }
 
   if(mostrarCatGastos && catGastoLbls.length){
     var catGastoBarLabelPlugin = {
@@ -5136,6 +5185,7 @@ function renderRcmFinanciero(envs, filtroCiclo){
 }
 
 function renderRcmCosecha(envs){
+  var ingSec = rcmIngresoPorSector(envs);
   var cont = document.getElementById('rcm-content');
 
   var totalTon = 0, totalHa = 0;
@@ -5265,9 +5315,47 @@ function renderRcmCosecha(envs){
           '<div style="position:relative;flex:1;min-width:160px;height:200px"><canvas id="rcm-variedad-pie-chart"></canvas></div>'+
         '</div>'+
       '</div>'+
+      (ingSec.lbls.length ?
+        '<div class="dash-card fin-chart-full">'+
+          '<div class="dash-card-title">Ingreso x Sector</div>'+
+          '<div style="position:relative;height:'+Math.max(200, ingSec.lbls.length*46)+'px;margin-top:8px"><canvas id="rcm-ingreso-sec-chart"></canvas></div>'+
+        '</div>' : '')+
     '</div>';
 
   var gridCol = rfrGridCol(); var textMuted = '#898781';
+
+  if(ingSec.lbls.length){
+    mkRcmChart('rcm-ingreso-sec-chart', {
+      type:'bar',
+      plugins:[{
+        id:'rcmIngresoBarLabels',
+        afterDatasetsDraw:function(chart){
+          var ctx=chart.ctx, ds=chart.data.datasets[0], meta=chart.getDatasetMeta(0);
+          meta.data.forEach(function(bar,i){
+            var v=ds.data[i]; if(v==null) return;
+            ctx.save();
+            ctx.fillStyle='#1a7a4a';
+            ctx.font='bold 11px monospace';
+            ctx.textAlign='left'; ctx.textBaseline='middle';
+            ctx.fillText(fmt(v), bar.x+8, bar.y);
+            ctx.restore();
+          });
+        }
+      }],
+      data:{labels:ingSec.lbls, datasets:[{data:ingSec.vals, backgroundColor:ingSec.cols, borderRadius:3}]},
+      options:{
+        indexAxis:'y',
+        responsive:true, maintainAspectRatio:false,
+        layout:{padding:{right:60}},
+        plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+fmt(c.raw);}}}},
+        scales:{
+          x:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:11}, callback:function(v){return fmtCompact(v);}}, beginAtZero:true,
+             suggestedMax:(function(){var m=Math.max.apply(null,ingSec.vals.concat([1])); return m+Math.ceil(m*0.2)+1;})()},
+          y:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}}
+        }
+      }
+    });
+  }
 
   var barLabelPlugin = function(suffix){
     return {
