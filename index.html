@@ -4990,7 +4990,46 @@ var VARIEDAD_COLS = {'Blanco Criollo':'#faf0e1','Amarillo Covington':'#f5964a','
 
 // Vista de operación de Comercializadora (Reportes -> Camote -> Comercializadora).
 // El estado de resultados (Ingresos/Costos/Ganancia) vive aparte, en renderRcmComer.
+// RESULTADOS -> Estado de Resultados -> Comercializadora: las 3 tarjetas de siempre
 function renderRcmComer(envs, filtroCiclo, contId){
+  var cont = document.getElementById(contId||'rcm-content');
+  if(!cont) return;
+
+  var ingresos = envs.reduce(function(a,e){ return a+envioTotal(e); },0);
+  var gastosCom = gastos.filter(function(g){
+    return g.loc==='com' &&
+      (filtroCiclo==='todos' || (g.ciclo||cicloFromFecha(g.fechaVal))===filtroCiclo);
+  });
+  var costos = gastosCom.reduce(function(a,g){ return a+(parseFloat(g.monto)||0); },0);
+  var ganancia = ingresos - costos;
+
+  if(!ingresos && !costos){
+    cont.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--text3);font-size:13px">Sin operaciones para este ciclo</div>';
+    return;
+  }
+  var colGan = ganancia>=0 ? 'var(--green)' : '#D64545';
+  cont.innerHTML =
+    '<div class="kpi-grid">'+
+      '<div class="kpi-card">'+
+        '<div class="kpi-accent" style="background:var(--green)"></div>'+
+        '<div class="kpi-lbl">Ingresos</div>'+
+        '<div class="kpi-val" style="color:var(--green)">'+fmt(ingresos)+'</div>'+
+      '</div>'+
+      '<div class="kpi-card">'+
+        '<div class="kpi-accent" style="background:var(--camote)"></div>'+
+        '<div class="kpi-lbl">Costos</div>'+
+        '<div class="kpi-val" style="color:var(--camote)">'+fmt(costos)+'</div>'+
+      '</div>'+
+      '<div class="kpi-card">'+
+        '<div class="kpi-accent" style="background:'+colGan+'"></div>'+
+        '<div class="kpi-lbl">Ganancia</div>'+
+        '<div class="kpi-val" style="color:'+colGan+'">'+fmt(ganancia)+'</div>'+
+      '</div>'+
+    '</div>';
+}
+
+// REPORTES -> Camote -> Comercializadora: volumen y márgenes de la operación
+function renderRcmComerOps(envs, filtroCiclo, contId){
   var cont = document.getElementById(contId||'rcm-content');
   if(!cont) return;
 
@@ -5093,6 +5132,32 @@ function renderRcmComer(envs, filtroCiclo, contId){
   }
 }
 
+
+// Ingreso por sector a partir de los envíos. Lo usan el estado de resultados
+// (para el costo x sector) y la gráfica de la pestaña de Cosecha.
+function rcmIngresoPorSector(envs){
+  var map={}, set={};
+  envs.forEach(function(e){
+    (e.partidas||[]).forEach(function(p){
+      var sec = p.sector || '—';
+      set[sec] = true;
+      var ingreso = p.total!=null ? parseFloat(p.total)||0 :
+        (e.esComer||p.kgRecibidos!==undefined ? (parseFloat(p.kgRecibidos||0)*parseFloat(p.precioVenta||0)) : (parseFloat(p.pesoNeto||0)*parseFloat(p.precio||0)));
+      map[sec] = (map[sec]||0) + ingreso;
+    });
+  });
+  var ord = Object.keys(map).sort(function(a,b){
+    var na=parseFloat(a), nb=parseFloat(b);
+    if(!isNaN(na)&&!isNaN(nb)) return na-nb;
+    return String(a).localeCompare(String(b));
+  });
+  return {
+    num: Object.keys(set).length,
+    lbls: ord.map(function(x){return 'Sector '+x;}),
+    vals: ord.map(function(x){return Math.round(map[x]);}),
+    cols: ord.map(function(x,i){return SEC_COLS_RCM[i%SEC_COLS_RCM.length];})
+  };
+}
 
 function renderRcmFinanciero(envs, filtroCiclo, negKey, contId){
   var cont = document.getElementById(contId||'rcm-content');
