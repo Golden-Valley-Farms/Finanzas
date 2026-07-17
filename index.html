@@ -361,6 +361,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .fintab td.num{font-family:var(--mono)}
 .fintab td.cero{color:var(--text3)}
 .fintab td.pag{font-weight:700;color:var(--fram)}
+.fintab-wrap.auto{height:auto;max-height:none}
+.fintab td.pag-ok{font-weight:700;color:var(--green)}
+.fintab td.pag-mal{font-weight:700;color:#D64545}
+.fintab tfoot td{border-top:2px solid var(--border);border-bottom:none;font-weight:700;background:var(--surface2)}
 .fintab .fintab-sub{font-size:13.5px;color:var(--text3);font-weight:400;margin-top:1px;letter-spacing:0}
 .fintab tbody tr:nth-child(even){background:var(--surface2)}
 @media (min-width:700px){
@@ -679,8 +683,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div class="rfr-topbar" id="rep-maintabs-mobile" style="gap:8px;align-items:stretch;margin-bottom:14px;height:52px">
       <button class="rfr-navbtn" id="rep-main-prev" onclick="repTabStep(-1)" aria-label="Reporte anterior">&lsaquo;</button>
       <div style="position:relative;flex:1;min-width:0">
-        <div id="rep-main-display" style="height:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:16px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">💰 Gastos</div>
+        <div id="rep-main-display" style="height:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:16px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">📊 Resumen</div>
         <select id="rep-main-select" class="no-ssel" onchange="repTab(this.value)" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;font-size:16px">
+          <option value="resumen">📊 Resumen</option>
           <option value="fin">💰 Gastos</option>
           <option value="cam">🍠 Camote</option>
           <option value="fram">🍇 Frambuesa</option>
@@ -691,14 +696,25 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
     <div class="rep-subnav-wrap" id="rep-maintabs-wrap">
       <div class="rep-subnav">
-        <button class="rep-tab active" id="rt-fin" onclick="repTab('fin')">💰 Gastos</button>
+        <button class="rep-tab active" id="rt-resumen" onclick="repTab('resumen')">📊 Resumen</button>
+        <button class="rep-tab" id="rt-fin" onclick="repTab('fin')">💰 Gastos</button>
         <button class="rep-tab" id="rt-cam" onclick="repTab('cam')">🍠 Camote</button>
         <button class="rep-tab" id="rt-fram" onclick="repTab('fram')">🍇 Frambuesa</button>
       </div>
     </div>
 
     <!-- ============ SUB-TAB: FINANCIERO (Power BI style) ============ -->
-    <div id="rep-fin-sec">
+    <!-- ══════ RESUMEN (estado de resultados de toda la empresa) ══════ -->
+    <div id="rep-resumen-sec">
+      <div class="rfr-topbar" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px">
+        <span style="font-size:14px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Ciclo</span>
+        <select id="rsm-ciclo" onchange="renderRepResumen()" style="flex:0 0 auto;min-width:150px;padding:10px 18px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:17px;color:var(--text);font-weight:700;text-align:center;text-align-last:center;outline:none">
+        </select>
+      </div>
+      <div id="rsm-content"></div>
+    </div>
+
+    <div id="rep-fin-sec" style="display:none">
 
       <!-- Fila 1: Negocios (nivel superior) -->
       <!-- Celular: una sola tarjeta con lista y flechas -->
@@ -2464,7 +2480,7 @@ function goSc(s){
     lastFinSc = s;
   }
   if(s==='his') renderHis();
-  if(s==='rep') repTab('fin');
+  if(s==='rep') repTab(repTabActual||'resumen');
   if(s==='ven'){ venTab('lista'); }
   if(s==='fram'){ framTab('nuevo'); }
   window.scrollTo(0,0);
@@ -2944,8 +2960,8 @@ function attachDashTooltips(cont, ttId){
 // ---- FINANCIERO: Dashboard estilo Power BI ----
 // ============================================================
 
-var REP_TABS=[{k:'fin',lbl:'💰 Gastos'},{k:'cam',lbl:'🍠 Camote'},{k:'fram',lbl:'🍇 Frambuesa'}];
-var repTabActual='fin';
+var REP_TABS=[{k:'resumen',lbl:'📊 Resumen'},{k:'fin',lbl:'💰 Gastos'},{k:'cam',lbl:'🍠 Camote'},{k:'fram',lbl:'🍇 Frambuesa'}];
+var repTabActual='resumen';
 
 // Flechas del stepper de celular
 function repTabStep(dir){
@@ -2970,12 +2986,14 @@ function repTabSyncMobile(t){
 function repTab(t){
   repTabActual=t;
   repTabSyncMobile(t);
-  document.getElementById('rt-fin').classList.toggle('active', t==='fin');
-  document.getElementById('rt-cam').classList.toggle('active', t==='cam');
-  document.getElementById('rt-fram').classList.toggle('active', t==='fram');
+  ['resumen','fin','cam','fram'].forEach(function(x){
+    var b=document.getElementById('rt-'+x); if(b) b.classList.toggle('active', x===t);
+  });
+  document.getElementById('rep-resumen-sec').style.display = t==='resumen' ? 'block' : 'none';
   document.getElementById('rep-fin-sec').style.display = t==='fin' ? 'block' : 'none';
   document.getElementById('rep-cam-sec').style.display = t==='cam' ? 'block' : 'none';
   document.getElementById('rep-fram-sec').style.display = t==='fram' ? 'block' : 'none';
+  if(t==='resumen') renderRepResumen();
   if(t==='fin') finNegTab(finNegSel||'todos');
   if(t==='cam') renderRepCam();
   if(t==='fram') renderRepFram();
@@ -3245,11 +3263,11 @@ function framBarraH(id, lbls, vals, cols, colorTxt, xMax, yAncho){
       meta.data.forEach(function(bar,i){
         var v=ds.data[i]; if(v==null) return;
         ctx.save();
-        ctx.fillStyle=colorTxt;
+        ctx.fillStyle=(typeof colorTxt==='function')?colorTxt(v):colorTxt;
         ctx.font='bold 11px monospace';
-        ctx.textAlign='left';
+        ctx.textAlign=v<0?'right':'left';
         ctx.textBaseline='middle';
-        ctx.fillText(fmt(v), bar.x+8, bar.y);
+        ctx.fillText(fmt(v), bar.x+(v<0?-8:8), bar.y);
         ctx.restore();
       });
     }
@@ -3261,7 +3279,7 @@ function framBarraH(id, lbls, vals, cols, colorTxt, xMax, yAncho){
     options:{
       indexAxis:'y',
       responsive:true, maintainAspectRatio:false,
-      layout:{padding:{right:70}},
+      layout:{padding:{right:70, left:20}},
       plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+fmt(c.raw);}}}},
       scales:{
         x:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:11}, callback:function(v){return fmtCompact(v);}}, beginAtZero:true,
@@ -4604,6 +4622,160 @@ function rcmSubTab(tab){
   renderRepCam();
 }
 
+// ══════════ RESUMEN: estado de resultados de toda la empresa ══════════
+// Un renglón por negocio, con el mismo reparto de los gastos "General" que ya
+// usan Camote y Frambuesa:
+//   Jalisco General -> 50% a Camote Jalisco, 50% a Frambuesa
+//   Nayarit General -> 100% a Camote Nayarit
+var RSM_NEGOCIOS = [
+  {k:'camjal', lbl:'Camote Jalisco',   color:'#5BA3E0'},
+  {k:'camnay', lbl:'Camote Nayarit',   color:'#D98A4A'},
+  {k:'com',    lbl:'Comercializadora', color:'#3CB87A'},
+  {k:'fram',   lbl:'Frambuesa',        color:'#D6336C'},
+  {k:'ofic',   lbl:'Oficina',          color:'#9E9E9E'}
+];
+
+function rsmEnCiclo(g, ciclo){
+  return ciclo==='todos' || (g.ciclo||cicloFromFecha(g.fechaVal))===ciclo;
+}
+function rsmSumaGastos(filtro, ciclo, factor){
+  return gastos.filter(function(g){ return filtro(g) && rsmEnCiclo(g, ciclo); })
+               .reduce(function(a,g){ return a+((parseFloat(g.monto)||0)*(factor||1)); },0);
+}
+function rsmSumaEnvios(locKey, ciclo){
+  return (envios||[]).filter(function(e){ return e.loc===locKey && (ciclo==='todos'||e.ciclo===ciclo); })
+               .reduce(function(a,e){ return a+envioTotal(e); },0);
+}
+
+function rsmFilas(ciclo){
+  var F = FRAM_GEN_JAL_FACTOR; // 0.5
+  var ingFram = (framFinanzas||[]).filter(function(f){
+    return ciclo==='todos' || f.ciclo===ciclo;
+  }).reduce(function(a,f){ return a+((f.cajas||0)*(f.precio||0)); },0);
+
+  var datos = {
+    camjal: {
+      ing: rsmSumaEnvios('jal', ciclo),
+      gas: rsmSumaGastos(function(g){return g.loc==='jal'&&g.cultivo==='camote';}, ciclo, 1)
+         + rsmSumaGastos(function(g){return g.loc==='jal'&&g.cultivo==='general';}, ciclo, F)
+    },
+    camnay: {
+      ing: rsmSumaEnvios('nay', ciclo),
+      gas: rsmSumaGastos(function(g){return g.loc==='nay'&&g.cultivo==='camote';}, ciclo, 1)
+         + rsmSumaGastos(function(g){return g.loc==='nay'&&g.cultivo==='general';}, ciclo, 1)
+    },
+    com: {
+      ing: rsmSumaEnvios('com', ciclo),
+      gas: rsmSumaGastos(function(g){return g.loc==='com';}, ciclo, 1)
+    },
+    fram: {
+      ing: ingFram,
+      gas: rsmSumaGastos(function(g){return g.cultivo==='fram'&&['jal','nay'].indexOf(g.loc)>=0;}, ciclo, 1)
+         + rsmSumaGastos(function(g){return g.loc==='jal'&&g.cultivo==='general';}, ciclo, F)
+    },
+    ofic: {
+      ing: 0,
+      gas: rsmSumaGastos(function(g){return g.loc==='ofic';}, ciclo, 1)
+    }
+  };
+
+  return RSM_NEGOCIOS.map(function(n){
+    var d=datos[n.k];
+    return {k:n.k, lbl:n.lbl, color:n.color, ing:d.ing, gas:d.gas, util:d.ing-d.gas};
+  });
+}
+
+function renderRepResumen(){
+  var cont=document.getElementById('rsm-content');
+  if(!cont) return;
+
+  // Ciclos de toda la empresa: envíos, finanzas de frambuesa y gastos
+  var sel=document.getElementById('rsm-ciclo');
+  if(sel){
+    var cics=[];
+    (envios||[]).forEach(function(e){ if(e.ciclo&&cics.indexOf(e.ciclo)<0) cics.push(e.ciclo); });
+    (framFinanzas||[]).forEach(function(f){ if(f.ciclo&&cics.indexOf(f.ciclo)<0) cics.push(f.ciclo); });
+    (gastos||[]).forEach(function(g){ if(g.ciclo&&cics.indexOf(g.ciclo)<0) cics.push(g.ciclo); });
+    cics.sort().reverse();
+    var prev=sel.value;
+    sel.innerHTML='';
+    cics.forEach(function(c){ var o=document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o); });
+    if(prev && sel.querySelector('option[value="'+prev+'"]')) sel.value=prev;
+    else if(cics.length) sel.value=cics[0];
+  }
+  var ciclo = (sel && sel.value) ? sel.value : 'todos';
+
+  var filas=rsmFilas(ciclo);
+  var totIng=0, totGas=0;
+  filas.forEach(function(f){ totIng+=f.ing; totGas+=f.gas; });
+  var totUtil=totIng-totGas;
+
+  if(!totIng && !totGas){
+    cont.innerHTML='<div style="text-align:center;padding:60px 0;color:var(--text3);font-size:13px">Sin movimientos para este ciclo</div>';
+    return;
+  }
+
+  var colUtil = totUtil>=0 ? 'var(--green)' : '#D64545';
+
+  var html =
+    '<div class="kpi-grid">'+
+      '<div class="kpi-card">'+
+        '<div class="kpi-accent" style="background:var(--green)"></div>'+
+        '<div class="kpi-lbl">Ingresos</div>'+
+        '<div class="kpi-val" style="color:var(--green)">'+fmt(totIng)+'</div>'+
+      '</div>'+
+      '<div class="kpi-card">'+
+        '<div class="kpi-accent" style="background:var(--camote)"></div>'+
+        '<div class="kpi-lbl">Gastos</div>'+
+        '<div class="kpi-val" style="color:var(--camote)">'+fmt(totGas)+'</div>'+
+      '</div>'+
+      '<div class="kpi-card">'+
+        '<div class="kpi-accent" style="background:'+colUtil+'"></div>'+
+        '<div class="kpi-lbl">Utilidad Total</div>'+
+        '<div class="kpi-val" style="color:'+colUtil+'">'+fmt(totUtil)+'</div>'+
+      '</div>'+
+    '</div>';
+
+  html +=
+    '<div class="fintab-wrap auto"><table class="fintab">'+
+      '<thead><tr><th class="txt">Negocio</th><th>Ingresos</th><th>Gastos</th><th>Utilidad</th></tr></thead>'+
+      '<tbody>'+
+      filas.map(function(f){
+        return '<tr>'+
+          '<td class="txt"><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+f.color+';margin-right:7px"></span>'+f.lbl+'</td>'+
+          '<td class="num">'+(f.ing?fmt(f.ing):'\u2014')+'</td>'+
+          '<td class="num">'+(f.gas?fmt(f.gas):'\u2014')+'</td>'+
+          '<td class="num '+(f.util>=0?'pag-ok':'pag-mal')+'">'+fmt(f.util)+'</td>'+
+        '</tr>';
+      }).join('')+
+      '</tbody>'+
+      '<tfoot><tr>'+
+        '<td class="txt">Total</td>'+
+        '<td class="num">'+fmt(totIng)+'</td>'+
+        '<td class="num">'+fmt(totGas)+'</td>'+
+        '<td class="num '+(totUtil>=0?'pag-ok':'pag-mal')+'">'+fmt(totUtil)+'</td>'+
+      '</tr></tfoot>'+
+    '</table></div>';
+
+  html +=
+    '<div class="fin-charts-grid" style="margin-top:14px">'+
+      '<div class="dash-card fin-chart-full">'+
+        '<div class="dash-card-title">Utilidad x Negocio</div>'+
+        '<div style="position:relative;height:'+Math.max(200, filas.length*46)+'px;margin-top:8px"><canvas id="rsm-util-chart"></canvas></div>'+
+      '</div>'+
+    '</div>';
+
+  cont.innerHTML=html;
+
+  var lbls=filas.map(function(f){return f.lbl;});
+  var vals=filas.map(function(f){return Math.round(f.util);});
+  var cols=filas.map(function(f){return f.util>=0 ? '#3CB87A' : '#D64545';});
+  framBarraH('rsm-util-chart', lbls, vals, cols,
+             function(v){ return v>=0 ? '#1a7a4a' : '#D64545'; },
+             maxEjeXCat([vals.map(Math.abs)]),
+             ejeYAnchoCat([lbls]));
+}
+
 function renderRepCam(){
   // Poblar selector de ciclos según los envíos del negocio activo
   var cicloSel = document.getElementById('rcm-ciclo');
@@ -4701,7 +4873,7 @@ function renderRcmComer(envs, filtroCiclo){
         '<div class="kpi-lbl">Costos</div>'+
         '<div class="kpi-val" style="color:var(--camote)">'+fmt(costos)+'</div>'+
       '</div>'+
-      '<div class="kpi-card span2">'+
+      '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:'+colGan+'"></div>'+
         '<div class="kpi-lbl">Ganancia</div>'+
         '<div class="kpi-val" style="color:'+colGan+'">'+fmt(ganancia)+'</div>'+
