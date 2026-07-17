@@ -4626,16 +4626,17 @@ function renderRepCam(){
   var subtabsEl = document.getElementById('rcm-subtabs');
   if(!cont) return;
 
-  if(rcmNegSel==='com'){
-    if(subtabsEl) subtabsEl.style.display = 'none';
-    cont.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--text3);font-size:13px">Comercializadora — próximamente</div>';
-    return;
-  }
-  if(subtabsEl) subtabsEl.style.display = 'flex';
-
   var envs = envios.filter(function(e){
     return e.loc===rcmNegSel && (filtroCiclo==='todos' || e.ciclo===filtroCiclo);
   });
+
+  // Comercializadora no tiene cosecha: va directo al financiero, sin sub-pestañas
+  if(rcmNegSel==='com'){
+    if(subtabsEl) subtabsEl.style.display = 'none';
+    renderRcmComer(envs, filtroCiclo);
+    return;
+  }
+  if(subtabsEl) subtabsEl.style.display = 'flex';
 
   if(rcmSubTabSel==='fin') renderRcmFinanciero(envs, filtroCiclo);
   else renderRcmCosecha(envs);
@@ -4657,6 +4658,57 @@ function ejeYAnchoCat(listas){
   listas.forEach(function(l){ (l||[]).forEach(function(t){ max=Math.max(max, String(t).length); }); });
   return Math.min(175, Math.max(80, Math.round(max*6.2)+10));
 }
+
+// ─── COMERCIALIZADORA (compra-venta) ──────────────────────────
+// Ingresos = venta (kg recibidos x precio de venta) + flete de venta
+// Costos   = gastos con loc 'com': "Compra Mercancia" y "Fletes".
+//            La app los genera sola al guardar cada operación (autoGen),
+//            así que no hay que capturarlos a mano.
+// Ganancia = Ingresos - Costos
+function renderRcmComer(envs, filtroCiclo){
+  var cont = document.getElementById('rcm-content');
+  if(!cont) return;
+
+  // Ingresos: venta de la mercancía + flete de venta (envioTotal ya suma e.flete)
+  var ingresos = envs.reduce(function(a,e){ return a+envioTotal(e); },0);
+
+  // Costos: los gastos de Comercializadora. Al guardar una operación la app crea
+  // sola "Compra Mercancia" y "Fletes" (autoGen), así que aquí ya viene todo.
+  // Ojo: llevan cultivo 'com', no 'camote'.
+  var gastosCom = gastos.filter(function(g){
+    return g.loc==='com' &&
+      (filtroCiclo==='todos' || (g.ciclo||cicloFromFecha(g.fechaVal))===filtroCiclo);
+  });
+  var costos = gastosCom.reduce(function(a,g){ return a+(parseFloat(g.monto)||0); },0);
+  var ganancia = ingresos - costos;
+
+  if(!ingresos && !costos){
+    cont.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--text3);font-size:13px">Sin operaciones para este ciclo</div>';
+    return;
+  }
+
+  var colGan = ganancia>=0 ? 'var(--green)' : '#D64545';
+
+  cont.innerHTML =
+    '<div class="kpi-grid">'+
+      '<div class="kpi-card">'+
+        '<div class="kpi-accent" style="background:var(--green)"></div>'+
+        '<div class="kpi-lbl">Ingresos</div>'+
+        '<div class="kpi-val" style="color:var(--green)">'+fmt(ingresos)+'</div>'+
+      '</div>'+
+      '<div class="kpi-card">'+
+        '<div class="kpi-accent" style="background:var(--camote)"></div>'+
+        '<div class="kpi-lbl">Costos</div>'+
+        '<div class="kpi-val" style="color:var(--camote)">'+fmt(costos)+'</div>'+
+      '</div>'+
+      '<div class="kpi-card span2">'+
+        '<div class="kpi-accent" style="background:'+colGan+'"></div>'+
+        '<div class="kpi-lbl">Ganancia</div>'+
+        '<div class="kpi-val" style="color:'+colGan+'">'+fmt(ganancia)+'</div>'+
+      '</div>'+
+    '</div>';
+}
+
 
 function renderRcmFinanciero(envs, filtroCiclo){
   var cont = document.getElementById('rcm-content');
