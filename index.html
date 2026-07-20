@@ -4056,6 +4056,7 @@ function renderRfrSemDetalle(){
         scales:{
           x:{grid:{display:false},ticks:{color:textMuted,font:{size:11}}},
           y:{grid:{color:gridCol},ticks:{color:textMuted,font:{size:11}},beginAtZero:true,
+             suggestedMax:(function(){var vs=kgPorDia.concat(mermaPorDia).filter(function(v){return v!==null&&v!==undefined;});var m=vs.length?Math.max.apply(null,vs):0;return m+Math.ceil(m*0.15)+1;})(),
              title:{display:true,text:'Kg',color:textMuted,font:{size:11}}}
         }
       }
@@ -4871,15 +4872,17 @@ function renderRsltEDR(ciclo){
     renderRfrEDR(ciclo, 'rslt-edr-content');
     return;
   }
-  // Oficina: por ahora solo el gasto
-  var gOfic = gastos.filter(function(g){
+  // Oficina: gasto total + desglose por categoría
+  var gOficList = gastos.filter(function(g){
     return g.loc==='ofic' && (ciclo==='todos' || (g.ciclo||cicloFromFecha(g.fechaVal))===ciclo);
-  }).reduce(function(a,g){ return a+(parseFloat(g.monto)||0); },0);
+  });
+  var gOfic = gOficList.reduce(function(a,g){ return a+(parseFloat(g.monto)||0); },0);
 
   if(!gOfic){
     cont.innerHTML='<div style="text-align:center;padding:60px 0;color:var(--text3);font-size:13px">Sin gastos de Oficina para este ciclo</div>';
     return;
   }
+  var catOfic = framCatBreakdown(gOficList, 1);
   cont.innerHTML =
     '<div class="kpi-grid">'+
       '<div class="kpi-card">'+
@@ -4887,7 +4890,18 @@ function renderRsltEDR(ciclo){
         '<div class="kpi-lbl">Gastos</div>'+
         '<div class="kpi-val" style="color:var(--camote)">'+fmt(gOfic)+'</div>'+
       '</div>'+
-    '</div>';
+    '</div>'+
+    (catOfic.lbls.length ?
+      '<div class="fin-charts-grid">'+
+        '<div class="dash-card fin-chart-full">'+
+          '<div class="dash-card-title">Gastos x Categoría</div>'+
+          '<div style="position:relative;height:'+Math.max(200, catOfic.lbls.length*46)+'px;margin-top:8px"><canvas id="rslt-ofic-cat-chart"></canvas></div>'+
+        '</div>'+
+      '</div>' : '');
+  if(catOfic.lbls.length){
+    framBarraH('rslt-ofic-cat-chart', catOfic.lbls, catOfic.vals, catOfic.cols, '#C45B0A',
+               maxEjeXCat([catOfic.vals]), ejeYAnchoCat([catOfic.lbls]));
+  }
 }
 
 function renderRepResumen(cicloArg){
@@ -5061,6 +5075,7 @@ function renderRcmComer(envs, filtroCiclo, contId){
     return;
   }
   var colGan = ganancia>=0 ? 'var(--green)' : '#D64545';
+  var catCom = framCatBreakdown(gastosCom, 1);
   cont.innerHTML =
     '<div class="kpi-grid">'+
       '<div class="kpi-card">'+
@@ -5078,7 +5093,18 @@ function renderRcmComer(envs, filtroCiclo, contId){
         '<div class="kpi-lbl">Ganancia</div>'+
         '<div class="kpi-val" style="color:'+colGan+'">'+fmt(ganancia)+'</div>'+
       '</div>'+
-    '</div>';
+    '</div>'+
+    (catCom.lbls.length ?
+      '<div class="fin-charts-grid">'+
+        '<div class="dash-card fin-chart-full">'+
+          '<div class="dash-card-title">Gastos x Categoría</div>'+
+          '<div style="position:relative;height:'+Math.max(200, catCom.lbls.length*46)+'px;margin-top:8px"><canvas id="rslt-comer-cat-chart"></canvas></div>'+
+        '</div>'+
+      '</div>' : '');
+  if(catCom.lbls.length){
+    framBarraH('rslt-comer-cat-chart', catCom.lbls, catCom.vals, catCom.cols, '#C45B0A',
+               maxEjeXCat([catCom.vals]), ejeYAnchoCat([catCom.lbls]));
+  }
 }
 
 // REPORTES -> Camote -> Comercializadora: volumen y márgenes de la operación
