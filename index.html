@@ -5225,8 +5225,9 @@ function renderRcmComerOps(envs, filtroCiclo, contId){
 //          mitad se reparte entre los sectores usados.
 //        · Nayarit: 1 actividad (solo camote) -> se reparte entre los sectores usados.
 //   "Sectores usados" = los que tienen algún gasto de cosecha con sector asignado o algún
-//   ingreso registrado en el ciclo. El ingreso por sector es el mismo que la gráfica
-//   "Ingreso x Sector" (venta de mercancía, sin repartir el flete de venta).
+//   ingreso registrado en el ciclo. El ingreso por sector = venta de mercancía + flete de
+//   venta prorrateado dentro de cada envío (SOLO para la tabla "Ganancias x Sector"; la
+//   gráfica "Ingreso x Sector" usa rcmIngresoPorSector, que va sin flete).
 var CATS_COSECHA_SEC = ['Arado','Cosecha','Desvarada','Flete Cosecha','Plantacion','Plantación'];
 var ACTIVIDADES_LOC = { jal:2, nay:1 }; // número de actividades por ubicación
 
@@ -5251,16 +5252,25 @@ function rcmCostoPorSector(loc, filtroCiclo, envs){
     secs.forEach(function(s){ directo[s]=(directo[s]||0)+parte; usados[s]=true; });
   });
 
-  // Ingreso por sector (mismo cálculo que la gráfica "Ingreso x Sector") + sectores usados
+  // Ingreso por sector = venta de mercancía + flete de venta prorrateado dentro de cada
+  // envío (el flete es a nivel de envío; se reparte entre las partidas en proporción a su
+  // venta). Este ingreso CON flete es solo para la tabla "Ganancias x Sector".
   var ingreso={};
   (envs||[]).forEach(function(e){
-    (e.partidas||[]).forEach(function(p){
-      if(p.sector==null || p.sector==='') return;
-      var s=String(p.sector).trim(); usados[s]=true;
-      var ing = p.total!=null ? parseFloat(p.total)||0 :
+    var flete=parseFloat(e.flete||0);
+    var ps=(e.partidas||[]);
+    var ventas=ps.map(function(p){
+      return p.total!=null ? parseFloat(p.total)||0 :
         ((e.esComer||p.kgRecibidos!==undefined) ? (parseFloat(p.kgRecibidos||0)*parseFloat(p.precioVenta||0))
                                                  : (parseFloat(p.pesoNeto||0)*parseFloat(p.precio||0)));
-      ingreso[s]=(ingreso[s]||0)+ing;
+    });
+    var subtotal=ventas.reduce(function(a,v){return a+v;},0);
+    var nConSector=ps.filter(function(p){return p.sector!=null&&p.sector!=='';}).length;
+    ps.forEach(function(p,i){
+      if(p.sector==null || p.sector==='') return;
+      var s=String(p.sector).trim(); usados[s]=true;
+      var fleteShare = subtotal>0 ? flete*(ventas[i]/subtotal) : (nConSector>0 ? flete/nConSector : 0);
+      ingreso[s]=(ingreso[s]||0)+ventas[i]+fleteShare;
     });
   });
 
@@ -5568,36 +5578,54 @@ function renderRcmCosecha(envs, filtroCiclo, negKey){
     '</div>';
   }).join('');
 
-  // Tabla "Ganancias x Sector" (costo prorrateado según rcmCostoPorSector, ingreso por sector, ganancia)
+  // "Ingreso x Sector" (gráfica, izquierda) + "Ganancias x Sector" (tabla, derecha), lado a lado.
+  // La tabla usa costo prorrateado (rcmCostoPorSector) e ingreso CON flete de venta; la gráfica
+  // sigue usando rcmIngresoPorSector (sin flete).
   var costoSec = rcmCostoPorSector(negKey, filtroCiclo, envs);
-  var gananciaTablaHtml = '';
-  if(costoSec.filas.length){
+  var hayIngreso = ingSec.lbls.length>0;
+  var hayTabla = costoSec.filas.length>0;
+  // Ambos presentes -> mitad y mitad; solo uno -> ancho completo.
+  var celdaCls = (hayIngreso && hayTabla) ? 'dash-card' : 'dash-card fin-chart-full';
+
+  var ingresoCell = hayIngreso ?
+    '<div class="'+celdaCls+'">'+
+      '<div class="dash-card-title">Ingreso x Sector</div>'+
+      '<div style="position:relative;height:'+Math.max(200, ingSec.lbls.length*46)+'px;margin-top:8px"><canvas id="rcm-ingreso-sec-chart"></canvas></div>'+
+    '</div>' : '';
+
+  var tablaCell = '';
+  if(hayTabla){
     var tCosto=0, tIng=0, tGan=0;
     costoSec.filas.forEach(function(f){ tCosto+=f.costo; tIng+=f.ingreso; tGan+=f.ganancia; });
-    gananciaTablaHtml =
-      '<div class="section-hd" style="margin-top:18px">Ganancias x Sector</div>'+
-      '<div class="fintab-wrap auto"><table class="fintab">'+
-        '<thead><tr><th class="txt">Sector</th><th>Costo</th><th>Ingreso</th><th>Ganancia</th></tr></thead>'+
-        '<tbody>'+
-        costoSec.filas.map(function(f,i){
-          var col = SEC_COLS_RCM[i%SEC_COLS_RCM.length];
-          return '<tr>'+
-            '<td class="txt"><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+col+';margin-right:7px"></span>Sector '+f.sector+'</td>'+
-            '<td class="num">'+fmt(f.costo)+'</td>'+
-            '<td class="num">'+fmt(f.ingreso)+'</td>'+
-            '<td class="num '+(f.ganancia>=0?'pag-ok':'pag-mal')+'">'+fmt(f.ganancia)+'</td>'+
-          '</tr>';
-        }).join('')+
-        '</tbody>'+
-        '<tfoot><tr>'+
-          '<td class="txt">Total</td>'+
-          '<td class="num">'+fmt(tCosto)+'</td>'+
-          '<td class="num">'+fmt(tIng)+'</td>'+
-          '<td class="num '+(tGan>=0?'pag-ok':'pag-mal')+'">'+fmt(tGan)+'</td>'+
-        '</tr></tfoot>'+
-      '</table></div>'+
-      '<div style="font-size:11px;color:var(--text3);margin-top:6px">Prorrateo por sector — Camote general: <b>'+fmt(costoSec.bSector)+'</b> · Gastos generales: <b>'+fmt(costoSec.cSector)+'</b> · sobre '+costoSec.nSectores+' sector'+(costoSec.nSectores===1?'':'es')+' usado'+(costoSec.nSectores===1?'':'s')+'</div>';
+    tablaCell =
+      '<div class="'+celdaCls+'">'+
+        '<div class="dash-card-title">Ganancias x Sector</div>'+
+        '<div class="fintab-wrap auto" style="margin-top:8px"><table class="fintab">'+
+          '<thead><tr><th class="txt">Sector</th><th>Costo</th><th>Ingreso</th><th>Ganancia</th></tr></thead>'+
+          '<tbody>'+
+          costoSec.filas.map(function(f,i){
+            var col = SEC_COLS_RCM[i%SEC_COLS_RCM.length];
+            return '<tr>'+
+              '<td class="txt"><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+col+';margin-right:7px"></span>Sector '+f.sector+'</td>'+
+              '<td class="num">'+fmt(f.costo)+'</td>'+
+              '<td class="num">'+fmt(f.ingreso)+'</td>'+
+              '<td class="num '+(f.ganancia>=0?'pag-ok':'pag-mal')+'">'+fmt(f.ganancia)+'</td>'+
+            '</tr>';
+          }).join('')+
+          '</tbody>'+
+          '<tfoot><tr>'+
+            '<td class="txt">Total</td>'+
+            '<td class="num">'+fmt(tCosto)+'</td>'+
+            '<td class="num">'+fmt(tIng)+'</td>'+
+            '<td class="num '+(tGan>=0?'pag-ok':'pag-mal')+'">'+fmt(tGan)+'</td>'+
+          '</tr></tfoot>'+
+        '</table></div>'+
+        '<div style="font-size:11px;color:var(--text3);margin-top:6px">Prorrateo por sector — Camote general: <b>'+fmt(costoSec.bSector)+'</b> · Gastos generales: <b>'+fmt(costoSec.cSector)+'</b> · sobre '+costoSec.nSectores+' sector'+(costoSec.nSectores===1?'':'es')+' usado'+(costoSec.nSectores===1?'':'s')+'</div>'+
+      '</div>';
   }
+
+  var ingresoGananciaGrid = (hayIngreso || hayTabla) ?
+    '<div class="fin-charts-grid" style="margin-top:12px">'+ingresoCell+tablaCell+'</div>' : '';
 
   cont.innerHTML =
     '<div class="kpi-grid">'+
@@ -5643,13 +5671,8 @@ function renderRcmCosecha(envs, filtroCiclo, negKey){
           '<div style="position:relative;flex:1;min-width:160px;height:200px"><canvas id="rcm-variedad-pie-chart"></canvas></div>'+
         '</div>'+
       '</div>'+
-      (ingSec.lbls.length ?
-        '<div class="dash-card fin-chart-full">'+
-          '<div class="dash-card-title">Ingreso x Sector</div>'+
-          '<div style="position:relative;height:'+Math.max(200, ingSec.lbls.length*46)+'px;margin-top:8px"><canvas id="rcm-ingreso-sec-chart"></canvas></div>'+
-        '</div>' : '')+
     '</div>'+
-    gananciaTablaHtml;
+    ingresoGananciaGrid;
 
   var gridCol = rfrGridCol(); var textMuted = '#898781';
 
