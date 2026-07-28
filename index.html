@@ -21,6 +21,7 @@
   --ofic:#2C7A5A;--ofic-bg:#E6F5EF;--ofic-border:#7FCDB0;
   --com:#8B4513;--com-bg:#FDF0E6;--com-border:#E8B88A;
   --camote:#C45B0A;--camote-bg:#FEF0E6;--camote-border:#F4B98A;
+  --maiz:#B8860B;--maiz-bg:#FBF3D9;--maiz-border:#E6CE7A;
   --fram:#B03A6A;--fram-bg:#FCEEF4;--fram-border:#EDAACB;
   --green:#1A7A57;--green-bg:#E6F5EF;--green-border:#7FCDB0;
   --radius:10px;--radius-lg:16px;
@@ -35,6 +36,7 @@
   --ofic:#3CB87A;--ofic-bg:#0A1F15;--ofic-border:#1A5C38;
   --com:#D4894A;--com-bg:#251508;--com-border:#5C2E0A;
   --camote:#E8803A;--camote-bg:#2A1A0A;--camote-border:#5A2E0A;
+  --maiz:#E0B84A;--maiz-bg:#231D06;--maiz-border:#5C4E0A;
   --fram:#E06898;--fram-bg:#250F1A;--fram-border:#5A1F35;
   --green:#3CB87A;--green-bg:#0A1F15;--green-border:#1A5C38;
 }}
@@ -63,18 +65,20 @@ input,select,textarea,button{font-family:var(--font)}
 .step-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px}
 
 /* Ubicacion */
-.loc-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:14px}
-.loc-btn{padding:12px 8px;border-radius:var(--radius-lg);border:1.5px solid var(--border);background:var(--surface);cursor:pointer;text-align:center;transition:all .15s;-webkit-tap-highlight-color:transparent;width:100%}
+.loc-row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px}
+.loc-btn{padding:11px 4px;border-radius:var(--radius-lg);border:1.5px solid var(--border);background:var(--surface);cursor:pointer;text-align:center;transition:all .15s;-webkit-tap-highlight-color:transparent;width:100%}
 .loc-btn.jal.sel{background:var(--jal-bg);border-color:var(--jal)}
 .loc-btn.nay.sel{background:var(--nay-bg);border-color:var(--nay)}
 .loc-btn.ofic.sel{background:var(--ofic-bg);border-color:var(--ofic)}
 .loc-btn.com.sel{background:var(--com-bg);border-color:var(--com)}
-.loc-emoji{font-size:22px;line-height:1;margin-bottom:4px}
-.loc-label{font-size:12px;font-weight:600;color:var(--text)}
+.loc-btn.maiz.sel{background:var(--maiz-bg);border-color:var(--maiz)}
+.loc-emoji{font-size:20px;line-height:1;margin-bottom:4px}
+.loc-label{font-size:11px;font-weight:600;color:var(--text);line-height:1.15}
 .loc-btn.jal.sel .loc-label{color:var(--jal)}
 .loc-btn.nay.sel .loc-label{color:var(--nay)}
 .loc-btn.ofic.sel .loc-label{color:var(--ofic)}
 .loc-btn.com.sel .loc-label{color:var(--com)}
+.loc-btn.maiz.sel .loc-label{color:var(--maiz)}
 .loc-sub{font-size:10px;color:var(--text3);margin-top:2px}
 
 /* Cultivo */
@@ -189,11 +193,13 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .chip.nay{background:var(--nay-bg);color:var(--nay);border:1px solid var(--nay-border)}
 .chip.ofic{background:var(--ofic-bg);color:var(--ofic);border:1px solid var(--green-border)}
 .chip.com{background:var(--com-bg);color:var(--com);border:1px solid var(--com-border)}
+.chip.maiz{background:var(--maiz-bg);color:var(--maiz);border:1px solid var(--maiz-border)}
 .tag{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:500;display:inline-flex;align-items:center}
 .tag.jal{background:var(--jal-bg);color:var(--jal)}
 .tag.nay{background:var(--nay-bg);color:var(--nay)}
 .tag.ofic{background:var(--ofic-bg);color:var(--ofic)}
 .tag.com{background:var(--com-bg);color:var(--com)}
+.tag.maiz{background:var(--maiz-bg);color:var(--maiz)}
 .tag.camote{background:var(--camote-bg);color:var(--camote)}
 .tag.fram{background:var(--fram-bg);color:var(--fram)}
 .tag.general{background:var(--surface2);color:var(--text3);border:1px solid var(--border)}
@@ -233,6 +239,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .gasto-dot.nay{background:var(--nay)}
 .gasto-dot.ofic{background:var(--ofic)}
 .gasto-dot.com{background:var(--com)}
+.gasto-dot.maiz{background:var(--maiz)}
 .gasto-body{flex:1;min-width:0}
 .gasto-cat{font-size:13px;font-weight:500;color:var(--text)}
 .gasto-tags{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
@@ -284,7 +291,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;box-shadow:var(--shadow)}
 .stat-lbl{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px}
 .stat-val{font-size:20px;font-weight:600;font-family:var(--mono);letter-spacing:-.03em}
-.stat-val.jal{color:var(--jal)}.stat-val.nay{color:var(--nay)}.stat-val.ofic{color:var(--ofic)}.stat-val.com{color:var(--com)}.stat-val.green{color:var(--green)}.stat-val.camote{color:var(--camote)}
+.stat-val.jal{color:var(--jal)}.stat-val.nay{color:var(--nay)}.stat-val.ofic{color:var(--ofic)}.stat-val.com{color:var(--com)}.stat-val.maiz{color:var(--maiz)}.stat-val.green{color:var(--green)}.stat-val.camote{color:var(--camote)}
 .section-hd{font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
 .report-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:10px;box-shadow:var(--shadow)}
 .bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
@@ -292,7 +299,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .bar-lbl{font-size:12px;color:var(--text2);width:130px;flex-shrink:0;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bar-track{flex:1;height:10px;background:var(--surface2);border-radius:5px;overflow:hidden}
 .bar-fill{height:100%;border-radius:5px;transition:width .5s cubic-bezier(.4,0,.2,1)}
-.bar-fill.jal{background:var(--jal)}.bar-fill.nay{background:var(--nay)}.bar-fill.ofic{background:var(--ofic)}.bar-fill.com{background:var(--com)}
+.bar-fill.jal{background:var(--jal)}.bar-fill.nay{background:var(--nay)}.bar-fill.ofic{background:var(--ofic)}.bar-fill.com{background:var(--com)}.bar-fill.maiz{background:var(--maiz)}
 .bar-fill.camote{background:var(--camote)}.bar-fill.fram{background:var(--fram)}
 .bar-fill.c1{background:#1A7A57}.bar-fill.c2{background:#2B6CB0}.bar-fill.c3{background:#7B5EA7}
 .bar-fill.c4{background:#B7791F}.bar-fill.c5{background:#718096}.bar-fill.c6{background:#2C7A7B}.bar-fill.c7{background:#C45B0A}
@@ -542,10 +549,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div class="rfr-topbar" id="rslt-subtabs" style="display:flex;gap:4px;margin-bottom:10px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
       <button class="ven-tab active" id="rslt-tab-resumen" onclick="rsltTab('resumen')" style="flex:1">📊 Resumen</button>
       <button class="ven-tab" id="rslt-tab-edr" onclick="rsltTab('edr')" style="flex:1">📄 Estado de Resultados</button>
+      <button class="ven-tab" id="rslt-tab-gastos" onclick="rsltTab('gastos')" style="flex:1">💰 Gastos</button>
     </div>
 
     <!-- Ciclo: compartido por las dos sub-pestañas y por los 5 negocios -->
-    <div class="rfr-topbar" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px">
+    <div class="rfr-topbar" id="rslt-ciclo-row" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px">
       <span style="font-size:14px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Ciclo</span>
       <button type="button" class="fin-sem-nav" id="rsm-ciclo-prev" onclick="cicloStep('rsm-ciclo',-1)" aria-label="Ciclo anterior">&lsaquo;</button>
         <select id="rsm-ciclo" onchange="renderResultados()" style="flex:0 0 auto;min-width:150px;padding:10px 18px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:17px;color:var(--text);font-weight:700;text-align:center;text-align-last:center;outline:none">
@@ -570,11 +578,125 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <option value="com">Camote Comercializadora</option>
             <option value="fram">Frambuesa</option>
             <option value="ofic">Oficina</option>
+            <option value="maiz">Maíz</option>
           </select>
         </div>
         <button class="rfr-navbtn" id="rslt-neg-next" onclick="rsltNegStep(1)" aria-label="Negocio siguiente">&rsaquo;</button>
       </div>
       <div id="rslt-edr-content"></div>
+    </div>
+
+    <div id="rslt-sec-gastos" style="display:none">
+    <!-- ============ SUB-TAB: FINANCIERO (Power BI style) ============ -->
+    <div id="rep-fin-sec">
+
+      <div class="fin-periodo-row" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:150px">
+          <span style="font-size:13px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap" id="fin-periodo-lbl">Año</span>
+          <select id="fin-anio-select" onchange="onFinAnioChange()" style="flex:1;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:15px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
+            <option value="todos">Todos los años</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex:1.6 1 auto;min-width:250px">
+          <span style="font-size:13px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Semana</span>
+          <button type="button" class="fin-sem-nav" id="fin-sem-prev" onclick="finSemStep(-1)" aria-label="Semana anterior">‹</button>
+          <select id="fin-sem-select" onchange="onFinSemanaChange()" style="flex:1;min-width:112px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:15px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
+            <option value="todas">Todas</option>
+          </select>
+          <button type="button" class="fin-sem-nav" id="fin-sem-next" onclick="finSemStep(1)" aria-label="Semana siguiente">›</button>
+        </div>
+      </div>
+
+      <!-- Fila 1: Negocios (nivel superior) -->
+      <!-- Celular: una sola tarjeta con lista y flechas -->
+      <div class="rfr-topbar" id="fin-neg-mobile" style="gap:8px;align-items:stretch;margin-bottom:14px;height:52px">
+        <span style="display:flex;align-items:center;font-size:13px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;flex-shrink:0">Negocio</span>
+        <button class="rfr-navbtn" id="fin-neg-prev" onclick="finNegStep(-1)" aria-label="Negocio anterior">&lsaquo;</button>
+        <div style="position:relative;flex:1;min-width:0">
+          <div id="fin-neg-display" style="height:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:16px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Todos</div>
+          <select id="fin-neg-select" class="no-ssel" onchange="finTopTab(this.value)" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;font-size:16px">
+            <option value="todos">Todos</option>
+            <option value="jal">Camote Jalisco</option>
+            <option value="nay">Camote Nayarit</option>
+            <option value="fram">Frambuesa</option>
+            <option value="ofic">Oficina</option>
+            <option value="com">Comercializadora</option>
+            <option value="maiz">Maíz</option>
+          </select>
+        </div>
+        <button class="rfr-navbtn" id="fin-neg-next" onclick="finNegStep(1)" aria-label="Negocio siguiente">&rsaquo;</button>
+      </div>
+
+      <div class="rep-subnav-wrap" id="fin-neg-wrap">
+        <div class="rep-subnav" id="fin-neg-subnav" style="width:100%">
+          <button class="rep-tab active" data-parent="todos" onclick="finTopTab('todos')" style="flex:1 1 auto">Todos</button>
+          <button class="rep-tab" data-parent="jal" onclick="finTopTab('jal')" style="flex:1 1 auto">Camote Jalisco</button>
+          <button class="rep-tab" data-parent="nay" onclick="finTopTab('nay')" style="flex:1 1 auto">Camote Nayarit</button>
+          <button class="rep-tab" data-parent="fram" onclick="finTopTab('fram')" style="flex:1 1 auto">Frambuesa</button>
+          <button class="rep-tab" data-parent="ofic" onclick="finTopTab('ofic')" style="flex:1 1 auto">Oficina</button>
+          <button class="rep-tab" data-parent="com" onclick="finTopTab('com')" style="flex:1 1 auto">Comercializadora</button>
+          <button class="rep-tab" data-parent="maiz" onclick="finTopTab('maiz')" style="flex:1 1 auto">Maíz</button>
+        </div>
+      </div>
+
+      <!-- Fila 1b: Sub-pestañas (General/Camote/Frambuesa según negocio) -->
+      <div class="rep-subnav-wrap" id="fin-sub-subnav-wrap" style="display:none">
+        <div class="rep-subnav" id="fin-sub-subnav" style="width:100%"></div>
+      </div>
+
+      <div id="fin-dashboard-body">
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-accent" style="background:var(--fram)"></div>
+          <div class="kpi-lbl" id="fin-kpi1-lbl">Gasto Total Semanal</div>
+          <div class="kpi-val" id="fin-kpi1" style="color:var(--fram)">$0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-accent" style="background:var(--fram)"></div>
+          <div class="kpi-lbl" id="fin-kpi2-lbl">Gasto Promedio Semanal</div>
+          <div class="kpi-val" id="fin-kpi2" style="color:var(--fram)">$0</div>
+        </div>
+        <div class="kpi-card span2">
+          <div class="kpi-accent" style="background:var(--fram)"></div>
+          <div class="kpi-lbl">Gasto Total Anual</div>
+          <div class="kpi-val" id="fin-kpi-anio" style="color:var(--fram)">$0</div>
+        </div>
+      </div>
+
+      <div class="fin-charts-grid">
+
+        <div class="dash-card">
+          <div class="dash-card-title" id="fin-cat-title">Gastos x Sub-Concepto</div>
+          <div id="fin-barras-categoria" style="position:relative"></div>
+        </div>
+
+        <div class="dash-card" id="fin-card-negocio">
+          <div class="dash-card-title">Gastos x Negocio</div>
+          <div id="fin-barras-todos-negocios" style="position:relative"></div>
+        </div>
+
+        <div class="dash-card fin-chart-full" id="fin-card-semana" style="display:flex;flex-direction:column">
+          <div class="dash-card-title" id="fin-semana-chart-title">Gastos x Semana</div>
+          <div style="display:flex;width:100%;flex:1;min-height:275px;margin-top:8px">
+            <div style="width:70px;flex-shrink:0;display:flex;align-items:stretch;gap:4px">
+              <div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:10px;color:var(--text3);white-space:nowrap;display:flex;align-items:center;justify-content:center;padding:0 2px">Gasto ($)</div>
+              <div style="position:relative;flex:1"><canvas id="fin-semana-chart-axis"></canvas></div>
+            </div>
+            <div id="fin-semana-chart-wrap" style="position:relative;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden">
+              <div id="fin-semana-chart-inner" style="position:relative;height:100%;min-width:500px">
+                <canvas id="fin-semana-chart" role="img" aria-label="Gastos por semana">Gastos por semana.</canvas>
+              </div>
+            </div>
+          </div>
+          <div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>
+        </div>
+
+      </div>
+
+      </div>
+
+    </div>
     </div>
   </div>
 
@@ -597,6 +719,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <button class="loc-btn com" id="lb-com" onclick="selLoc('com')">
         <div class="loc-emoji">🛒</div>
         <div class="loc-label">Comercial.</div>
+      </button>
+      <button class="loc-btn maiz" id="lb-maiz" onclick="selLoc('maiz')">
+        <div class="loc-emoji">🌽</div>
+        <div class="loc-label">Maíz</div>
       </button>
     </div>
 
@@ -751,11 +877,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div class="rfr-topbar" id="rep-maintabs-mobile" style="gap:8px;align-items:stretch;margin-bottom:14px;height:52px">
       <button class="rfr-navbtn" id="rep-main-prev" onclick="repTabStep(-1)" aria-label="Reporte anterior">&lsaquo;</button>
       <div style="position:relative;flex:1;min-width:0">
-        <div id="rep-main-display" style="height:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:16px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">💰 Gastos</div>
+        <div id="rep-main-display" style="height:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:16px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">🍠 Camote</div>
         <select id="rep-main-select" class="no-ssel" onchange="repTab(this.value)" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;font-size:16px">
-          <option value="fin">💰 Gastos</option>
           <option value="cam">🍠 Camote</option>
           <option value="fram">🍇 Frambuesa</option>
+          <option value="maiz">🌽 Maíz</option>
         </select>
       </div>
       <button class="rfr-navbtn" id="rep-main-next" onclick="repTabStep(1)" aria-label="Reporte siguiente">&rsaquo;</button>
@@ -763,119 +889,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
     <div class="rep-subnav-wrap" id="rep-maintabs-wrap">
       <div class="rep-subnav">
-        <button class="rep-tab active" id="rt-fin" onclick="repTab('fin')">💰 Gastos</button>
-        <button class="rep-tab" id="rt-cam" onclick="repTab('cam')">🍠 Camote</button>
+        <button class="rep-tab active" id="rt-cam" onclick="repTab('cam')">🍠 Camote</button>
         <button class="rep-tab" id="rt-fram" onclick="repTab('fram')">🍇 Frambuesa</button>
+        <button class="rep-tab" id="rt-maiz" onclick="repTab('maiz')">🌽 Maíz</button>
       </div>
-    </div>
-
-    <!-- ============ SUB-TAB: FINANCIERO (Power BI style) ============ -->
-    <div id="rep-fin-sec">
-
-      <div class="fin-periodo-row" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-        <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:150px">
-          <span style="font-size:13px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap" id="fin-periodo-lbl">Año</span>
-          <select id="fin-anio-select" onchange="onFinAnioChange()" style="flex:1;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:15px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
-            <option value="todos">Todos los años</option>
-          </select>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;flex:1.6 1 auto;min-width:250px">
-          <span style="font-size:13px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Semana</span>
-          <button type="button" class="fin-sem-nav" id="fin-sem-prev" onclick="finSemStep(-1)" aria-label="Semana anterior">‹</button>
-          <select id="fin-sem-select" onchange="onFinSemanaChange()" style="flex:1;min-width:112px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:15px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
-            <option value="todas">Todas</option>
-          </select>
-          <button type="button" class="fin-sem-nav" id="fin-sem-next" onclick="finSemStep(1)" aria-label="Semana siguiente">›</button>
-        </div>
-      </div>
-
-      <!-- Fila 1: Negocios (nivel superior) -->
-      <!-- Celular: una sola tarjeta con lista y flechas -->
-      <div class="rfr-topbar" id="fin-neg-mobile" style="gap:8px;align-items:stretch;margin-bottom:14px;height:52px">
-        <span style="display:flex;align-items:center;font-size:13px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;flex-shrink:0">Negocio</span>
-        <button class="rfr-navbtn" id="fin-neg-prev" onclick="finNegStep(-1)" aria-label="Negocio anterior">&lsaquo;</button>
-        <div style="position:relative;flex:1;min-width:0">
-          <div id="fin-neg-display" style="height:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:16px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Todos</div>
-          <select id="fin-neg-select" class="no-ssel" onchange="finTopTab(this.value)" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;font-size:16px">
-            <option value="todos">Todos</option>
-            <option value="jal">Camote Jalisco</option>
-            <option value="nay">Camote Nayarit</option>
-            <option value="fram">Frambuesa</option>
-            <option value="ofic">Oficina</option>
-            <option value="com">Comercializadora</option>
-          </select>
-        </div>
-        <button class="rfr-navbtn" id="fin-neg-next" onclick="finNegStep(1)" aria-label="Negocio siguiente">&rsaquo;</button>
-      </div>
-
-      <div class="rep-subnav-wrap" id="fin-neg-wrap">
-        <div class="rep-subnav" id="fin-neg-subnav" style="width:100%">
-          <button class="rep-tab active" data-parent="todos" onclick="finTopTab('todos')" style="flex:1 1 auto">Todos</button>
-          <button class="rep-tab" data-parent="jal" onclick="finTopTab('jal')" style="flex:1 1 auto">Camote Jalisco</button>
-          <button class="rep-tab" data-parent="nay" onclick="finTopTab('nay')" style="flex:1 1 auto">Camote Nayarit</button>
-          <button class="rep-tab" data-parent="fram" onclick="finTopTab('fram')" style="flex:1 1 auto">Frambuesa</button>
-          <button class="rep-tab" data-parent="ofic" onclick="finTopTab('ofic')" style="flex:1 1 auto">Oficina</button>
-          <button class="rep-tab" data-parent="com" onclick="finTopTab('com')" style="flex:1 1 auto">Comercializadora</button>
-        </div>
-      </div>
-
-      <!-- Fila 1b: Sub-pestañas (General/Camote/Frambuesa según negocio) -->
-      <div class="rep-subnav-wrap" id="fin-sub-subnav-wrap" style="display:none">
-        <div class="rep-subnav" id="fin-sub-subnav" style="width:100%"></div>
-      </div>
-
-      <div id="fin-dashboard-body">
-
-      <div class="kpi-grid">
-        <div class="kpi-card">
-          <div class="kpi-accent" style="background:var(--fram)"></div>
-          <div class="kpi-lbl" id="fin-kpi1-lbl">Gasto Total Semanal</div>
-          <div class="kpi-val" id="fin-kpi1" style="color:var(--fram)">$0</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-accent" style="background:var(--fram)"></div>
-          <div class="kpi-lbl" id="fin-kpi2-lbl">Gasto Promedio Semanal</div>
-          <div class="kpi-val" id="fin-kpi2" style="color:var(--fram)">$0</div>
-        </div>
-        <div class="kpi-card span2">
-          <div class="kpi-accent" style="background:var(--fram)"></div>
-          <div class="kpi-lbl">Gasto Total Anual</div>
-          <div class="kpi-val" id="fin-kpi-anio" style="color:var(--fram)">$0</div>
-        </div>
-      </div>
-
-      <div class="fin-charts-grid">
-
-        <div class="dash-card">
-          <div class="dash-card-title" id="fin-cat-title">Gastos x Sub-Concepto</div>
-          <div id="fin-barras-categoria" style="position:relative"></div>
-        </div>
-
-        <div class="dash-card" id="fin-card-negocio">
-          <div class="dash-card-title">Gastos x Negocio</div>
-          <div id="fin-barras-todos-negocios" style="position:relative"></div>
-        </div>
-
-        <div class="dash-card fin-chart-full" id="fin-card-semana" style="display:flex;flex-direction:column">
-          <div class="dash-card-title" id="fin-semana-chart-title">Gastos x Semana</div>
-          <div style="display:flex;width:100%;flex:1;min-height:275px;margin-top:8px">
-            <div style="width:70px;flex-shrink:0;display:flex;align-items:stretch;gap:4px">
-              <div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:10px;color:var(--text3);white-space:nowrap;display:flex;align-items:center;justify-content:center;padding:0 2px">Gasto ($)</div>
-              <div style="position:relative;flex:1"><canvas id="fin-semana-chart-axis"></canvas></div>
-            </div>
-            <div id="fin-semana-chart-wrap" style="position:relative;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden">
-              <div id="fin-semana-chart-inner" style="position:relative;height:100%;min-width:500px">
-                <canvas id="fin-semana-chart" role="img" aria-label="Gastos por semana">Gastos por semana.</canvas>
-              </div>
-            </div>
-          </div>
-          <div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>
-        </div>
-
-      </div>
-
-      </div>
-
     </div>
 
     <!-- ============ SUB-TAB: GENERAL ============ -->
@@ -1064,6 +1081,22 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
 
       <div id="rcm-content"></div>
+
+    </div>
+
+    <!-- ============ SUB-TAB: MAÍZ ============ -->
+    <div id="rep-maiz-sec" style="display:none">
+
+      <!-- Selector de Ciclo -->
+      <div class="rfr-topbar" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px">
+        <span style="font-size:14px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Ciclo</span>
+        <button type="button" class="fin-sem-nav" id="rmz-ciclo-prev" onclick="cicloStep('rmz-ciclo',-1)" aria-label="Ciclo anterior">&lsaquo;</button>
+        <select id="rmz-ciclo" onchange="renderRepMaiz()" style="flex:0 0 auto;min-width:150px;padding:10px 18px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:17px;color:var(--text);font-weight:700;text-align:center;text-align-last:center;outline:none">
+        </select>
+        <button type="button" class="fin-sem-nav" id="rmz-ciclo-next" onclick="cicloStep('rmz-ciclo',1)" aria-label="Ciclo siguiente">&rsaquo;</button>
+      </div>
+
+      <div id="rmz-content"></div>
 
     </div>
   </div>
@@ -1758,11 +1791,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 <div class="bottom-nav">
   <button class="nav-item active" id="nav-resultados" onclick="goSc('resultados')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-    Resultados
+    Finanzas
   </button>
   <button class="nav-item" id="nav-fin" onclick="goFin()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"></path></svg>
-    Finanzas
+    Registrar
   </button>
   <button class="nav-item" id="nav-ven" onclick="goSc('ven')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
@@ -2024,12 +2057,13 @@ var CATS_DEFAULT = {
   fram:             ['Compra Insumos','Compra Insumos Agroquímicos','Compra Insumos Riego','Compra Mercancia','Inocuidad','Intereses Operativos','Nóminas Operativas','Pago Prestamo','Planta'],
   campo_general:    ['Adquisición de Maquinaria','Combustible','Compra Insumos','Fletes','Mantenimiento Equipo','Otros Gastos','Servicios','Viáticos'],
   ofic:             ['Combustible','Contabilidad','Impuestos','IMSS','Intereses Operativos','Manejo de Cuenta','Nóminas Administrativas','Otros Gastos','Seguros','Servicios','Viáticos'],
-  com:              ['Compra Mercancia','Fletes']
+  com:              ['Compra Mercancia','Fletes'],
+  maiz:             ['Compra Insumos','Compra Insumos Agroquímicos','Compra Insumos Riego','Cosecha','Fletes','Nóminas Operativas','Renta','Semilla','Siembra','Trilla']
 };
 
 var CAT_LISTA_LBL = {
   camote_general:'Camote · General', camote_cosecha:'Camote · Cosecha', fram:'Frambuesa',
-  campo_general:'General Terreno', ofic:'Oficina', com:'Comercializadora'
+  campo_general:'General Terreno', ofic:'Oficina', com:'Comercializadora', maiz:'Maíz'
 };
 
 var CATS = JSON.parse(JSON.stringify(CATS_DEFAULT));
@@ -2046,6 +2080,7 @@ function saveCats(){try{localStorage.setItem('cc_cats',JSON.stringify(CATS));}ca
 function catListaActual(){
   if(loc==='ofic') return 'ofic';
   if(loc==='com') return 'com';
+  if(loc==='maiz') return 'maiz';
   if(cultivo==='camote' && tipoCamote==='cosecha') return 'camote_cosecha';
   if(cultivo==='camote') return 'camote_general';
   if(cultivo==='fram') return 'fram';
@@ -2098,7 +2133,8 @@ function catColor(cat){
 var CULTIVOS_BY_LOC = {
   jal: [{key:'camote',lbl:'&#127808; Camote'},{key:'fram',lbl:'&#127815; Frambuesa'}],
   nay: [{key:'camote',lbl:'&#127808; Camote'}],
-  ofic: []
+  ofic: [],
+  maiz: []
 };
 
 // ---- Ciclos ----
@@ -2461,7 +2497,7 @@ function updateCultivoButtons(l){
     sec.classList.remove('visible');
     tipoSec.classList.remove('visible');
     document.getElementById('sector-sec').classList.remove('visible');
-    cultivo= (l==='com') ? 'com' : 'ofic'; updateCatSelect(); updateStepNumbers(); return;
+    cultivo= (l==='com') ? 'com' : (l==='maiz') ? 'maiz' : 'ofic'; updateCatSelect(); updateStepNumbers(); return;
   }
   sec.classList.add('visible');
   cultivo=opts[0].key;
@@ -2512,7 +2548,7 @@ function updateCultivoButtons(l){
 // ---- Loc ----
 function selLoc(l){
   loc=l;
-  ['jal','nay','ofic','com'].forEach(function(x){
+  ['jal','nay','ofic','com','maiz'].forEach(function(x){
     document.getElementById('lb-'+x).classList.toggle('sel',x===l);
   });
   sectoresSel=[]; tipoCamote='general';
@@ -2538,9 +2574,9 @@ function goSc(s){
     document.getElementById('fin-mt-his').classList.toggle('active', s==='his');
     lastFinSc = s;
   }
-  if(s==='resultados') renderResultados();
+  if(s==='resultados') rsltTab(rsltTabSel);
   if(s==='his') renderHis();
-  if(s==='rep') repTab(repTabActual||'fin');
+  if(s==='rep') repTab(repTabActual||'cam');
   if(s==='ven'){ venTab('lista'); }
   if(s==='fram'){ framTab('nuevo'); }
   window.scrollTo(0,0);
@@ -2579,7 +2615,7 @@ function registrar(){
       if(bancoVal) agregarBancoSiNuevo(bancoVal);
       if(provVal) agregarProveedorSiNuevo(provVal);
       gastos[idx]=Object.assign({},orig,{
-        loc:loc, cultivo:(loc==='ofic'||loc==='com')?null:cultivo,
+        loc:loc, cultivo:(loc==='ofic'||loc==='com'||loc==='maiz')?null:cultivo,
         ciclo: (function(){ var v=document.getElementById('f-ciclo').value; return v||null; })(),
         tipoCamote:cultivo==='camote'?tipoCamote:null,
         cat:cat,
@@ -2613,7 +2649,7 @@ function registrar(){
   if(provNuevoVal) agregarProveedorSiNuevo(provNuevoVal);
 
   var g={
-    id:Date.now(), loc:loc, cultivo:(loc==='ofic'||loc==='com')?null:cultivo,
+    id:Date.now(), loc:loc, cultivo:(loc==='ofic'||loc==='com'||loc==='maiz')?null:cultivo,
     ciclo: (function(){ var v=document.getElementById('f-ciclo').value; return v||null; })(),
     tipoCamote: cultivo==='camote' ? tipoCamote : null,
     cat:cat, sectores: (cultivo==='camote' && tipoCamote==='cosecha') ? sectoresSel.slice() : [],
@@ -2631,7 +2667,7 @@ function registrar(){
   document.getElementById('f-factura').value='';
   sectoresSel=[];
   if(document.getElementById('sector-sec').classList.contains('visible')) buildSectorGrid();
-  var locNames={jal:'Jalisco',nay:'Nayarit',ofic:'Oficina'};
+  var locNames={jal:'Jalisco',nay:'Nayarit',ofic:'Oficina',com:'Comercializadora',maiz:'Maíz'};
   var secTxt=g.sectores.length?' ('+g.sectores.map(function(n){return n+',';}).join(', ')+')':'';
   var tipoTxt=g.tipoCamote?' - '+( g.tipoCamote==='cosecha'?'Cosecha':'General'):'';
   showToast('Guardado: '+fmtDec(monto)+' - '+locNames[loc]+tipoTxt+secTxt);
@@ -2791,8 +2827,8 @@ function renderHis(){
   dayOrder.sort(function(a,b){ return a<b?1:a>b?-1:0; });
 
   list.innerHTML='';
-  var locNames={jal:'Jalisco',nay:'Nayarit',ofic:'Oficina',com:'Comercial.'};
-  var cultNames={camote:'Camote',fram:'Frambuesa',general:'General',ofic:'Oficina',com:'Comercial.'};
+  var locNames={jal:'Jalisco',nay:'Nayarit',ofic:'Oficina',com:'Comercial.',maiz:'Maíz'};
+  var cultNames={camote:'Camote',fram:'Frambuesa',general:'General',ofic:'Oficina',com:'Comercial.',maiz:'Maíz'};
 
   dayOrder.forEach(function(dk){
     var gs=byDay[dk];
@@ -2809,7 +2845,7 @@ function renderHis(){
       it.dataset.gid=String(g.id);
       var locTag='<span class="tag '+g.loc+'">'+locNames[g.loc]+'</span>';
       var cicloTag=g.ciclo?'<span class="tag general">'+g.ciclo+'</span>':'';
-      var cultTag=(g.loc!=='ofic'&&g.loc!=='com'&&g.cultivo)?'<span class="tag '+g.cultivo+'">'+(cultNames[g.cultivo]||g.cultivo)+'</span>':'';
+      var cultTag=(g.loc!=='ofic'&&g.loc!=='com'&&g.loc!=='maiz'&&g.cultivo)?'<span class="tag '+g.cultivo+'">'+(cultNames[g.cultivo]||g.cultivo)+'</span>':'';
       var tipoTag=g.tipoCamote?'<span class="tag '+(g.tipoCamote==='cosecha'?'camote':'general')+'">'+(g.tipoCamote==='cosecha'?'Cosecha':'General')+'</span>':'';
       var secTag=g.sectores&&g.sectores.length?'<span class="tag sector">'+g.sectores.map(function(n){return n;}).join(', ')+'</span>':'';
       var checkHtml=selMode?'<div class="gasto-check'+(selIds.has(String(g.id))?' checked':'')+'"></div>':'';
@@ -2852,15 +2888,15 @@ function delGasto(id){
 var editandoGastoId = null;
 
 function verDet(g){
-  var locNames={jal:'Jalisco',nay:'Nayarit',ofic:'Oficina',com:'Comercializadora'};
-  var cultNames={camote:'Camote',fram:'Frambuesa',general:'General',ofic:'Oficina',com:'Comercializadora'};
+  var locNames={jal:'Jalisco',nay:'Nayarit',ofic:'Oficina',com:'Comercializadora',maiz:'Maíz'};
+  var cultNames={camote:'Camote',fram:'Frambuesa',general:'General',ofic:'Oficina',com:'Comercializadora',maiz:'Maíz'};
   document.getElementById('mo-title').innerHTML=g.cat+'&nbsp;<span class="chip '+g.loc+'">'+locNames[g.loc]+'</span>';
 
   var esCamote = g.cultivo==='camote';
   var esCosecha = esCamote && g.tipoCamote==='cosecha';
 
   var negocioVal = locNames[g.loc] || '-';
-  var actividadVal = (g.loc==='ofic'||g.loc==='com') ? '-' : (cultNames[g.cultivo] || '-');
+  var actividadVal = (g.loc==='ofic'||g.loc==='com'||g.loc==='maiz') ? '-' : (cultNames[g.cultivo] || '-');
   var tipoVal = esCamote ? (g.tipoCamote==='cosecha'?'Cosecha':'General') : '-';
   var sectorVal = (esCosecha && g.sectores && g.sectores.length) ? g.sectores.join(', ') : '-';
   var fechaVal = g.fecha || (g.fechaVal ? new Date(g.fechaVal+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : '-');
@@ -3020,8 +3056,8 @@ function attachDashTooltips(cont, ttId){
 // ---- FINANCIERO: Dashboard estilo Power BI ----
 // ============================================================
 
-var REP_TABS=[{k:'fin',lbl:'💰 Gastos'},{k:'cam',lbl:'🍠 Camote'},{k:'fram',lbl:'🍇 Frambuesa'}];
-var repTabActual='fin';
+var REP_TABS=[{k:'cam',lbl:'🍠 Camote'},{k:'fram',lbl:'🍇 Frambuesa'},{k:'maiz',lbl:'🌽 Maíz'}];
+var repTabActual='cam';
 
 // Flechas del stepper de celular
 function repTabStep(dir){
@@ -3046,15 +3082,51 @@ function repTabSyncMobile(t){
 function repTab(t){
   repTabActual=t;
   repTabSyncMobile(t);
-  ['fin','cam','fram'].forEach(function(x){
+  ['cam','fram','maiz'].forEach(function(x){
     var b=document.getElementById('rt-'+x); if(b) b.classList.toggle('active', x===t);
   });
-  document.getElementById('rep-fin-sec').style.display = t==='fin' ? 'block' : 'none';
   document.getElementById('rep-cam-sec').style.display = t==='cam' ? 'block' : 'none';
   document.getElementById('rep-fram-sec').style.display = t==='fram' ? 'block' : 'none';
-  if(t==='fin') finNegTab(finNegSel||'todos');
+  document.getElementById('rep-maiz-sec').style.display = t==='maiz' ? 'block' : 'none';
   if(t==='cam') renderRepCam();
   if(t==='fram') renderRepFram();
+  if(t==='maiz') renderRepMaiz();
+}
+
+// ============================================================
+// ---- REPORTE MAÍZ ----
+// ============================================================
+// Estructura espejo de Camote: por ahora solo la vista de Cosecha, que se deja
+// en blanco a propósito (Fernando definirá después cómo se acomoda). Los gastos
+// de Maíz viven en Reportes -> Gastos -> Maíz y en Resultados -> Estado de
+// Resultados -> Maíz. El financiero (ingresos/utilidad) se agrega cuando exista
+// la captura de cosecha/ventas de maíz.
+function renderRepMaiz(){
+  // Poblar selector de ciclos con los ciclos presentes en gastos de maíz.
+  var cicloSel = document.getElementById('rmz-ciclo');
+  if(cicloSel){
+    var ciclosPresentes = [];
+    (gastos||[]).filter(function(g){return g.loc==='maiz';}).forEach(function(g){
+      var c = g.ciclo || cicloFromFecha(g.fechaVal);
+      if(c && ciclosPresentes.indexOf(c)<0) ciclosPresentes.push(c);
+    });
+    ciclosPresentes.sort().reverse();
+    var prevVal = cicloSel.value;
+    cicloSel.innerHTML = '';
+    ciclosPresentes.forEach(function(c){ var o=document.createElement('option'); o.value=c; o.textContent=c; cicloSel.appendChild(o); });
+    if(prevVal && cicloSel.querySelector('option[value="'+prevVal+'"]')) cicloSel.value = prevVal;
+    else if(ciclosPresentes.length) cicloSel.value = ciclosPresentes[0];
+    cicloNavSync('rmz-ciclo');
+  }
+  var cont = document.getElementById('rmz-content');
+  if(!cont) return;
+  // Sección de Cosecha — en blanco por ahora (pendiente de definir).
+  cont.innerHTML =
+    '<div style="text-align:center;padding:70px 20px;color:var(--text3)">'+
+      '<div style="font-size:34px;margin-bottom:10px">🌽</div>'+
+      '<div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:4px">Cosecha de Maíz</div>'+
+      '<div style="font-size:13px">Sección pendiente de configurar.</div>'+
+    '</div>';
 }
 
 // ============================================================
@@ -4727,7 +4799,8 @@ var RSM_NEGOCIOS = [
   {k:'camnay', lbl:'Camote Nayarit',   color:'#D98A4A'},
   {k:'com',    lbl:'Comercializadora', color:'#3CB87A'},
   {k:'fram',   lbl:'Frambuesa',        color:'#D6336C'},
-  {k:'ofic',   lbl:'Oficina',          color:'#9E9E9E'}
+  {k:'ofic',   lbl:'Oficina',          color:'#9E9E9E'},
+  {k:'maiz',   lbl:'Maíz',             color:'#B8860B'}
 ];
 
 function rsmEnCiclo(g, ciclo){
@@ -4767,6 +4840,10 @@ function rsmFilas(ciclo){
     ofic: {
       ing: 0,
       gas: rsmSumaGastos(function(g){return g.loc==='ofic';}, ciclo, 1)
+    },
+    maiz: {
+      ing: 0,
+      gas: rsmSumaGastos(function(g){return g.loc==='maiz';}, ciclo, 1)
     }
   };
 
@@ -4782,17 +4859,21 @@ var RSLT_NEGS = [
   {k:'camnay', lbl:'Camote Nayarit'},
   {k:'com',    lbl:'Camote Comercializadora'},
   {k:'fram',   lbl:'Frambuesa'},
-  {k:'ofic',   lbl:'Oficina'}
+  {k:'ofic',   lbl:'Oficina'},
+  {k:'maiz',   lbl:'Maíz'}
 ];
 var rsltTabSel='resumen', rsltNegSel='camjal';
 
 function rsltTab(t){
   rsltTabSel=t;
-  ['resumen','edr'].forEach(function(x){
+  ['resumen','edr','gastos'].forEach(function(x){
     var b=document.getElementById('rslt-tab-'+x); if(b) b.classList.toggle('active', x===t);
     var sec=document.getElementById('rslt-sec-'+x); if(sec) sec.style.display = x===t?'block':'none';
   });
-  renderResultados();
+  var cicloRow=document.getElementById('rslt-ciclo-row');
+  if(cicloRow) cicloRow.style.display = (t==='gastos') ? 'none' : 'flex';
+  if(t==='gastos'){ finNegTab(finNegSel||'todos'); }
+  else { renderResultados(); }
 }
 
 function rsltNegTab(n){ rsltNegSel=n; renderResultados(); }
@@ -4862,6 +4943,38 @@ function renderRsltEDR(ciclo){
   }
   if(rsltNegSel==='fram'){
     renderRfrEDR(ciclo, 'rslt-edr-content');
+    return;
+  }
+  if(rsltNegSel==='maiz'){
+    // Maíz: por ahora solo gastos (los ingresos/cosecha se agregan después).
+    var gMaizList = gastos.filter(function(g){
+      return g.loc==='maiz' && (ciclo==='todos' || (g.ciclo||cicloFromFecha(g.fechaVal))===ciclo);
+    });
+    var gMaiz = gMaizList.reduce(function(a,g){ return a+(parseFloat(g.monto)||0); },0);
+    if(!gMaiz){
+      cont.innerHTML='<div style="text-align:center;padding:60px 0;color:var(--text3);font-size:13px">Sin gastos de Maíz para este ciclo</div>';
+      return;
+    }
+    var catMaiz = framCatBreakdown(gMaizList, 1);
+    cont.innerHTML =
+      '<div class="kpi-grid">'+
+        '<div class="kpi-card">'+
+          '<div class="kpi-accent" style="background:var(--maiz)"></div>'+
+          '<div class="kpi-lbl">Gastos</div>'+
+          '<div class="kpi-val" style="color:var(--maiz)">'+fmt(gMaiz)+'</div>'+
+        '</div>'+
+      '</div>'+
+      (catMaiz.lbls.length ?
+        '<div class="fin-charts-grid">'+
+          '<div class="dash-card fin-chart-full">'+
+            '<div class="dash-card-title">Gastos x Categoría</div>'+
+            '<div style="position:relative;height:'+Math.max(200, catMaiz.lbls.length*46)+'px;margin-top:8px"><canvas id="rslt-maiz-cat-chart"></canvas></div>'+
+          '</div>'+
+        '</div>' : '');
+    if(catMaiz.lbls.length){
+      framBarraH('rslt-maiz-cat-chart', catMaiz.lbls, catMaiz.vals, catMaiz.cols, '#B8860B',
+                 maxEjeXCat([catMaiz.vals]), ejeYAnchoCat([catMaiz.lbls]));
+    }
     return;
   }
   // Oficina: gasto total + desglose por categoría
@@ -5764,14 +5877,15 @@ var FIN_NEG_MAP = {
   nay:  {locs:['nay'], cultivo:'camote', label:'Camote Nayarit', color:'#D98A4A'},
   ofic: {locs:['ofic'], cultivo:null, label:'Oficina', color:'#9E9E9E'},
   fram: {locs:['jal','nay'], cultivo:'fram', label:'Frambuesa', color:'#D6336C'},
-  com:  {locs:['com'], cultivo:null, label:'Comercializadora', color:'#3CB87A'}
+  com:  {locs:['com'], cultivo:null, label:'Comercializadora', color:'#3CB87A'},
+  maiz: {locs:['maiz'], cultivo:null, label:'Maíz', color:'#B8860B'}
 };
 // Barras "Gastos x Negocio" (vista Todos): los 5 negocios sin traslapes
-var FIN_BREAKDOWN_KEYS = ['jal','nay','fram','ofic','com'];
+var FIN_BREAKDOWN_KEYS = ['jal','nay','fram','ofic','com','maiz'];
 // Sin sub-pestañas: cada negocio es plano
 var FIN_PARENT_SUBS = {};
 // Hoja -> negocio padre (cada negocio es su propio padre)
-var FIN_LEAF_PARENT = {todos:'todos', jal:'jal', nay:'nay', fram:'fram', ofic:'ofic', com:'com'};
+var FIN_LEAF_PARENT = {todos:'todos', jal:'jal', nay:'nay', fram:'fram', ofic:'ofic', com:'com', maiz:'maiz'};
 
 // Semana ISO del año calendario real (1-53)
 function semanaISO(fechaStr){
@@ -5803,7 +5917,7 @@ function finGastosFiltrados(negKey, soloEsteNeg){
   });
 }
 
-var FIN_NEG_TABS=[{k:'todos',lbl:'Todos'},{k:'jal',lbl:'Camote Jalisco'},{k:'nay',lbl:'Camote Nayarit'},{k:'fram',lbl:'Frambuesa'},{k:'ofic',lbl:'Oficina'},{k:'com',lbl:'Comercializadora'}];
+var FIN_NEG_TABS=[{k:'todos',lbl:'Todos'},{k:'jal',lbl:'Camote Jalisco'},{k:'nay',lbl:'Camote Nayarit'},{k:'fram',lbl:'Frambuesa'},{k:'ofic',lbl:'Oficina'},{k:'com',lbl:'Comercializadora'},{k:'maiz',lbl:'Maíz'}];
 
 // Flechas del stepper de celular (se mueve entre negocios, no entre sub-pestañas)
 function finNegStep(dir){
@@ -8373,21 +8487,20 @@ function renderFramFinHist(){
     var semLbl = f.semanaKey ? ('Semana '+String(rfrWeekNum(f.semanaKey)).padStart(2,'0')+' \u00b7 '+rfrSemanaLbl(f.semanaKey)) : '\u2014';
     var item = document.createElement('div');
     item.className='fram-hist-item';
+    item.style.cssText='display:flex;justify-content:space-between;align-items:flex-start;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:8px;box-shadow:var(--shadow)';
     item.innerHTML=
-      '<div class="fram-hist-header">'+
-        '<div>'+
+      '<div style="flex:1;min-width:0">'+
           '<div class="fram-hist-fecha">'+semLbl+'</div>'+
           '<div style="font-size:12px;color:var(--text3);margin-top:2px">'+(f.ciclo||'')+(f.cliente?' \u00b7 '+f.cliente:'')+'</div>'+
-        '</div>'+
-        '<div class="fram-hist-cubetas">$'+totalFacturado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>'+
-      '</div>'+
+        '<div class="fram-hist-cubetas" style="margin:4px 0">$'+totalFacturado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>'+
       '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">'+
         '<span class="tag fram">📦 '+(f.cajas||0)+' cajas</span>'+
         '<span class="tag general">$'+(f.precio||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'/caja</span>'+
         '<span class="tag general">Facturado $'+totalFacturado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span>'+
         (totalDescuentos?'<span class="tag camote">Descuentos $'+totalDescuentos.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span>':'')+
       '</div>'+
-      '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">'+
+      '</div>'+
+      '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">'+
         '<button onclick="editarFramFin('+f.id+')" style="padding:6px 12px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Editar</button>'+
         '<button id="delbtn-ff-'+f.id+'" onclick="confirmDelFramFin('+f.id+')" style="padding:6px 12px;border-radius:var(--radius);border:1px solid var(--fram-border);background:transparent;color:var(--fram);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Eliminar</button>'+
       '</div>';
@@ -8457,14 +8570,12 @@ function renderFramNominaHist(){
     var numTrab = (f.nominaCosechadoresDetalle||[]).length;
     var item = document.createElement('div');
     item.className='fram-hist-item';
+    item.style.cssText='display:flex;justify-content:space-between;align-items:flex-start;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:8px;box-shadow:var(--shadow)';
     item.innerHTML=
-      '<div class="fram-hist-header">'+
-        '<div>'+
+      '<div style="flex:1;min-width:0">'+
           '<div class="fram-hist-fecha">'+semLbl+'</div>'+
           '<div style="font-size:12px;color:var(--text3);margin-top:2px">'+(f.ciclo||'')+'</div>'+
-        '</div>'+
-        '<div class="fram-hist-cubetas">$'+(f.nominaCosechadores||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>'+
-      '</div>'+
+        '<div class="fram-hist-cubetas" style="margin:4px 0">$'+(f.nominaCosechadores||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>'+
       (numTrab?
         '<details style="margin-bottom:6px">'+
           '<summary style="cursor:pointer;font-size:12px;color:var(--text3);font-weight:600">Ver desglose ('+numTrab+' cosechadores)</summary>'+
@@ -8478,7 +8589,8 @@ function renderFramNominaHist(){
           '</div>'+
         '</details>'
         : '<div style="font-size:12px;color:var(--text3);margin-bottom:6px">Solo el total, sin desglose por trabajador todav\u00eda</div>')+
-      '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">'+
+      '</div>'+
+      '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">'+
         '<button onclick="editarFramNomina(\''+f.semanaKey+'\')" style="padding:6px 12px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Editar</button>'+
         '<button id="delbtn-fn-'+f.semanaKey+'" onclick="confirmBorrarFramNomina(\''+f.semanaKey+'\')" style="padding:6px 12px;border-radius:var(--radius);border:1px solid var(--fram-border);background:transparent;color:var(--fram);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Eliminar</button>'+
       '</div>';
@@ -9095,21 +9207,20 @@ function renderFramHist(){
   data.forEach(function(r){
     var item = document.createElement('div');
     item.className='fram-hist-item';
+    item.style.cssText='display:flex;justify-content:space-between;align-items:flex-start;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:8px;box-shadow:var(--shadow);cursor:pointer';
     item.innerHTML=
-      '<div class="fram-hist-header">'+
-        '<div>'+
+      '<div style="flex:1;min-width:0">'+
           '<div class="fram-hist-fecha">'+r.fechaLbl+'</div>'+
           '<div style="font-size:12px;color:var(--text3);margin-top:2px">'+(r.ciclo||'')+'</div>'+
-        '</div>'+
-        '<div class="fram-hist-cubetas">'+r.totalCajas+' cajas</div>'+
-      '</div>'+
+        '<div class="fram-hist-cubetas" style="margin:4px 0">'+r.totalCajas+' cajas</div>'+
       '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">'+
         '<span class="tag fram">🍇 '+r.totalCubetas+' cubetas</span>'+
         (r.totalCajas?'<span class="tag general">📦 '+r.totalCajas+' cajas</span>':'')+
         (r.totalKg?'<span class="tag general">⚖️ '+r.totalKg+' kg</span>':'')+
         (r.merma?'<span class="tag camote">Merma '+r.merma+' kg</span>':'')+
       '</div>'+
-      '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">'+
+      '</div>'+
+      '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">'+
         '<button onclick="editarFramRegistro('+r.id+')" style="padding:6px 12px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Editar</button>'+
         '<button id="delbtn-'+r.id+'" onclick="confirmDelFram('+r.id+')" style="padding:6px 12px;border-radius:var(--radius);border:1px solid var(--fram-border);background:transparent;color:var(--fram);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Eliminar</button>'+
       '</div>';
