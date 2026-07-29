@@ -66,12 +66,14 @@ input,select,textarea,button{font-family:var(--font)}
 
 /* Ubicacion */
 .loc-row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px}
+.neg-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px}
 .loc-btn{padding:11px 4px;border-radius:var(--radius-lg);border:1.5px solid var(--border);background:var(--surface);cursor:pointer;text-align:center;transition:all .15s;-webkit-tap-highlight-color:transparent;width:100%}
 .loc-btn.jal.sel{background:var(--jal-bg);border-color:var(--jal)}
 .loc-btn.nay.sel{background:var(--nay-bg);border-color:var(--nay)}
 .loc-btn.ofic.sel{background:var(--ofic-bg);border-color:var(--ofic)}
 .loc-btn.com.sel{background:var(--com-bg);border-color:var(--com)}
 .loc-btn.maiz.sel{background:var(--maiz-bg);border-color:var(--maiz)}
+.loc-btn.fram.sel{background:var(--fram-bg);border-color:var(--fram)}
 .loc-emoji{font-size:20px;line-height:1;margin-bottom:4px}
 .loc-label{font-size:11px;font-weight:600;color:var(--text);line-height:1.15}
 .loc-btn.jal.sel .loc-label{color:var(--jal)}
@@ -79,6 +81,7 @@ input,select,textarea,button{font-family:var(--font)}
 .loc-btn.ofic.sel .loc-label{color:var(--ofic)}
 .loc-btn.com.sel .loc-label{color:var(--com)}
 .loc-btn.maiz.sel .loc-label{color:var(--maiz)}
+.loc-btn.fram.sel .loc-label{color:var(--fram)}
 .loc-sub{font-size:10px;color:var(--text3);margin-top:2px}
 
 /* Cultivo */
@@ -194,6 +197,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .chip.ofic{background:var(--ofic-bg);color:var(--ofic);border:1px solid var(--green-border)}
 .chip.com{background:var(--com-bg);color:var(--com);border:1px solid var(--com-border)}
 .chip.maiz{background:var(--maiz-bg);color:var(--maiz);border:1px solid var(--maiz-border)}
+.chip.fram{background:var(--fram-bg);color:var(--fram);border:1px solid var(--fram)}
 .tag{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:500;display:inline-flex;align-items:center}
 .tag.jal{background:var(--jal-bg);color:var(--jal)}
 .tag.nay{background:var(--nay-bg);color:var(--nay)}
@@ -703,33 +707,31 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   <div id="sc-reg" class="screen">
 
     <div class="step-label" id="step-loc-lbl">1. Negocio</div>
-    <div class="loc-row">
-      <button class="loc-btn jal sel" id="lb-jal" onclick="selLoc('jal')">
-        <div class="loc-emoji">🌿</div>
-        <div class="loc-label">Jalisco</div>
+    <div class="neg-row" id="negocio-row">
+      <button class="loc-btn jal sel" data-neg="cam_jal" onclick="selNegocio('cam_jal')">
+        <div class="loc-emoji">🍠</div>
+        <div class="loc-label">Camote Jalisco</div>
       </button>
-      <button class="loc-btn nay" id="lb-nay" onclick="selLoc('nay')">
-        <div class="loc-emoji">🍀</div>
-        <div class="loc-label">Nayarit</div>
+      <button class="loc-btn nay" data-neg="cam_nay" onclick="selNegocio('cam_nay')">
+        <div class="loc-emoji">🍠</div>
+        <div class="loc-label">Camote Nayarit</div>
       </button>
-      <button class="loc-btn ofic" id="lb-ofic" onclick="selLoc('ofic')">
+      <button class="loc-btn fram" data-neg="fram" onclick="selNegocio('fram')">
+        <div class="loc-emoji">🍇</div>
+        <div class="loc-label">Frambuesa</div>
+      </button>
+      <button class="loc-btn ofic" data-neg="ofic" onclick="selNegocio('ofic')">
         <div class="loc-emoji">💼</div>
         <div class="loc-label">Oficina</div>
       </button>
-      <button class="loc-btn com" id="lb-com" onclick="selLoc('com')">
+      <button class="loc-btn com" data-neg="com" onclick="selNegocio('com')">
         <div class="loc-emoji">🛒</div>
         <div class="loc-label">Comercial.</div>
       </button>
-      <button class="loc-btn maiz" id="lb-maiz" onclick="selLoc('maiz')">
+      <button class="loc-btn maiz" data-neg="maiz" onclick="selNegocio('maiz')">
         <div class="loc-emoji">🌽</div>
         <div class="loc-label">Maíz</div>
       </button>
-    </div>
-
-    <!-- Actividad (solo campo) -->
-    <div class="slide-section visible" id="cultivo-sec">
-      <div class="step-label" id="step-cultivo-lbl">2. Actividad</div>
-      <div class="cultivo-btns" id="cultivo-btns"><button class="cultivo-btn camote sel">🍀 Camote</button><button class="cultivo-btn fram">🍇 Frambuesa</button></div>
     </div>
 
     <!-- Tipo de gasto (solo camote) -->
@@ -824,26 +826,19 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
-      <div>
+      <div style="grid-column:1 / -1">
         <select id="his-fil-neg" onchange="filtroNeg=this.value;renderHis()" style="width:100%;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center;padding-right:30px">
           <option value="todas">Negocio: Todos</option>
-          <option value="jal">Jalisco</option>
-          <option value="nay">Nayarit</option>
+          <option value="cam_jal">Camote Jalisco</option>
+          <option value="cam_nay">Camote Nayarit</option>
+          <option value="fram">Frambuesa</option>
           <option value="ofic">Oficina</option>
-          <option value="com">Comercial.</option>
+          <option value="com">Comercializadora</option>
+          <option value="maiz">Maíz</option>
         </select>
       </div>
       <div>
         <select id="his-fil-ciclo" onchange="filtroCiclo=this.value;renderHis()" style="width:100%;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center;padding-right:30px"><option value="todos">Ciclo: Todos</option></select>
-      </div>
-      <div>
-        <select id="his-fil-cultivo" onchange="filtroCultivo=this.value;renderHis()" style="width:100%;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center;padding-right:30px">
-          <option value="todas">Actividad: Todas</option>
-          <option value="camote">Camote</option>
-          <option value="fram">Frambuesa</option>
-          <option value="ofic">Oficina</option>
-          <option value="com">Comercial.</option>
-        </select>
       </div>
       <div>
         <select id="his-fil-cat" onchange="filtroCat=this.value;renderHis()" style="width:100%;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center;padding-right:30px"><option value="todas">Categoria: Todas</option></select>
@@ -1795,7 +1790,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </button>
   <button class="nav-item" id="nav-fin" onclick="goFin()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"></path></svg>
-    Registrar
+    Gastos
   </button>
   <button class="nav-item" id="nav-ven" onclick="goSc('ven')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
@@ -2458,11 +2453,9 @@ function selTipo(t){
 }
 
 function updateStepNumbers(){
-  var esCampo = loc!=='ofic' && loc!=='com';
-  var esCamote = esCampo && cultivo==='camote';
+  var esCamote = cultivo==='camote';
   var step=1;
   document.getElementById('step-loc-lbl').textContent=step+'. Negocio'; step++;
-  if(esCampo){ document.getElementById('step-cultivo-lbl').textContent=step+'. Actividad'; step++; }
   if(esCamote){ document.getElementById('step-tipo-lbl').textContent=step+'. Tipo de gasto'; step++; }
   if(esCamote && tipoCamote==='cosecha'){ document.getElementById('step-sector-lbl').innerHTML=step+'. Sector <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3)">(opcional)</span>'; step++; }
   document.getElementById('step-detalle-lbl').textContent=step+'. Detalle';
@@ -2488,73 +2481,64 @@ function onSectorChange(){
 
 function updateSectorHint(){}
 
-// ---- Cultivo ----
-function updateCultivoButtons(l){
-  var sec=document.getElementById('cultivo-sec');
+// ---- Negocios ----
+// Cada negocio determina (loc, cultivo). La "actividad" ya no existe como paso aparte:
+// el negocio elegido fija el cultivo por debajo, dejando intactos reportes/sectores/Supabase.
+var NEGOCIOS = [
+  {key:'cam_jal', loc:'jal',  cultivo:'camote', esCamote:true},
+  {key:'cam_nay', loc:'nay',  cultivo:'camote', esCamote:true},
+  {key:'fram',    loc:'jal',  cultivo:'fram',   esCamote:false},
+  {key:'ofic',    loc:'ofic', cultivo:'ofic',   esCamote:false},
+  {key:'com',     loc:'com',  cultivo:'com',    esCamote:false},
+  {key:'maiz',    loc:'maiz', cultivo:'maiz',   esCamote:false}
+];
+function negById(k){ for(var i=0;i<NEGOCIOS.length;i++){ if(NEGOCIOS[i].key===k) return NEGOCIOS[i]; } return null; }
+
+// Deriva el negocio de un gasto existente a partir de su loc+cultivo
+function negKeyFromGasto(g){
+  if(g.loc==='ofic') return 'ofic';
+  if(g.loc==='com')  return 'com';
+  if(g.loc==='maiz') return 'maiz';
+  if(g.cultivo==='fram') return 'fram';
+  if(g.cultivo==='camote') return g.loc==='nay' ? 'cam_nay' : 'cam_jal';
+  return g.loc==='nay' ? 'cam_nay' : 'cam_jal';
+}
+// Nombre legible del negocio para historial/modal
+function negNombre(g){
+  if(g.loc==='ofic') return 'Oficina';
+  if(g.loc==='com')  return 'Comercializadora';
+  if(g.loc==='maiz') return 'Maíz';
+  if(g.cultivo==='fram') return 'Frambuesa';
+  if(g.cultivo==='camote') return g.loc==='nay' ? 'Camote Nayarit' : 'Camote Jalisco';
+  var nm={jal:'Jalisco',nay:'Nayarit',ofic:'Oficina',com:'Comercializadora',maiz:'Maíz'};
+  return nm[g.loc]||'-';
+}
+// Clase de color (tag/chip) del negocio
+function negColorCls(g){
+  if(g.cultivo==='fram') return 'fram';
+  return g.loc;
+}
+
+var negocioSel='cam_jal';
+function selNegocio(k){
+  var n=negById(k); if(!n) return;
+  negocioSel=k; loc=n.loc; cultivo=n.cultivo; sectoresSel=[];
+  var row=document.getElementById('negocio-row');
+  if(row){ row.querySelectorAll('.loc-btn').forEach(function(b){ b.classList.toggle('sel', b.dataset.neg===k); }); }
   var tipoSec=document.getElementById('tipo-sec');
-  var opts=CULTIVOS_BY_LOC[l];
-  if(!opts||!opts.length){
-    sec.classList.remove('visible');
-    tipoSec.classList.remove('visible');
-    document.getElementById('sector-sec').classList.remove('visible');
-    cultivo= (l==='com') ? 'com' : (l==='maiz') ? 'maiz' : 'ofic'; updateCatSelect(); updateStepNumbers(); return;
-  }
-  sec.classList.add('visible');
-  cultivo=opts[0].key;
-  var cont=document.getElementById('cultivo-btns'); cont.innerHTML='';
-  for(var i=0;i<opts.length;i++){
-    (function(opt,idx){
-      var b=document.createElement('button');
-      b.className='cultivo-btn '+opt.key+(idx===0?' sel':'');
-      b.innerHTML=opt.lbl;
-      b.onclick=function(){
-        cultivo=opt.key; sectoresSel=[];
-        var all=cont.querySelectorAll('.cultivo-btn');
-        for(var j=0;j<all.length;j++) all[j].classList.remove('sel');
-        b.classList.add('sel');
-        // show tipo only for camote
-        var ts=document.getElementById('tipo-sec');
-        var ss=document.getElementById('sector-sec');
-        if(opt.key==='camote'){
-          ts.classList.add('visible');
-          tipoCamote='cosecha';
-          document.getElementById('tb-cosecha').classList.add('sel');
-          document.getElementById('tb-general').classList.remove('sel');
-          ss.classList.add('visible');
-          buildSectorGrid();
-        } else {
-          ts.classList.remove('visible');
-          ss.classList.remove('visible');
-        }
-        updateCatSelect(); updateStepNumbers();
-      };
-      cont.appendChild(b);
-    })(opts[i],i);
-  }
-  // init tipo for default cultivo (camote) - default general
-  if(cultivo==='camote'){
+  var secSec=document.getElementById('sector-sec');
+  if(n.esCamote){
     tipoSec.classList.add('visible');
     tipoCamote='general';
     document.getElementById('tb-general').classList.add('sel');
     document.getElementById('tb-cosecha').classList.remove('sel');
-    document.getElementById('sector-sec').classList.remove('visible');
+    secSec.classList.remove('visible');
   } else {
+    tipoCamote='general';
     tipoSec.classList.remove('visible');
-    document.getElementById('sector-sec').classList.remove('visible');
+    secSec.classList.remove('visible');
   }
-  updateCatSelect(); updateStepNumbers();
-}
-
-// ---- Loc ----
-function selLoc(l){
-  loc=l;
-  ['jal','nay','ofic','com','maiz'].forEach(function(x){
-    document.getElementById('lb-'+x).classList.toggle('sel',x===l);
-  });
-  sectoresSel=[]; tipoCamote='general';
-  document.getElementById('sector-sec').classList.remove('visible');
-  document.getElementById('tipo-sec').classList.remove('visible');
-  updateCultivoButtons(l);
+  updateCatSelect();
   updateStepNumbers();
 }
 
@@ -2782,7 +2766,6 @@ function renderHis(){
   });
   // sync neg select
   document.getElementById('his-fil-neg').value = filtroNeg;
-  document.getElementById('his-fil-cultivo').value = filtroCultivo;
 
   // poblar categorías disponibles dinámicamente
   var selCat = document.getElementById('his-fil-cat');
@@ -2799,11 +2782,10 @@ function renderHis(){
 
   var list=document.getElementById('his-list');
   var data = gastos.filter(function(g){
-    var negOk = filtroNeg==='todas' || g.loc===filtroNeg;
+    var negOk = filtroNeg==='todas' || negKeyFromGasto(g)===filtroNeg;
     var cicloOk = filtroCiclo==='todos' || g.ciclo===filtroCiclo;
-    var cultivoOk = filtroCultivo==='todas' || g.cultivo===filtroCultivo;
     var catOk = filtroCat==='todas' || g.cat===filtroCat;
-    return negOk && cicloOk && cultivoOk && catOk;
+    return negOk && cicloOk && catOk;
   });
 
   // Monto total de lo que dejan pasar los filtros (se actualiza aunque no haya resultados)
@@ -2843,9 +2825,9 @@ function renderHis(){
       var it=document.createElement('div');
       it.className='gasto-item'+(selMode?' sel-mode':'')+(selIds.has(String(g.id))?' selected':'');
       it.dataset.gid=String(g.id);
-      var locTag='<span class="tag '+g.loc+'">'+locNames[g.loc]+'</span>';
+      var locTag='<span class="tag '+negColorCls(g)+'">'+negNombre(g)+'</span>';
       var cicloTag=g.ciclo?'<span class="tag general">'+g.ciclo+'</span>':'';
-      var cultTag=(g.loc!=='ofic'&&g.loc!=='com'&&g.loc!=='maiz'&&g.cultivo)?'<span class="tag '+g.cultivo+'">'+(cultNames[g.cultivo]||g.cultivo)+'</span>':'';
+      var cultTag='';
       var tipoTag=g.tipoCamote?'<span class="tag '+(g.tipoCamote==='cosecha'?'camote':'general')+'">'+(g.tipoCamote==='cosecha'?'Cosecha':'General')+'</span>':'';
       var secTag=g.sectores&&g.sectores.length?'<span class="tag sector">'+g.sectores.map(function(n){return n;}).join(', ')+'</span>':'';
       var checkHtml=selMode?'<div class="gasto-check'+(selIds.has(String(g.id))?' checked':'')+'"></div>':'';
@@ -2890,13 +2872,12 @@ var editandoGastoId = null;
 function verDet(g){
   var locNames={jal:'Jalisco',nay:'Nayarit',ofic:'Oficina',com:'Comercializadora',maiz:'Maíz'};
   var cultNames={camote:'Camote',fram:'Frambuesa',general:'General',ofic:'Oficina',com:'Comercializadora',maiz:'Maíz'};
-  document.getElementById('mo-title').innerHTML=g.cat+'&nbsp;<span class="chip '+g.loc+'">'+locNames[g.loc]+'</span>';
+  document.getElementById('mo-title').innerHTML=g.cat+'&nbsp;<span class="chip '+negColorCls(g)+'">'+negNombre(g)+'</span>';
 
   var esCamote = g.cultivo==='camote';
   var esCosecha = esCamote && g.tipoCamote==='cosecha';
 
-  var negocioVal = locNames[g.loc] || '-';
-  var actividadVal = (g.loc==='ofic'||g.loc==='com'||g.loc==='maiz') ? '-' : (cultNames[g.cultivo] || '-');
+  var negocioVal = negNombre(g);
   var tipoVal = esCamote ? (g.tipoCamote==='cosecha'?'Cosecha':'General') : '-';
   var sectorVal = (esCosecha && g.sectores && g.sectores.length) ? g.sectores.join(', ') : '-';
   var fechaVal = g.fecha || (g.fechaVal ? new Date(g.fechaVal+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : '-');
@@ -2909,7 +2890,6 @@ function verDet(g){
 
   document.getElementById('mo-body').innerHTML=
     '<div class="modal-row"><span class="modal-key">Negocio</span><span class="modal-val">'+negocioVal+'</span></div>'+
-    '<div class="modal-row"><span class="modal-key">Actividad</span><span class="modal-val">'+actividadVal+'</span></div>'+
     '<div class="modal-row"><span class="modal-key">Tipo de Gasto</span><span class="modal-val">'+tipoVal+'</span></div>'+
     '<div class="modal-row"><span class="modal-key">Sector</span><span class="modal-val">'+sectorVal+'</span></div>'+
     '<div class="modal-row"><span class="modal-key">Fecha</span><span class="modal-val">'+fechaVal+'</span></div>'+
@@ -2948,26 +2928,16 @@ function editarGasto(id){
   editandoGastoId = g.id;
   document.getElementById('overlay').classList.remove('open');
   goSc('reg');
-  // Set loc
-  selLoc(g.loc);
-  // Set cultivo
-  var cultReal = (g.loc==='ofic'||g.loc==='com') ? null : g.cultivo;
-  if(cultReal){
-    var btns=document.querySelectorAll('.cultivo-btn');
-    btns.forEach(function(b){
-      b.classList.remove('sel');
-      if(b.textContent.trim().toLowerCase().indexOf(cultReal)>=0 || b.className.indexOf(cultReal)>=0) b.classList.add('sel');
-    });
-    cultivo=cultReal;
-    // tipo camote
-    if(cultReal==='camote'){
-      var tipo=g.tipoCamote||'general';
-      selTipo(tipo);
-      if(tipo==='cosecha'){
-        sectoresSel = (g.sectores&&g.sectores.length) ? [parseInt(g.sectores[0])] : [];
-        var secSel=document.getElementById('sector-select');
-        if(secSel) secSel.value = sectoresSel.length ? sectoresSel[0] : '';
-      }
+  // Set negocio (fija loc+cultivo por debajo)
+  selNegocio(negKeyFromGasto(g));
+  // tipo camote
+  if(g.cultivo==='camote'){
+    var tipo=g.tipoCamote||'general';
+    selTipo(tipo);
+    if(tipo==='cosecha'){
+      sectoresSel = (g.sectores&&g.sectores.length) ? [parseInt(g.sectores[0])] : [];
+      var secSel=document.getElementById('sector-select');
+      if(secSel) secSel.value = sectoresSel.length ? sectoresSel[0] : '';
     }
   }
   // Set ciclo dropdown if visible
@@ -6561,7 +6531,7 @@ window.addEventListener('load', function(){
   goSc('resultados');
   setTimeout(initSupabase, 300);
 });
-updateCultivoButtons('jal');
+selNegocio('cam_jal');
 updateStepNumbers();
 // set today as default date and auto-select ciclo
 (function(){
