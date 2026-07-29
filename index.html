@@ -734,9 +734,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </button>
     </div>
 
-    <!-- Tipo de gasto (solo camote) -->
+    <!-- Actividad (solo camote) -->
     <div class="slide-section" id="tipo-sec">
-      <div class="step-label" id="step-tipo-lbl">3. Tipo de gasto</div>
+      <div class="step-label" id="step-tipo-lbl">3. Actividad</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <button class="tipo-btn general" id="tb-general" onclick="selTipo('general')">
           <div style="font-size:20px;margin-bottom:4px">🌿</div>
@@ -963,7 +963,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="section-hd" style="margin-top:14px">Por ubicacion y cultivo</div>
       <div class="report-block" id="rb-loc"><div style="font-size:13px;color:var(--text3);text-align:center;padding:8px 0">Sin datos aun</div></div>
 
-      <div class="section-hd" style="margin-top:14px">Por tipo de gasto (camote)</div>
+      <div class="section-hd" style="margin-top:14px">Por actividad (camote)</div>
       <div class="report-block" id="rb-tipo"><div style="font-size:13px;color:var(--text3);text-align:center;padding:8px 0">Sin datos aun</div></div>
 
       <div class="section-hd" style="margin-top:14px">Por categoria</div>
@@ -1873,11 +1873,27 @@ async function cargarDesdeSB(){
 
   if(gData && gData.length){
     gastos = gData.map(function(g){
-      return {id:g.id, fechaVal:g.fecha_val, fecha:g.fecha_lbl, semLbl:gastoSemLbl(g.fecha_val)||g.fecha_lbl,
-        loc:g.loc, cultivo:g.cultivo, cat:g.cat, desc:g.descripcion,
+      // Lectura tolerante: usa el esquema nuevo (negocio/actividad/fecha/categoria) y,
+      // si aún no migras, cae al viejo (loc/cultivo/fecha_val/cat/tipo_camote).
+      var negKey = g.negocio ? (NEG_FROM_LABEL[g.negocio] || negKeyFromGasto({loc:g.loc, cultivo:g.cultivo}))
+                             : negKeyFromGasto({loc:g.loc, cultivo:g.cultivo});
+      var lc = NEG_LOCCULT[negKey] || {loc:'jal', cultivo:'camote'};
+      var fechaV = g.fecha || g.fecha_val || '';
+      var catV = g.categoria || g.cat || '';
+      var actRaw = (g.actividad!=null && g.actividad!=='') ? g.actividad : g.tipo_camote;
+      var tipoCam = null;
+      if(lc.cultivo==='camote'){
+        var a = String(actRaw||'').toLowerCase();
+        tipoCam = a.indexOf('cosecha')>=0 ? 'cosecha'
+                : a.indexOf('general')>=0 ? 'general'
+                : ((catV && ['Arado','Cosecha','Desvarada','Flete Cosecha','Plantacion','Plantación'].indexOf(catV)>=0) ? 'cosecha' : 'general');
+      }
+      var fechaLbl = fechaV ? new Date(fechaV+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : (g.fecha_lbl||'');
+      return {id:g.id, fechaVal:fechaV, fecha:fechaLbl, semLbl:gastoSemLbl(fechaV)||g.semana||fechaLbl,
+        loc:lc.loc, cultivo:lc.cultivo, cat:catV, desc:g.descripcion,
         monto:parseFloat(g.monto||0), ciclo:g.ciclo,
         sectores:g.sector ? String(g.sector).split(',').filter(Boolean) : [],
-        tipoCamote: g.tipo_camote || (g.cultivo==='camote' ? ((g.cat && ['Arado','Cosecha','Desvarada','Flete Cosecha','Plantacion','Plantación'].indexOf(g.cat)>=0) ? 'cosecha' : 'general') : null),
+        tipoCamote: tipoCam,
         banco:g.banco, proveedor:g.proveedor||'', factura:g.factura||'', autoGen:g.auto_gen};
     });
     localStorage.setItem('cc_gastos3', JSON.stringify(gastos));
@@ -1967,13 +1983,20 @@ async function cargarDesdeSB(){
 
 async function sbSaveGasto(g){
   if(!sbOnline||!sb) return;
+  var negKey = negKeyFromGasto(g);
+  var esCamote = (g.cultivo==='camote');
   await sb.from('gastos').upsert({
-    id:g.id, fecha_val:g.fechaVal||'', fecha_lbl:g.fecha||'',
-    loc:g.loc||'', cultivo:g.cultivo||'', cat:g.cat||'',
-    descripcion:g.desc||'', monto:g.monto||0, ciclo:g.ciclo||'',
+    id:g.id,
+    negocio: NEG_LABEL[negKey] || 'Camote Jalisco',
+    actividad: esCamote ? (g.tipoCamote==='cosecha' ? 'Cosecha' : 'General') : null,
     sector:(g.sectores&&g.sectores.length)?g.sectores.join(','):'',
-    banco:g.banco||'', proveedor:g.proveedor||'', auto_gen:g.autoGen||false,
-    tipo_camote:g.tipoCamote||'', factura:g.factura||''
+    fecha:g.fechaVal||'',
+    semana: gastoSemLbl(g.fechaVal||'') || '',
+    categoria:g.cat||'',
+    monto:g.monto||0, ciclo:g.ciclo||'',
+    descripcion:g.desc||'',
+    proveedor:g.proveedor||'', banco:g.banco||'', factura:g.factura||'',
+    auto_gen:g.autoGen||false
   });
 }
 
@@ -2456,7 +2479,7 @@ function updateStepNumbers(){
   var esCamote = cultivo==='camote';
   var step=1;
   document.getElementById('step-loc-lbl').textContent=step+'. Negocio'; step++;
-  if(esCamote){ document.getElementById('step-tipo-lbl').textContent=step+'. Tipo de gasto'; step++; }
+  if(esCamote){ document.getElementById('step-tipo-lbl').textContent=step+'. Actividad'; step++; }
   if(esCamote && tipoCamote==='cosecha'){ document.getElementById('step-sector-lbl').innerHTML=step+'. Sector <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3)">(opcional)</span>'; step++; }
   document.getElementById('step-detalle-lbl').textContent=step+'. Detalle';
 }
@@ -2518,6 +2541,21 @@ function negColorCls(g){
   if(g.cultivo==='fram') return 'fram';
   return g.loc;
 }
+
+// Mapas para Supabase (esquema nuevo por Negocio):
+//  - NEG_LABEL: clave interna -> etiqueta legible que se guarda en la columna "negocio"
+//  - NEG_FROM_LABEL: etiqueta guardada -> clave interna (al leer)
+//  - NEG_LOCCULT: clave interna -> loc/cultivo que usa el resto de la app internamente
+var NEG_LABEL = {cam_jal:'Camote Jalisco', cam_nay:'Camote Nayarit', fram:'Frambuesa', ofic:'Oficina', com:'Comercializadora', maiz:'Maíz'};
+var NEG_FROM_LABEL = {}; Object.keys(NEG_LABEL).forEach(function(k){ NEG_FROM_LABEL[NEG_LABEL[k]] = k; });
+var NEG_LOCCULT = {
+  cam_jal:{loc:'jal',  cultivo:'camote'},
+  cam_nay:{loc:'nay',  cultivo:'camote'},
+  fram:   {loc:'jal',  cultivo:'fram'},
+  ofic:   {loc:'ofic', cultivo:null},
+  com:    {loc:'com',  cultivo:null},
+  maiz:   {loc:'maiz', cultivo:null}
+};
 
 var negocioSel='cam_jal';
 function selNegocio(k){
@@ -2890,7 +2928,7 @@ function verDet(g){
 
   document.getElementById('mo-body').innerHTML=
     '<div class="modal-row"><span class="modal-key">Negocio</span><span class="modal-val">'+negocioVal+'</span></div>'+
-    '<div class="modal-row"><span class="modal-key">Tipo de Gasto</span><span class="modal-val">'+tipoVal+'</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Actividad</span><span class="modal-val">'+tipoVal+'</span></div>'+
     '<div class="modal-row"><span class="modal-key">Sector</span><span class="modal-val">'+sectorVal+'</span></div>'+
     '<div class="modal-row"><span class="modal-key">Fecha</span><span class="modal-val">'+fechaVal+'</span></div>'+
     '<div class="modal-row"><span class="modal-key">Semana</span><span class="modal-val">'+semanaVal+'</span></div>'+
