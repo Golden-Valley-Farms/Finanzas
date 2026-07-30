@@ -437,6 +437,25 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   #sc-resultados .rfr-topbar,
   #sc-resultados .fintab-wrap{max-width:1400px;margin-left:auto;margin-right:auto}
 
+  /* Deudas: mismo breakout de ancho que Finanzas (sc-resultados) */
+  #sc-deudas{
+    width:100vw;
+    position:relative;
+    left:50%;
+    margin-left:-50vw;
+    padding:16px 24px 0;
+    box-sizing:border-box;
+  }
+  #sc-deudas > .rfr-topbar,
+  #sc-deudas > #deuda-kpi-row,
+  #sc-deudas > #deuda-add-row{max-width:1400px;margin-left:auto;margin-right:auto}
+  #sc-deudas #deuda-list{
+    max-width:1400px;margin:0 auto;
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px;
+  }
+  #sc-deudas #deuda-list .deuda-card{margin-bottom:0}
+  #sc-deudas #deuda-list .empty{grid-column:1/-1}
+
   #rep-fin-sec{
     width:100vw;
     position:relative;
@@ -1810,7 +1829,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <button class="ven-tab active" id="deuda-tab-cobrar" onclick="setDeudaTab('cobrar')" style="flex:1">Por cobrar</button>
       <button class="ven-tab" id="deuda-tab-pagar" onclick="setDeudaTab('pagar')" style="flex:1">Por pagar</button>
     </div>
-    <div style="display:flex;gap:10px;margin-bottom:12px">
+    <div id="deuda-kpi-row" style="display:flex;gap:10px;margin-bottom:12px">
       <div class="kpi-card" style="flex:1">
         <div class="kpi-accent" style="background:var(--green)"></div>
         <div class="kpi-lbl" id="deuda-total-lbl">Total por cobrar</div>
@@ -1822,7 +1841,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="kpi-val" id="deuda-count-val" style="color:var(--jal)">0</div>
       </div>
     </div>
-    <div style="text-align:right;margin-bottom:10px">
+    <div id="deuda-add-row" style="text-align:right;margin-bottom:10px">
       <button onclick="abrirAgregarDeuda()" style="padding:8px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">+ Agregar cuenta</button>
     </div>
     <div id="deuda-list"></div>
@@ -1915,6 +1934,8 @@ async function cargarDesdeSB(){
   var cpData = await fetchAllRows('contrapartes', 'created_at', false);
   var rC = await sb.from('clientes').select('nombre').order('nombre');
   var rP = await sb.from('proveedores').select('nombre').order('nombre');
+  var rPC = await sb.from('proveedores_comer').select('nombre').order('nombre');
+  var rCC = await sb.from('clientes_comer').select('nombre').order('nombre');
   var rB = await sb.from('bancos').select('nombre').order('nombre');
   var rT = await sb.from('trabajadores').select('nombre').order('nombre');
   var rCat = await sb.from('categorias').select('lista,nombre').order('nombre');
@@ -2020,6 +2041,8 @@ async function cargarDesdeSB(){
   if(typeof renderDeudas==='function' && document.getElementById('sc-deudas') && document.getElementById('sc-deudas').classList.contains('active')) renderDeudas();
   if(rC.data) clientes = rC.data.map(function(c){return c.nombre;});
   if(rP.data) proveedores = rP.data.map(function(p){return p.nombre;});
+  if(rPC && rPC.data){ proveedoresComer = rPC.data.map(function(p){return p.nombre;}); saveProveedoresComer(); }
+  if(rCC && rCC.data){ clientesComer = rCC.data.map(function(c){return c.nombre;}); saveClientesComer(); }
   if(rB.data) bancos = rB.data.map(function(b){return b.nombre;});
   if(rT.data && rT.data.length){ trabajadores = rT.data.map(function(t){return t.nombre;}); saveTrabajadores(); }
 
@@ -2108,6 +2131,24 @@ async function sbSaveProveedor(nombre){
 async function sbDeleteProveedor(nombre){
   if(!sbOnline||!sb) return;
   await sb.from('proveedores').delete().eq('nombre', nombre);
+}
+
+// Comercializadora: listas propias e independientes
+async function sbSaveProveedorComer(nombre){
+  if(!sbOnline||!sb) return;
+  await sb.from('proveedores_comer').upsert({nombre:nombre},{onConflict:'nombre'});
+}
+async function sbDeleteProveedorComer(nombre){
+  if(!sbOnline||!sb) return;
+  await sb.from('proveedores_comer').delete().eq('nombre', nombre);
+}
+async function sbSaveClienteComer(nombre){
+  if(!sbOnline||!sb) return;
+  await sb.from('clientes_comer').upsert({nombre:nombre},{onConflict:'nombre'});
+}
+async function sbDeleteClienteComer(nombre){
+  if(!sbOnline||!sb) return;
+  await sb.from('clientes_comer').delete().eq('nombre', nombre);
 }
 
 async function sbSaveBanco(nombre){
@@ -7738,6 +7779,24 @@ function agregarProveedorSiNuevo(nombre){
   if(proveedores.indexOf(nom)<0){proveedores.push(nom);proveedores.sort(function(a,b){return a.localeCompare(b,'es');});saveProveedores();sbSaveProveedor(nom);}
 }
 
+// ---- PROVEEDORES / CLIENTES DE COMERCIALIZADORA (listas propias, independientes de Gastos y de Envíos) ----
+var proveedoresComer = [];
+try{var svpc=localStorage.getItem('cc_proveedores_comer');if(svpc)proveedoresComer=JSON.parse(svpc);}catch(e){}
+function saveProveedoresComer(){try{localStorage.setItem('cc_proveedores_comer',JSON.stringify(proveedoresComer));}catch(e){}}
+function agregarProveedorComerSiNuevo(nombre){
+  if(!nombre) return;
+  var nom=nombre.trim(); if(!nom) return;
+  if(proveedoresComer.indexOf(nom)<0){proveedoresComer.push(nom);proveedoresComer.sort(function(a,b){return a.localeCompare(b,'es');});saveProveedoresComer();sbSaveProveedorComer(nom);}
+}
+var clientesComer = [];
+try{var svcc=localStorage.getItem('cc_clientes_comer');if(svcc)clientesComer=JSON.parse(svcc);}catch(e){}
+function saveClientesComer(){try{localStorage.setItem('cc_clientes_comer',JSON.stringify(clientesComer));}catch(e){}}
+function agregarClienteComerSiNuevo(nombre){
+  if(!nombre) return;
+  var nom=nombre.trim(); if(!nom) return;
+  if(clientesComer.indexOf(nom)<0){clientesComer.push(nom);clientesComer.sort(function(a,b){return a.localeCompare(b,'es');});saveClientesComer();sbSaveClienteComer(nom);}
+}
+
 // ---- CLIENTE/PROVEEDOR DROPDOWN (selección forzada con buscador, Finanzas-Registrar) ----
 function fprovValidar(v){
   v=String(v||'').trim();
@@ -8239,7 +8298,7 @@ function recalcComer(){
 function renderProveedorDropdown(){
   var dd=document.getElementById('proveedor-dropdown'); if(!dd) return;
   var q=(document.getElementById('cf-proveedor').value||'').toLowerCase();
-  var filtered=proveedores.filter(function(p){return p.toLowerCase().indexOf(q)>=0;});
+  var filtered=proveedoresComer.filter(function(p){return p.toLowerCase().indexOf(q)>=0;});
   dd.innerHTML='';
   filtered.forEach(function(p){
     var row=document.createElement('div');
@@ -8252,7 +8311,7 @@ function renderProveedorDropdown(){
     btn.textContent='×'; btn.title='Eliminar';
     btn.style.cssText='background:none;border:none;color:var(--text3);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0';
     btn.onmousedown=function(e){e.preventDefault();e.stopPropagation();
-      proveedores=proveedores.filter(function(x){return x!==p;});saveProveedores();sbDeleteProveedor(p);
+      proveedoresComer=proveedoresComer.filter(function(x){return x!==p;});saveProveedoresComer();sbDeleteProveedorComer(p);
       renderProveedorDropdown();
       if(document.getElementById('cf-proveedor').value===p) document.getElementById('cf-proveedor').value='';
       showToast('Proveedor eliminado');};
@@ -8284,7 +8343,7 @@ function confirmarNuevoCfProveedor(){
   var inp = document.getElementById('nuevo-cfproveedor-nombre-input');
   var nom = inp.value.trim();
   if(!nom){ showToast('Escribe un nombre'); return; }
-  agregarProveedorSiNuevo(nom);
+  agregarProveedorComerSiNuevo(nom);
   closeModal();
   document.getElementById('cf-proveedor').value = nom;
   showToast('Proveedor agregado');
@@ -8294,9 +8353,8 @@ function confirmarNuevoCfProveedor(){
 function renderComerClienteDropdown(){
   var dd=document.getElementById('comer-cliente-dropdown'); if(!dd) return;
   var q=(document.getElementById('cf-cliente').value||'').toLowerCase();
-  var filtered=clientes.filter(function(c){return c.toLowerCase().indexOf(q)>=0;});
+  var filtered=clientesComer.filter(function(c){return c.toLowerCase().indexOf(q)>=0;});
   dd.innerHTML='';
-  if(!filtered.length){dd.style.display='none';return;}
   filtered.forEach(function(c){
     var row=document.createElement('div');
     row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px';
@@ -8304,13 +8362,46 @@ function renderComerClienteDropdown(){
     row.onmouseleave=function(){this.style.background='';};
     var name=document.createElement('span'); name.textContent=c; name.style.flex='1';
     name.onmousedown=function(e){e.preventDefault();document.getElementById('cf-cliente').value=c;hideComerClienteDropdown();};
-    row.appendChild(name); dd.appendChild(row);
+    var btn=document.createElement('button');
+    btn.textContent='×'; btn.title='Eliminar';
+    btn.style.cssText='background:none;border:none;color:var(--text3);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0';
+    btn.onmousedown=function(e){e.preventDefault();e.stopPropagation();
+      clientesComer=clientesComer.filter(function(x){return x!==c;});saveClientesComer();sbDeleteClienteComer(c);
+      renderComerClienteDropdown();
+      if(document.getElementById('cf-cliente').value===c) document.getElementById('cf-cliente').value='';
+      showToast('Cliente eliminado');};
+    row.appendChild(name); row.appendChild(btn); dd.appendChild(row);
   });
+  var addRow=document.createElement('div');
+  addRow.style.cssText='padding:10px 12px;cursor:pointer;font-size:13px;color:var(--green);font-weight:600';
+  addRow.textContent='+ Agregar nuevo...';
+  addRow.onmouseenter=function(){this.style.background='var(--green-bg)';};
+  addRow.onmouseleave=function(){this.style.background='';};
+  addRow.onmousedown=function(e){e.preventDefault();var txt=(document.getElementById('cf-cliente')||{}).value||'';hideComerClienteDropdown();abrirModalNuevoComerCliente(txt.trim());};
+  dd.appendChild(addRow);
   dd.style.display='block';
 }
 function showComerClienteDropdown(){renderComerClienteDropdown();}
 function hideComerClienteDropdown(){var dd=document.getElementById('comer-cliente-dropdown');if(dd)dd.style.display='none';}
 function onComerClienteInput(){renderComerClienteDropdown();var dd=document.getElementById('comer-cliente-dropdown');if(dd&&dd.children.length)dd.style.display='block';}
+function abrirModalNuevoComerCliente(prefill){
+  document.getElementById('mo-title').innerHTML = '👤 Nuevo cliente';
+  document.getElementById('mo-body').innerHTML =
+    '<div class="field" style="margin-bottom:14px"><label>Nombre del cliente</label>'+
+    '<input type="text" id="nuevo-comercliente-nombre-input" placeholder="Nombre" style="width:100%" onkeydown="if(event.key===\'Enter\'){event.preventDefault();confirmarNuevoComerCliente();}"></div>'+
+    '<button class="btn-main" onclick="confirmarNuevoComerCliente()">Agregar cliente</button>';
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(function(){ var inp=document.getElementById('nuevo-comercliente-nombre-input'); if(inp){ if(prefill) inp.value=prefill; inp.focus(); } }, 100);
+}
+function confirmarNuevoComerCliente(){
+  var inp = document.getElementById('nuevo-comercliente-nombre-input');
+  var nom = inp.value.trim();
+  if(!nom){ showToast('Escribe un nombre'); return; }
+  agregarClienteComerSiNuevo(nom);
+  closeModal();
+  document.getElementById('cf-cliente').value = nom;
+  showToast('Cliente agregado');
+}
 
 // ---- GUARDAR OPERACION COMER ----
 function guardarOperacionComer(){
@@ -8362,8 +8453,8 @@ function guardarOperacionComer(){
     sbSaveGasto(gastoFlete);
   }
   save();
-  agregarProveedorSiNuevo(proveedor);
-  if(typeof agregarClienteSiNuevo==='function') agregarClienteSiNuevo(cliente);
+  agregarProveedorComerSiNuevo(proveedor);
+  if(typeof agregarClienteComerSiNuevo==='function') agregarClienteComerSiNuevo(cliente);
   showToast('Operación guardada: '+fmt(totalVenta));
   venTab('lista');
 }
