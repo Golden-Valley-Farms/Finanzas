@@ -448,7 +448,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   }
   #sc-deudas > .rfr-topbar,
   #sc-deudas > #deuda-kpi-row,
-  #sc-deudas > #deuda-add-row{max-width:1400px;margin-left:auto;margin-right:auto}
+  #sc-deudas > #deuda-registrar-sec{max-width:1400px;margin-left:auto;margin-right:auto}
+  #sc-deudas > #deuda-registrar-sec{max-width:520px}
   #sc-deudas #deuda-list{
     max-width:1400px;margin:0 auto;
     display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px;
@@ -1828,6 +1829,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div class="rfr-topbar" style="display:flex;gap:4px;margin-bottom:12px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
       <button class="ven-tab active" id="deuda-tab-cobrar" onclick="setDeudaTab('cobrar')" style="flex:1">Por cobrar</button>
       <button class="ven-tab" id="deuda-tab-pagar" onclick="setDeudaTab('pagar')" style="flex:1">Por pagar</button>
+      <button class="ven-tab" id="deuda-tab-registrar" onclick="setDeudaTab('registrar')" style="flex:1">Registrar</button>
     </div>
     <div id="deuda-kpi-row" style="display:flex;gap:10px;margin-bottom:12px">
       <div class="kpi-card" style="flex:1">
@@ -1841,10 +1843,25 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="kpi-val" id="deuda-count-val" style="color:var(--jal)">0</div>
       </div>
     </div>
-    <div id="deuda-add-row" style="text-align:right;margin-bottom:10px">
-      <button onclick="abrirAgregarDeuda()" style="padding:8px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">+ Agregar cuenta</button>
-    </div>
     <div id="deuda-list"></div>
+    <div id="deuda-registrar-sec" style="display:none;max-width:520px;margin:0 auto">
+      <div class="field" style="margin-bottom:12px"><label>Fecha</label>
+        <input type="date" id="dr-fecha" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none"></div>
+      <div class="field" style="margin-bottom:12px"><label>Tipo de deuda</label>
+        <select id="dr-tipo" onchange="onDrTipoChange()" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none">
+          <option value="cobrar">Deuda por cobrar (nos deben)</option>
+          <option value="pagar">Deuda por pagar (debemos)</option>
+        </select></div>
+      <div class="field" style="margin-bottom:12px"><label id="dr-contraparte-lbl">Deudor</label>
+        <input type="text" id="dr-contraparte" placeholder="Nombre" autocomplete="off" style="width:100%"></div>
+      <div class="field" style="margin-bottom:12px"><label>Monto</label>
+        <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="dr-monto" placeholder="0.00" min="0" step="0.01"></div></div>
+      <div class="field" style="margin-bottom:12px"><label>Concepto</label>
+        <input type="text" id="dr-concepto" placeholder="Ej: Préstamo, anticipo..." style="width:100%"></div>
+      <div class="field" style="margin-bottom:16px"><label>Factura <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(opcional)</span></label>
+        <input type="text" id="dr-factura" placeholder="Folio de factura" style="width:100%"></div>
+      <button class="btn-main" onclick="registrarDeudaManualForm()">Registrar deuda</button>
+    </div>
   </div>
 
 <div class="bottom-nav">
@@ -2023,7 +2040,7 @@ async function cargarDesdeSB(){
     deudas = dData.map(function(d){
       return {id:d.id, tipo:d.tipo, contraparte:d.contraparte, fecha:d.fecha||'', ciclo:d.ciclo||'',
         origen:d.origen||'manual', folioExterno:d.folio_externo||'', refId:d.ref_id, refKind:d.ref_kind||'',
-        items:d.items||[], monto:parseFloat(d.monto||0), desc:d.descripcion||''};
+        items:d.items||[], monto:parseFloat(d.monto||0), desc:d.descripcion||'', factura:d.factura||''};
     });
     saveDeudas();
   }
@@ -7257,7 +7274,7 @@ async function sbSaveDeuda(d){
   await sb.from('deudas').upsert({
     id:d.id, tipo:d.tipo, contraparte:d.contraparte, fecha:d.fecha||'', ciclo:d.ciclo||'',
     origen:d.origen||'manual', folio_externo:d.folioExterno||'', ref_id:d.refId||null,
-    ref_kind:d.refKind||'', items:d.items||[], monto:d.monto||0, descripcion:d.desc||''
+    ref_kind:d.refKind||'', items:d.items||[], monto:d.monto||0, descripcion:d.desc||'', factura:d.factura||''
   });
 }
 async function sbDeleteDeuda(id){ if(!sbOnline||!sb) return; await sb.from('deudas').delete().eq('id', id); }
@@ -7382,12 +7399,12 @@ function registrarPagoDeuda(tipo, contraparte, monto, fecha, desc){
 }
 function borrarPagoDeuda(id){ pagosDeuda=pagosDeuda.filter(function(p){return p.id!==id;}); savePagosDeuda(); sbDeletePagoDeuda(id); }
 
-function agregarDeudaManual(tipo, contraparte, monto, fecha, concepto){
+function agregarDeudaManual(tipo, contraparte, monto, fecha, concepto, factura){
   monto=parseFloat(monto)||0;
   if(!contraparte){ showToast('Ingresa la contraparte'); return null; }
   if(monto<=0){ showToast('Ingresa un monto válido'); return null; }
   var d={id:Date.now(), tipo:tipo, contraparte:contraparte, fecha:fecha||new Date().toISOString().substring(0,10), ciclo:'',
-    origen:'manual', folioExterno:'', refId:null, refKind:'manual', items:[{concepto:concepto||'Deuda', monto:monto}], monto:monto, desc:concepto||''};
+    origen:'manual', folioExterno:'', refId:null, refKind:'manual', items:[{concepto:concepto||'Deuda', monto:monto}], monto:monto, desc:concepto||'', factura:factura||''};
   deudas.push(d); saveDeudas(); sbSaveDeuda(d); registrarContraparte(contraparte, tipo);
   return d;
 }
@@ -7395,9 +7412,65 @@ function borrarDeudaManual(id){ deudas=deudas.filter(function(x){return x.id!==i
 
 function fmtFechaCorta(f){ if(!f) return '—'; try{return new Date(f+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return f;} }
 
-function setDeudaTab(t){ deudaTabSel=t; renderDeudas(); }
+// Contador de plazo (30 días) para deudas automáticas de camote. Verde si aún hay días, rojo si llegó a 0 o menos.
+function diasDeudaBadge(fechaISO){
+  if(!fechaISO) return '';
+  var venc; try{ venc=new Date(fechaISO+'T12:00:00'); }catch(e){ return ''; }
+  venc.setDate(venc.getDate()+30);
+  var hoy=new Date(); hoy.setHours(12,0,0,0);
+  var dias=Math.round((venc-hoy)/86400000);
+  var verde=dias>0;
+  var col=verde?'var(--green)':'#D64545';
+  var bg=verde?'var(--green-bg)':'rgba(214,69,69,.14)';
+  return '<span title="Plazo de pago: 30 días" style="font-size:11px;font-weight:700;font-family:var(--mono);padding:3px 9px;border-radius:20px;white-space:nowrap;background:'+bg+';color:'+col+'">'+dias+' d</span>';
+}
+
+function setDeudaTab(t){
+  deudaTabSel=t;
+  var tc=document.getElementById('deuda-tab-cobrar'), tp=document.getElementById('deuda-tab-pagar'), tr=document.getElementById('deuda-tab-registrar');
+  if(tc) tc.classList.toggle('active', t==='cobrar');
+  if(tp) tp.classList.toggle('active', t==='pagar');
+  if(tr) tr.classList.toggle('active', t==='registrar');
+  var esReg=(t==='registrar');
+  var kpi=document.getElementById('deuda-kpi-row'), lst=document.getElementById('deuda-list'), reg=document.getElementById('deuda-registrar-sec');
+  if(kpi) kpi.style.display=esReg?'none':'flex';
+  if(lst) lst.style.display=esReg?'none':'';
+  if(reg) reg.style.display=esReg?'block':'none';
+  if(esReg) initDeudaRegistrarForm(); else renderDeudas();
+}
+function onDrTipoChange(){
+  var tipo=(document.getElementById('dr-tipo')||{}).value||'cobrar';
+  var lbl=document.getElementById('dr-contraparte-lbl');
+  var inp=document.getElementById('dr-contraparte');
+  var esCobrar=(tipo==='cobrar');
+  if(lbl) lbl.textContent=esCobrar?'Deudor':'Acreedor';
+  if(inp) inp.placeholder=esCobrar?'¿Quién nos debe?':'¿A quién le debemos?';
+}
+function initDeudaRegistrarForm(){
+  var f=document.getElementById('dr-fecha');
+  if(f && !f.value) f.value=new Date().toISOString().substring(0,10);
+  onDrTipoChange();
+}
+function registrarDeudaManualForm(){
+  var tipo=(document.getElementById('dr-tipo')||{}).value||'cobrar';
+  var contraparte=(document.getElementById('dr-contraparte').value||'').trim();
+  var monto=document.getElementById('dr-monto').value;
+  var fecha=document.getElementById('dr-fecha').value;
+  var concepto=(document.getElementById('dr-concepto').value||'').trim();
+  var factura=(document.getElementById('dr-factura').value||'').trim();
+  if(!fecha){ showToast('Selecciona una fecha'); return; }
+  var d=agregarDeudaManual(tipo, contraparte, monto, fecha, concepto, factura);
+  if(!d) return;
+  document.getElementById('dr-contraparte').value='';
+  document.getElementById('dr-monto').value='';
+  document.getElementById('dr-concepto').value='';
+  document.getElementById('dr-factura').value='';
+  showToast('Deuda registrada');
+  setDeudaTab(tipo);
+}
 function renderDeudas(){
   var tipo=deudaTabSel;
+  if(tipo!=='cobrar' && tipo!=='pagar') return;
   var tc=document.getElementById('deuda-tab-cobrar'), tp=document.getElementById('deuda-tab-pagar');
   if(tc) tc.classList.toggle('active', tipo==='cobrar');
   if(tp) tp.classList.toggle('active', tipo==='pagar');
@@ -7457,7 +7530,10 @@ function abrirDeudaContraparte(tipo, nombre){
     html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px">'+
       '<div style="min-width:0"><div style="font-size:13px;font-weight:600;font-family:var(--mono);color:var(--text)">'+(d.folioExterno||(d.origen==='manual'?'Manual':d.origen))+'</div>'+
       '<div style="font-size:11px;color:var(--text3)">'+fmtFechaCorta(d.fecha)+'</div></div>'+
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">'+
+      ((!s.liquidada && d.origen!=='manual') ? diasDeudaBadge(d.fecha) : '')+
       '<span class="deuda-estatus" style="background:'+(s.liquidada?'var(--green-bg)':'var(--fram-bg)')+';color:'+(s.liquidada?'var(--green)':'var(--fram)')+'">'+(s.liquidada?'Liquidado':'Pendiente')+'</span>'+
+      '</div>'+
       '</div>';
     html+='<div style="border-top:0.5px solid var(--border);padding:8px 12px">';
     (d.items||[]).forEach(function(it){
@@ -8251,9 +8327,9 @@ function renderComerPartidas(){
       '</div>'+
       '<div style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:6px">COMPRA</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">'+
-        '<div><label>Kg recibidos</label><input type="number" placeholder="0" min="0" value="'+(p.kgRecibidos||'')+'" oninput="comerPartidasTemp['+idx+'].kgRecibidos=parseFloat(this.value)||0;recalcComer()" onblur="renderComerPartidas()"></div>'+
-        '<div><label>% descuento</label><input type="number" placeholder="0" min="0" max="100" step="0.1" value="'+(p.descPct!==''?p.descPct:'')+'" oninput="comerPartidasTemp['+idx+'].descPct=this.value;recalcComer()" onblur="renderComerPartidas()"></div>'+
-        '<div><label>Kg a pagar</label><input type="number" id="ckp-'+idx+'" value="'+kgPagar.toFixed(2)+'" readonly style="background:var(--surface2);color:var(--text3)"></div>'+
+        '<div><label>Kg recibidos</label><input type="number" placeholder="0" min="0" value="'+(p.kgRecibidos||'')+'" oninput="comerPartidasTemp['+idx+'].kgRecibidos=parseFloat(this.value)||0;recalcComer()"></div>'+
+        '<div><label>% descuento</label><input type="number" placeholder="0" min="0" max="100" step="0.1" value="'+(p.descPct!==''?p.descPct:'')+'" oninput="comerPartidasTemp['+idx+'].descPct=this.value;recalcComer()"></div>'+
+        '<div><label>Kg a pagar</label><input type="number" id="ckp-'+idx+'" tabindex="-1" value="'+kgPagar.toFixed(2)+'" readonly style="background:var(--surface2);color:var(--text3)"></div>'+
       '</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'+
         '<div><label>Precio compra $/kg</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" placeholder="0" min="0" value="'+(p.precioCompra||'')+'" style="padding-left:24px" oninput="comerPartidasTemp['+idx+'].precioCompra=this.value;recalcComer()"></div></div>'+
