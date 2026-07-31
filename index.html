@@ -8416,13 +8416,17 @@ function editarOperacionComer(e){
   setV('cf-flete-venta', (e.flete!=null?e.flete:''));
   var cfC=document.getElementById('cf-ciclo'); if(cfC && e.ciclo) cfC.value=e.ciclo;
   comerPartidasTemp=(e.partidas||[]).map(function(p){
+    // Respaldo para registros viejos que perdieron los campos propios de comercializadora
+    // al haberse editado antes por el formulario normal: la venta sobrevive en pesoNeto/precio.
+    var kgR=(p.kgRecibidos!=null && p.kgRecibidos!=='') ? p.kgRecibidos : (p.pesoNeto!=null?p.pesoNeto:'');
+    var pV =(p.precioVenta!=null && p.precioVenta!=='') ? p.precioVenta : (p.precio!=null?p.precio:'');
     return {
       variedad:p.variedad,
-      kgRecibidos:(p.kgRecibidos!=null?p.kgRecibidos:''),
+      kgRecibidos:kgR,
       descPct:(p.descPct!=null?p.descPct:''),
       kgPagar:p.kgPagar||0,
       precioCompra:(p.precioCompra!=null?p.precioCompra:''),
-      precioVenta:(p.precioVenta!=null?p.precioVenta:'')
+      precioVenta:pV
     };
   });
   renderComerPartidas();
