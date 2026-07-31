@@ -1358,7 +1358,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           </div>
         </div>
       </div>
-      <button class="btn-main" style="margin-top:12px" onclick="guardarOperacionComer()">
+      <button id="cf-guardar" class="btn-main" style="margin-top:12px" onclick="guardarOperacionComer()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"></path></svg>
         Guardar operación
       </button>
@@ -6809,6 +6809,9 @@ var editandoEnvioId = null;
 var envioActual = null;
 
 function editarEnvio(e){
+  // Las operaciones de comercializadora se editan en su propio formulario,
+  // que conserva proveedor, precios de compra/venta, descuentos y fletes.
+  if(e && e.esComer===true){ editarOperacionComer(e); return; }
   closeModal();
   editandoEnvioId = e.id;
   // poblar encabezado
@@ -6850,6 +6853,11 @@ function venTab(t){
   // Si estaba editando un envío y cambia a otra pestaña (que no sea "nuevo"), cancelar la edición
   if(editandoEnvioId && t!=='nuevo'){
     cancelarEdicionEnvio();
+  }
+  // Si estaba editando una operación de comercializadora y sale de esa pestaña, cancelar.
+  if(editandoComerId && t!=='comer'){
+    editandoComerId=null;
+    resetComerFormLabels();
   }
   ['lista','nuevo','comer','alm'].forEach(function(tab){
     var btn=document.getElementById('vt-'+tab);
@@ -7261,6 +7269,19 @@ function verEnvio(e){
 }
 
 function delEnvio(id){
+  // Si es operación de comercializadora, limpia también los gastos auto-generados
+  // (Compra Mercancia / Flete compra) que creó al guardarse.
+  var envDel=envios.find(function(e){return e.id===id;});
+  if(envDel && envDel.esComer===true){
+    var num=envDel.num||'';
+    var descsCom=['Compra mercancia op. '+num, 'Flete compra op. '+num];
+    var quedanG=[];
+    gastos.forEach(function(g){
+      if(g.autoGen && g.loc==='com' && descsCom.indexOf(g.desc)>=0){ sbDeleteGasto(g.id); }
+      else quedanG.push(g);
+    });
+    gastos=quedanG; save();
+  }
   envios=envios.filter(function(e){return e.id!==id;});
   saveEnvios(); closeModal(); renderEnvios();
   sbDeleteEnvio(id);
@@ -7352,7 +7373,7 @@ function sincronizarDeudasEnvio(e){
         var m=r2((parseFloat(p.kgRecibidos)||parseFloat(p.pesoNeto)||0)*(parseFloat(p.precioVenta)||parseFloat(p.precio)||0));
         if(m>0) itC.push({concepto:'Venta '+(p.variedad||''), monto:m});
       });
-      var fv=parseFloat(e.flete)||0; if(fv>0) itC.push({concepto:'Fletes', monto:r2(fv)});
+      // Comercializadora: cuentas por cobrar = solo la venta del camote, SIN el flete de venta.
       var totC=itC.reduce(function(a,i){return a+i.monto;},0);
       if(totC>0) nuevas.push({id:e.id*10+2, tipo:'cobrar', contraparte:e.cliente, fecha:e.fecha, ciclo:e.ciclo||'',
         origen:'comercializadora', folioExterno:folioExt, refId:e.id, refKind:'com_cobrar', items:itC, monto:r2(totC), desc:''});
@@ -8332,9 +8353,20 @@ function fmt(n){return '$'+(parseFloat(n)||0).toLocaleString('es-MX',{minimumFra
 
 // ---- COMERCIALIZADORA JS ----
 var comerPartidasTemp=[];
+var editandoComerId=null;
 var saveEnviosComer = function(){try{localStorage.setItem('cc_envios',JSON.stringify(envios));}catch(e){}};
 
+// Restaura el botón/título del form de comercializadora a modo "nuevo"
+function resetComerFormLabels(){
+  var b=document.getElementById('cf-guardar');
+  if(b) b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"></path></svg> Guardar operación';
+  var lbl=document.querySelector('#comer-form-sec .step-label');
+  if(lbl) lbl.textContent='Encabezado';
+}
+
 function initComerForm(){
+  editandoComerId=null;
+  resetComerFormLabels();
   comerPartidasTemp=[];
   var hoyStr=new Date();
   var tz=hoyStr.getTimezoneOffset()*60000;
@@ -8360,6 +8392,44 @@ function initComerForm(){
   recalcComer();
   hideProveedorDropdown();
   hideComerClienteDropdown();
+}
+
+// Carga una operación de comercializadora existente en su propio formulario para editarla.
+// Se enruta aquí desde editarEnvio() cuando el envío es esComer, así se conservan
+// proveedor, precios de compra/venta, descuentos y fletes (que el form normal no maneja).
+function editarOperacionComer(e){
+  closeModal();
+  venTab('comer');              // muestra el form y corre initComerForm() (deja todo en "nuevo")
+  editandoComerId = e.id;
+  var setV=function(id,val){var el=document.getElementById(id); if(el) el.value=(val==null?'':val);};
+  setV('cf-num', e.num||'');
+  setV('cf-folio', e.folio||'');
+  var iso=e.fecha||'';
+  setV('cf-fecha-picker', iso);
+  if(iso){ var pp=iso.split('-'); setV('cf-fecha', pp[2]+'/'+pp[1]+'/'+pp[0]); }
+  else setV('cf-fecha', e.fechaLbl||'');
+  setV('cf-proveedor', e.proveedor||'');
+  setV('cf-cliente', e.cliente||'');
+  setV('cf-flete-compra', (e.fleteCompra!=null?e.fleteCompra:''));
+  setV('cf-flete-venta', (e.flete!=null?e.flete:''));
+  var cfC=document.getElementById('cf-ciclo'); if(cfC && e.ciclo) cfC.value=e.ciclo;
+  comerPartidasTemp=(e.partidas||[]).map(function(p){
+    return {
+      variedad:p.variedad,
+      kgRecibidos:(p.kgRecibidos!=null?p.kgRecibidos:''),
+      descPct:(p.descPct!=null?p.descPct:''),
+      kgPagar:p.kgPagar||0,
+      precioCompra:(p.precioCompra!=null?p.precioCompra:''),
+      precioVenta:(p.precioVenta!=null?p.precioVenta:'')
+    };
+  });
+  renderComerPartidas();
+  updateComerVarSelect();
+  recalcComer();
+  var b=document.getElementById('cf-guardar');
+  if(b) b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg> Guardar cambios';
+  var lbl=document.querySelector('#comer-form-sec .step-label');
+  if(lbl) lbl.textContent='Editando operación';
 }
 
 function recalcComerNum(){
@@ -8608,8 +8678,9 @@ function guardarOperacionComer(){
   });
   var totalVenta=comerPartidasTemp.reduce(function(a,p){return a+parseFloat(p.kgRecibidos||0)*parseFloat(p.precioVenta||0);},0)+fleteVenta;
   var cicloV=(document.getElementById('cf-ciclo')&&document.getElementById('cf-ciclo').value)||cicloFromFecha(fecha);
+  var esEdicion = (editandoComerId!=null);
   var envioObj={
-    id:Date.now(), num:num, folio:(document.getElementById('cf-folio').value||'').trim(), fecha:fecha, fechaLbl:fechaDisplay,
+    id: esEdicion?editandoComerId:Date.now(), num:num, folio:(document.getElementById('cf-folio').value||'').trim(), fecha:fecha, fechaLbl:fechaDisplay,
     loc:'com', ciclo:cicloV, cliente:cliente, proveedor:proveedor,
     flete:fleteVenta, fleteCompra:fleteCompra, esComer:true, total:totalVenta,
     partidas:comerPartidasTemp.map(function(p){
@@ -8619,7 +8690,21 @@ function guardarOperacionComer(){
         precioCompra:p.precioCompra,precioVenta:p.precioVenta,pesoNeto:p.kgRecibidos,precio:p.precioVenta,total:totalPartida,sector:''};
     })
   };
-  envios.unshift(envioObj);
+  if(esEdicion){
+    // Reemplazo en sitio; conserva la posición del registro en la lista.
+    var idxE=envios.findIndex(function(x){return x.id===editandoComerId;});
+    if(idxE>=0) envios[idxE]=envioObj; else envios.unshift(envioObj);
+    // Limpia los gastos auto-generados de esta operación para no duplicarlos al recrearlos.
+    var descsViejos=['Compra mercancia op. '+num, 'Flete compra op. '+num];
+    var quedanG=[];
+    gastos.forEach(function(g){
+      if(g.autoGen && g.loc==='com' && descsViejos.indexOf(g.desc)>=0){ sbDeleteGasto(g.id); }
+      else quedanG.push(g);
+    });
+    gastos=quedanG;
+  } else {
+    envios.unshift(envioObj);
+  }
   try{localStorage.setItem('cc_envios',JSON.stringify(envios));}catch(e){}
   sbSaveEnvio(envioObj);
   sincronizarDeudasEnvio(envioObj);
@@ -8639,7 +8724,8 @@ function guardarOperacionComer(){
   save();
   agregarProveedorComerSiNuevo(proveedor);
   if(typeof agregarClienteComerSiNuevo==='function') agregarClienteComerSiNuevo(cliente);
-  showToast('Operación guardada: '+fmt(totalVenta));
+  showToast(esEdicion?'Operación actualizada':('Operación guardada: '+fmt(totalVenta)));
+  editandoComerId=null;
   venTab('lista');
 }
 
