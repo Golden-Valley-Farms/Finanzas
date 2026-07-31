@@ -6811,7 +6811,9 @@ var envioActual = null;
 function editarEnvio(e){
   // Las operaciones de comercializadora se editan en su propio formulario,
   // que conserva proveedor, precios de compra/venta, descuentos y fletes.
-  if(e && e.esComer===true){ editarOperacionComer(e); return; }
+  // Se detectan por la bandera esComer o por loc==='com' (registros viejos o
+  // que perdieron la bandera al editarse antes por el formulario normal).
+  if(e && (e.esComer===true || e.loc==='com')){ editarOperacionComer(e); return; }
   closeModal();
   editandoEnvioId = e.id;
   // poblar encabezado
