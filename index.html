@@ -2813,6 +2813,7 @@ function registrar(){
     editandoGastoId=null;
     var btn=document.getElementById('btn-reg');
     btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"/></svg> Registrar gasto';
+    ocultarCancelarEdicion('btn-reg');
     save(); updateHeader(); sbSaveGasto(gastos[idx]);
     showToast('✅ Gasto actualizado');
     document.getElementById('f-monto').value='';
@@ -3120,6 +3121,38 @@ function delGastoModal(id){
   }
 }
 
+// ── Botón "Cancelar" para modos de edición ─────────────────────────────
+// Inserta un botón "Cancelar" junto al botón de guardar indicado (envuelve
+// ambos en una fila flex) y lo retira al terminar/cancelar la edición.
+function mostrarCancelarEdicion(saveBtnId, onCancel){
+  var b=document.getElementById(saveBtnId); if(!b) return;
+  if(document.getElementById(saveBtnId+'-editwrap')) return; // ya activo
+  var origMt=b.style.marginTop;
+  b.setAttribute('data-orig-mt', origMt);
+  var wrap=document.createElement('div');
+  wrap.id=saveBtnId+'-editwrap';
+  wrap.style.cssText='display:flex;gap:8px;align-items:stretch;margin-top:'+(origMt||'12px');
+  b.parentNode.insertBefore(wrap, b);
+  b.style.marginTop='0'; b.style.flex='1';
+  wrap.appendChild(b);
+  var c=document.createElement('button');
+  c.type='button'; c.className='btn-main'; c.textContent='Cancelar';
+  c.style.cssText='flex:1;margin-top:0;background:var(--surface2);color:var(--text2);border:1px solid var(--border)';
+  c.onclick=function(){ if(typeof onCancel==='function') onCancel(); };
+  wrap.appendChild(c);
+}
+function ocultarCancelarEdicion(saveBtnId){
+  var wrap=document.getElementById(saveBtnId+'-editwrap'); if(!wrap) return;
+  var b=document.getElementById(saveBtnId);
+  if(b){
+    b.style.flex='';
+    b.style.marginTop=b.getAttribute('data-orig-mt')||'';
+    b.removeAttribute('data-orig-mt');
+    wrap.parentNode.insertBefore(b, wrap);
+  }
+  wrap.remove();
+}
+
 function editarGasto(id){
   var g=gastos.find(function(x){return x.id==id;});
   if(!g) return;
@@ -3156,8 +3189,19 @@ function editarGasto(id){
   // Change button label
   var btn=document.getElementById('btn-reg');
   btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M5 12l5 5L19 7"/></svg> Guardar cambios';
+  mostrarCancelarEdicion('btn-reg', cancelarEdicionGasto);
   window.scrollTo(0,0);
   showToast('Editando gasto — haz tus cambios y guarda');
+}
+
+function cancelarEdicionGasto(){
+  editandoGastoId=null;
+  var btn=document.getElementById('btn-reg');
+  if(btn) btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"/></svg> Registrar gasto';
+  ['f-monto','f-desc','f-banco','f-proveedor','f-factura'].forEach(function(id){var el=document.getElementById(id); if(el) el.value='';});
+  sectoresSel=[];
+  ocultarCancelarEdicion('btn-reg');
+  goSc('his');
 }
 
 function closeModal(e){if(!e||e.target===document.getElementById('overlay'))document.getElementById('overlay').classList.remove('open');}
@@ -6849,6 +6893,7 @@ function editarEnvio(e){
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg> Guardar cambios';
   document.getElementById('ven-form-sec').querySelector('.step-label').textContent='Editando envio';
   venTab('nuevo');
+  mostrarCancelarEdicion('btn-ven-guardar', function(){ venTab('lista'); });
 }
 
 function venTab(t){
@@ -6886,6 +6931,7 @@ function venTab(t){
 // Cancela una edición de envío en curso y deja el formulario listo para un envío nuevo
 function cancelarEdicionEnvio(){
   editandoEnvioId = null;
+  ocultarCancelarEdicion('btn-ven-guardar');
   document.getElementById('btn-ven-guardar').innerHTML=
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"/></svg> Guardar envio';
   var lbl = document.getElementById('ven-form-sec').querySelector('.step-label');
@@ -7065,6 +7111,7 @@ function guardarEnvio(){
 
   // reset form
   editandoEnvioId = null;
+  ocultarCancelarEdicion('btn-ven-guardar');
   document.getElementById('vf-folio').value='';
   document.getElementById('vf-cliente').value='';
   document.getElementById('vf-flete').value='';
@@ -8360,6 +8407,7 @@ var saveEnviosComer = function(){try{localStorage.setItem('cc_envios',JSON.strin
 
 // Restaura el botón/título del form de comercializadora a modo "nuevo"
 function resetComerFormLabels(){
+  ocultarCancelarEdicion('cf-guardar');
   var b=document.getElementById('cf-guardar');
   if(b) b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"></path></svg> Guardar operación';
   var lbl=document.querySelector('#comer-form-sec .step-label');
@@ -8436,6 +8484,7 @@ function editarOperacionComer(e){
   if(b) b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg> Guardar cambios';
   var lbl=document.querySelector('#comer-form-sec .step-label');
   if(lbl) lbl.textContent='Editando operación';
+  mostrarCancelarEdicion('cf-guardar', function(){ venTab('lista'); });
 }
 
 function recalcComerNum(){
@@ -8732,6 +8781,7 @@ function guardarOperacionComer(){
   if(typeof agregarClienteComerSiNuevo==='function') agregarClienteComerSiNuevo(cliente);
   showToast(esEdicion?'Operación actualizada':('Operación guardada: '+fmt(totalVenta)));
   editandoComerId=null;
+  ocultarCancelarEdicion('cf-guardar');
   venTab('lista');
 }
 
@@ -8941,6 +8991,12 @@ function initFramFinForm(editF){
   document.getElementById('ff-desc-planta').value = editF ? (editF.descPlanta||'') : '';
   document.getElementById('ff-desc-inocuidad').value = editF ? (editF.descInocuidad||'') : '';
   document.getElementById('ff-desc-material').value = editF ? (editF.descMaterial||'') : '';
+  var ffBtn=document.getElementById('btn-framfin-guardar');
+  if(ffBtn) ffBtn.innerHTML = editF
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"/></svg> Guardar cambios'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"/></svg> Guardar registro';
+  if(editF) mostrarCancelarEdicion('btn-framfin-guardar', function(){ framFinEditId=null; ocultarCancelarEdicion('btn-framfin-guardar'); framTab('finhist'); });
+  else ocultarCancelarEdicion('btn-framfin-guardar');
   recalcFramFin();
 }
 
@@ -9026,6 +9082,9 @@ function guardarRegistroFinanzasFram(){
   sbSaveFramFinanza(reg);
   showToast('Registro de finanzas guardado');
   framFinEditId = null;
+  ocultarCancelarEdicion('btn-framfin-guardar');
+  var ffBtn2=document.getElementById('btn-framfin-guardar');
+  if(ffBtn2) ffBtn2.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"/></svg> Guardar registro';
   framTab('finhist');
 }
 
@@ -9445,6 +9504,8 @@ function initFramForm(editReg){
   document.getElementById('btn-fram-guardar').innerHTML = editReg
     ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"/></svg> Guardar cambios'
     : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"/></svg> Guardar registro';
+  if(editReg) mostrarCancelarEdicion('btn-fram-guardar', function(){ framEditId=null; ocultarCancelarEdicion('btn-fram-guardar'); framTab('hist'); });
+  else ocultarCancelarEdicion('btn-fram-guardar');
 }
 
 // ---- Trabajadores ----
@@ -9883,6 +9944,7 @@ function guardarRegistroFram(){
 
   var wasEdit = !!framEditId;
   framEditId = null;
+  ocultarCancelarEdicion('btn-fram-guardar');
 
   showToast(wasEdit ? '✅ Registro actualizado' : '✅ Registro guardado — '+totalCubetas+' cubetas');
   var btn = document.getElementById('btn-fram-guardar');
