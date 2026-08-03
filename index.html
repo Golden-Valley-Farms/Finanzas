@@ -1333,11 +1333,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="field-row">
           <div class="field">
             <label>Flete de compra ($)</label>
-            <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="cf-flete-compra" placeholder="0" min="0" style="padding-left:24px" oninput="recalcComer()"></div>
+            <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="cf-flete-compra" placeholder="0" min="0" step="0.01" style="padding-left:24px" oninput="recalcComer()"></div>
           </div>
           <div class="field">
             <label>Flete de venta ($)</label>
-            <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="cf-flete-venta" placeholder="0" min="0" style="padding-left:24px" oninput="recalcComer()"></div>
+            <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="cf-flete-venta" placeholder="0" min="0" step="0.01" style="padding-left:24px" oninput="recalcComer()"></div>
           </div>
         </div>
       </div>
@@ -6973,7 +6973,7 @@ function renderPartidas(){
       '</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">'+
         '<div><label>Toneladas</label><input type="number" id="ptn-'+idx+'" placeholder="0.000" min="0" step="0.001" value="'+p.toneladas+'" readonly style="background:var(--surface2);color:var(--text3)"></div>'+
-        '<div><label>Precio x kg</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" placeholder="0" min="0" value="'+p.precio+'" style="padding-left:24px" onchange="partidasTemp['+idx+'].precio=this.value;autoCalc('+idx+')"></div></div>'+
+        '<div><label>Precio x kg</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" placeholder="0" min="0" step="0.01" value="'+p.precio+'" style="padding-left:24px" onchange="partidasTemp['+idx+'].precio=this.value;autoCalc('+idx+')"></div></div>'+
         '<div><label>Total</label><div id="ptot-'+idx+'" style="padding:10px 12px;background:var(--green-bg);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--green);font-family:var(--mono)">'+calcTotal(p)+'</div></div>'+
       '</div>';
 
@@ -8565,12 +8565,12 @@ function renderComerPartidas(){
         '<div><label>Kg a pagar</label><input type="number" id="ckp-'+idx+'" tabindex="-1" value="'+kgPagar.toFixed(2)+'" readonly style="background:var(--surface2);color:var(--text3)"></div>'+
       '</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'+
-        '<div><label>Precio compra $/kg</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" placeholder="0" min="0" value="'+(p.precioCompra||'')+'" style="padding-left:24px" oninput="comerPartidasTemp['+idx+'].precioCompra=this.value;recalcComer()"></div></div>'+
+        '<div><label>Precio compra $/kg</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" placeholder="0" min="0" step="0.01" value="'+(p.precioCompra||'')+'" style="padding-left:24px" oninput="comerPartidasTemp['+idx+'].precioCompra=this.value;recalcComer()"></div></div>'+
         '<div><label>Subtotal compra</label><div id="csc-'+idx+'" style="padding:10px 12px;background:var(--fram-bg);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--fram);font-family:var(--mono)">'+fmt(costoVar)+'</div></div>'+
       '</div>'+
       '<div style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:6px">VENTA</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-        '<div><label>Precio venta $/kg</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" placeholder="0" min="0" value="'+(p.precioVenta||'')+'" style="padding-left:24px" oninput="comerPartidasTemp['+idx+'].precioVenta=this.value;recalcComer()"></div></div>'+
+        '<div><label>Precio venta $/kg</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" placeholder="0" min="0" step="0.01" value="'+(p.precioVenta||'')+'" style="padding-left:24px" oninput="comerPartidasTemp['+idx+'].precioVenta=this.value;recalcComer()"></div></div>'+
         '<div><label>Subtotal venta</label><div id="csv-'+idx+'" style="padding:10px 12px;background:var(--green-bg);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--green);font-family:var(--mono)">'+fmt(ingresoVar)+'</div></div>'+
       '</div>';
     cont.appendChild(d);
