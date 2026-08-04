@@ -1852,11 +1852,15 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <option value="cobrar">Por cobrar</option>
           <option value="pagar">Por pagar</option>
         </select></div>
-      <div class="field" style="margin-bottom:12px"><label id="dr-contraparte-lbl">Deudor</label>
-        <div style="position:relative">
-          <input type="text" id="dr-contraparte" placeholder="Nombre" autocomplete="off" style="width:100%" oninput="onDrContraparteInput()" onclick="showDrContraparteDropdown()" onblur="setTimeout(hideDrContraparteDropdown,150)">
-          <div id="dr-contraparte-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:200px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
-        </div></div>
+      <div style="display:flex;gap:10px;margin-bottom:12px">
+        <div class="field" style="flex:1;min-width:0;margin-bottom:0"><label id="dr-contraparte-lbl">Deudor</label>
+          <div style="position:relative">
+            <input type="text" id="dr-contraparte" placeholder="Nombre" autocomplete="off" style="width:100%" oninput="onDrContraparteInput()" onclick="showDrContraparteDropdown()" onblur="setTimeout(hideDrContraparteDropdown,150)">
+            <div id="dr-contraparte-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:200px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
+          </div></div>
+        <div class="field" style="flex:1;min-width:0;margin-bottom:0"><label>ID</label>
+          <input type="text" id="dr-id" placeholder="ID" autocomplete="off" style="width:100%" onchange="onDrIdChange()"></div>
+      </div>
       <div class="field" style="margin-bottom:12px"><label>Monto</label>
         <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="dr-monto" placeholder="0.00" min="0" step="0.01"></div></div>
       <div class="field" style="margin-bottom:12px"><label>Concepto</label>
@@ -7541,12 +7545,26 @@ function drRefreshContraparteLabel(){
 function onDrTipoChange(){
   drRefreshContraparteLabel();
   var inp=document.getElementById('dr-contraparte'); if(inp) inp.value='';
+  var idInp=document.getElementById('dr-id'); if(idInp) idInp.value='';
   hideDrContraparteDropdown();
+}
+// Muestra en la caja ID el ID guardado del cliente, o el mismo nombre si aún no tiene.
+function drSyncIdFromNombre(){
+  var nom=(document.getElementById('dr-contraparte')||{}).value||'';
+  var idInp=document.getElementById('dr-id'); if(!idInp) return;
+  idInp.value = nom.trim() ? getContraparteId(nom) : '';
+}
+// Al editar la caja ID, se guarda para ese cliente (persiste al volver a seleccionarlo).
+function onDrIdChange(){
+  var nom=((document.getElementById('dr-contraparte')||{}).value||'').trim();
+  if(!nom) return;
+  setContraparteId(nom, (document.getElementById('dr-id')||{}).value||'');
 }
 function initDeudaRegistrarForm(){
   var f=document.getElementById('dr-fecha');
   if(f && !f.value) f.value=new Date().toISOString().substring(0,10);
   drRefreshContraparteLabel();
+  drSyncIdFromNombre();
 }
 // Lista desplegable de contraparte (patrón del buscador de Cliente en Nuevo envío), según el tipo elegido
 function drContraparteLista(){ return (((document.getElementById('dr-tipo')||{}).value||'cobrar')==='cobrar') ? deudores : acreedores; }
@@ -7566,7 +7584,7 @@ function renderDrContraparteDropdown(){
     row.onmouseenter=function(){this.style.background='var(--green-bg)';};
     row.onmouseleave=function(){this.style.background='';};
     var name=document.createElement('span'); name.textContent=c; name.style.flex='1';
-    name.onmousedown=function(e){e.preventDefault();document.getElementById('dr-contraparte').value=c;hideDrContraparteDropdown();};
+    name.onmousedown=function(e){e.preventDefault();document.getElementById('dr-contraparte').value=c;drSyncIdFromNombre();hideDrContraparteDropdown();};
     var btn=document.createElement('button');
     btn.textContent='×'; btn.title='Eliminar';
     btn.style.cssText='background:none;border:none;color:var(--text3);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0';
@@ -7589,7 +7607,7 @@ function renderDrContraparteDropdown(){
 }
 function showDrContraparteDropdown(){renderDrContraparteDropdown();}
 function hideDrContraparteDropdown(){var dd=document.getElementById('dr-contraparte-dropdown');if(dd)dd.style.display='none';}
-function onDrContraparteInput(){renderDrContraparteDropdown();}
+function onDrContraparteInput(){renderDrContraparteDropdown();drSyncIdFromNombre();}
 function abrirModalNuevoDrContraparte(prefill){
   var esCobrar=(((document.getElementById('dr-tipo')||{}).value||'cobrar')==='cobrar');
   var etq=esCobrar?'deudor':'acreedor';
@@ -7608,6 +7626,7 @@ function confirmarNuevoDrContraparte(){
   drAgregarContraparteSiNuevo(nom);
   closeModal();
   document.getElementById('dr-contraparte').value=nom;
+  drSyncIdFromNombre();
   showToast('Agregado');
 }
 function registrarDeudaManualForm(){
@@ -7617,11 +7636,14 @@ function registrarDeudaManualForm(){
   var fecha=document.getElementById('dr-fecha').value;
   var concepto=(document.getElementById('dr-concepto').value||'').trim();
   var factura=(document.getElementById('dr-factura').value||'').trim();
+  var idAbrev=(document.getElementById('dr-id').value||'').trim();
   if(!fecha){ showToast('Selecciona una fecha'); return; }
   var d=agregarDeudaManual(tipo, contraparte, monto, fecha, concepto, factura);
   if(!d) return;
   drAgregarContraparteSiNuevo(contraparte);
+  setContraparteId(contraparte, idAbrev);
   document.getElementById('dr-contraparte').value='';
+  document.getElementById('dr-id').value='';
   document.getElementById('dr-monto').value='';
   document.getElementById('dr-concepto').value='';
   document.getElementById('dr-factura').value='';
@@ -8034,6 +8056,13 @@ function agregarClienteComerSiNuevo(nombre){
 }
 
 // ---- DEUDORES / ACREEDORES (listas propias para el registro manual de deudas) ----
+// ID abreviado por contraparte (mapa nombre -> ID). Se guarda localmente; si no hay ID,
+// el default es el mismo nombre. Editable en el registro de deudas y persiste por cliente.
+var contraparteIds = {};
+try{var svci=localStorage.getItem('cc_contraparte_ids');if(svci)contraparteIds=JSON.parse(svci)||{};}catch(e){}
+function saveContraparteIds(){try{localStorage.setItem('cc_contraparte_ids',JSON.stringify(contraparteIds));}catch(e){}}
+function getContraparteId(nombre){ nombre=(nombre||'').trim(); if(!nombre) return ''; return (contraparteIds[nombre]!=null && contraparteIds[nombre]!=='')?contraparteIds[nombre]:nombre; }
+function setContraparteId(nombre, id){ nombre=(nombre||'').trim(); if(!nombre) return; contraparteIds[nombre]=(id||'').trim(); saveContraparteIds(); }
 var deudores = [];
 try{var svde=localStorage.getItem('cc_deudores');if(svde)deudores=JSON.parse(svde);}catch(e){}
 function saveDeudores(){try{localStorage.setItem('cc_deudores',JSON.stringify(deudores));}catch(e){}}
@@ -8396,6 +8425,8 @@ function envioTotal(e){
 }
 
 function fmt(n){return '$'+(parseFloat(n)||0).toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:0});}
+// Igual que fmt pero forzando 2 decimales. Usado en Comercializadora (subtotales y totales).
+function fmt2(n){return '$'+(parseFloat(n)||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});}
 
 // ---- VENTAS TAB ----
 // venTab fusionada (no duplicar)
@@ -8566,12 +8597,12 @@ function renderComerPartidas(){
       '</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'+
         '<div><label>Precio compra $/kg</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" placeholder="0" min="0" step="0.01" value="'+(p.precioCompra||'')+'" style="padding-left:24px" oninput="comerPartidasTemp['+idx+'].precioCompra=this.value;recalcComer()"></div></div>'+
-        '<div><label>Subtotal compra</label><div id="csc-'+idx+'" style="padding:10px 12px;background:var(--fram-bg);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--fram);font-family:var(--mono)">'+fmt(costoVar)+'</div></div>'+
+        '<div><label>Subtotal compra</label><div id="csc-'+idx+'" style="padding:10px 12px;background:var(--fram-bg);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--fram);font-family:var(--mono)">'+fmt2(costoVar)+'</div></div>'+
       '</div>'+
       '<div style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:6px">VENTA</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
         '<div><label>Precio venta $/kg</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" placeholder="0" min="0" step="0.01" value="'+(p.precioVenta||'')+'" style="padding-left:24px" oninput="comerPartidasTemp['+idx+'].precioVenta=this.value;recalcComer()"></div></div>'+
-        '<div><label>Subtotal venta</label><div id="csv-'+idx+'" style="padding:10px 12px;background:var(--green-bg);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--green);font-family:var(--mono)">'+fmt(ingresoVar)+'</div></div>'+
+        '<div><label>Subtotal venta</label><div id="csv-'+idx+'" style="padding:10px 12px;background:var(--green-bg);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--green);font-family:var(--mono)">'+fmt2(ingresoVar)+'</div></div>'+
       '</div>';
     cont.appendChild(d);
   });
@@ -8588,17 +8619,17 @@ function recalcComer(){
     var elSC=document.getElementById('csc-'+comerPartidasTemp.indexOf(p));
     var elSV=document.getElementById('csv-'+comerPartidasTemp.indexOf(p));
     if(elKg) elKg.value=kgPagar.toFixed(2);
-    if(elSC) elSC.textContent=fmt(kgPagar*parseFloat(p.precioCompra||0));
-    if(elSV) elSV.textContent=fmt(parseFloat(p.kgRecibidos||0)*parseFloat(p.precioVenta||0));
+    if(elSC) elSC.textContent=fmt2(kgPagar*parseFloat(p.precioCompra||0));
+    if(elSV) elSV.textContent=fmt2(parseFloat(p.kgRecibidos||0)*parseFloat(p.precioVenta||0));
   });
   totalGasto+=parseFloat(document.getElementById('cf-flete-compra')?document.getElementById('cf-flete-compra').value||0:0);
   var totalIngreso=comerPartidasTemp.reduce(function(a,p){return a+parseFloat(p.kgRecibidos||0)*parseFloat(p.precioVenta||0);},0);
   totalIngreso+=parseFloat(document.getElementById('cf-flete-venta')?document.getElementById('cf-flete-venta').value||0:0);
   var util=totalIngreso-totalGasto;
-  if(document.getElementById('cf-resumen-gasto')) document.getElementById('cf-resumen-gasto').textContent=fmt(totalGasto);
-  if(document.getElementById('cf-resumen-ingreso')) document.getElementById('cf-resumen-ingreso').textContent=fmt(totalIngreso);
+  if(document.getElementById('cf-resumen-gasto')) document.getElementById('cf-resumen-gasto').textContent=fmt2(totalGasto);
+  if(document.getElementById('cf-resumen-ingreso')) document.getElementById('cf-resumen-ingreso').textContent=fmt2(totalIngreso);
   var utilEl=document.getElementById('cf-resumen-util');
-  if(utilEl){utilEl.textContent=fmt(util);utilEl.style.color=util>=0?'var(--green)':'var(--fram)';}
+  if(utilEl){utilEl.textContent=fmt2(util);utilEl.style.color=util>=0?'var(--green)':'var(--fram)';}
   var utilCard=document.getElementById('cf-utilidad-card');
   if(utilCard) utilCard.style.borderColor=util>=0?'var(--green-border)':'var(--fram-border)';
 }
