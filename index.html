@@ -1864,6 +1864,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="field" style="margin-bottom:16px"><label>Factura <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(opcional)</span></label>
         <input type="text" id="dr-factura" placeholder="Folio de factura" style="width:100%"></div>
       <button class="btn-main" onclick="registrarDeudaManualForm()">Registrar deuda</button>
+      <div style="margin-top:24px;padding-top:16px;border-top:0.5px solid var(--border)">
+        <label style="display:block;margin-bottom:6px">Importar historial (archivo JSON)</label>
+        <input type="file" id="dr-import-file" accept=".json,application/json" style="font-size:13px;color:var(--text2);width:100%">
+        <div style="font-size:11px;color:var(--text3);margin-top:6px">Carga cuentas y abonos desde un archivo. No duplica lo que ya esté cargado.</div>
+        <button style="margin-top:10px;width:100%;padding:11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)" onclick="importarDeudasDesdeArchivo()">Importar a la app y Supabase</button>
+      </div>
     </div>
   </div>
 
@@ -7704,7 +7710,7 @@ function abrirDeudaContraparte(tipo, nombre){
       '<div style="min-width:0"><div style="font-size:13px;font-weight:600;font-family:var(--mono);color:var(--text)">'+(d.folioExterno||(d.origen==='manual'?'Manual':d.origen))+'</div>'+
       '<div style="font-size:11px;color:var(--text3)">'+fmtFechaCorta(d.fecha)+'</div></div>'+
       '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">'+
-      ((!s.liquidada && d.origen!=='manual') ? diasDeudaBadge(d.fecha) : '')+
+      ((!s.liquidada && tipo==='cobrar' && (d.origen==='camote'||d.origen==='comercializadora')) ? diasDeudaBadge(d.fecha) : '')+
       '<span class="deuda-estatus" style="background:'+(s.liquidada?'var(--green-bg)':'var(--fram-bg)')+';color:'+(s.liquidada?'var(--green)':'var(--fram)')+'">'+(s.liquidada?'Liquidado':'Pendiente')+'</span>'+
       '</div>'+
       '</div>';
@@ -7788,6 +7794,54 @@ function confirmarDeudaManual(){
   var d=agregarDeudaManual(deudaTabSel, document.getElementById('dd-nom').value.trim(), document.getElementById('dd-monto').value, document.getElementById('dd-fecha').value, document.getElementById('dd-concepto').value.trim());
   if(!d) return;
   closeModal(); renderDeudas(); showToast('Cuenta agregada');
+}
+
+// ---- Importar historial de deudas desde archivo JSON (cuentas + abonos) ----
+function _deudaRowFull(d){ return { id:d.id, tipo:d.tipo, contraparte:d.contraparte, fecha:d.fecha||'', ciclo:d.ciclo||'', origen:d.origen||'manual', folio_externo:d.folioExterno||'', ref_id:d.refId||null, ref_kind:d.refKind||'', items:d.items||[], monto:d.monto||0, descripcion:d.desc||'', factura:d.factura||'', moneda:d.moneda||'MXN', tipo_cambio:parseFloat(d.tipoCambio)||0, interes:parseFloat(d.interes)||0, nc:parseFloat(d.nc)||0, negocio:d.negocio||'' }; }
+function _pagoRowFull(p){ return { id:p.id, tipo:p.tipo, contraparte:p.contraparte, fecha:p.fecha||'', monto:p.monto||0, folio:p.folio||'', descripcion:p.desc||'', moneda:p.moneda||'MXN', tipo_cambio:parseFloat(p.tipoCambio)||0, dirigido_a:p.dirigidoA||'' }; }
+function _stripCols(row, cols){ var r={}; for(var k in row){ if(cols.indexOf(k)<0) r[k]=row[k]; } return r; }
+async function sbBulkUpsert(tabla, filas, colsNuevas){
+  if(!sbOnline||!sb||!filas.length) return;
+  for(var i=0;i<filas.length;i+=100){
+    var chunk=filas.slice(i,i+100);
+    var res=await sb.from(tabla).upsert(chunk);
+    // Fallback: si faltan las columnas nuevas, reintenta el bloque sin ellas.
+    if(res&&res.error){ await sb.from(tabla).upsert(chunk.map(function(r){return _stripCols(r,colsNuevas);})); }
+  }
+}
+function importarDeudasAplicar(data){
+  if(!data || (!data.deudas && !data.pagos)){ showToast('El archivo no trae deudas'); return; }
+  var nd=(data.deudas||[]).slice(), np=(data.pagos||[]).slice();
+  var idsD={}; deudas.forEach(function(d){idsD[d.id]=true;});
+  var idsP={}; pagosDeuda.forEach(function(p){idsP[p.id]=true;});
+  nd=nd.filter(function(d){return d && d.id!=null && !idsD[d.id];});
+  np=np.filter(function(p){return p && p.id!=null && !idsP[p.id];});
+  if(!nd.length && !np.length){ showToast('Ese historial ya estaba importado'); return; }
+  nd.forEach(function(d){ d.origen=d.origen||'importada'; d.refKind=d.refKind||'importada'; if(d.refId===undefined)d.refId=null;
+    d.items=(d.items&&d.items.length)?d.items:[{concepto:(d.desc||'Cargo'),monto:(parseFloat(d.monto)||0)}];
+    d.moneda=d.moneda||'MXN'; d.tipoCambio=parseFloat(d.tipoCambio)||0; d.interes=parseFloat(d.interes)||0; d.nc=parseFloat(d.nc)||0; d.negocio=d.negocio||''; });
+  np.forEach(function(p){ p.moneda=p.moneda||'MXN'; p.tipoCambio=parseFloat(p.tipoCambio)||0; p.dirigidoA=p.dirigidoA||''; });
+  deudas=deudas.concat(nd); pagosDeuda=pagosDeuda.concat(np);
+  saveDeudas(); savePagosDeuda();
+  nd.concat(np).forEach(function(x){
+    registrarContraparte(x.contraparte, x.tipo);
+    if(x.tipo==='cobrar') agregarDeudorSiNuevo(x.contraparte); else agregarAcreedorSiNuevo(x.contraparte);
+  });
+  var inp=document.getElementById('dr-import-file'); if(inp) inp.value='';
+  showToast('Importadas '+nd.length+' cuentas y '+np.length+' abonos \u2014 subiendo a Supabase\u2026');
+  Promise.resolve()
+    .then(function(){ return sbBulkUpsert('deudas', nd.map(_deudaRowFull), ['moneda','tipo_cambio','interes','nc','negocio']); })
+    .then(function(){ return sbBulkUpsert('pagos_deuda', np.map(_pagoRowFull), ['moneda','tipo_cambio','dirigido_a']); })
+    .then(function(){ showToast('\u2705 Historial en la app y en Supabase'); if(deudaTabSel==='cobrar'||deudaTabSel==='pagar') renderDeudas(); })
+    .catch(function(){ showToast('Guardado local; hubo un error subiendo a Supabase'); });
+}
+function importarDeudasDesdeArchivo(){
+  var inp=document.getElementById('dr-import-file');
+  if(!inp || !inp.files || !inp.files[0]){ showToast('Elige un archivo .json primero'); return; }
+  var rd=new FileReader();
+  rd.onload=function(){ var data; try{ data=JSON.parse(rd.result); }catch(e){ showToast('El archivo no es un JSON v\u00e1lido'); return; } importarDeudasAplicar(data); };
+  rd.onerror=function(){ showToast('No se pudo leer el archivo'); };
+  rd.readAsText(inp.files[0]);
 }
 
 
