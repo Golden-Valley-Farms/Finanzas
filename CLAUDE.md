@@ -146,10 +146,34 @@ Tablas: `gastos`, `envios`, `alm_lotes`, `fram_registros`, `fram_finanzas`, `deu
 
 Si una tabla regresa vacía teniendo datos, casi siempre es RLS — el código ya avisa esto por consola para `fram_registros`.
 
+## Flujo de trabajo
+
+**Claude publica los cambios; el usuario no sube archivos a mano.** El ciclo completo de cada cambio es:
+
+1. Editar `index.html` en este clon local.
+2. Verificar el cambio (ver "Desplegar y probar").
+3. `git add` + commit descriptivo.
+4. `git push origin main` — GitHub Pages despliega solo.
+
+No dejar cambios sin commitear al terminar una tarea, ni pedirle al usuario que suba el archivo por la web de GitHub.
+
+### Mantener este archivo al día
+
+**Después de cualquier cambio importante al código, actualizar `CLAUDE.md` en el mismo commit.** "Importante" significa cualquier cosa que vuelva obsoleto algo escrito aquí:
+
+- Se agrega, quita o renombra un negocio, ciclo, categoría o pantalla.
+- Cambia el esquema de una tabla de Supabase, o se agrega/quita una tabla o clave de localStorage.
+- Cambia una convención (helpers de Chart.js, patrón de render, manejo de ciclos).
+- Se resuelve una de las "trampas conocidas" — hay que borrarla de esa lista.
+- Se agrega un acoplamiento nuevo entre módulos.
+- Se mueven mucho las líneas: los números de línea citados aquí dejan de servir.
+
+Un arreglo puntual que no altere nada de lo documentado no requiere tocar este archivo.
+
 ## Git
 
 Todo el proyecto es un archivo de 10,700 líneas, así que un diff que mezcla varios cambios es ilegible. Hacer **commits chicos y descriptivos**, uno por cambio lógico.
 
-Recordar que `main` es producción: pushear solo cuando el cambio esté probado.
+`main` es producción y sale en vivo al instante. Pushear solo cuando el cambio esté probado.
 
 `core.autocrlf=true` en este equipo: el archivo en disco usa CRLF y git lo normaliza a LF al commitear. Es transparente — si `git status` marca `index.html` como modificado sin que hayas tocado nada, es señal de otra cosa, no de finales de línea.
