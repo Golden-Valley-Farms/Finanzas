@@ -99,6 +99,25 @@ O sea: un registro sin ciclo puede estar invisible en Historial y a la vez suman
 
 Los colores de categoría (`catColor()`) buscan en `CAT_COLORS` por nombre normalizado (`normCat()` quita acentos y baja a minúsculas); si no existe, deriva un color estable hasheando el nombre contra `CAT_PALETTE`.
 
+## Módulo de deudas
+
+Rediseñado en ago-2026 (spec en `docs/superpowers/specs/2026-08-07-modulo-deudas-design.md`).
+
+**Catálogo de contrapartes obligatorio.** Cada contraparte vive en `contrapartes` con `{nombre, tipo, clave, modo, moneda, tipoCambio}`. La `clave` es un ID corto que asigna el usuario a mano (ej. `Clem`, `AgrLB`), único, con mayúsculas/minúsculas respetadas. Registrar deudas o abonos exige elegir una contraparte del catálogo (`getContraparte()` valida); el alta se hace desde "+ Nueva contraparte..." en el dropdown.
+
+**Dos modos por cuenta**, guardados en `contraparte.modo`:
+
+- `fifo` (facturas con abonos): cada cargo es una factura; `calcContraparte()` aplica los abonos de la más antigua a la más reciente. En estas cuentas `monto` ya es el neto (cargo + interés − nota de crédito); `interes`/`nc` quedan informativos y desglosados en `items`.
+- `corriente` (cargos y abonos): `calcCorriente()` lleva saldo corrido = Σ(monto + interes − nc) − Σ(abonos). Puede ser negativo (a favor de la contraparte, ej. Clemente Duarte). El detalle se pinta como estado de cuenta en `renderModalCorriente()`.
+
+`calcSaldoCuenta()` despacha por modo y es lo que usan las tarjetas (`renderDeudas`), que muestran clave, insignia USD y una sección "Historial (saldadas)" al fondo. `abrirDeudaContraparte()` es el dispatcher del modal; `abrirEditarContraparte()` (⚙️ en el título) edita clave/modo/moneda/tipo de cambio.
+
+**Moneda.** Cuentas USD (Bioterra): movimientos y saldo en dólares (`fmtMon`/`fmtUSD`); el equivalente MXN es informativo con `contraparte.tipoCambio` editable. Los KPIs convierten USD→MXN con ese tipo de cambio.
+
+**Regla de negocio (fletes):** el flete de compra NO se carga a la cuenta por pagar del proveedor (se paga aparte); `sincronizarDeudasEnvio()` ya no lo incluye. Solo el flete de venta de camote jal/nay va a la cuenta por cobrar del cliente.
+
+**Histórico importado.** Los movimientos migrados del Excel original tienen `ref_kind:'importado'` e ids `9000000000000xx`. La migración fue única (ago-2026); no hay código de importación de Excel en la app.
+
 ## Navegación
 
 `goSc(nombre)` es el router: alterna la clase `.active` entre los divs `sc-resultados`, `sc-reg`, `sc-his`, `sc-rep`, `sc-ven`, `sc-fram`, `sc-maiz`, `sc-deudas`, ajusta la barra inferior y dispara el render de esa pantalla. Las variables `lastFinSc` y `lastCosSc` recuerdan en qué sub-pestaña se quedó cada grupo.
@@ -124,7 +143,7 @@ Los colores de las gráficas se resuelven por tema en runtime: `isDark()`, `dash
 ## Acoplamientos entre módulos
 
 - **Envío → gastos.** `generarGastosCosechaDesdeEnvio()` crea gastos con `autoGen:true` a partir de un envío de camote, prorrateando flete/cosecha/arado/desvarada por hectáreas de cada sector. Los ids resultantes se guardan en el envío para poder actualizarlos o borrarlos al reeditar. **No editar a mano un gasto con `autoGen:true`**: se sobreescribe al guardar el envío de origen.
-- **Envío → deudas.** `sincronizarDeudasEnvio()` crea/actualiza la cuenta por cobrar; `borrarDeudasDeEnvio()` la limpia.
+- **Envío → deudas.** `sincronizarDeudasEnvio()` crea/actualiza las deudas del envío (cobrar en camote jal/nay; cobrar + pagar en comercializadora, esta última sin flete de compra); `borrarDeudasDeEnvio()` las limpia. Si el cliente/proveedor no existe en el catálogo de contrapartes, se crea solo con modo `fifo` y clave vacía.
 - **Almacén → envíos.** Un despacho de lotes puede generar **varios** envíos de golpe, uno por ubicación de origen, con el flete prorrateado entre ellos.
 - **Frambuesa: registros → nómina → finanzas.** `framFinanzas` guarda en `gastoIds` las referencias a los gastos que generó, para el mismo ciclo de vida que arriba.
 
@@ -145,6 +164,8 @@ URL y clave publicable están en duro al inicio del script (líneas ~1911-1912).
 Tablas: `gastos`, `envios`, `alm_lotes`, `fram_registros`, `fram_finanzas`, `deudas`, `pagos_deuda`, `contrapartes`, `clientes`, `proveedores`, `proveedores_comer`, `clientes_comer`, `deudores`, `acreedores`, `bancos`, `trabajadores`, `categorias`.
 
 Si una tabla regresa vacía teniendo datos, casi siempre es RLS — el código ya avisa esto por consola para `fram_registros`.
+
+**Ojo (ago-2026): el advisor de Supabase reporta RLS DESACTIVADO en 12 tablas** (gastos, envios, deudas, pagos_deuda, contrapartes, etc.). Mientras no se active RLS con autenticación, cualquiera con la clave publishable puede leer y escribir esos datos. Hay una tarea pendiente para agregar login + políticas RLS.
 
 ## Flujo de trabajo
 
