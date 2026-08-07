@@ -142,7 +142,27 @@ Tres registros separados de instancias — `finCharts`, `rfrCharts`, `rcmCharts`
 
 Para gráficas anchas con scroll horizontal existe el patrón de "eje congelado" (`mkFinFrozenAxisLineChart`, `mkFrozenAxisLineChart`): se dibuja un segundo canvas fijo con solo el eje Y mientras el principal hace scroll.
 
-Los colores de las gráficas se resuelven por tema en runtime: `isDark()`, `dashGridColor()`, `dashTextColor()`, `rfrGridCol()`.
+Los colores de las gráficas se resuelven por tema en runtime: `isDark()`, `dashGridColor()`, `dashTextColor()`, `rfrGridCol()`, `rfrLabelInk()`.
+
+### Semáforo de las gráficas de línea en Frambuesa → Cosecha → Por ciclo
+
+Las 7 gráficas de línea de `renderRfrResumen()` usan **línea neutra + punto de color**: la línea va en `RFR_LINEA_NEUTRA` y el color de cada punto lo da `rfrPuntoCols(datos, cortes, altoBueno)` según el estado de esa semana (`RFR_SEM_COLS`: bien / vigilar / preocupa / problema / sin dato). Las etiquetas de valor van en tinta neutra (`rfrLabelInk()`) para que el color no compita con el punto.
+
+**Los cortes viven en la llamada de cada dataset** — ahí se cambian:
+
+| Gráfica | cortes | sentido |
+|---|---|---|
+| % de merma | `[5,10,20]` | más alto es peor |
+| Kg cosechados vs. proceso | `[5,10,20]` sobre `semMermaPct` | más alto es peor |
+| Cajas por semana | `[300,150,75]` | más alto es mejor |
+| Costo/cubeta general | `[30,45,70]` | más alto es peor |
+| Costo/cubeta cosechadores | `[15,20,30]` | más alto es peor |
+| Precio por caja | `[170,130,60]` | más alto es mejor |
+| Total facturado | `[80000,40000,15000]` | más alto es mejor |
+
+Solo dos cortes son metas reales del negocio: **costo/cubeta cosechadores $15** y **precio por caja $170**. El resto son provisionales, puestos a ojo sobre el comportamiento del ciclo 2025-2026 — ajustarlos cuando el usuario defina las métricas.
+
+La gráfica de Kg conserva el color propio de sus dos líneas (es lo que las distingue en su leyenda del markup) y solo pinta los puntos con el semáforo de merma. "Por día" y "Por semana" no llevan semáforo: siguen con color sólido por serie.
 
 ## Acoplamientos entre módulos
 

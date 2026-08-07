@@ -3407,6 +3407,9 @@ function mkRfrChart(id, cfg){
 }
 
 function rfrGridCol(){ return window.matchMedia('(prefers-color-scheme:dark)').matches?'#2c2c2a':'#e1e0d9'; }
+// Tinta de las etiquetas de valor sobre las gráficas: neutra, para que el color
+// del semáforo lo cargue solo el punto y no compita con el número.
+function rfrLabelInk(){ return window.matchMedia('(prefers-color-scheme:dark)').matches?'#D8D2C8':'#3a352e'; }
 
 // Pestaña principal: Cosecha (dia/sem/res) o Finanzas (fac/edr).
 // Cada grupo recuerda en qué sub-pestaña se quedó.
@@ -4388,6 +4391,32 @@ function renderRfrSemDetalle(){
 
 
 // ─── POR CICLO (Resumen) ────────────────────────────────────
+// ─── Semáforo de las gráficas de línea del resumen por ciclo ───
+// La línea queda neutra y el color lo carga el punto de cada semana, para que el
+// estado se lea de un vistazo sin que el color de la serie compita con el del semáforo.
+// Solo dos cortes son metas reales del negocio: costo/cubeta cosechadores $15 y
+// precio por caja $170. El resto son provisionales — ajustar aquí cuando se definan.
+var RFR_SEM_COLS={bien:'#1baf7a', vigilar:'#eda100', preocupa:'#ec835a', problema:'#d03b3b', sinDato:'#c3c2b7'};
+var RFR_LINEA_NEUTRA='#898781';
+var RFR_LINEA_NEUTRA_BG='rgba(137,135,129,0.10)';
+// cortes = [bien, vigilar, preocupa]; altoBueno=true cuando más alto es mejor.
+function rfrPuntoCol(v, cortes, altoBueno){
+  if(v===null||v===undefined) return RFR_SEM_COLS.sinDato;
+  if(altoBueno){
+    if(v>=cortes[0]) return RFR_SEM_COLS.bien;
+    if(v>=cortes[1]) return RFR_SEM_COLS.vigilar;
+    if(v>=cortes[2]) return RFR_SEM_COLS.preocupa;
+    return RFR_SEM_COLS.problema;
+  }
+  if(v<=cortes[0]) return RFR_SEM_COLS.bien;
+  if(v<=cortes[1]) return RFR_SEM_COLS.vigilar;
+  if(v<=cortes[2]) return RFR_SEM_COLS.preocupa;
+  return RFR_SEM_COLS.problema;
+}
+function rfrPuntoCols(arr, cortes, altoBueno){
+  return (arr||[]).map(function(v){ return rfrPuntoCol(v, cortes, altoBueno); });
+}
+
 function renderRfrResumen(data){
   var cont=document.getElementById('rfr-res-detalle'); if(!cont) return;
   if(!data.length){ cont.innerHTML='<div style="text-align:center;padding:40px 0;color:var(--text3);font-size:13px">Sin registros para este ciclo</div>'; return; }
@@ -4777,7 +4806,7 @@ function renderRfrResumen(data){
           meta.data.forEach(function(pt,i){
             var v=ds.data[i]; if(v===null||v===undefined||!pt) return;
             ctx.save();
-            ctx.fillStyle='#1a7a4a'; ctx.font='bold 10px monospace';
+            ctx.fillStyle=rfrLabelInk(); ctx.font='bold 10px monospace';
             ctx.textAlign='center'; ctx.textBaseline='bottom';
             ctx.fillText(v, pt.x, pt.y-6);
             ctx.restore();
@@ -4828,7 +4857,7 @@ function renderRfrResumen(data){
         var ctx=chart.ctx; var ds=chart.data.datasets[0]; var meta=chart.getDatasetMeta(0);
         meta.data.forEach(function(pt,i){
           var v=ds.data[i]; if(v===null||v===undefined||!pt) return;
-          ctx.save(); ctx.fillStyle='#C45B0A'; ctx.font='bold 11px monospace';
+          ctx.save(); ctx.fillStyle=rfrLabelInk(); ctx.font='bold 11px monospace';
           ctx.textAlign='center'; ctx.textBaseline='bottom';
           ctx.fillText(v.toLocaleString('es-MX')+'%', pt.x, pt.y-8);
           ctx.restore();
@@ -4840,7 +4869,7 @@ function renderRfrResumen(data){
       plugins:[mermaPctLabelPlugin],
       data:{
         labels:semNumLbls,
-        datasets:[{label:'% merma',data:semMermaPct,borderColor:'#eda100',backgroundColor:'rgba(237,161,0,0.1)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#eda100',fill:true,tension:0.3,spanGaps:true}]
+        datasets:[{label:'% merma',data:semMermaPct,borderColor:RFR_LINEA_NEUTRA,backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(semMermaPct,[5,10,20],false),pointBorderColor:rfrPuntoCols(semMermaPct,[5,10,20],false),fill:true,tension:0.3,spanGaps:true}]
       },
       options:{
         responsive:true,maintainAspectRatio:false,
@@ -4861,8 +4890,11 @@ function renderRfrResumen(data){
       data:{
         labels:semNumLbls,
         datasets:[
-          {label:'Kg cosechados',data:semKgVals,borderColor:'#D6336C',backgroundColor:'rgba(214,51,108,0.08)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#D6336C',fill:true,tension:0.3,spanGaps:true},
-          {label:'Kg de proceso',data:semMermaVals,borderColor:'#e34948',backgroundColor:'rgba(227,73,72,0.08)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#e34948',fill:true,tension:0.3,spanGaps:true}
+          // Las dos líneas conservan su color (es lo que distingue las series en la leyenda);
+          // los puntos llevan el semáforo del % de merma de esa semana, que es justo la
+          // relación que compara esta gráfica.
+          {label:'Kg cosechados',data:semKgVals,borderColor:'#D6336C',backgroundColor:'rgba(214,51,108,0.08)',borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(semMermaPct,[5,10,20],false),pointBorderColor:rfrPuntoCols(semMermaPct,[5,10,20],false),fill:true,tension:0.3,spanGaps:true},
+          {label:'Kg de proceso',data:semMermaVals,borderColor:'#e34948',backgroundColor:'rgba(227,73,72,0.08)',borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(semMermaPct,[5,10,20],false),pointBorderColor:rfrPuntoCols(semMermaPct,[5,10,20],false),fill:true,tension:0.3,spanGaps:true}
         ]
       },
       options:{
@@ -4884,7 +4916,7 @@ function renderRfrResumen(data){
         var ctx=chart.ctx; var ds=chart.data.datasets[0]; var meta=chart.getDatasetMeta(0);
         meta.data.forEach(function(pt,i){
           var v=ds.data[i]; if(v===null||v===undefined||!pt) return;
-          ctx.save(); ctx.fillStyle='#1a7a4a'; ctx.font='bold 11px monospace';
+          ctx.save(); ctx.fillStyle=rfrLabelInk(); ctx.font='bold 11px monospace';
           ctx.textAlign='center'; ctx.textBaseline='bottom';
           ctx.fillText(v, pt.x, pt.y-8);
           ctx.restore();
@@ -4896,7 +4928,7 @@ function renderRfrResumen(data){
       plugins:[cajasSemanaLabelPlugin],
       data:{
         labels:semNumLbls,
-        datasets:[{label:'Cajas',data:cajasPorSemanaCiclo,borderColor:'#9B59B6',backgroundColor:'rgba(155,89,182,0.1)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#9B59B6',fill:true,tension:0.3}]
+        datasets:[{label:'Cajas',data:cajasPorSemanaCiclo,borderColor:RFR_LINEA_NEUTRA,backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(cajasPorSemanaCiclo,[300,150,75],true),pointBorderColor:rfrPuntoCols(cajasPorSemanaCiclo,[300,150,75],true),fill:true,tension:0.3}]
       },
       options:{
         responsive:true,maintainAspectRatio:false,
@@ -4917,7 +4949,7 @@ function renderRfrResumen(data){
         var ctx=chart.ctx; var ds=chart.data.datasets[0]; var meta=chart.getDatasetMeta(0);
         meta.data.forEach(function(pt,i){
           var v=ds.data[i]; if(v===null||v===undefined||!pt) return;
-          ctx.save(); ctx.fillStyle='#1a7a4a'; ctx.font='bold 11px monospace';
+          ctx.save(); ctx.fillStyle=rfrLabelInk(); ctx.font='bold 11px monospace';
           ctx.textAlign='center'; ctx.textBaseline='bottom';
           ctx.fillText('$'+v.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}), pt.x, pt.y-8);
           ctx.restore();
@@ -4930,7 +4962,7 @@ function renderRfrResumen(data){
       plugins:[costoLineLabelPlugin],
       data:{
         labels:semNumLbls,
-        datasets:[{label:'Costo/cubeta general',data:costoGeneralPorSemana,borderColor:'#C97B3D',backgroundColor:'rgba(201,123,61,0.1)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#C97B3D',fill:true,tension:0.3,spanGaps:true}]
+        datasets:[{label:'Costo/cubeta general',data:costoGeneralPorSemana,borderColor:RFR_LINEA_NEUTRA,backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(costoGeneralPorSemana,[30,45,70],false),pointBorderColor:rfrPuntoCols(costoGeneralPorSemana,[30,45,70],false),fill:true,tension:0.3,spanGaps:true}]
       },
       options:{
         responsive:true,maintainAspectRatio:false,
@@ -4950,7 +4982,8 @@ function renderRfrResumen(data){
       plugins:[costoLineLabelPlugin],
       data:{
         labels:semNumLbls,
-        datasets:[{label:'Costo/cubeta cosechadores',data:costoCosechadoresPorSemana,borderColor:'#8B5CF6',backgroundColor:'rgba(139,92,246,0.1)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#8B5CF6',fill:true,tension:0.3,spanGaps:true}]
+        // Meta real del negocio: $15 por cubeta.
+        datasets:[{label:'Costo/cubeta cosechadores',data:costoCosechadoresPorSemana,borderColor:RFR_LINEA_NEUTRA,backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(costoCosechadoresPorSemana,[15,20,30],false),pointBorderColor:rfrPuntoCols(costoCosechadoresPorSemana,[15,20,30],false),fill:true,tension:0.3,spanGaps:true}]
       },
       options:{
         responsive:true,maintainAspectRatio:false,
@@ -4969,7 +5002,8 @@ function renderRfrResumen(data){
       plugins:[costoLineLabelPlugin],
       data:{
         labels:semNumLbls,
-        datasets:[{label:'Precio/caja',data:precioPorSemana,borderColor:'#D6336C',backgroundColor:'rgba(214,51,108,0.1)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#D6336C',fill:true,tension:0.3,spanGaps:true}]
+        // Precio normal del negocio: $170 por caja.
+        datasets:[{label:'Precio/caja',data:precioPorSemana,borderColor:RFR_LINEA_NEUTRA,backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(precioPorSemana,[170,130,60],true),pointBorderColor:rfrPuntoCols(precioPorSemana,[170,130,60],true),fill:true,tension:0.3,spanGaps:true}]
       },
       options:{
         responsive:true,maintainAspectRatio:false,
@@ -4990,7 +5024,7 @@ function renderRfrResumen(data){
         meta.data.forEach(function(pt,i){
           var v=ds.data[i]; if(v===null||v===undefined||!pt) return;
           ctx.save();
-          ctx.fillStyle='#1a7a4a'; ctx.font='bold 11px monospace';
+          ctx.fillStyle=rfrLabelInk(); ctx.font='bold 11px monospace';
           ctx.textAlign='center'; ctx.textBaseline='bottom';
           ctx.fillText('$'+v.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}), pt.x, pt.y-8);
           ctx.restore();
@@ -5002,7 +5036,7 @@ function renderRfrResumen(data){
       plugins:[facturadoLineLabelPlugin],
       data:{
         labels:semNumLbls,
-        datasets:[{label:'Total facturado',data:facturadoPorSemana,borderColor:'#1baf7a',backgroundColor:'rgba(27,175,122,0.1)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#1baf7a',fill:true,tension:0.3,spanGaps:true}]
+        datasets:[{label:'Total facturado',data:facturadoPorSemana,borderColor:RFR_LINEA_NEUTRA,backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(facturadoPorSemana,[80000,40000,15000],true),pointBorderColor:rfrPuntoCols(facturadoPorSemana,[80000,40000,15000],true),fill:true,tension:0.3,spanGaps:true}]
       },
       options:{
         responsive:true,maintainAspectRatio:false,
