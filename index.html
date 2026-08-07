@@ -7514,6 +7514,37 @@ function calcContraparte(tipo, nombre){
   return {items:res, saldoTotal:saldoTotal, saldoAFavor:saldoAFavor};
 }
 
+function calcCorriente(tipo, nombre){
+  var movs=[];
+  deudas.forEach(function(d){
+    if(d.tipo!==tipo || d.contraparte!==nombre) return;
+    var cargo=parseFloat(d.monto)||0, inte=parseFloat(d.interes)||0, nc=parseFloat(d.nc)||0;
+    movs.push({fecha:d.fecha||'', esCargo:true, obj:d, concepto:d.desc||((d.items&&d.items[0])?d.items[0].concepto:'Cargo'),
+      ref:d.folioExterno||d.factura||'', cargo:cargo, interes:inte, nc:nc, abono:0, saldoDespues:0});
+  });
+  pagosDeuda.forEach(function(p){
+    if(p.tipo!==tipo || p.contraparte!==nombre) return;
+    movs.push({fecha:p.fecha||'', esCargo:false, obj:p, concepto:p.desc||'Abono',
+      ref:p.folio||'', cargo:0, interes:0, nc:0, abono:parseFloat(p.monto)||0, saldoDespues:0});
+  });
+  movs.sort(function(a,b){ var fa=a.fecha,fb=b.fecha; return fa<fb?-1:fa>fb?1:((a.obj.id||0)-(b.obj.id||0)); });
+  var saldo=0;
+  movs.forEach(function(m){ saldo+=(m.cargo+m.interes-m.nc)-m.abono; m.saldoDespues=saldo; });
+  return {movs:movs, saldoTotal:saldo, nMovs:movs.length};
+}
+function calcSaldoCuenta(tipo, nombre){
+  var c=getContraparte(tipo, nombre)||{};
+  if(cpModo(tipo,nombre)==='corriente'){
+    var r=calcCorriente(tipo, nombre);
+    return {saldo:Math.max(0,r.saldoTotal), aFavor:Math.max(0,-r.saldoTotal), n:r.nMovs, moneda:c.moneda||'MXN', clave:c.clave||''};
+  }
+  var f=calcContraparte(tipo, nombre);
+  var nP=pagosDeuda.filter(function(p){return p.tipo===tipo && p.contraparte===nombre;}).length;
+  return {saldo:f.saldoTotal, aFavor:f.saldoAFavor, n:f.items.length+nP, moneda:c.moneda||'MXN', clave:c.clave||''};
+}
+function fmtUSD(n){ n=parseFloat(n)||0; return 'US$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtMon(n, moneda){ return moneda==='USD'?fmtUSD(n):fmt(n); }
+
 function generarFolioPago(tipo, contraparte, fecha){
   var prefijo=(tipo==='cobrar')?'PAGO':'ABONO';
   var anio=(fecha||'').substring(0,4) || String(new Date().getFullYear());
@@ -7774,6 +7805,16 @@ function renderDeudas(){
 
 function abrirDeudaContraparte(tipo, nombre){
   deudaModalTipo=tipo; deudaModalNombre=nombre;
+  if(cpModo(tipo,nombre)==='corriente') renderModalCorriente(tipo,nombre);
+  else renderModalFifo(tipo,nombre);
+}
+function tituloModalCuenta(tipo, nombre){
+  var cpc=getContraparte(tipo,nombre)||{};
+  return (cpc.clave?'<span style="font-family:var(--mono);font-size:13px;color:var(--text3)">'+cpc.clave+'</span> ':'')+nombre+
+    '&nbsp;<span class="chip '+(tipo==='cobrar'?'jal':'com')+'">'+(tipo==='cobrar'?'Por cobrar':'Por pagar')+'</span>'+
+    '&nbsp;<button onclick="abrirEditarContraparte(\''+tipo+'\',deudaModalNombre)" style="background:none;border:none;cursor:pointer;font-size:14px">⚙️</button>';
+}
+function renderModalFifo(tipo, nombre){
   var r=calcContraparte(tipo,nombre);
   var accent=(tipo==='cobrar')?'var(--green)':'var(--fram)';
   var palabraPago=(tipo==='cobrar')?'Pagos':'Abonos';
@@ -7828,7 +7869,43 @@ function abrirDeudaContraparte(tipo, nombre){
         '</div>';
     });
   }
-  document.getElementById('mo-title').innerHTML=nombre+'&nbsp;<span class="chip '+(tipo==='cobrar'?'jal':'com')+'">'+(tipo==='cobrar'?'Por cobrar':'Por pagar')+'</span>';
+  document.getElementById('mo-title').innerHTML=tituloModalCuenta(tipo, nombre);
+  document.getElementById('mo-body').innerHTML=html;
+  document.getElementById('overlay').classList.add('open');
+}
+
+function renderModalCorriente(tipo, nombre){
+  var r=calcCorriente(tipo, nombre);
+  var c=getContraparte(tipo,nombre)||{};
+  var mon=c.moneda==='USD'?'USD':'MXN';
+  var accent=(tipo==='cobrar')?'var(--green)':'var(--fram)';
+  var st=r.saldoTotal;
+  var lblSaldo=st>=0?((tipo==='cobrar')?'Nos debe':'Le debemos'):'A su favor';
+  var html='';
+  html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
+    '<div><div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">'+lblSaldo+'</div>'+
+    '<div style="font-size:24px;font-weight:700;font-family:var(--mono);color:'+(st>=0?accent:'var(--jal)')+'">'+fmtMon(Math.abs(st),mon)+'</div>'+
+    (mon==='USD'&&c.tipoCambio?'<div style="font-size:12px;color:var(--text3)">≈ '+fmt(Math.abs(st)*c.tipoCambio)+' MXN (TC '+c.tipoCambio+')</div>':'')+
+    '</div>'+
+    '<button class="btn-main" style="width:auto;padding:9px 14px;font-size:13px" onclick="abrirRegistrarPago()">'+((tipo==='cobrar')?'Registrar pago':'Registrar abono')+'</button>'+
+    '</div>';
+  var tieneInteres=r.movs.some(function(m){return m.interes>0;});
+  html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
+  html+='<tr style="color:var(--text3);text-transform:uppercase;font-size:10px;letter-spacing:.04em"><th style="text-align:left;padding:6px 4px">Fecha</th><th style="text-align:left;padding:6px 4px">Concepto</th><th style="text-align:right;padding:6px 4px">Cargo</th>'+(tieneInteres?'<th style="text-align:right;padding:6px 4px">Interés</th>':'')+'<th style="text-align:right;padding:6px 4px">Abono</th><th style="text-align:right;padding:6px 4px">Saldo</th></tr>';
+  r.movs.forEach(function(m){
+    var esAuto=m.esCargo && m.obj.origen && m.obj.origen!=='manual' && m.obj.origen!=='importado';
+    html+='<tr style="border-top:0.5px solid var(--border)">'+
+      '<td style="padding:6px 4px;white-space:nowrap;color:var(--text3)">'+fmtFechaCorta(m.fecha)+'</td>'+
+      '<td style="padding:6px 4px;color:var(--text2)">'+m.concepto+(m.ref?' <span style="color:var(--text3);font-family:var(--mono);font-size:10px">'+m.ref+'</span>':'')+(esAuto?' <span style="font-size:9px;color:var(--text3)">auto · envío</span>':'')+'</td>'+
+      '<td style="padding:6px 4px;text-align:right;font-family:var(--mono);color:'+(m.esCargo?'var(--fram)':'var(--text3)')+'">'+(m.esCargo?fmtMon(m.cargo,mon):'')+'</td>'+
+      (tieneInteres?'<td style="padding:6px 4px;text-align:right;font-family:var(--mono);color:var(--text3)">'+(m.interes>0?fmtMon(m.interes,mon):'')+'</td>':'')+
+      '<td style="padding:6px 4px;text-align:right;font-family:var(--mono);color:'+(!m.esCargo?'var(--green)':'var(--text3)')+'">'+(!m.esCargo?fmtMon(m.abono,mon):'')+'</td>'+
+      '<td style="padding:6px 4px;text-align:right;font-family:var(--mono);font-weight:600;color:var(--text)">'+fmtMon(m.saldoDespues,mon)+'</td>'+
+      '</tr>';
+  });
+  html+='</table></div>';
+  html+='<div style="font-size:11px;color:var(--text3);margin-top:10px">'+r.nMovs+' movimientos · toca ⚙️ para editar la cuenta</div>';
+  document.getElementById('mo-title').innerHTML=tituloModalCuenta(tipo, nombre);
   document.getElementById('mo-body').innerHTML=html;
   document.getElementById('overlay').classList.add('open');
 }
