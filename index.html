@@ -7450,7 +7450,7 @@ function sincronizarDeudasEnvio(e){
         var m=r2(kgP*(parseFloat(p.precioCompra)||0));
         if(m>0) itP.push({concepto:'Compra '+(p.variedad||''), monto:m});
       });
-      var fc=parseFloat(e.fleteCompra)||0; if(fc>0) itP.push({concepto:'Fletes', monto:r2(fc)});
+      // Los fletes de compra NO se le deben al proveedor: se pagan aparte (regla del negocio).
       var totP=itP.reduce(function(a,i){return a+i.monto;},0);
       if(totP>0) nuevas.push({id:e.id*10+1, tipo:'pagar', contraparte:e.proveedor, fecha:e.fecha, ciclo:e.ciclo||'',
         origen:'comercializadora', folioExterno:folioExt, refId:e.id, refKind:'com_pagar', items:itP, monto:r2(totP), desc:''});
