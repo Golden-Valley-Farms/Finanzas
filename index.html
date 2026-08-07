@@ -3407,9 +3407,17 @@ function mkRfrChart(id, cfg){
 }
 
 function rfrGridCol(){ return window.matchMedia('(prefers-color-scheme:dark)').matches?'#2c2c2a':'#e1e0d9'; }
-// Tinta de las etiquetas de valor sobre las gráficas: neutra, para que el color
-// del semáforo lo cargue solo el punto y no compita con el número.
+// Tinta neutra de respaldo, para etiquetas sin punto de color asociado.
 function rfrLabelInk(){ return window.matchMedia('(prefers-color-scheme:dark)').matches?'#D8D2C8':'#3a352e'; }
+// La etiqueta de valor toma el color de su propio punto. En tema claro los tonos
+// saturados del semáforo no alcanzan contraste como texto sobre fondo blanco
+// (el amarillo queda casi invisible), así que se cambian por el paso oscuro del
+// mismo tono: se sigue leyendo como el mismo color, pero legible.
+var RFR_SEM_COLS_TXT={'#1baf7a':'#0f7a55','#eda100':'#8a6000','#ec835a':'#b8552b','#d03b3b':'#b02a2a','#c3c2b7':'#8a8378'};
+function rfrTintaPunto(col){
+  if(!col) return rfrLabelInk();
+  return window.matchMedia('(prefers-color-scheme:dark)').matches ? col : (RFR_SEM_COLS_TXT[col]||col);
+}
 
 // Pestaña principal: Cosecha (dia/sem/res) o Finanzas (fac/edr).
 // Cada grupo recuerda en qué sub-pestaña se quedó.
@@ -4806,7 +4814,7 @@ function renderRfrResumen(data){
           meta.data.forEach(function(pt,i){
             var v=ds.data[i]; if(v===null||v===undefined||!pt) return;
             ctx.save();
-            ctx.fillStyle=rfrLabelInk(); ctx.font='bold 10px monospace';
+            ctx.fillStyle=rfrTintaPunto(ds.pointBackgroundColor&&ds.pointBackgroundColor[i]); ctx.font='bold 10px monospace';
             ctx.textAlign='center'; ctx.textBaseline='bottom';
             ctx.fillText(v, pt.x, pt.y-6);
             ctx.restore();
@@ -4857,7 +4865,7 @@ function renderRfrResumen(data){
         var ctx=chart.ctx; var ds=chart.data.datasets[0]; var meta=chart.getDatasetMeta(0);
         meta.data.forEach(function(pt,i){
           var v=ds.data[i]; if(v===null||v===undefined||!pt) return;
-          ctx.save(); ctx.fillStyle=rfrLabelInk(); ctx.font='bold 11px monospace';
+          ctx.save(); ctx.fillStyle=rfrTintaPunto(ds.pointBackgroundColor&&ds.pointBackgroundColor[i]); ctx.font='bold 11px monospace';
           ctx.textAlign='center'; ctx.textBaseline='bottom';
           ctx.fillText(v.toLocaleString('es-MX')+'%', pt.x, pt.y-8);
           ctx.restore();
@@ -4916,7 +4924,7 @@ function renderRfrResumen(data){
         var ctx=chart.ctx; var ds=chart.data.datasets[0]; var meta=chart.getDatasetMeta(0);
         meta.data.forEach(function(pt,i){
           var v=ds.data[i]; if(v===null||v===undefined||!pt) return;
-          ctx.save(); ctx.fillStyle=rfrLabelInk(); ctx.font='bold 11px monospace';
+          ctx.save(); ctx.fillStyle=rfrTintaPunto(ds.pointBackgroundColor&&ds.pointBackgroundColor[i]); ctx.font='bold 11px monospace';
           ctx.textAlign='center'; ctx.textBaseline='bottom';
           ctx.fillText(v, pt.x, pt.y-8);
           ctx.restore();
@@ -4949,7 +4957,7 @@ function renderRfrResumen(data){
         var ctx=chart.ctx; var ds=chart.data.datasets[0]; var meta=chart.getDatasetMeta(0);
         meta.data.forEach(function(pt,i){
           var v=ds.data[i]; if(v===null||v===undefined||!pt) return;
-          ctx.save(); ctx.fillStyle=rfrLabelInk(); ctx.font='bold 11px monospace';
+          ctx.save(); ctx.fillStyle=rfrTintaPunto(ds.pointBackgroundColor&&ds.pointBackgroundColor[i]); ctx.font='bold 11px monospace';
           ctx.textAlign='center'; ctx.textBaseline='bottom';
           ctx.fillText('$'+v.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}), pt.x, pt.y-8);
           ctx.restore();
@@ -5024,7 +5032,7 @@ function renderRfrResumen(data){
         meta.data.forEach(function(pt,i){
           var v=ds.data[i]; if(v===null||v===undefined||!pt) return;
           ctx.save();
-          ctx.fillStyle=rfrLabelInk(); ctx.font='bold 11px monospace';
+          ctx.fillStyle=rfrTintaPunto(ds.pointBackgroundColor&&ds.pointBackgroundColor[i]); ctx.font='bold 11px monospace';
           ctx.textAlign='center'; ctx.textBaseline='bottom';
           ctx.fillText('$'+v.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}), pt.x, pt.y-8);
           ctx.restore();

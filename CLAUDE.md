@@ -146,7 +146,9 @@ Los colores de las gráficas se resuelven por tema en runtime: `isDark()`, `dash
 
 ### Semáforo de las gráficas de línea en Frambuesa → Cosecha → Por ciclo
 
-Las 7 gráficas de línea de `renderRfrResumen()` usan **línea neutra + punto de color**: la línea va en `RFR_LINEA_NEUTRA` y el color de cada punto lo da `rfrPuntoCols(datos, cortes, altoBueno)` según el estado de esa semana (`RFR_SEM_COLS`: bien / vigilar / preocupa / problema / sin dato). Las etiquetas de valor van en tinta neutra (`rfrLabelInk()`) para que el color no compita con el punto.
+Las 7 gráficas de línea de `renderRfrResumen()` usan **línea neutra + punto de color**: la línea va en `RFR_LINEA_NEUTRA` y el color de cada punto lo da `rfrPuntoCols(datos, cortes, altoBueno)` según el estado de esa semana (`RFR_SEM_COLS`: bien / vigilar / preocupa / problema / sin dato).
+
+La etiqueta de valor toma el color de su propio punto: los plugins leen `ds.pointBackgroundColor[i]` y lo pasan por `rfrTintaPunto()`, que en tema oscuro devuelve el color tal cual y en tema claro lo cambia por el paso oscuro del mismo tono (`RFR_SEM_COLS_TXT`) — los tonos saturados del semáforo no alcanzan contraste como texto sobre fondo blanco, el amarillo queda casi invisible. `rfrLabelInk()` queda solo como respaldo para etiquetas sin punto asociado.
 
 **Los cortes viven en la llamada de cada dataset** — ahí se cambian:
 
