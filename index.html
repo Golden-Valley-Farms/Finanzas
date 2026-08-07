@@ -7623,25 +7623,74 @@ function renderDrContraparteDropdown(){
 function showDrContraparteDropdown(){renderDrContraparteDropdown();}
 function hideDrContraparteDropdown(){var dd=document.getElementById('dr-contraparte-dropdown');if(dd)dd.style.display='none';}
 function onDrContraparteInput(){renderDrContraparteDropdown();}
+function claveDuplicada(clave, exceptoTipo, exceptoNombre){
+  if(!clave) return false;
+  return contrapartes.some(function(c){
+    return c.clave===clave && !(c.tipo===exceptoTipo && c.nombre===exceptoNombre);
+  });
+}
 function abrirModalNuevoDrContraparte(prefill){
   var esCobrar=(((document.getElementById('dr-tipo')||{}).value||'cobrar')==='cobrar');
-  var etq=esCobrar?'deudor':'acreedor';
-  document.getElementById('mo-title').innerHTML = '👤 Nuevo '+etq;
-  document.getElementById('mo-body').innerHTML =
-    '<div class="field" style="margin-bottom:14px"><label>Nombre del '+etq+'</label>'+
-    '<input type="text" id="nuevo-drcontraparte-nombre-input" placeholder="Nombre" style="width:100%" onkeydown="if(event.key===\'Enter\'){event.preventDefault();confirmarNuevoDrContraparte();}"></div>'+
-    '<button class="btn-main" onclick="confirmarNuevoDrContraparte()">Agregar</button>';
+  var tipo=esCobrar?'cobrar':'pagar';
+  document.getElementById('mo-title').innerHTML='👤 Nueva contraparte <span class="chip '+(esCobrar?'jal':'com')+'">'+(esCobrar?'Por cobrar':'Por pagar')+'</span>';
+  document.getElementById('mo-body').innerHTML=
+    '<div class="field" style="margin-bottom:10px"><label>Nombre</label><input type="text" id="nc-nombre" placeholder="Nombre completo" style="width:100%"></div>'+
+    '<div class="field" style="margin-bottom:10px"><label>ID <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(lo asignas tú, ej. CD-01)</span></label><input type="text" id="nc-clave" placeholder="XX-01" style="width:100%;font-family:var(--mono);text-transform:uppercase"></div>'+
+    '<div class="field" style="margin-bottom:10px"><label>Modo de cuenta</label><select id="nc-modo" style="'+_dsInput+'">'+
+      '<option value="fifo">Facturas con abonos (se paga la más antigua)</option>'+
+      '<option value="corriente">Cargos y abonos (saldo corrido)</option></select></div>'+
+    '<div class="field" style="margin-bottom:14px"><label>Moneda</label><select id="nc-moneda" style="'+_dsInput+'">'+
+      '<option value="MXN">Pesos (MXN)</option><option value="USD">Dólares (USD)</option></select></div>'+
+    '<button class="btn-main" onclick="confirmarNuevoDrContraparte(\''+tipo+'\')">Agregar</button>';
   document.getElementById('overlay').classList.add('open');
-  setTimeout(function(){ var inp=document.getElementById('nuevo-drcontraparte-nombre-input'); if(inp){ if(prefill) inp.value=prefill; inp.focus(); } }, 100);
+  setTimeout(function(){ var inp=document.getElementById('nc-nombre'); if(inp){ if(prefill) inp.value=prefill; inp.focus(); } }, 100);
 }
-function confirmarNuevoDrContraparte(){
-  var inp=document.getElementById('nuevo-drcontraparte-nombre-input');
-  var nom=(inp.value||'').trim();
+function confirmarNuevoDrContraparte(tipo){
+  var nom=(document.getElementById('nc-nombre').value||'').trim();
+  var clave=(document.getElementById('nc-clave').value||'').trim().toUpperCase();
+  var modo=document.getElementById('nc-modo').value;
+  var moneda=document.getElementById('nc-moneda').value;
   if(!nom){ showToast('Escribe un nombre'); return; }
-  drAgregarContraparteSiNuevo(nom);
+  if(!clave){ showToast('Asigna un ID'); return; }
+  if(claveDuplicada(clave)){ showToast('El ID '+clave+' ya está usado'); return; }
+  if(getContraparte(tipo, nom)){ showToast('Esa contraparte ya existe'); return; }
+  var c={nombre:nom, tipo:tipo, clave:clave, modo:modo, moneda:moneda, tipoCambio:0};
+  contrapartes.push(c); saveContrapartes(); sbSaveContraparte(c);
   closeModal();
-  document.getElementById('dr-contraparte').value=nom;
-  showToast('Agregado');
+  var inp=document.getElementById('dr-contraparte'); if(inp) inp.value=nom;
+  showToast('Contraparte '+clave+' agregada');
+}
+function abrirEditarContraparte(tipo, nombre){
+  var c=getContraparte(tipo, nombre);
+  if(!c){ showToast('Contraparte no encontrada'); return; }
+  document.getElementById('mo-title').innerHTML='⚙️ '+nombre;
+  document.getElementById('mo-body').innerHTML=
+    '<div class="field" style="margin-bottom:10px"><label>ID</label><input type="text" id="ec-clave" value="'+(c.clave||'')+'" style="width:100%;font-family:var(--mono);text-transform:uppercase"></div>'+
+    '<div class="field" style="margin-bottom:10px"><label>Modo de cuenta</label><select id="ec-modo" style="'+_dsInput+'">'+
+      '<option value="fifo"'+(c.modo!=='corriente'?' selected':'')+'>Facturas con abonos</option>'+
+      '<option value="corriente"'+(c.modo==='corriente'?' selected':'')+'>Cargos y abonos</option></select></div>'+
+    '<div class="field" style="margin-bottom:10px"><label>Moneda</label><select id="ec-moneda" style="'+_dsInput+'">'+
+      '<option value="MXN"'+(c.moneda!=='USD'?' selected':'')+'>Pesos (MXN)</option>'+
+      '<option value="USD"'+(c.moneda==='USD'?' selected':'')+'>Dólares (USD)</option></select></div>'+
+    '<div class="field" style="margin-bottom:14px"><label>Tipo de cambio <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(solo cuentas USD, para el equivalente en pesos)</span></label>'+
+    '<input type="number" id="ec-tc" value="'+(c.tipoCambio||'')+'" placeholder="17.00" min="0" step="0.01" style="'+_dsInput+'"></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+      '<button onclick="abrirDeudaContraparte(\''+tipo+'\',deudaModalNombre)" style="padding:11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Cancelar</button>'+
+      '<button class="btn-main" style="margin:0" onclick="guardarEdicionContraparte(\''+tipo+'\',deudaModalNombre)">Guardar</button>'+
+    '</div>';
+}
+function guardarEdicionContraparte(tipo, nombre){
+  var c=getContraparte(tipo, nombre); if(!c) return;
+  var clave=(document.getElementById('ec-clave').value||'').trim().toUpperCase();
+  if(!clave){ showToast('Asigna un ID'); return; }
+  if(claveDuplicada(clave, tipo, nombre)){ showToast('El ID '+clave+' ya está usado'); return; }
+  c.clave=clave;
+  c.modo=document.getElementById('ec-modo').value;
+  c.moneda=document.getElementById('ec-moneda').value;
+  c.tipoCambio=parseFloat(document.getElementById('ec-tc').value)||0;
+  saveContrapartes(); sbSaveContraparte(c);
+  showToast('Guardado');
+  abrirDeudaContraparte(tipo, nombre); renderDeudas();
 }
 function registrarDeudaManualForm(){
   var tipo=(document.getElementById('dr-tipo')||{}).value||'cobrar';
