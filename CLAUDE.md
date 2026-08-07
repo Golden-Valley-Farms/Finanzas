@@ -150,21 +150,25 @@ Las 7 gráficas de línea de `renderRfrResumen()` usan **línea neutra + punto d
 
 La etiqueta de valor toma el color de su propio punto: los plugins leen `ds.pointBackgroundColor[i]` y lo pasan por `rfrTintaPunto()`, que en tema oscuro devuelve el color tal cual y en tema claro lo cambia por el paso oscuro del mismo tono (`RFR_SEM_COLS_TXT`) — los tonos saturados del semáforo no alcanzan contraste como texto sobre fondo blanco, el amarillo queda casi invisible. `rfrLabelInk()` queda solo como respaldo para etiquetas sin punto asociado.
 
-**Los cortes viven en la llamada de cada dataset** — ahí se cambian:
+**Cada serie se compara contra su propia métrica**, nunca contra la de otra serie — si no, una semana con más kg puede acabar peor pintada que una con menos (ese bug existió: la línea de Kg cosechados se pintaba con el semáforo de merma).
 
-| Gráfica | cortes | sentido |
+Hay dos orígenes de cortes:
+
+- **Metas reales del negocio** (fijas, en duro en la llamada del dataset): costo/cubeta cosechadores `[15,20,30]` y precio por caja `[170,130,60]`.
+- **Mediana histórica** (`rfrRefsHistoricas()` + `rfrCortesDesde(ref, altoBueno)`) para las demás, porque no hay meta definida. `rfrRefsHistoricas()` agrega por semana **todo** `framRegistros` (todos los ciclos, no solo el filtrado) y saca la mediana. Se usa mediana y no promedio porque la temporada alta lo jala mucho hacia arriba (677 kg contra 470 de mediana) y dejaría casi todo en rojo. `rfrCortesDesde` abre las bandas en proporción: `[ref, ref×0.6, ref×0.35]` cuando más alto es mejor, `[ref, ref×1.5, ref×2.5]` cuando más alto es peor.
+
+| Gráfica | referencia | sentido |
 |---|---|---|
-| % de merma | `[5,10,20]` | más alto es peor |
-| Kg cosechados vs. proceso | `[5,10,20]` sobre `semMermaPct` | más alto es peor |
-| Cajas por semana | `[300,150,75]` | más alto es mejor |
-| Costo/cubeta general | `[30,45,70]` | más alto es peor |
-| Costo/cubeta cosechadores | `[15,20,30]` | más alto es peor |
-| Precio por caja | `[170,130,60]` | más alto es mejor |
-| Total facturado | `[80000,40000,15000]` | más alto es mejor |
+| % de merma | mediana `refs.mermaPct` | más alto es peor |
+| Kg cosechados | mediana `refs.kg` | más alto es mejor |
+| Kg de proceso | mediana `refs.proceso` | más alto es peor |
+| Cajas por semana | mediana `refs.cajas` | más alto es mejor |
+| Costo/cubeta general | mediana `refs.costoGen` | más alto es peor |
+| Costo/cubeta cosechadores | **meta $15** | más alto es peor |
+| Precio por caja | **normal $170** | más alto es mejor |
+| Total facturado | mediana `refs.facturado` | más alto es mejor |
 
-Solo dos cortes son metas reales del negocio: **costo/cubeta cosechadores $15** y **precio por caja $170**. El resto son provisionales, puestos a ojo sobre el comportamiento del ciclo 2025-2026 — ajustarlos cuando el usuario defina las métricas.
-
-La gráfica de Kg conserva el color propio de sus dos líneas (es lo que las distingue en su leyenda del markup) y solo pinta los puntos con el semáforo de merma. "Por día" y "Por semana" no llevan semáforo: siguen con color sólido por serie.
+La gráfica de Kg conserva el color propio de sus dos líneas (es lo que las distingue en su leyenda del markup) y cada una lleva su propio semáforo. "Por día" y "Por semana" no llevan semáforo: siguen con color sólido por serie.
 
 ## Acoplamientos entre módulos
 

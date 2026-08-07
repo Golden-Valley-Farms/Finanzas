@@ -4424,6 +4424,44 @@ function rfrPuntoCol(v, cortes, altoBueno){
 function rfrPuntoCols(arr, cortes, altoBueno){
   return (arr||[]).map(function(v){ return rfrPuntoCol(v, cortes, altoBueno); });
 }
+// Cortes derivados de una referencia histórica: la referencia marca "una semana normal"
+// y las bandas se abren proporcionalmente a partir de ahí.
+function rfrCortesDesde(ref, altoBueno){
+  ref=parseFloat(ref)||0;
+  return altoBueno ? [ref, ref*0.6, ref*0.35] : [ref, ref*1.5, ref*2.5];
+}
+function rfrMediana(arr){
+  var v=(arr||[]).filter(function(x){return x!==null&&x!==undefined&&!isNaN(x);})
+                 .slice().sort(function(a,b){return a-b;});
+  if(!v.length) return 0;
+  var m=Math.floor(v.length/2);
+  return v.length%2 ? v[m] : (v[m-1]+v[m])/2;
+}
+// Referencias del semáforo: mediana semanal de TODO el histórico (todos los ciclos).
+// Se usa mediana y no promedio porque la temporada alta jala el promedio muy arriba
+// (677 kg contra 470 de mediana) y dejaría casi todas las semanas en rojo.
+function rfrRefsHistoricas(){
+  var sem={};
+  (framRegistros||[]).forEach(function(r){
+    var sk; try{ sk=rfrSemanaKey(r.fecha); }catch(e){ return; }
+    if(!sem[sk]) sem[sk]={kg:0,merma:0,cajas:0,cubetas:0};
+    var kg=(r.totalKg!==undefined&&r.totalKg!==null)?r.totalKg:((r.totalCajas||0)*(typeof KG_POR_CAJA!=='undefined'?KG_POR_CAJA:2.4));
+    sem[sk].kg+=kg; sem[sk].merma+=(r.merma||0);
+    sem[sk].cajas+=(r.totalCajas||0); sem[sk].cubetas+=(r.totalCubetas||0);
+  });
+  var kgs=[],procs=[],pcts=[],cajas=[],costos=[],facts=[];
+  Object.keys(sem).forEach(function(sk){
+    var s=sem[sk];
+    kgs.push(s.kg); procs.push(s.merma); cajas.push(s.cajas);
+    var base=s.kg+s.merma;
+    if(base>0) pcts.push(s.merma/base*100);
+    if(s.cubetas>0) costos.push(nominaFramSemana(sk)/s.cubetas);
+    var f=(framFinanzas||[]).filter(function(x){return x.semanaKey===sk;})[0];
+    if(f && f.precio) facts.push((f.cajas||0)*(f.precio||0));
+  });
+  return {kg:rfrMediana(kgs), proceso:rfrMediana(procs), mermaPct:rfrMediana(pcts),
+          cajas:rfrMediana(cajas), costoGen:rfrMediana(costos), facturado:rfrMediana(facts)};
+}
 
 function renderRfrResumen(data){
   var cont=document.getElementById('rfr-res-detalle'); if(!cont) return;
@@ -4744,6 +4782,8 @@ function renderRfrResumen(data){
     '</div>';
 
   var gridCol=rfrGridCol(); var textMuted='#898781';
+  // Referencias del semáforo de las gráficas de línea (ver rfrRefsHistoricas).
+  var refs=rfrRefsHistoricas();
 
   setTimeout(function(){
     mkRfrChart('rfr-res-trab-chart',{
@@ -4877,7 +4917,7 @@ function renderRfrResumen(data){
       plugins:[mermaPctLabelPlugin],
       data:{
         labels:semNumLbls,
-        datasets:[{label:'% merma',data:semMermaPct,borderColor:RFR_LINEA_NEUTRA,backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(semMermaPct,[5,10,20],false),pointBorderColor:rfrPuntoCols(semMermaPct,[5,10,20],false),fill:true,tension:0.3,spanGaps:true}]
+        datasets:[{label:'% merma',data:semMermaPct,borderColor:RFR_LINEA_NEUTRA,backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(semMermaPct,rfrCortesDesde(refs.mermaPct,false),false),pointBorderColor:rfrPuntoCols(semMermaPct,rfrCortesDesde(refs.mermaPct,false),false),fill:true,tension:0.3,spanGaps:true}]
       },
       options:{
         responsive:true,maintainAspectRatio:false,
@@ -4898,11 +4938,11 @@ function renderRfrResumen(data){
       data:{
         labels:semNumLbls,
         datasets:[
-          // Las dos líneas conservan su color (es lo que distingue las series en la leyenda);
-          // los puntos llevan el semáforo del % de merma de esa semana, que es justo la
-          // relación que compara esta gráfica.
-          {label:'Kg cosechados',data:semKgVals,borderColor:'#D6336C',backgroundColor:'rgba(214,51,108,0.08)',borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(semMermaPct,[5,10,20],false),pointBorderColor:rfrPuntoCols(semMermaPct,[5,10,20],false),fill:true,tension:0.3,spanGaps:true},
-          {label:'Kg de proceso',data:semMermaVals,borderColor:'#e34948',backgroundColor:'rgba(227,73,72,0.08)',borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(semMermaPct,[5,10,20],false),pointBorderColor:rfrPuntoCols(semMermaPct,[5,10,20],false),fill:true,tension:0.3,spanGaps:true}
+          // Las dos líneas conservan su color (es lo que distingue las series en la leyenda).
+          // Cada serie lleva su PROPIO semáforo, contra su propia mediana histórica:
+          // en cosechados más kg es mejor; en proceso más kg es peor.
+          {label:'Kg cosechados',data:semKgVals,borderColor:'#D6336C',backgroundColor:'rgba(214,51,108,0.08)',borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(semKgVals,rfrCortesDesde(refs.kg,true),true),pointBorderColor:rfrPuntoCols(semKgVals,rfrCortesDesde(refs.kg,true),true),fill:true,tension:0.3,spanGaps:true},
+          {label:'Kg de proceso',data:semMermaVals,borderColor:'#e34948',backgroundColor:'rgba(227,73,72,0.08)',borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(semMermaVals,rfrCortesDesde(refs.proceso,false),false),pointBorderColor:rfrPuntoCols(semMermaVals,rfrCortesDesde(refs.proceso,false),false),fill:true,tension:0.3,spanGaps:true}
         ]
       },
       options:{
@@ -4936,7 +4976,7 @@ function renderRfrResumen(data){
       plugins:[cajasSemanaLabelPlugin],
       data:{
         labels:semNumLbls,
-        datasets:[{label:'Cajas',data:cajasPorSemanaCiclo,borderColor:RFR_LINEA_NEUTRA,backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(cajasPorSemanaCiclo,[300,150,75],true),pointBorderColor:rfrPuntoCols(cajasPorSemanaCiclo,[300,150,75],true),fill:true,tension:0.3}]
+        datasets:[{label:'Cajas',data:cajasPorSemanaCiclo,borderColor:RFR_LINEA_NEUTRA,backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(cajasPorSemanaCiclo,rfrCortesDesde(refs.cajas,true),true),pointBorderColor:rfrPuntoCols(cajasPorSemanaCiclo,rfrCortesDesde(refs.cajas,true),true),fill:true,tension:0.3}]
       },
       options:{
         responsive:true,maintainAspectRatio:false,
@@ -4970,7 +5010,7 @@ function renderRfrResumen(data){
       plugins:[costoLineLabelPlugin],
       data:{
         labels:semNumLbls,
-        datasets:[{label:'Costo/cubeta general',data:costoGeneralPorSemana,borderColor:RFR_LINEA_NEUTRA,backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(costoGeneralPorSemana,[30,45,70],false),pointBorderColor:rfrPuntoCols(costoGeneralPorSemana,[30,45,70],false),fill:true,tension:0.3,spanGaps:true}]
+        datasets:[{label:'Costo/cubeta general',data:costoGeneralPorSemana,borderColor:RFR_LINEA_NEUTRA,backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(costoGeneralPorSemana,rfrCortesDesde(refs.costoGen,false),false),pointBorderColor:rfrPuntoCols(costoGeneralPorSemana,rfrCortesDesde(refs.costoGen,false),false),fill:true,tension:0.3,spanGaps:true}]
       },
       options:{
         responsive:true,maintainAspectRatio:false,
@@ -5044,7 +5084,7 @@ function renderRfrResumen(data){
       plugins:[facturadoLineLabelPlugin],
       data:{
         labels:semNumLbls,
-        datasets:[{label:'Total facturado',data:facturadoPorSemana,borderColor:RFR_LINEA_NEUTRA,backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(facturadoPorSemana,[80000,40000,15000],true),pointBorderColor:rfrPuntoCols(facturadoPorSemana,[80000,40000,15000],true),fill:true,tension:0.3,spanGaps:true}]
+        datasets:[{label:'Total facturado',data:facturadoPorSemana,borderColor:RFR_LINEA_NEUTRA,backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(facturadoPorSemana,rfrCortesDesde(refs.facturado,true),true),pointBorderColor:rfrPuntoCols(facturadoPorSemana,rfrCortesDesde(refs.facturado,true),true),fill:true,tension:0.3,spanGaps:true}]
       },
       options:{
         responsive:true,maintainAspectRatio:false,
