@@ -7771,36 +7771,54 @@ function renderDeudas(){
   pagosDeuda.forEach(function(p){ if(p.tipo===tipo) nombres[p.contraparte]=true; });
   contrapartes.forEach(function(c){ if(c.tipo===tipo) nombres[c.nombre]=true; });
   var lista=Object.keys(nombres).map(function(nom){
-    var r=calcContraparte(tipo,nom);
-    return {nombre:nom, saldo:r.saldoTotal, saldoAFavor:r.saldoAFavor, n:r.items.length};
+    var r=calcSaldoCuenta(tipo,nom);
+    return {nombre:nom, saldo:r.saldo, aFavor:r.aFavor, n:r.n, moneda:r.moneda, clave:r.clave,
+      tc:(getContraparte(tipo,nom)||{}).tipoCambio||0};
   }).sort(function(a,b){ return b.saldo-a.saldo; });
-  var totalSaldo=lista.reduce(function(a,x){return a+x.saldo;},0);
+  var totalSaldo=lista.reduce(function(a,x){
+    return a+(x.moneda==='USD'?x.saldo*(x.tc||0):x.saldo);
+  },0);
   document.getElementById('deuda-total-lbl').textContent=(tipo==='cobrar')?'Total por cobrar':'Total por pagar';
   var tv=document.getElementById('deuda-total-val'); tv.textContent=fmt(totalSaldo); tv.style.color=accent;
-  document.getElementById('deuda-count-val').textContent=lista.filter(function(x){return x.saldo>0.5;}).length;
+  var abiertas=lista.filter(function(x){return x.saldo>0.5 || x.aFavor>0.5;});
+  var saldadas=lista.filter(function(x){return x.saldo<=0.5 && x.aFavor<=0.5;});
+  document.getElementById('deuda-count-val').textContent=abiertas.length;
   var cont=document.getElementById('deuda-list');
   if(!lista.length){
     cont.innerHTML='<div class="empty" style="padding:44px 20px;text-align:center"><div class="empty-icon" style="font-size:40px">📒</div><div class="empty-text" style="margin-top:10px">Sin cuentas '+(tipo==='cobrar'?'por cobrar':'por pagar')+' aún.</div></div>';
     return;
   }
   cont.innerHTML='';
-  lista.forEach(function(x){
-    var liq=x.saldo<=0.5;
+  function pintaCard(x, esHist){
     var card=document.createElement('div');
     card.className='deuda-card';
+    if(esHist) card.style.opacity='0.55';
     card.onclick=function(){ abrirDeudaContraparte(tipo, x.nombre); };
+    var sub=x.n+' movimiento'+(x.n!==1?'s':'');
+    if(x.aFavor>0.5) sub+=' · a su favor '+fmtMon(x.aFavor,x.moneda);
+    var saldoTxt=fmtMon(x.saldo,x.moneda);
+    var eqMxn=(x.moneda==='USD'&&x.tc&&x.saldo>0.5)?'<div style="font-size:10px;color:var(--text3);font-family:var(--mono)">≈ '+fmt(x.saldo*x.tc)+'</div>':'';
     card.innerHTML=
       '<div style="flex:1;min-width:0">'+
-        '<div class="deuda-nom">'+x.nombre+'</div>'+
-        '<div class="deuda-sub">'+x.n+' movimiento'+(x.n!==1?'s':'')+(x.saldoAFavor>0.5?' · saldo a favor '+fmt(x.saldoAFavor):'')+'</div>'+
+        '<div class="deuda-nom">'+(x.clave?'<span style="font-family:var(--mono);font-size:11px;color:var(--text3)">'+x.clave+'</span> · ':'')+x.nombre+
+          (x.moneda==='USD'?' <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:var(--green-bg);color:var(--green)">USD</span>':'')+'</div>'+
+        '<div class="deuda-sub">'+sub+'</div>'+
       '</div>'+
       '<div style="text-align:right">'+
         '<div class="deuda-sub">saldo</div>'+
-        '<div class="deuda-saldo" style="color:'+(liq?'var(--text3)':accent)+'">'+fmt(x.saldo)+'</div>'+
+        '<div class="deuda-saldo" style="color:'+(esHist?'var(--text3)':accent)+'">'+saldoTxt+'</div>'+eqMxn+
       '</div>'+
       '<svg viewBox="0 0 24 24" fill="none" stroke="var(--text3)" style="width:18px;height:18px;stroke-width:2;flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>';
     cont.appendChild(card);
-  });
+  }
+  abiertas.forEach(function(x){ pintaCard(x,false); });
+  if(saldadas.length){
+    var hdr=document.createElement('div');
+    hdr.style.cssText='font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin:18px 0 8px';
+    hdr.textContent='Historial (saldadas)';
+    cont.appendChild(hdr);
+    saldadas.forEach(function(x){ pintaCard(x,true); });
+  }
 }
 
 function abrirDeudaContraparte(tipo, nombre){
