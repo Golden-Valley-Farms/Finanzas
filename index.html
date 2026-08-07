@@ -1845,39 +1845,62 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
     <div id="deuda-list"></div>
     <div id="deuda-registrar-sec" style="display:none;max-width:520px;margin:0 auto">
-      <div class="field" style="margin-bottom:12px"><label>Fecha</label>
-        <input type="date" id="dr-fecha" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none"></div>
-      <div class="field" style="margin-bottom:12px"><label>Movimiento</label>
-        <select id="dr-mov" onchange="onDrMovChange()" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none">
-          <option value="cargo">Cargo (nueva deuda)</option>
-          <option value="abono">Abono / pago</option>
-        </select></div>
-      <div class="field" style="margin-bottom:12px"><label>Tipo de deuda</label>
-        <select id="dr-tipo" onchange="onDrTipoChange()" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none">
-          <option value="cobrar">Por cobrar</option>
-          <option value="pagar">Por pagar</option>
-        </select></div>
-      <div class="field-row" style="margin-bottom:12px">
-        <div class="field" style="margin-bottom:0"><label id="dr-contraparte-lbl">Deudor</label>
-          <div style="position:relative">
-            <input type="text" id="dr-contraparte" placeholder="Nombre" autocomplete="off" style="width:100%" oninput="onDrContraparteInput()" onclick="showDrContraparteDropdown()" onblur="setTimeout(hideDrContraparteDropdown,150)" onchange="onDrContraparteElegida()">
-            <div id="dr-contraparte-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:200px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
-          </div></div>
-        <div class="field" style="margin-bottom:0"><label>ID</label>
-          <div style="position:relative">
-            <input type="text" id="dr-clave-view" readonly disabled placeholder="—" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text3);outline:none;cursor:default;font-family:var(--mono)">
-            <button type="button" id="dr-clave-edit-btn" onclick="editarClaveDesdeRegistrar()" title="Editar ID" style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px;line-height:1">✏️</button>
-          </div></div>
+      <div class="rfr-topbar" style="display:flex;gap:4px;margin-bottom:14px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
+        <button class="ven-tab active" id="drsub-tab-deuda" onclick="setDrSubTab('deuda')" style="flex:1">Deuda</button>
+        <button class="ven-tab" id="drsub-tab-clientes" onclick="setDrSubTab('clientes')" style="flex:1">Clientes</button>
       </div>
-      <div class="field" style="margin-bottom:12px"><label>Monto</label>
-        <div class="monto-wrap"><span class="monto-prefix" id="dr-monto-prefix">$</span><input type="number" id="dr-monto" placeholder="0.00" min="0" step="0.01"></div></div>
-      <div class="field" style="margin-bottom:12px;display:none" id="dr-interes-row"><label>Interés <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(opcional, se suma al cargo)</span></label>
-        <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="dr-interes" placeholder="0.00" min="0" step="0.01"></div></div>
-      <div class="field" style="margin-bottom:12px"><label>Concepto</label>
-        <input type="text" id="dr-concepto" placeholder="Ej: Préstamo, anticipo..." style="width:100%"></div>
-      <div class="field" style="margin-bottom:16px"><label>Factura <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(opcional)</span></label>
-        <input type="text" id="dr-factura" placeholder="Folio de factura" style="width:100%"></div>
-      <button class="btn-main" onclick="registrarDeudaManualForm()">Registrar movimiento</button>
+
+      <div id="drsub-deuda">
+        <div class="field" style="margin-bottom:12px"><label>Fecha</label>
+          <input type="date" id="dr-fecha" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none"></div>
+        <div class="field" style="margin-bottom:12px"><label>Movimiento</label>
+          <select id="dr-mov" onchange="onDrMovChange()" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none">
+            <option value="cargo">Cargo (nueva deuda)</option>
+            <option value="abono">Abono / pago</option>
+          </select></div>
+        <div class="field" style="margin-bottom:12px"><label>Tipo de deuda</label>
+          <select id="dr-tipo" onchange="onDrTipoChange()" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none">
+            <option value="cobrar">Por cobrar</option>
+            <option value="pagar">Por pagar</option>
+          </select></div>
+        <div class="field-row" style="margin-bottom:12px">
+          <div class="field" style="margin-bottom:0"><label id="dr-contraparte-lbl">Deudor</label>
+            <select id="dr-contraparte" onchange="onDrContraparteElegida()" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none">
+              <option value="">Selecciona...</option>
+            </select></div>
+          <div class="field" style="margin-bottom:0"><label>ID</label>
+            <input type="text" id="dr-clave-view" readonly disabled placeholder="—" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text3);outline:none;cursor:default;font-family:var(--mono)"></div>
+        </div>
+        <div class="field" style="margin-bottom:12px"><label>Monto</label>
+          <div class="monto-wrap"><span class="monto-prefix" id="dr-monto-prefix">$</span><input type="number" id="dr-monto" placeholder="0.00" min="0" step="0.01"></div></div>
+        <div class="field" style="margin-bottom:12px;display:none" id="dr-interes-row"><label>Interés <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(opcional, se suma al cargo)</span></label>
+          <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="dr-interes" placeholder="0.00" min="0" step="0.01"></div></div>
+        <div class="field" style="margin-bottom:12px"><label>Concepto</label>
+          <input type="text" id="dr-concepto" placeholder="Ej: Préstamo, anticipo..." style="width:100%"></div>
+        <div class="field" style="margin-bottom:16px"><label>Factura <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(opcional)</span></label>
+          <input type="text" id="dr-factura" placeholder="Folio de factura" style="width:100%"></div>
+        <button class="btn-main" onclick="registrarDeudaManualForm()">Registrar movimiento</button>
+      </div>
+
+      <div id="drsub-clientes" style="display:none">
+        <div class="rfr-topbar" style="display:flex;gap:4px;margin-bottom:14px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
+          <button class="ven-tab active" id="drc-tab-registro" onclick="setDrClientesTab('registro')" style="flex:1">Registro</button>
+          <button class="ven-tab" id="drc-tab-historial" onclick="setDrClientesTab('historial')" style="flex:1">Historial</button>
+        </div>
+        <div id="drc-registro">
+          <div class="field" style="margin-bottom:12px"><label>Nombre</label>
+            <input type="text" id="drc-nombre" placeholder="Nombre completo" style="width:100%"></div>
+          <div class="field" style="margin-bottom:12px"><label>ID</label>
+            <input type="text" id="drc-clave" placeholder="ID corto, ej. Clem" style="width:100%;font-family:var(--mono)"></div>
+          <div class="field" style="margin-bottom:16px"><label>Tipo</label>
+            <select id="drc-tipo" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none">
+              <option value="cobrar">Deudor (nos debe)</option>
+              <option value="pagar">Acreedor (le debemos)</option>
+            </select></div>
+          <button class="btn-main" onclick="registrarClienteForm()">Agregar cliente</button>
+        </div>
+        <div id="drc-historial" style="display:none"></div>
+      </div>
     </div>
   </div>
 
@@ -7606,15 +7629,11 @@ function setDeudaTab(t){
 function drRefreshContraparteLabel(){
   var esCobrar=((document.getElementById('dr-tipo')||{}).value||'cobrar')==='cobrar';
   var lbl=document.getElementById('dr-contraparte-lbl');
-  var inp=document.getElementById('dr-contraparte');
   if(lbl) lbl.textContent=esCobrar?'Deudor':'Acreedor';
-  if(inp) inp.placeholder=esCobrar?'¿Quién nos debe?':'¿A quién le debemos?';
 }
 function onDrTipoChange(){
   drRefreshContraparteLabel();
-  var inp=document.getElementById('dr-contraparte'); if(inp) inp.value='';
-  hideDrContraparteDropdown();
-  onDrContraparteElegida();
+  renderDrContraparteSelect();
 }
 function onDrMovChange(){ onDrContraparteElegida(); }
 function onDrContraparteElegida(){
@@ -7626,90 +7645,103 @@ function onDrContraparteElegida(){
   var pref=document.getElementById('dr-monto-prefix');
   if(pref) pref.textContent=(nom && cpMoneda(tipo,nom)==='USD')?'US$':'$';
   var cpc=getContraparte(tipo,nom);
-  var claveView=document.getElementById('dr-clave-view'), editBtn=document.getElementById('dr-clave-edit-btn');
+  var claveView=document.getElementById('dr-clave-view');
   if(claveView) claveView.value=cpc?(cpc.clave||'(sin ID)'):'';
-  if(editBtn) editBtn.style.display=cpc?'':'none';
-}
-function editarClaveDesdeRegistrar(){
-  var tipo=(((document.getElementById('dr-tipo')||{}).value||'cobrar')==='cobrar')?'cobrar':'pagar';
-  var nom=(document.getElementById('dr-contraparte').value||'').trim();
-  if(!nom) return;
-  abrirEditarContraparte(tipo, nom, 'registrar');
 }
 function initDeudaRegistrarForm(){
   var f=document.getElementById('dr-fecha');
   if(f && !f.value) f.value=new Date().toISOString().substring(0,10);
   drRefreshContraparteLabel();
+  setDrSubTab(drSubTabSel);
 }
-// Lista desplegable de contraparte: catálogo de contrapartes filtrado por el tipo elegido
+// Catálogo de contrapartes filtrado por el tipo elegido, para el select de Deuda
 function drContraparteLista(){
   var tipo=(((document.getElementById('dr-tipo')||{}).value||'cobrar')==='cobrar')?'cobrar':'pagar';
-  return contrapartes.filter(function(c){return c.tipo===tipo;});
+  return contrapartes.filter(function(c){return c.tipo===tipo;}).slice().sort(function(a,b){return a.nombre.localeCompare(b.nombre);});
 }
-function renderDrContraparteDropdown(){
-  var dd=document.getElementById('dr-contraparte-dropdown'); if(!dd) return;
+function renderDrContraparteSelect(){
+  var sel=document.getElementById('dr-contraparte'); if(!sel) return;
+  var valPrevio=sel.value;
   var lista=drContraparteLista();
-  var q=(document.getElementById('dr-contraparte').value||'').toLowerCase();
-  var filtered=lista.filter(function(c){return (c.nombre+' '+c.clave).toLowerCase().indexOf(q)>=0;});
-  dd.innerHTML='';
-  filtered.forEach(function(c){
-    var row=document.createElement('div');
-    row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px';
-    row.onmouseenter=function(){this.style.background='var(--green-bg)';};
-    row.onmouseleave=function(){this.style.background='';};
-    var name=document.createElement('span');
-    name.textContent=(c.clave?c.clave+' · ':'')+c.nombre; name.style.flex='1';
-    name.onmousedown=function(e){e.preventDefault();document.getElementById('dr-contraparte').value=c.nombre;hideDrContraparteDropdown();onDrContraparteElegida();};
-    row.appendChild(name); dd.appendChild(row);
-  });
-  var addRow=document.createElement('div');
-  addRow.style.cssText='padding:10px 12px;cursor:pointer;font-size:13px;color:var(--green);font-weight:600';
-  addRow.textContent='+ Nueva contraparte...';
-  addRow.onmouseenter=function(){this.style.background='var(--green-bg)';};
-  addRow.onmouseleave=function(){this.style.background='';};
-  addRow.onmousedown=function(e){e.preventDefault();var txt=(document.getElementById('dr-contraparte')||{}).value||'';hideDrContraparteDropdown();abrirModalNuevoDrContraparte(txt.trim());};
-  dd.appendChild(addRow);
-  dd.style.display='block';
+  sel.innerHTML='<option value="">Selecciona...</option>'+lista.map(function(c){
+    return '<option value="'+c.nombre.replace(/"/g,'&quot;')+'">'+(c.clave?c.clave+' · ':'')+c.nombre+'</option>';
+  }).join('');
+  sel.value=lista.some(function(c){return c.nombre===valPrevio;})?valPrevio:'';
+  onDrContraparteElegida();
 }
-function showDrContraparteDropdown(){renderDrContraparteDropdown();}
-function hideDrContraparteDropdown(){var dd=document.getElementById('dr-contraparte-dropdown');if(dd)dd.style.display='none';}
-function onDrContraparteInput(){renderDrContraparteDropdown();}
 function claveDuplicada(clave, exceptoTipo, exceptoNombre){
   if(!clave) return false;
   return contrapartes.some(function(c){
     return c.clave===clave && !(c.tipo===exceptoTipo && c.nombre===exceptoNombre);
   });
 }
-function abrirModalNuevoDrContraparte(prefill){
-  var esCobrar=(((document.getElementById('dr-tipo')||{}).value||'cobrar')==='cobrar');
-  var tipo=esCobrar?'cobrar':'pagar';
-  document.getElementById('mo-title').innerHTML='👤 Nueva contraparte <span class="chip '+(esCobrar?'jal':'com')+'">'+(esCobrar?'Por cobrar':'Por pagar')+'</span>';
-  document.getElementById('mo-body').innerHTML=
-    '<div class="field" style="margin-bottom:10px"><label>Nombre</label><input type="text" id="nc-nombre" placeholder="Nombre completo" style="width:100%"></div>'+
-    '<div class="field" style="margin-bottom:10px"><label>ID <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(lo asignas tú, ej. Clem)</span></label><input type="text" id="nc-clave" placeholder="ID corto" style="width:100%;font-family:var(--mono)"></div>'+
-    '<div class="field" style="margin-bottom:10px"><label>Modo de cuenta</label><select id="nc-modo" style="'+_dsInput+'">'+
-      '<option value="fifo">Facturas con abonos (se paga la más antigua)</option>'+
-      '<option value="corriente">Cargos y abonos (saldo corrido)</option></select></div>'+
-    '<div class="field" style="margin-bottom:14px"><label>Moneda</label><select id="nc-moneda" style="'+_dsInput+'">'+
-      '<option value="MXN">Pesos (MXN)</option><option value="USD">Dólares (USD)</option></select></div>'+
-    '<button class="btn-main" onclick="confirmarNuevoDrContraparte(\''+tipo+'\')">Agregar</button>';
-  document.getElementById('overlay').classList.add('open');
-  setTimeout(function(){ var inp=document.getElementById('nc-nombre'); if(inp){ if(prefill) inp.value=prefill; inp.focus(); } }, 100);
+var drSubTabSel='deuda';
+function setDrSubTab(t){
+  drSubTabSel=t;
+  var td=document.getElementById('drsub-tab-deuda'), tc=document.getElementById('drsub-tab-clientes');
+  if(td) td.classList.toggle('active', t==='deuda');
+  if(tc) tc.classList.toggle('active', t==='clientes');
+  var pd=document.getElementById('drsub-deuda'), pc=document.getElementById('drsub-clientes');
+  if(pd) pd.style.display=(t==='deuda')?'':'none';
+  if(pc) pc.style.display=(t==='clientes')?'':'none';
+  if(t==='deuda') renderDrContraparteSelect();
+  else setDrClientesTab(drClientesTabSel);
 }
-function confirmarNuevoDrContraparte(tipo){
-  var nom=(document.getElementById('nc-nombre').value||'').trim();
-  var clave=(document.getElementById('nc-clave').value||'').trim();
-  var modo=document.getElementById('nc-modo').value;
-  var moneda=document.getElementById('nc-moneda').value;
-  if(!nom){ showToast('Escribe un nombre'); return; }
+var drClientesTabSel='registro';
+function setDrClientesTab(t){
+  drClientesTabSel=t;
+  var tr=document.getElementById('drc-tab-registro'), th=document.getElementById('drc-tab-historial');
+  if(tr) tr.classList.toggle('active', t==='registro');
+  if(th) th.classList.toggle('active', t==='historial');
+  var pr=document.getElementById('drc-registro'), ph=document.getElementById('drc-historial');
+  if(pr) pr.style.display=(t==='registro')?'':'none';
+  if(ph) ph.style.display=(t==='historial')?'':'none';
+  if(t==='historial') renderClientesHistorial();
+}
+function registrarClienteForm(){
+  var nombre=(document.getElementById('drc-nombre').value||'').trim();
+  var clave=(document.getElementById('drc-clave').value||'').trim();
+  var tipo=document.getElementById('drc-tipo').value||'cobrar';
+  if(!nombre){ showToast('Escribe un nombre'); return; }
   if(!clave){ showToast('Asigna un ID'); return; }
   if(claveDuplicada(clave)){ showToast('El ID '+clave+' ya está usado'); return; }
-  if(getContraparte(tipo, nom)){ showToast('Esa contraparte ya existe'); return; }
-  var c={nombre:nom, tipo:tipo, clave:clave, modo:modo, moneda:moneda, tipoCambio:0};
+  if(getContraparte(tipo, nombre)){ showToast('Ese cliente ya existe'); return; }
+  var c={nombre:nombre, tipo:tipo, clave:clave, modo:'fifo', moneda:'MXN', tipoCambio:0};
   contrapartes.push(c); saveContrapartes(); sbSaveContraparte(c);
-  closeModal();
-  var inp=document.getElementById('dr-contraparte'); if(inp) inp.value=nom;
-  showToast('Contraparte '+clave+' agregada');
+  document.getElementById('drc-nombre').value='';
+  document.getElementById('drc-clave').value='';
+  showToast('Cliente '+clave+' agregado');
+}
+function renderClientesHistorial(){
+  var cont=document.getElementById('drc-historial'); if(!cont) return;
+  var lista=contrapartes.slice().sort(function(a,b){
+    if(a.tipo!==b.tipo) return a.tipo==='cobrar'?-1:1;
+    return a.nombre.localeCompare(b.nombre);
+  });
+  if(!lista.length){
+    cont.innerHTML='<div class="empty" style="padding:30px 20px;text-align:center"><div class="empty-icon" style="font-size:36px">👤</div><div class="empty-text" style="margin-top:8px">Aún no hay clientes registrados.</div></div>';
+    return;
+  }
+  cont.innerHTML='';
+  lista.forEach(function(c){
+    var card=document.createElement('div');
+    card.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:11px 12px;border:0.5px solid var(--border);border-radius:var(--radius);margin-bottom:8px';
+    card.innerHTML=
+      '<div style="min-width:0">'+
+        '<div style="font-size:14px;font-weight:600;color:var(--text)">'+
+          '<span style="font-family:var(--mono);font-size:11px;color:var(--text3)">'+(c.clave||'—')+'</span> · '+c.nombre+
+        '</div>'+
+        '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+
+          (c.tipo==='cobrar'?'Deudor':'Acreedor')+' · '+(c.modo==='corriente'?'Cargos y abonos':'Facturas')+(c.moneda==='USD'?' · USD':'')+
+        '</div>'+
+      '</div>';
+    var btn=document.createElement('button');
+    btn.innerHTML='✏️'; btn.title='Editar';
+    btn.style.cssText='background:none;border:none;cursor:pointer;font-size:16px;padding:4px 6px;flex-shrink:0';
+    btn.onclick=function(){ abrirEditarContraparte(c.tipo, c.nombre, 'clientes'); };
+    card.appendChild(btn);
+    cont.appendChild(card);
+  });
 }
 var _ecTipo='', _ecNombre='', _ecContexto='cuenta';
 function abrirEditarContraparte(tipo, nombre, contexto){
@@ -7734,7 +7766,7 @@ function abrirEditarContraparte(tipo, nombre, contexto){
   document.getElementById('overlay').classList.add('open');
 }
 function cancelarEdicionContraparte(){
-  if(_ecContexto==='registrar') closeModal();
+  if(_ecContexto==='clientes') closeModal();
   else abrirDeudaContraparte(_ecTipo, _ecNombre);
 }
 function guardarEdicionContraparte(){
@@ -7748,7 +7780,7 @@ function guardarEdicionContraparte(){
   c.tipoCambio=parseFloat(document.getElementById('ec-tc').value)||0;
   saveContrapartes(); sbSaveContraparte(c);
   showToast('Guardado');
-  if(_ecContexto==='registrar'){ closeModal(); onDrContraparteElegida(); }
+  if(_ecContexto==='clientes'){ closeModal(); renderClientesHistorial(); }
   else { abrirDeudaContraparte(_ecTipo, _ecNombre); renderDeudas(); }
 }
 function registrarDeudaManualForm(){

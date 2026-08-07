@@ -103,7 +103,11 @@ Los colores de categoría (`catColor()`) buscan en `CAT_COLORS` por nombre norma
 
 Rediseñado en ago-2026 (spec en `docs/superpowers/specs/2026-08-07-modulo-deudas-design.md`).
 
-**Catálogo de contrapartes obligatorio.** Cada contraparte vive en `contrapartes` con `{nombre, tipo, clave, modo, moneda, tipoCambio}`. La `clave` es un ID corto que asigna el usuario a mano (ej. `Clem`, `AgrLB`), único, con mayúsculas/minúsculas respetadas. Registrar deudas o abonos exige elegir una contraparte del catálogo (`getContraparte()` valida); el alta se hace desde "+ Nueva contraparte..." en el dropdown.
+**Catálogo de contrapartes obligatorio.** Cada contraparte vive en `contrapartes` con `{nombre, tipo, clave, modo, moneda, tipoCambio}`. La `clave` es un ID corto que asigna el usuario a mano (ej. `Clem`, `AgrLB`), único, con mayúsculas/minúsculas respetadas. Registrar deudas o abonos exige elegir una contraparte del catálogo (`getContraparte()` valida).
+
+**"Registrar" tiene sub-pestañas: Deuda / Clientes** (`setDrSubTab()`, estado en `drSubTabSel`). En "Deuda", el selector de contraparte es un `<select>` de solo elección (`dr-contraparte`, poblado por `renderDrContraparteSelect()`/`drContraparteLista()` según el tipo cobrar/pagar) — ya no se puede escribir un nombre libre ni dar de alta desde ahí. "Clientes" a su vez tiene sub-pestañas **Registro** / **Historial** (`setDrClientesTab()`, estado en `drClientesTabSel`): Registro (`registrarClienteForm()`) solo pide nombre, ID y tipo — crea con `modo:'fifo'`, `moneda:'MXN'` por defecto; Historial (`renderClientesHistorial()`) lista todas las contrapartes con botón ✏️ para editar clave/modo/moneda/tipo de cambio vía `abrirEditarContraparte(tipo, nombre, 'clientes')`.
+
+**`abrirEditarContraparte(tipo, nombre, contexto)`** es el modal único de edición, reutilizado en dos contextos: `'cuenta'` (default, desde el ⚙️ del modal de una cuenta en Por cobrar/pagar — al cerrar vuelve a esa cuenta) y `'clientes'` (desde el Historial — al cerrar vuelve al Historial). No editar el `tipo` ni el `nombre` de una contraparte: son la clave compuesta que enlaza con sus `deudas`/`pagos_deuda` existentes; cambiarlos huerfanaría esos movimientos.
 
 **Dos modos por cuenta**, guardados en `contraparte.modo`:
 
