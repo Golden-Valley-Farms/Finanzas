@@ -2065,7 +2065,8 @@ async function cargarDesdeSB(){
     savePagosDeuda();
   }
   if(cpData && cpData.length){
-    contrapartes = cpData.map(function(c){ return {nombre:c.nombre, tipo:c.tipo}; });
+    contrapartes = cpData.map(function(c){ return {nombre:c.nombre, tipo:c.tipo,
+      clave:c.clave||'', modo:c.modo||'fifo', moneda:c.moneda||'MXN', tipoCambio:parseFloat(c.tipo_cambio||0)}; });
     saveContrapartes();
   }
   if(typeof renderDeudas==='function' && document.getElementById('sc-deudas') && document.getElementById('sc-deudas').classList.contains('active')) renderDeudas();
@@ -7397,15 +7398,28 @@ async function sbSavePagoDeuda(p){
   if(r && r.error){ await sb.from('pagos_deuda').upsert(base); }
 }
 async function sbDeletePagoDeuda(id){ if(!sbOnline||!sb) return; await sb.from('pagos_deuda').delete().eq('id', id); }
-async function sbSaveContraparte(nombre, tipo){
+async function sbSaveContraparte(c){
   if(!sbOnline||!sb) return;
-  await sb.from('contrapartes').upsert({nombre:nombre, tipo:tipo}, {onConflict:'nombre,tipo'});
+  var full={nombre:c.nombre, tipo:c.tipo, clave:c.clave||'', modo:c.modo||'fifo',
+    moneda:c.moneda||'MXN', tipo_cambio:parseFloat(c.tipoCambio)||0};
+  var r=await sb.from('contrapartes').upsert(full, {onConflict:'nombre,tipo'});
+  if(r && r.error){ await sb.from('contrapartes').upsert({nombre:c.nombre, tipo:c.tipo}, {onConflict:'nombre,tipo'}); }
 }
+
+function getContraparte(tipo, nombre){
+  for(var i=0;i<contrapartes.length;i++){
+    if(contrapartes[i].tipo===tipo && contrapartes[i].nombre===nombre) return contrapartes[i];
+  }
+  return null;
+}
+function cpModo(tipo, nombre){ var c=getContraparte(tipo,nombre); return (c&&c.modo==='corriente')?'corriente':'fifo'; }
+function cpMoneda(tipo, nombre){ var c=getContraparte(tipo,nombre); return (c&&c.moneda==='USD')?'USD':'MXN'; }
 
 function registrarContraparte(nombre, tipo){
   if(!nombre) return;
-  if(!contrapartes.some(function(c){return c.nombre===nombre && c.tipo===tipo;})){
-    contrapartes.push({nombre:nombre, tipo:tipo}); saveContrapartes(); sbSaveContraparte(nombre, tipo);
+  if(!getContraparte(tipo, nombre)){
+    var c={nombre:nombre, tipo:tipo, clave:'', modo:'fifo', moneda:'MXN', tipoCambio:0};
+    contrapartes.push(c); saveContrapartes(); sbSaveContraparte(c);
   }
 }
 
