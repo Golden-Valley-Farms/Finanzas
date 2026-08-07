@@ -7675,7 +7675,7 @@ function abrirModalNuevoDrContraparte(prefill){
   document.getElementById('mo-title').innerHTML='👤 Nueva contraparte <span class="chip '+(esCobrar?'jal':'com')+'">'+(esCobrar?'Por cobrar':'Por pagar')+'</span>';
   document.getElementById('mo-body').innerHTML=
     '<div class="field" style="margin-bottom:10px"><label>Nombre</label><input type="text" id="nc-nombre" placeholder="Nombre completo" style="width:100%"></div>'+
-    '<div class="field" style="margin-bottom:10px"><label>ID <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(lo asignas tú, ej. CD-01)</span></label><input type="text" id="nc-clave" placeholder="XX-01" style="width:100%;font-family:var(--mono);text-transform:uppercase"></div>'+
+    '<div class="field" style="margin-bottom:10px"><label>ID <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(lo asignas tú, ej. Clem)</span></label><input type="text" id="nc-clave" placeholder="ID corto" style="width:100%;font-family:var(--mono)"></div>'+
     '<div class="field" style="margin-bottom:10px"><label>Modo de cuenta</label><select id="nc-modo" style="'+_dsInput+'">'+
       '<option value="fifo">Facturas con abonos (se paga la más antigua)</option>'+
       '<option value="corriente">Cargos y abonos (saldo corrido)</option></select></div>'+
@@ -7687,7 +7687,7 @@ function abrirModalNuevoDrContraparte(prefill){
 }
 function confirmarNuevoDrContraparte(tipo){
   var nom=(document.getElementById('nc-nombre').value||'').trim();
-  var clave=(document.getElementById('nc-clave').value||'').trim().toUpperCase();
+  var clave=(document.getElementById('nc-clave').value||'').trim();
   var modo=document.getElementById('nc-modo').value;
   var moneda=document.getElementById('nc-moneda').value;
   if(!nom){ showToast('Escribe un nombre'); return; }
@@ -7705,7 +7705,7 @@ function abrirEditarContraparte(tipo, nombre){
   if(!c){ showToast('Contraparte no encontrada'); return; }
   document.getElementById('mo-title').innerHTML='⚙️ '+nombre;
   document.getElementById('mo-body').innerHTML=
-    '<div class="field" style="margin-bottom:10px"><label>ID</label><input type="text" id="ec-clave" value="'+(c.clave||'')+'" style="width:100%;font-family:var(--mono);text-transform:uppercase"></div>'+
+    '<div class="field" style="margin-bottom:10px"><label>ID</label><input type="text" id="ec-clave" value="'+(c.clave||'')+'" style="width:100%;font-family:var(--mono)"></div>'+
     '<div class="field" style="margin-bottom:10px"><label>Modo de cuenta</label><select id="ec-modo" style="'+_dsInput+'">'+
       '<option value="fifo"'+(c.modo!=='corriente'?' selected':'')+'>Facturas con abonos</option>'+
       '<option value="corriente"'+(c.modo==='corriente'?' selected':'')+'>Cargos y abonos</option></select></div>'+
@@ -7721,7 +7721,7 @@ function abrirEditarContraparte(tipo, nombre){
 }
 function guardarEdicionContraparte(tipo, nombre){
   var c=getContraparte(tipo, nombre); if(!c) return;
-  var clave=(document.getElementById('ec-clave').value||'').trim().toUpperCase();
+  var clave=(document.getElementById('ec-clave').value||'').trim();
   if(!clave){ showToast('Asigna un ID'); return; }
   if(claveDuplicada(clave, tipo, nombre)){ showToast('El ID '+clave+' ya está usado'); return; }
   c.clave=clave;
