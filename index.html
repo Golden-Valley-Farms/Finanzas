@@ -1857,11 +1857,18 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <option value="cobrar">Por cobrar</option>
           <option value="pagar">Por pagar</option>
         </select></div>
-      <div class="field" style="margin-bottom:12px"><label id="dr-contraparte-lbl">Deudor</label>
-        <div style="position:relative">
-          <input type="text" id="dr-contraparte" placeholder="Nombre" autocomplete="off" style="width:100%" oninput="onDrContraparteInput()" onclick="showDrContraparteDropdown()" onblur="setTimeout(hideDrContraparteDropdown,150)" onchange="onDrContraparteElegida()">
-          <div id="dr-contraparte-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:200px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
-        </div></div>
+      <div class="field-row" style="margin-bottom:12px">
+        <div class="field" style="margin-bottom:0"><label id="dr-contraparte-lbl">Deudor</label>
+          <div style="position:relative">
+            <input type="text" id="dr-contraparte" placeholder="Nombre" autocomplete="off" style="width:100%" oninput="onDrContraparteInput()" onclick="showDrContraparteDropdown()" onblur="setTimeout(hideDrContraparteDropdown,150)" onchange="onDrContraparteElegida()">
+            <div id="dr-contraparte-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:200px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
+          </div></div>
+        <div class="field" style="margin-bottom:0"><label>ID</label>
+          <div style="position:relative">
+            <input type="text" id="dr-clave-view" readonly disabled placeholder="—" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text3);outline:none;cursor:default;font-family:var(--mono)">
+            <button type="button" id="dr-clave-edit-btn" onclick="editarClaveDesdeRegistrar()" title="Editar ID" style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px;line-height:1">✏️</button>
+          </div></div>
+      </div>
       <div class="field" style="margin-bottom:12px"><label>Monto</label>
         <div class="monto-wrap"><span class="monto-prefix" id="dr-monto-prefix">$</span><input type="number" id="dr-monto" placeholder="0.00" min="0" step="0.01"></div></div>
       <div class="field" style="margin-bottom:12px;display:none" id="dr-interes-row"><label>Interés <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(opcional, se suma al cargo)</span></label>
@@ -1871,12 +1878,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="field" style="margin-bottom:16px"><label>Factura <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(opcional)</span></label>
         <input type="text" id="dr-factura" placeholder="Folio de factura" style="width:100%"></div>
       <button class="btn-main" onclick="registrarDeudaManualForm()">Registrar movimiento</button>
-      <div style="margin-top:24px;padding-top:16px;border-top:0.5px solid var(--border)">
-        <label style="display:block;margin-bottom:6px">Importar historial (archivo JSON)</label>
-        <input type="file" id="dr-import-file" accept=".json,application/json" style="font-size:13px;color:var(--text2);width:100%">
-        <div style="font-size:11px;color:var(--text3);margin-top:6px">Carga cuentas y abonos desde un archivo. No duplica lo que ya esté cargado.</div>
-        <button style="margin-top:10px;width:100%;padding:11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)" onclick="importarDeudasDesdeArchivo()">Importar a la app y Supabase</button>
-      </div>
     </div>
   </div>
 
@@ -7624,6 +7625,16 @@ function onDrContraparteElegida(){
   if(row) row.style.display=(esCargo && nom && cpModo(tipo,nom)==='corriente')?'':'none';
   var pref=document.getElementById('dr-monto-prefix');
   if(pref) pref.textContent=(nom && cpMoneda(tipo,nom)==='USD')?'US$':'$';
+  var cpc=getContraparte(tipo,nom);
+  var claveView=document.getElementById('dr-clave-view'), editBtn=document.getElementById('dr-clave-edit-btn');
+  if(claveView) claveView.value=cpc?(cpc.clave||'(sin ID)'):'';
+  if(editBtn) editBtn.style.display=cpc?'':'none';
+}
+function editarClaveDesdeRegistrar(){
+  var tipo=(((document.getElementById('dr-tipo')||{}).value||'cobrar')==='cobrar')?'cobrar':'pagar';
+  var nom=(document.getElementById('dr-contraparte').value||'').trim();
+  if(!nom) return;
+  abrirEditarContraparte(tipo, nom, 'registrar');
 }
 function initDeudaRegistrarForm(){
   var f=document.getElementById('dr-fecha');
@@ -7700,9 +7711,11 @@ function confirmarNuevoDrContraparte(tipo){
   var inp=document.getElementById('dr-contraparte'); if(inp) inp.value=nom;
   showToast('Contraparte '+clave+' agregada');
 }
-function abrirEditarContraparte(tipo, nombre){
+var _ecTipo='', _ecNombre='', _ecContexto='cuenta';
+function abrirEditarContraparte(tipo, nombre, contexto){
   var c=getContraparte(tipo, nombre);
   if(!c){ showToast('Contraparte no encontrada'); return; }
+  _ecTipo=tipo; _ecNombre=nombre; _ecContexto=contexto||'cuenta';
   document.getElementById('mo-title').innerHTML='⚙️ '+nombre;
   document.getElementById('mo-body').innerHTML=
     '<div class="field" style="margin-bottom:10px"><label>ID</label><input type="text" id="ec-clave" value="'+(c.clave||'')+'" style="width:100%;font-family:var(--mono)"></div>'+
@@ -7715,22 +7728,28 @@ function abrirEditarContraparte(tipo, nombre){
     '<div class="field" style="margin-bottom:14px"><label>Tipo de cambio <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(solo cuentas USD, para el equivalente en pesos)</span></label>'+
     '<input type="number" id="ec-tc" value="'+(c.tipoCambio||'')+'" placeholder="17.00" min="0" step="0.01" style="'+_dsInput+'"></div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-      '<button onclick="abrirDeudaContraparte(\''+tipo+'\',deudaModalNombre)" style="padding:11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Cancelar</button>'+
-      '<button class="btn-main" style="margin:0" onclick="guardarEdicionContraparte(\''+tipo+'\',deudaModalNombre)">Guardar</button>'+
+      '<button onclick="cancelarEdicionContraparte()" style="padding:11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Cancelar</button>'+
+      '<button class="btn-main" style="margin:0" onclick="guardarEdicionContraparte()">Guardar</button>'+
     '</div>';
+  document.getElementById('overlay').classList.add('open');
 }
-function guardarEdicionContraparte(tipo, nombre){
-  var c=getContraparte(tipo, nombre); if(!c) return;
+function cancelarEdicionContraparte(){
+  if(_ecContexto==='registrar') closeModal();
+  else abrirDeudaContraparte(_ecTipo, _ecNombre);
+}
+function guardarEdicionContraparte(){
+  var c=getContraparte(_ecTipo, _ecNombre); if(!c) return;
   var clave=(document.getElementById('ec-clave').value||'').trim();
   if(!clave){ showToast('Asigna un ID'); return; }
-  if(claveDuplicada(clave, tipo, nombre)){ showToast('El ID '+clave+' ya está usado'); return; }
+  if(claveDuplicada(clave, _ecTipo, _ecNombre)){ showToast('El ID '+clave+' ya está usado'); return; }
   c.clave=clave;
   c.modo=document.getElementById('ec-modo').value;
   c.moneda=document.getElementById('ec-moneda').value;
   c.tipoCambio=parseFloat(document.getElementById('ec-tc').value)||0;
   saveContrapartes(); sbSaveContraparte(c);
   showToast('Guardado');
-  abrirDeudaContraparte(tipo, nombre); renderDeudas();
+  if(_ecContexto==='registrar'){ closeModal(); onDrContraparteElegida(); }
+  else { abrirDeudaContraparte(_ecTipo, _ecNombre); renderDeudas(); }
 }
 function registrarDeudaManualForm(){
   var tipo=(document.getElementById('dr-tipo')||{}).value||'cobrar';
@@ -7973,55 +7992,6 @@ function confirmarDeudaManual(){
   if(!d) return;
   closeModal(); renderDeudas(); showToast('Cuenta agregada');
 }
-
-// ---- Importar historial de deudas desde archivo JSON (cuentas + abonos) ----
-function _deudaRowFull(d){ return { id:d.id, tipo:d.tipo, contraparte:d.contraparte, fecha:d.fecha||'', ciclo:d.ciclo||'', origen:d.origen||'manual', folio_externo:d.folioExterno||'', ref_id:d.refId||null, ref_kind:d.refKind||'', items:d.items||[], monto:d.monto||0, descripcion:d.desc||'', factura:d.factura||'', moneda:d.moneda||'MXN', tipo_cambio:parseFloat(d.tipoCambio)||0, interes:parseFloat(d.interes)||0, nc:parseFloat(d.nc)||0, negocio:d.negocio||'' }; }
-function _pagoRowFull(p){ return { id:p.id, tipo:p.tipo, contraparte:p.contraparte, fecha:p.fecha||'', monto:p.monto||0, folio:p.folio||'', descripcion:p.desc||'', moneda:p.moneda||'MXN', tipo_cambio:parseFloat(p.tipoCambio)||0, dirigido_a:p.dirigidoA||'' }; }
-function _stripCols(row, cols){ var r={}; for(var k in row){ if(cols.indexOf(k)<0) r[k]=row[k]; } return r; }
-async function sbBulkUpsert(tabla, filas, colsNuevas){
-  if(!sbOnline||!sb||!filas.length) return;
-  for(var i=0;i<filas.length;i+=100){
-    var chunk=filas.slice(i,i+100);
-    var res=await sb.from(tabla).upsert(chunk);
-    // Fallback: si faltan las columnas nuevas, reintenta el bloque sin ellas.
-    if(res&&res.error){ await sb.from(tabla).upsert(chunk.map(function(r){return _stripCols(r,colsNuevas);})); }
-  }
-}
-function importarDeudasAplicar(data){
-  if(!data || (!data.deudas && !data.pagos)){ showToast('El archivo no trae deudas'); return; }
-  var nd=(data.deudas||[]).slice(), np=(data.pagos||[]).slice();
-  var idsD={}; deudas.forEach(function(d){idsD[d.id]=true;});
-  var idsP={}; pagosDeuda.forEach(function(p){idsP[p.id]=true;});
-  nd=nd.filter(function(d){return d && d.id!=null && !idsD[d.id];});
-  np=np.filter(function(p){return p && p.id!=null && !idsP[p.id];});
-  if(!nd.length && !np.length){ showToast('Ese historial ya estaba importado'); return; }
-  nd.forEach(function(d){ d.origen=d.origen||'importada'; d.refKind=d.refKind||'importada'; if(d.refId===undefined)d.refId=null;
-    d.items=(d.items&&d.items.length)?d.items:[{concepto:(d.desc||'Cargo'),monto:(parseFloat(d.monto)||0)}];
-    d.moneda=d.moneda||'MXN'; d.tipoCambio=parseFloat(d.tipoCambio)||0; d.interes=parseFloat(d.interes)||0; d.nc=parseFloat(d.nc)||0; d.negocio=d.negocio||''; });
-  np.forEach(function(p){ p.moneda=p.moneda||'MXN'; p.tipoCambio=parseFloat(p.tipoCambio)||0; p.dirigidoA=p.dirigidoA||''; });
-  deudas=deudas.concat(nd); pagosDeuda=pagosDeuda.concat(np);
-  saveDeudas(); savePagosDeuda();
-  nd.concat(np).forEach(function(x){
-    registrarContraparte(x.contraparte, x.tipo);
-    if(x.tipo==='cobrar') agregarDeudorSiNuevo(x.contraparte); else agregarAcreedorSiNuevo(x.contraparte);
-  });
-  var inp=document.getElementById('dr-import-file'); if(inp) inp.value='';
-  showToast('Importadas '+nd.length+' cuentas y '+np.length+' abonos \u2014 subiendo a Supabase\u2026');
-  Promise.resolve()
-    .then(function(){ return sbBulkUpsert('deudas', nd.map(_deudaRowFull), ['moneda','tipo_cambio','interes','nc','negocio']); })
-    .then(function(){ return sbBulkUpsert('pagos_deuda', np.map(_pagoRowFull), ['moneda','tipo_cambio','dirigido_a']); })
-    .then(function(){ showToast('\u2705 Historial en la app y en Supabase'); if(deudaTabSel==='cobrar'||deudaTabSel==='pagar') renderDeudas(); })
-    .catch(function(){ showToast('Guardado local; hubo un error subiendo a Supabase'); });
-}
-function importarDeudasDesdeArchivo(){
-  var inp=document.getElementById('dr-import-file');
-  if(!inp || !inp.files || !inp.files[0]){ showToast('Elige un archivo .json primero'); return; }
-  var rd=new FileReader();
-  rd.onload=function(){ var data; try{ data=JSON.parse(rd.result); }catch(e){ showToast('El archivo no es un JSON v\u00e1lido'); return; } importarDeudasAplicar(data); };
-  rd.onerror=function(){ showToast('No se pudo leer el archivo'); };
-  rd.readAsText(inp.files[0]);
-}
-
 
 // ---- Importacion Excel ----
 var ENVIOS_IMPORTADOS = [];
