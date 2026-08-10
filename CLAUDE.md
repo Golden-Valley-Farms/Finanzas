@@ -154,12 +154,12 @@ La etiqueta de valor toma el color de su propio punto: los plugins leen `ds.poin
 
 Hay dos orígenes de cortes:
 
-- **Metas reales del negocio** (fijas, en duro en la llamada del dataset): costo/cubeta cosechadores `[15,20,30]` y precio por caja `[170,130,60]`.
+- **Metas reales del negocio** (fijas): % de merma `RFR_CORTES_MERMA=[2,4,7]`, costo/cubeta cosechadores `[15,20,30]` y precio por caja `[170,130,60]`. Las dos últimas van en duro en la llamada del dataset; la de merma es constante porque la comparten tarjeta y gráfica.
 - **Mediana histórica** (`rfrRefsHistoricas()` + `rfrCortesDesde(ref, altoBueno)`) para las demás, porque no hay meta definida. `rfrRefsHistoricas()` agrega por semana **todo** `framRegistros` (todos los ciclos, no solo el filtrado) y saca la mediana. Se usa mediana y no promedio porque la temporada alta lo jala mucho hacia arriba (677 kg contra 470 de mediana) y dejaría casi todo en rojo. `rfrCortesDesde` abre las bandas en proporción: `[ref, ref×0.6, ref×0.35]` cuando más alto es mejor, `[ref, ref×1.5, ref×2.5]` cuando más alto es peor.
 
 | Gráfica | referencia | sentido |
 |---|---|---|
-| % de merma | mediana `refs.mermaPct` | más alto es peor |
+| % de merma | **meta `RFR_CORTES_MERMA` `[2,4,7]`** | más alto es peor |
 | Kg cosechados | mediana `refs.kg` | más alto es mejor |
 | Kg de proceso | mediana `refs.proceso` | más alto es peor |
 | Cajas por semana | mediana `refs.cajas` | más alto es mejor |
@@ -186,7 +186,7 @@ Por eso `var refs=rfrRefsHistoricas()` se calcula **antes** de armar `cont.inner
 | Sectores 1 y 2 / 3 y 4 | meta **8,000** cada uno | más alto es mejor |
 | Prom. cajas/día | mediana `refs.cajasDia` | más alto es mejor |
 | Prom. cajas/semana | mediana `refs.cajas` | más alto es mejor |
-| Merma | mediana `refs.mermaPct` | más alto es peor |
+| Merma | **meta `RFR_CORTES_MERMA` `[2,4,7]`** | más alto es peor |
 | Promedio costo/cubeta general | derivado de la meta de cosechadores (ver abajo) | más alto es peor |
 | Promedio costo/cubeta cosechadores | **meta $15** → `[15,20,30]` | más alto es peor |
 | Promedio precio/caja | **normal $170** → `[170,130,60]` | más alto es mejor |
@@ -195,6 +195,10 @@ Por eso `var refs=rfrRefsHistoricas()` se calcula **antes** de armar `cont.inner
 **Costo/cubeta general no tiene meta propia**, y es la misma métrica que la de cosechadores más el resto de la nómina. Su meta se **convierte** desde los $15: `razon = refs.costoGen / refs.costoCosech` (≈1.84 hoy) y `metaCostoGen = 15 × razon` (≈$27.64), con las mismas proporciones de banda que `[15,20,30]` → `[meta, meta×20/15, meta×2]`. Si algún día se define una meta real para el general, sustituir esa conversión por el número duro.
 
 Ojo: la tarjeta antes llamada "Promedio costo/caja" ahora se llama **"Promedio precio/caja"** — es un precio de venta, no un costo, y por eso más alto es mejor.
+
+**No es bug que la tarjeta de Merma y su gráfica muestren números muy distintos.** La tarjeta es el ponderado de todo el ciclo (`totalMerma / (totalKgCosechados + totalMerma)`), mientras la gráfica es semana por semana. En el ciclo 2025-2026 la tarjeta da 7.2% y las últimas semanas de la gráfica dan 24-28%: esas semanas traen mucha merma sobre un volumen chico, y el grueso de los 21,238 kg del ciclo viene de semanas anteriores con merma baja. La fórmula es la misma en ambos lados, cambia el alcance.
+
+`refs.mermaPct` quedó sin uso al pasar la merma a meta fija; se conserva en `rfrRefsHistoricas()` por si vuelve a ocuparse.
 
 ## Acoplamientos entre módulos
 
