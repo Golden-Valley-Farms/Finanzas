@@ -4941,8 +4941,8 @@ function renderRfrResumen(data){
           // Las dos líneas conservan su color (es lo que distingue las series en la leyenda).
           // Cada serie lleva su PROPIO semáforo, contra su propia mediana histórica:
           // en cosechados más kg es mejor; en proceso más kg es peor.
-          {label:'Kg cosechados',data:semKgVals,borderColor:'#D6336C',backgroundColor:'rgba(214,51,108,0.08)',borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(semKgVals,rfrCortesDesde(refs.kg,true),true),pointBorderColor:rfrPuntoCols(semKgVals,rfrCortesDesde(refs.kg,true),true),fill:true,tension:0.3,spanGaps:true},
-          {label:'Kg de proceso',data:semMermaVals,borderColor:'#e34948',backgroundColor:'rgba(227,73,72,0.08)',borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(semMermaVals,rfrCortesDesde(refs.proceso,false),false),pointBorderColor:rfrPuntoCols(semMermaVals,rfrCortesDesde(refs.proceso,false),false),fill:true,tension:0.3,spanGaps:true}
+          {label:'Kg cosechados',data:semKgVals,borderColor:'#D6336C',backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(semKgVals,rfrCortesDesde(refs.kg,true),true),pointBorderColor:rfrPuntoCols(semKgVals,rfrCortesDesde(refs.kg,true),true),fill:true,tension:0.3,spanGaps:true},
+          {label:'Kg de proceso',data:semMermaVals,borderColor:'#e34948',backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(semMermaVals,rfrCortesDesde(refs.proceso,false),false),pointBorderColor:rfrPuntoCols(semMermaVals,rfrCortesDesde(refs.proceso,false),false),fill:true,tension:0.3,spanGaps:true}
         ]
       },
       options:{
