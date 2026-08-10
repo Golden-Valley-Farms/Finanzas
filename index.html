@@ -1523,9 +1523,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <div id="trab-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:200px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
           </div>
           <input type="number" id="fr-trab-cubetas-input" placeholder="0" min="0" step="1"
+            oninput="actualizarTotalCubetas()"
             onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('fr-trab-proceso-input').focus();}"
             style="width:100%;padding:10px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:600;color:var(--fram);font-family:var(--mono);text-align:center;outline:none">
           <input type="number" id="fr-trab-proceso-input" placeholder="0" min="0" step="1"
+            oninput="actualizarTotalCubetas()"
             onkeydown="if(event.key==='Enter'){event.preventDefault();agregarTrabajadorRow();}"
             style="width:100%;padding:10px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:600;color:var(--camote);font-family:var(--mono);text-align:center;outline:none">
           <button onclick="agregarTrabajadorRow()" title="Agregar"
@@ -1566,6 +1568,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <option value="4">4</option>
           </select>
           <input type="number" id="fr-caja-cantidad-input" placeholder="0" min="0" step="1"
+            oninput="actualizarTotalCajas()"
             onkeydown="if(event.key==='Enter'){event.preventDefault();agregarCajaRow();}"
             style="width:100%;padding:9px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:600;color:var(--green);font-family:var(--mono);text-align:center;outline:none">
           <button onclick="agregarCajaRow()" title="Agregar"
@@ -9863,6 +9866,10 @@ function renderTrabajadoresRows(){
 }
 function actualizarTotalCubetas(){
   var tot = trabsTemp.reduce(function(a,t){return a+(parseFloat(t.cubetas)||0)+(parseFloat(t.proceso)||0);},0);
+  var cubInp = document.getElementById('fr-trab-cubetas-input');
+  var procInp = document.getElementById('fr-trab-proceso-input');
+  if(cubInp) tot += parseFloat(cubInp.value)||0;
+  if(procInp) tot += parseFloat(procInp.value)||0;
   document.getElementById('fr-total-cubetas').textContent = tot % 1 === 0 ? tot : tot.toFixed(1);
 }
 function recalcMermaProceso(){
@@ -10163,6 +10170,8 @@ function actualizarTotalCajas(){
     if(cajasTemp[idx]) cajasTemp[idx].cantidad = v;
     tot += v;
   });
+  var cantInp = document.getElementById('fr-caja-cantidad-input');
+  if(cantInp) tot += parseFloat(cantInp.value)||0;
   document.getElementById('fr-total-cajas').textContent = tot;
 }
 
