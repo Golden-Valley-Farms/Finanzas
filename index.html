@@ -1562,6 +1562,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <div id="caja-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:180px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
           </div>
           <select id="fr-caja-sector-input" style="width:100%;padding:9px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;text-align:center">
+            <option value="" selected>-</option>
             <option value="1">1</option>
             <option value="2">2</option>
             <option value="3">3</option>
@@ -10093,8 +10094,9 @@ function setCajaDDHighlight(idx){
 function selectCajaFromDD(presentacion){
   document.getElementById('fr-caja-input').value = presentacion;
   hideCajaDropdown();
-  var cantInp = document.getElementById('fr-caja-cantidad-input');
-  if(cantInp){ cantInp.focus(); cantInp.select(); }
+  var secInp = document.getElementById('fr-caja-sector-input');
+  var secVisible = secInp && secInp.parentNode ? secInp.parentNode.querySelector('.ssel-input') : null;
+  if(secVisible) secVisible.focus(); else if(secInp) secInp.focus();
 }
 
 function onCajaKeydown(e){
@@ -10176,8 +10178,9 @@ function agregarCajaRow(refocusName){
   var secInp = document.getElementById('fr-caja-sector-input');
   var cantInp = document.getElementById('fr-caja-cantidad-input');
   var p = inp.value.trim();
-  var sector = secInp ? parseInt(secInp.value)||1 : 1;
   if(!p){ showToast('Escribe o selecciona una presentación'); return; }
+  if(secInp && !secInp.value){ showToast('Selecciona un sector'); secInp.focus(); return; }
+  var sector = secInp ? parseInt(secInp.value)||1 : 1;
   if(cajasTemp.find(function(c){return c.presentacion===p && c.sector===sector;})){
     showToast('Ya existe esa presentación en el sector '+sector); return;
   }
