@@ -204,6 +204,14 @@ Ojo: la tarjeta antes llamada "Promedio costo/caja" ahora se llama **"Promedio p
 
 `refs.mermaPct` quedó sin uso al pasar la merma a meta fija; se conserva en `rfrRefsHistoricas()` por si vuelve a ocuparse.
 
+### Mismo semáforo en Por día y Por semana, más variación semana-a-semana
+
+**Por día** (`renderRfrDiaDetalle`) y **Por semana** (`renderRfrSemDetalle`) llevan el mismo semáforo que Por ciclo, contra la mediana histórica del **mismo nivel** (día compara con día, semana con semana) — nunca contra la mediana semanal usada por Por ciclo, que es una escala distinta. `rfrRefsHistoricas()` por eso trae, además de lo semanal: `cubetas` (mediana semanal de cubetas, para "Cubetas cosechadas" en Por semana), y a nivel día `cubetasDia`, `kgDia`, `mermaKgDia` (para las 4 tarjetas de Por día que no tienen equivalente semanal que usar). Costo/cubeta general usa el mismo truco de conversión que Por ciclo, factorizado en `rfrMetaCostoGen(refs)` / `rfrColCostoGen(valor, refs)` para que las tres vistas no se desincronicen si cambia la meta de cosechadores.
+
+**Por semana además lleva una insignia de variación contra la semana anterior**, estilo precio de acción: flecha + % en la esquina superior derecha de cada una de las 8 tarjetas (`.kpi-wow`, generado por `rfrWowBadge(actual, anterior, altoBueno)`). Verde/rojo nada más, sin banda intermedia — sube+altoBueno o baja+¬altoBueno es verde, lo contrario es rojo. `rfrSemAnteriorKey(sk)` saca la semana anterior de las opciones **ya pobladas** del `<select>` (mismo ciclo/negocio que se está viendo, y es la misma semana a la que llevaría el botón "◀"), y `rfrComputeSemMetrics(sk)` recalcula las 8 métricas de esa semana reusando `rfrSemanaAgrup`/`rfrSemanaAcum`. Si no hay semana anterior (o a esa métrica le falta dato, ej. `precioCaja` sin captura en Finanzas), `rfrWowBadge` regresa `''` y no se pinta nada — no inventa una variación con dato faltante.
+
+**Trampa en la que ya se cayó una vez:** los colores/insignias de Por semana se calculan usando `precioCajaSem`/`totalFacturadoSem`/`costoCubetaGeneral`/etc., variables `var` que la función declara **más abajo**, junto al `finRegSem`. Por hoisting no truena, pero si el bloque de colores se pone *antes* de esa declaración quedan todas `undefined` y el semáforo sale "sin dato" aunque sí haya cifra en pantalla (pasó con "Precio por caja": mostraba $77.16 pero en gris). El bloque de colores/insignias de Por semana tiene que ir **después** de que `finRegSem`/`precioCajaSem`/`totalFacturadoSem` ya estén asignados.
+
 ## Acoplamientos entre módulos
 
 - **Envío → gastos.** `generarGastosCosechaDesdeEnvio()` crea gastos con `autoGen:true` a partir de un envío de camote, prorrateando flete/cosecha/arado/desvarada por hectáreas de cada sector. Los ids resultantes se guardan en el envío para poder actualizarlos o borrarlos al reeditar. **No editar a mano un gasto con `autoGen:true`**: se sobreescribe al guardar el envío de origen.
