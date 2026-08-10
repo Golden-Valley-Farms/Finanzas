@@ -155,11 +155,13 @@ La etiqueta de valor toma el color de su propio punto: los plugins leen `ds.poin
 Hay dos orígenes de cortes:
 
 - **Metas reales del negocio** (fijas): % de merma `RFR_CORTES_MERMA=[2,4,7]`, costo/cubeta cosechadores `[15,20,30]` y precio por caja `[170,130,60]`. Las dos últimas van en duro en la llamada del dataset; la de merma es constante porque la comparten tarjeta y gráfica.
+
+**La merma no usa `rfrPuntoCol()`**, usa `rfrColMerma()` / `rfrColsMerma()`. `rfrPuntoCol` corta con `<=` (límite superior inclusivo), y la merma se pidió con límites **exclusivos**: verde `[0,2)`, amarillo `[2,4)`, naranja `[4,7)`, rojo `>=7` — con `<=` un 7% caía en naranja. No cambiar el operador de `rfrPuntoCol` para arreglar esto: lo comparten todas las demás series, y movería también los límites de $15 y $170.
 - **Mediana histórica** (`rfrRefsHistoricas()` + `rfrCortesDesde(ref, altoBueno)`) para las demás, porque no hay meta definida. `rfrRefsHistoricas()` agrega por semana **todo** `framRegistros` (todos los ciclos, no solo el filtrado) y saca la mediana. Se usa mediana y no promedio porque la temporada alta lo jala mucho hacia arriba (677 kg contra 470 de mediana) y dejaría casi todo en rojo. `rfrCortesDesde` abre las bandas en proporción: `[ref, ref×0.6, ref×0.35]` cuando más alto es mejor, `[ref, ref×1.5, ref×2.5]` cuando más alto es peor.
 
 | Gráfica | referencia | sentido |
 |---|---|---|
-| % de merma | **meta `RFR_CORTES_MERMA` `[2,4,7]`** | más alto es peor |
+| % de merma | **meta `[2,4,7]` vía `rfrColMerma()`** | más alto es peor |
 | Kg cosechados | mediana `refs.kg` | más alto es mejor |
 | Kg de proceso | mediana `refs.proceso` | más alto es peor |
 | Cajas por semana | mediana `refs.cajas` | más alto es mejor |
@@ -186,7 +188,7 @@ Por eso `var refs=rfrRefsHistoricas()` se calcula **antes** de armar `cont.inner
 | Sectores 1 y 2 / 3 y 4 | meta **8,000** cada uno | más alto es mejor |
 | Prom. cajas/día | mediana `refs.cajasDia` | más alto es mejor |
 | Prom. cajas/semana | mediana `refs.cajas` | más alto es mejor |
-| Merma | **meta `RFR_CORTES_MERMA` `[2,4,7]`** | más alto es peor |
+| Merma | **meta `[2,4,7]` vía `rfrColMerma()`** | más alto es peor |
 | Promedio costo/cubeta general | derivado de la meta de cosechadores (ver abajo) | más alto es peor |
 | Promedio costo/cubeta cosechadores | **meta $15** → `[15,20,30]` | más alto es peor |
 | Promedio precio/caja | **normal $170** → `[170,130,60]` | más alto es mejor |

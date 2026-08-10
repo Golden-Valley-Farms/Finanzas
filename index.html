@@ -4426,9 +4426,20 @@ function renderRfrSemDetalle(){
 var RFR_SEM_COLS={bien:'#1baf7a', vigilar:'#eda100', preocupa:'#ec835a', problema:'#d03b3b', sinDato:'#c3c2b7'};
 var RFR_LINEA_NEUTRA='#898781';
 var RFR_LINEA_NEUTRA_BG='rgba(137,135,129,0.10)';
-// Meta real del negocio para % de merma (mas alto es peor):
-// verde 0-2, amarillo 2-4, naranja 4-7, rojo arriba de 7.
+// Meta real del negocio para % de merma (mas alto es peor). Los limites son
+// EXCLUSIVOS por arriba: verde [0,2), amarillo [2,4), naranja [4,7), rojo de 7 en adelante.
+// Por eso no pasa por rfrPuntoCol, que corta con <= y dejaria el 7% en naranja.
 var RFR_CORTES_MERMA=[2,4,7];
+function rfrColMerma(v){
+  if(v===null||v===undefined||isNaN(v)) return RFR_SEM_COLS.sinDato;
+  if(v<RFR_CORTES_MERMA[0]) return RFR_SEM_COLS.bien;
+  if(v<RFR_CORTES_MERMA[1]) return RFR_SEM_COLS.vigilar;
+  if(v<RFR_CORTES_MERMA[2]) return RFR_SEM_COLS.preocupa;
+  return RFR_SEM_COLS.problema;
+}
+function rfrColsMerma(arr){
+  return (arr||[]).map(function(v){ return rfrColMerma(v); });
+}
 // cortes = [bien, vigilar, preocupa]; altoBueno=true cuando más alto es mejor.
 function rfrPuntoCol(v, cortes, altoBueno){
   if(v===null||v===undefined) return RFR_SEM_COLS.sinDato;
@@ -4652,7 +4663,7 @@ function renderRfrResumen(data){
   var metaCostoGen=META_COSTO_COSECH*razonCosto;
   var colPromDia=rfrPuntoCol(promCajas,rfrCortesDesde(refs.cajasDia,true),true);
   var colPromSem=rfrPuntoCol(promCajasSemana,rfrCortesDesde(refs.cajas,true),true);
-  var colMerma=rfrPuntoCol(pctKgMerma,RFR_CORTES_MERMA,false);
+  var colMerma=rfrColMerma(pctKgMerma);
   var colCostoGen=rfrPuntoCol(costoGeneralPonderado,[metaCostoGen,metaCostoGen*(20/15),metaCostoGen*2],false);
   var colCostoCos=rfrPuntoCol(costoCosechadoresPonderado,[15,20,30],false);
   var colPrecioCaja=rfrPuntoCol(precioCajaPonderado,[170,130,60],true);
@@ -5003,7 +5014,7 @@ function renderRfrResumen(data){
       plugins:[mermaPctLabelPlugin],
       data:{
         labels:semNumLbls,
-        datasets:[{label:'% merma',data:semMermaPct,borderColor:RFR_LINEA_NEUTRA,backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(semMermaPct,RFR_CORTES_MERMA,false),pointBorderColor:rfrPuntoCols(semMermaPct,RFR_CORTES_MERMA,false),fill:true,tension:0.3,spanGaps:true}]
+        datasets:[{label:'% merma',data:semMermaPct,borderColor:RFR_LINEA_NEUTRA,backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrColsMerma(semMermaPct),pointBorderColor:rfrColsMerma(semMermaPct),fill:true,tension:0.3,spanGaps:true}]
       },
       options:{
         responsive:true,maintainAspectRatio:false,
