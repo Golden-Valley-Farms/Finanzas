@@ -1562,7 +1562,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <div id="caja-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:180px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
           </div>
           <select id="fr-caja-sector-input" style="width:100%;padding:9px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;text-align:center">
-            <option value="" selected>-</option>
+            <option value="" selected disabled>-</option>
             <option value="1">1</option>
             <option value="2">2</option>
             <option value="3">3</option>
@@ -2443,7 +2443,7 @@ function sselEnhance(sel){
   sel._sselSync=sync;
 
   function render(q){
-    var opts=Array.from(sel.options).map(function(o){return {value:o.value,text:o.text};});
+    var opts=Array.from(sel.options).filter(function(o){return !o.disabled;}).map(function(o){return {value:o.value,text:o.text};});
     var nq=sselNorm(q);
     filtered = nq ? opts.filter(function(o){return sselNorm(o.text).indexOf(nq)>=0;}) : opts;
     panel.innerHTML='';
