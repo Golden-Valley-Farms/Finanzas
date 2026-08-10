@@ -170,6 +170,32 @@ Hay dos orígenes de cortes:
 
 La gráfica de Kg conserva el color propio de sus dos líneas (es lo que las distingue en su leyenda del markup) y cada una lleva su propio semáforo. "Por día" y "Por semana" no llevan semáforo: siguen con color sólido por serie.
 
+### Semáforo de las tarjetas KPI del mismo resumen
+
+Las tarjetas de `renderRfrResumen()` usan **el mismo `rfrPuntoCol()` y los mismos cortes que su gráfica equivalente**, para que tarjeta y gráfica de una métrica nunca se contradigan. El color tiñe la cifra y la franja de acento de la tarjeta.
+
+Por eso `var refs=rfrRefsHistoricas()` se calcula **antes** de armar `cont.innerHTML` (antes estaba después, junto a las gráficas). Los colores se calculan justo antes del markup, ya que dependen de los ponderados (`costoGeneralPonderado`, `precioCajaPonderado`, etc.) que se arman más arriba en la función.
+
+`rfrRefsHistoricas()` devuelve además `cajasDia` (mediana de cajas por día, agregando por `fecha`) y `costoCosech` (mediana semanal de nómina de cosechadores / cubetas), que no existían cuando solo la usaban las gráficas.
+
+**Meta de cajas: 8,000 por conjunto de sectores**, o sea 16,000 el total del ciclo. La tarjeta de Total cajas lleva tres barras de avance — total contra 16,000, y una por cada conjunto (sectores 1-2 y 3-4) contra 8,000 — cada una con su propio color. Los cortes de meta van al 100/75/50% (`cortesMeta()`), no por `rfrCortesDesde`.
+
+| Tarjeta | cortes | sentido |
+|---|---|---|
+| Total cajas | meta **16,000** al 100/75/50% | más alto es mejor |
+| Sectores 1 y 2 / 3 y 4 | meta **8,000** cada uno | más alto es mejor |
+| Prom. cajas/día | mediana `refs.cajasDia` | más alto es mejor |
+| Prom. cajas/semana | mediana `refs.cajas` | más alto es mejor |
+| Merma | mediana `refs.mermaPct` | más alto es peor |
+| Promedio costo/cubeta general | derivado de la meta de cosechadores (ver abajo) | más alto es peor |
+| Promedio costo/cubeta cosechadores | **meta $15** → `[15,20,30]` | más alto es peor |
+| Promedio precio/caja | **normal $170** → `[170,130,60]` | más alto es mejor |
+| Promedio facturado | mediana `refs.facturado` | más alto es mejor |
+
+**Costo/cubeta general no tiene meta propia**, y es la misma métrica que la de cosechadores más el resto de la nómina. Su meta se **convierte** desde los $15: `razon = refs.costoGen / refs.costoCosech` (≈1.84 hoy) y `metaCostoGen = 15 × razon` (≈$27.64), con las mismas proporciones de banda que `[15,20,30]` → `[meta, meta×20/15, meta×2]`. Si algún día se define una meta real para el general, sustituir esa conversión por el número duro.
+
+Ojo: la tarjeta antes llamada "Promedio costo/caja" ahora se llama **"Promedio precio/caja"** — es un precio de venta, no un costo, y por eso más alto es mejor.
+
 ## Acoplamientos entre módulos
 
 - **Envío → gastos.** `generarGastosCosechaDesdeEnvio()` crea gastos con `autoGen:true` a partir de un envío de camote, prorrateando flete/cosecha/arado/desvarada por hectáreas de cada sector. Los ids resultantes se guardan en el envío para poder actualizarlos o borrarlos al reeditar. **No editar a mano un gasto con `autoGen:true`**: se sobreescribe al guardar el envío de origen.
