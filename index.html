@@ -3836,7 +3836,8 @@ function renderRfrDiaDetalle(){
   }).join('');
 
   var kgCosechados = r.totalKg||0;
-  var pctKgMerma = (kgCosechados+(r.merma||0))>0 ? Math.round(((r.merma||0)/(kgCosechados+(r.merma||0)))*100) : null;
+  var pctKgMerma = (kgCosechados+(r.merma||0))>0 ? Math.round(((r.merma||0)/(kgCosechados+(r.merma||0)))*1000)/10 : null;
+  var colMerma = rfrColMerma(pctKgMerma);
 
   var secMapDia={}; (r.cajas||[]).forEach(function(c){
     var sec='S'+(c.sector||1); secMapDia[sec]=(secMapDia[sec]||0)+(c.cantidad||0);
@@ -3868,9 +3869,9 @@ function renderRfrDiaDetalle(){
         '<div class="kpi-val" style="color:var(--camote)">'+(r.merma||0)+' <span style="font-size:14px;font-weight:400;color:var(--text3)">kg</span></div>'+
       '</div>'+
       '<div class="kpi-card">'+
-        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
+        '<div class="kpi-accent" style="background:'+colMerma+'"></div>'+
         '<div class="kpi-lbl">Merma</div>'+
-        '<div class="kpi-val" style="color:var(--fram)">'+(pctKgMerma===null?'—':pctKgMerma+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
+        '<div class="kpi-val" style="color:'+colMerma+'">'+(pctKgMerma===null?'—':pctKgMerma.toFixed(1)+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
       '</div>'+
     '</div>'+
     // ── Fila 2: dos columnas de igual altura ──
@@ -4130,7 +4131,8 @@ function renderRfrSemDetalle(){
     var kg=(r.totalKg!==undefined&&r.totalKg!==null)?r.totalKg:Math.round((r.totalCajas||0)*(typeof KG_POR_CAJA!=='undefined'?KG_POR_CAJA:2.4)*100)/100;
     return a+kg;
   },0)*10)/10;
-  var pctKgMerma=(kgCosechados+s.merma)>0?Math.round((s.merma/(kgCosechados+s.merma))*100):null;
+  var pctKgMerma=(kgCosechados+s.merma)>0?Math.round((s.merma/(kgCosechados+s.merma))*1000)/10:null;
+  var colMerma=rfrColMerma(pctKgMerma);
 
   var kgPorDia=diaLbls.map(function(_,i){
     var d=new Date(sunDate); d.setDate(sunDate.getDate()+i);
@@ -4170,9 +4172,9 @@ function renderRfrSemDetalle(){
         '<div class="kpi-val" style="color:var(--fram)">'+promCajas+'</div>'+
       '</div>'+
       '<div class="kpi-card">'+
-        '<div class="kpi-accent" style="background:var(--fram)"></div>'+
+        '<div class="kpi-accent" style="background:'+colMerma+'"></div>'+
         '<div class="kpi-lbl">Merma</div>'+
-        '<div class="kpi-val" style="color:var(--fram)">'+(pctKgMerma===null?'\u2014':pctKgMerma+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
+        '<div class="kpi-val" style="color:'+colMerma+'">'+(pctKgMerma===null?'\u2014':pctKgMerma.toFixed(1)+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
       '</div>'+
     '</div>'+
     // ── Fila 2: KPIs (4) ──
@@ -4570,7 +4572,8 @@ function renderRfrResumen(data){
   var colMeta34=rfrPuntoCol(cajasSec34,cortesMeta(META_CAJAS_GRUPO),true);
 
   totalKgCosechados=Math.round(totalKgCosechados*10)/10;
-  var pctKgMerma=(totalKgCosechados+totalMerma)>0?Math.round((totalMerma/(totalKgCosechados+totalMerma))*100):null;
+  // A un decimal: con entero, un 6.6% se veia como 7% y el semaforo lo pintaba rojo.
+  var pctKgMerma=(totalKgCosechados+totalMerma)>0?Math.round((totalMerma/(totalKgCosechados+totalMerma))*1000)/10:null;
 
   var defKeys=Object.keys(DEF_COLS_RFR);
   var defVals=defKeys.map(function(k){return Math.round((defMap[k]||0)*10)/10;});
@@ -4709,7 +4712,7 @@ function renderRfrResumen(data){
       '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:'+colMerma+'"></div>'+
         '<div class="kpi-lbl">Merma</div>'+
-        '<div class="kpi-val" style="color:'+colMerma+'">'+(pctKgMerma===null?'\u2014':pctKgMerma+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
+        '<div class="kpi-val" style="color:'+colMerma+'">'+(pctKgMerma===null?'\u2014':pctKgMerma.toFixed(1)+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
       '</div>'+
     '</div>'+
     // ── Fila 3: KPIs (4, promedios ponderados) ──

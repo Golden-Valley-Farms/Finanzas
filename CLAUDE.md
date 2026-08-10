@@ -156,6 +156,8 @@ Hay dos orígenes de cortes:
 
 - **Metas reales del negocio** (fijas): % de merma `RFR_CORTES_MERMA=[2,4,7]`, costo/cubeta cosechadores `[15,20,30]` y precio por caja `[170,130,60]`. Las dos últimas van en duro en la llamada del dataset; la de merma es constante porque la comparten tarjeta y gráfica.
 
+La tarjeta de Merma lleva el mismo trato en las **tres** vistas (Por día, Por semana y Por ciclo): valor a un decimal (`pctKgMerma` se redondea con `*1000)/10` y se pinta con `.toFixed(1)`) y color por `rfrColMerma()`. Se pasó a un decimal porque con entero un 6.6% se mostraba como "7%" y salía rojo cuando le tocaba naranja. Ojo: las tres vistas tienen su **propia** variable `pctKgMerma` en funciones distintas — al tocar una hay que tocar las tres.
+
 **La merma no usa `rfrPuntoCol()`**, usa `rfrColMerma()` / `rfrColsMerma()`. `rfrPuntoCol` corta con `<=` (límite superior inclusivo), y la merma se pidió con límites **exclusivos**: verde `[0,2)`, amarillo `[2,4)`, naranja `[4,7)`, rojo `>=7` — con `<=` un 7% caía en naranja. No cambiar el operador de `rfrPuntoCol` para arreglar esto: lo comparten todas las demás series, y movería también los límites de $15 y $170.
 - **Mediana histórica** (`rfrRefsHistoricas()` + `rfrCortesDesde(ref, altoBueno)`) para las demás, porque no hay meta definida. `rfrRefsHistoricas()` agrega por semana **todo** `framRegistros` (todos los ciclos, no solo el filtrado) y saca la mediana. Se usa mediana y no promedio porque la temporada alta lo jala mucho hacia arriba (677 kg contra 470 de mediana) y dejaría casi todo en rojo. `rfrCortesDesde` abre las bandas en proporción: `[ref, ref×0.6, ref×0.35]` cuando más alto es mejor, `[ref, ref×1.5, ref×2.5]` cuando más alto es peor.
 
