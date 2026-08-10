@@ -401,6 +401,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .kpi-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
 .kpi-lbl{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px}
 .kpi-val{font-size:22px;font-weight:700;color:var(--text);font-family:var(--mono);letter-spacing:-0.02em}
+/* Tarjeta KPI partida en dos datos (ej. Total cajas por grupo de sectores) */
+/* apilados en angosto (la etiqueta no cabe en media tarjeta), lado a lado en ancho */
+.kpi-split{display:flex;flex-direction:column;gap:7px;align-items:flex-start}
+.kpi-split>div{flex:1;min-width:0}
+.kpi-split .kpi-val{font-size:19px}
+.kpi-split-lbl{font-size:9.5px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.03em;margin-top:2px}
 .deuda-card{display:flex;align-items:center;gap:8px;background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:10px;cursor:pointer}
 .deuda-card:active{background:var(--surface2)}
 .deuda-nom{font-size:15px;font-weight:600;color:var(--text)}
@@ -531,6 +537,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   #rep-cam-sec .fin-chart-full{grid-column:1/-1}
   #rep-cam-sec .rfr-topbar{max-width:1400px;margin-left:auto;margin-right:auto}
   #rep-cam-sec .kpi-val,#rep-fin-sec .kpi-val,#rep-fram-sec .kpi-val{font-size:33px}
+  /* dos datos por tarjeta no caben a 33px: se bajan un escalon */
+  #rep-cam-sec .kpi-split .kpi-val,#rep-fin-sec .kpi-split .kpi-val,#rep-fram-sec .kpi-split .kpi-val{font-size:25px}
+  .kpi-split{flex-direction:row;gap:10px}
+  .kpi-split-lbl{font-size:11px}
   #rep-cam-sec .rcm-nay-charts-grid{
     max-width:1400px;margin:0 auto;
     display:grid;grid-template-columns:3fr 2fr;grid-template-rows:260px 260px;gap:12px;
@@ -4511,6 +4521,9 @@ function renderRfrResumen(data){
   var numDias=Object.keys(diasSet).length;
   var promCubetas=numDias>0?Math.round(totalCubetas/numDias*10)/10:0;
   var promCajas=numDias>0?Math.round(totalCajas/numDias*10)/10:0;
+  // Cajas agrupadas por par de sectores para la tarjeta de Total cajas
+  var cajasSec12=(secMap['S1']||0)+(secMap['S2']||0);
+  var cajasSec34=(secMap['S3']||0)+(secMap['S4']||0);
   totalKgCosechados=Math.round(totalKgCosechados*10)/10;
   var pctKgMerma=(totalKgCosechados+totalMerma)>0?Math.round((totalMerma/(totalKgCosechados+totalMerma))*100):null;
 
@@ -4599,7 +4612,16 @@ function renderRfrResumen(data){
       '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
         '<div class="kpi-lbl">Total cajas</div>'+
-        '<div class="kpi-val" style="color:var(--fram)">'+totalCajas.toLocaleString('es-MX')+'</div>'+
+        '<div class="kpi-split">'+
+          '<div>'+
+            '<div class="kpi-val" style="color:var(--fram)">'+cajasSec12.toLocaleString('es-MX')+'</div>'+
+            '<div class="kpi-split-lbl">Sectores 1 y 2</div>'+
+          '</div>'+
+          '<div>'+
+            '<div class="kpi-val" style="color:var(--fram)">'+cajasSec34.toLocaleString('es-MX')+'</div>'+
+            '<div class="kpi-split-lbl">Sectores 3 y 4</div>'+
+          '</div>'+
+        '</div>'+
       '</div>'+
       '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--fram)"></div>'+
