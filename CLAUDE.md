@@ -204,9 +204,9 @@ Si una tabla regresa vacía teniendo datos, casi siempre es RLS — el código y
 1. Editar `index.html` en este clon local.
 2. Verificar el cambio (ver "Desplegar y probar").
 3. `git add` + commit descriptivo.
-4. `git push origin main` — GitHub Pages despliega solo.
+4. **`git push origin main` automáticamente** — GitHub Pages despliega solo.
 
-No dejar cambios sin commitear al terminar una tarea, ni pedirle al usuario que suba el archivo por la web de GitHub.
+No dejar cambios sin commitear, y **siempre hacer push a GitHub al finalizar** (no dejar commits en local). Cada tarea termina cuando está en `main` remoto y desplegado en vivo.
 
 ### Recomendar el modelo antes de empezar
 
