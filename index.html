@@ -10093,12 +10093,8 @@ function setCajaDDHighlight(idx){
 function selectCajaFromDD(presentacion){
   document.getElementById('fr-caja-input').value = presentacion;
   hideCajaDropdown();
-  agregarCajaRow(false);
-  // focus the cantidad input of the last added row for quick entry
-  setTimeout(function(){
-    var rows = document.querySelectorAll('#fr-cajas-list input[type="number"]');
-    if(rows.length){ rows[rows.length-1].focus(); rows[rows.length-1].select(); }
-  }, 50);
+  var cantInp = document.getElementById('fr-caja-cantidad-input');
+  if(cantInp){ cantInp.focus(); cantInp.select(); }
 }
 
 function onCajaKeydown(e){
