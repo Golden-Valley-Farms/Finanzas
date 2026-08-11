@@ -9161,6 +9161,9 @@ function envioTotal(e){
 
 function fmt(n){return '$'+(parseFloat(n)||0).toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:0});}
 
+// Formateador con 2 decimales para paso directo de comercializadora
+function fmt2(n){return '$'+(parseFloat(n)||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});}
+
 // ---- VENTAS TAB ----
 // venTab fusionada (no duplicar)
 
@@ -9329,13 +9332,13 @@ function renderComerPartidas(){
         '<div><label>Kg a pagar</label><input type="number" id="ckp-'+idx+'" tabindex="-1" value="'+kgPagar.toFixed(2)+'" readonly style="background:var(--surface2);color:var(--text3)"></div>'+
       '</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'+
-        '<div><label>Precio compra $/kg</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" placeholder="0" min="0" value="'+(p.precioCompra||'')+'" style="padding-left:24px" oninput="comerPartidasTemp['+idx+'].precioCompra=this.value;recalcComer()"></div></div>'+
-        '<div><label>Subtotal compra</label><div id="csc-'+idx+'" style="padding:10px 12px;background:var(--fram-bg);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--fram);font-family:var(--mono)">'+fmt(costoVar)+'</div></div>'+
+        '<div><label>Precio compra $/kg</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" placeholder="0" min="0" step="0.01" value="'+(p.precioCompra||'')+'" style="padding-left:24px" oninput="comerPartidasTemp['+idx+'].precioCompra=this.value;recalcComer()"></div></div>'+
+        '<div><label>Subtotal compra</label><div id="csc-'+idx+'" style="padding:10px 12px;background:var(--fram-bg);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--fram);font-family:var(--mono)">'+fmt2(costoVar)+'</div></div>'+
       '</div>'+
       '<div style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:6px">VENTA</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-        '<div><label>Precio venta $/kg</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" placeholder="0" min="0" value="'+(p.precioVenta||'')+'" style="padding-left:24px" oninput="comerPartidasTemp['+idx+'].precioVenta=this.value;recalcComer()"></div></div>'+
-        '<div><label>Subtotal venta</label><div id="csv-'+idx+'" style="padding:10px 12px;background:var(--green-bg);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--green);font-family:var(--mono)">'+fmt(ingresoVar)+'</div></div>'+
+        '<div><label>Precio venta $/kg</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" placeholder="0" min="0" step="0.01" value="'+(p.precioVenta||'')+'" style="padding-left:24px" oninput="comerPartidasTemp['+idx+'].precioVenta=this.value;recalcComer()"></div></div>'+
+        '<div><label>Subtotal venta</label><div id="csv-'+idx+'" style="padding:10px 12px;background:var(--green-bg);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--green);font-family:var(--mono)">'+fmt2(ingresoVar)+'</div></div>'+
       '</div>';
     cont.appendChild(d);
   });
@@ -9352,17 +9355,17 @@ function recalcComer(){
     var elSC=document.getElementById('csc-'+comerPartidasTemp.indexOf(p));
     var elSV=document.getElementById('csv-'+comerPartidasTemp.indexOf(p));
     if(elKg) elKg.value=kgPagar.toFixed(2);
-    if(elSC) elSC.textContent=fmt(kgPagar*parseFloat(p.precioCompra||0));
-    if(elSV) elSV.textContent=fmt(parseFloat(p.kgRecibidos||0)*parseFloat(p.precioVenta||0));
+    if(elSC) elSC.textContent=fmt2(kgPagar*parseFloat(p.precioCompra||0));
+    if(elSV) elSV.textContent=fmt2(parseFloat(p.kgRecibidos||0)*parseFloat(p.precioVenta||0));
   });
   totalGasto+=parseFloat(document.getElementById('cf-flete-compra')?document.getElementById('cf-flete-compra').value||0:0);
   var totalIngreso=comerPartidasTemp.reduce(function(a,p){return a+parseFloat(p.kgRecibidos||0)*parseFloat(p.precioVenta||0);},0);
   totalIngreso+=parseFloat(document.getElementById('cf-flete-venta')?document.getElementById('cf-flete-venta').value||0:0);
   var util=totalIngreso-totalGasto;
-  if(document.getElementById('cf-resumen-gasto')) document.getElementById('cf-resumen-gasto').textContent=fmt(totalGasto);
-  if(document.getElementById('cf-resumen-ingreso')) document.getElementById('cf-resumen-ingreso').textContent=fmt(totalIngreso);
+  if(document.getElementById('cf-resumen-gasto')) document.getElementById('cf-resumen-gasto').textContent=fmt2(totalGasto);
+  if(document.getElementById('cf-resumen-ingreso')) document.getElementById('cf-resumen-ingreso').textContent=fmt2(totalIngreso);
   var utilEl=document.getElementById('cf-resumen-util');
-  if(utilEl){utilEl.textContent=fmt(util);utilEl.style.color=util>=0?'var(--green)':'var(--fram)';}
+  if(utilEl){utilEl.textContent=fmt2(util);utilEl.style.color=util>=0?'var(--green)':'var(--fram)';}
   var utilCard=document.getElementById('cf-utilidad-card');
   if(utilCard) utilCard.style.borderColor=util>=0?'var(--green-border)':'var(--fram-border)';
 }
