@@ -1435,7 +1435,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <div class="field-row">
             <div class="field">
               <label>Negocio</label>
-              <select id="af-loc" style="font-weight:600" onchange="buildAlmSectorSelect()">
+              <select id="af-loc" style="font-weight:600" onchange="onAlmLocChange()">
                 <option value="jal">🌾 Jalisco</option>
                 <option value="nay">🌿 Nayarit</option>
                 <option value="com">🛒 Comercializadora</option>
@@ -1446,6 +1446,28 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
               <div style="display:flex;gap:6px;align-items:center">
                 <input type="text" id="af-fecha" placeholder="DD/MM/AAAA" maxlength="10" oninput="onAlfFechaInput()" onblur="normalizarAlfFecha()" style="flex:1;font-family:var(--mono);font-weight:600">
                 <input type="date" id="af-fecha-picker" onchange="onAlfPickerChange()" style="padding:8px 6px;border-radius:var(--radius);border:1.5px solid var(--green-border);background:var(--green-bg);cursor:pointer;flex-shrink:0;width:36px;color:transparent;color-scheme:dark light">
+              </div>
+            </div>
+          </div>
+          <!-- Datos de la COMPRA: solo lotes de Comercializadora (ver onAlmLocChange) -->
+          <div id="af-com-fields" style="display:none">
+            <div class="field">
+              <label>Proveedor</label>
+              <input type="text" id="af-proveedor" list="af-proveedor-dl" placeholder="Nombre del proveedor" autocomplete="off">
+              <datalist id="af-proveedor-dl"></datalist>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Precio compra $/kg</label>
+                <div class="monto-wrap"><span class="monto-prefix">$</span>
+                  <input type="number" id="af-precio-compra" placeholder="0" min="0" step="0.01">
+                </div>
+              </div>
+              <div class="field">
+                <label>Flete de compra $</label>
+                <div class="monto-wrap"><span class="monto-prefix">$</span>
+                  <input type="number" id="af-flete-compra" placeholder="0" min="0" step="0.01">
+                </div>
               </div>
             </div>
           </div>
@@ -2088,6 +2110,8 @@ async function cargarDesdeSB(){
         ciclo:l.ciclo, variedad:l.variedad, kgTotal:parseFloat(l.kg_total||0),
         precioEst:parseFloat(l.precio_est||0), notas:l.notas||'',
         hectareas:parseFloat(l.hectareas||0), sector:l.sector||'',
+        proveedor:l.proveedor||'', precioCompra:parseFloat(l.precio_compra||0),
+        fleteCompra:parseFloat(l.flete_compra||0), gastoIds:l.gasto_ids||[],
         despachos:l.despachos||[], cerrado:l.cerrado||false};
     });
     saveAlmLotes();
@@ -10804,6 +10828,8 @@ async function sbSaveAlmLote(l){
     ciclo:l.ciclo, variedad:l.variedad, kg_total:l.kgTotal,
     precio_est:l.precioEst, notas:l.notas||'',
     hectareas:l.hectareas||0, sector:l.sector||'',
+    proveedor:l.proveedor||'', precio_compra:l.precioCompra||0,
+    flete_compra:l.fleteCompra||0, gasto_ids:l.gastoIds||[],
     despachos:l.despachos||[], cerrado:l.cerrado||false
   });
 }
@@ -10855,7 +10881,7 @@ function editarLote(loteId){
   document.getElementById('alm-form-title').textContent='Editar lote';
   document.getElementById('btn-alm-guardar').textContent='Guardar cambios';
   document.getElementById('af-loc').value=lote.loc;
-  buildAlmSectorSelect();
+  onAlmLocChange();
   document.getElementById('af-fecha').value=isoToDisplay(lote.fecha);
   document.getElementById('af-fecha-picker').value=lote.fecha;
   document.getElementById('af-ciclo').value=lote.ciclo;
@@ -10865,6 +10891,9 @@ function editarLote(loteId){
   document.getElementById('af-hectareas').value=lote.hectareas||'';
   document.getElementById('af-sector').value=lote.sector||'';
   document.getElementById('af-notas').value=lote.notas||'';
+  document.getElementById('af-proveedor').value=lote.proveedor||'';
+  document.getElementById('af-precio-compra').value=lote.precioCompra||'';
+  document.getElementById('af-flete-compra').value=lote.fleteCompra||'';
   recalcAlmForm();
 }
 
@@ -10950,8 +10979,21 @@ function initAlmForm(){
   document.getElementById('af-notas').value='';
   document.getElementById('af-resumen').style.display='none';
   document.getElementById('af-rinde-hint').style.display='none';
+  document.getElementById('af-proveedor').value='';
+  document.getElementById('af-precio-compra').value='';
+  document.getElementById('af-flete-compra').value='';
+  var dl=document.getElementById('af-proveedor-dl');
+  if(dl) dl.innerHTML=proveedoresComer.map(function(p){return '<option value="'+p.replace(/"/g,'&quot;')+'">';}).join('');
   document.getElementById('af-loc').value='jal';
+  onAlmLocChange();
+}
+
+// Muestra los campos de compra (proveedor/precio/flete) solo para lotes de
+// Comercializadora: en jal/nay la compra no existe (el lote es cosecha propia).
+function onAlmLocChange(){
   buildAlmSectorSelect();
+  var box=document.getElementById('af-com-fields');
+  if(box) box.style.display = document.getElementById('af-loc').value==='com' ? 'block' : 'none';
 }
 
 function buildAlmSectorSelect(){
@@ -11016,6 +11058,11 @@ function guardarLote(){
   var hectareas=parseFloat(document.getElementById('af-hectareas').value)||0;
   var sector=document.getElementById('af-sector').value||'';
   var notas=document.getElementById('af-notas').value.trim();
+  // Datos de compra: solo tienen sentido en Comercializadora; en jal/nay se ignoran.
+  var esCom = loc==='com';
+  var proveedor = esCom ? document.getElementById('af-proveedor').value.trim() : '';
+  var precioCompra = esCom ? (parseFloat(document.getElementById('af-precio-compra').value)||0) : 0;
+  var fleteCompra = esCom ? (parseFloat(document.getElementById('af-flete-compra').value)||0) : 0;
   if(!fechaISO){showToast('Selecciona una fecha');return;}
   if(!variedad){showToast('Selecciona una variedad');return;}
   if(!kg){showToast('Ingresa los kg');return;}
@@ -11027,12 +11074,16 @@ function guardarLote(){
       almLotes[idx].ciclo=cicloV; almLotes[idx].variedad=variedad;
       almLotes[idx].kgTotal=kg; almLotes[idx].precioEst=precio; almLotes[idx].notas=notas;
       almLotes[idx].hectareas=hectareas; almLotes[idx].sector=sector;
+      almLotes[idx].proveedor=proveedor; almLotes[idx].precioCompra=precioCompra;
+      almLotes[idx].fleteCompra=fleteCompra;
       sbSaveAlmLote(almLotes[idx]);
     }
     showToast('Lote actualizado');
   } else {
     var lote={id:Date.now(),loc:loc,fecha:fechaISO,fechaLbl:fechaLbl,ciclo:cicloV,
-      variedad:variedad,kgTotal:kg,precioEst:precio,notas:notas,hectareas:hectareas,sector:sector,despachos:[],cerrado:false};
+      variedad:variedad,kgTotal:kg,precioEst:precio,notas:notas,hectareas:hectareas,sector:sector,
+      proveedor:proveedor,precioCompra:precioCompra,fleteCompra:fleteCompra,gastoIds:[],
+      despachos:[],cerrado:false};
     almLotes.unshift(lote);
     sbSaveAlmLote(lote);
     showToast('Lote guardado: '+kg.toLocaleString('es-MX')+' kg');
