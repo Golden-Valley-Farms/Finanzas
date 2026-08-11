@@ -154,25 +154,37 @@ La etiqueta de valor toma el color de su propio punto: los plugins leen `ds.poin
 
 Hay dos orígenes de cortes:
 
-- **Metas reales del negocio** (fijas): % de merma `RFR_CORTES_MERMA=[2,4,7]`, costo/cubeta cosechadores `[15,20,30]` y precio por caja `[170,130,60]`. Las dos últimas van en duro en la llamada del dataset; la de merma es constante porque la comparten tarjeta y gráfica.
+- **Metas reales del negocio** (fijas, definidas por el usuario): tres constantes al inicio del bloque del semáforo — `RFR_CORTES_MERMA=[3,7,10]`, `RFR_CORTES_COSTO_COSECH=[15,18,20]` y `RFR_CORTES_PRECIO_CAJA=[220,200,180]`. **Son parámetros de negocio: no tocarlos salvo que el usuario dé nuevos números.** Cada una la comparten tarjeta y gráfica, así que están declaradas una sola vez y nunca en duro en la llamada del dataset.
 
-La tarjeta de Merma lleva el mismo trato en las **tres** vistas (Por día, Por semana y Por ciclo): valor a un decimal (`pctKgMerma` se redondea con `*1000)/10` y se pinta con `.toFixed(1)`) y color por `rfrColMerma()`. Se pasó a un decimal porque con entero un 6.6% se mostraba como "7%" y salía rojo cuando le tocaba naranja. Ojo: las tres vistas tienen su **propia** variable `pctKgMerma` en funciones distintas — al tocar una hay que tocar las tres.
+| métrica | verde | amarillo | naranja | rojo | helper |
+|---|---|---|---|---|---|
+| % de merma | `<=3` | `(3,7)` | `[7,10)` | `>=10` | `rfrColMerma()` / `rfrColsMerma()` |
+| Costo/cubeta cosechadores | `<=15` | `(15,18)` | `[18,20)` | `>=20` | `rfrColCostoCosech()` / `rfrColsCostoCosech()` |
+| Precio por caja | `>=220` | `[200,220)` | `[180,200)` | `<180` | `rfrPuntoCol(v, RFR_CORTES_PRECIO_CAJA, true)` |
 
-**La merma no usa `rfrPuntoCol()`**, usa `rfrColMerma()` / `rfrColsMerma()`. `rfrPuntoCol` corta con `<=` (límite superior inclusivo), y la merma se pidió con límites **exclusivos**: verde `[0,2)`, amarillo `[2,4)`, naranja `[4,7)`, rojo `>=7` — con `<=` un 7% caía en naranja. No cambiar el operador de `rfrPuntoCol` para arreglar esto: lo comparten todas las demás series, y movería también los límites de $15 y $170.
+La merma aplica en las **tres** vistas (Por día, Por semana y Por ciclo); las otras dos en Por semana y Por ciclo.
+
+La tarjeta de Merma lleva el mismo trato en las tres vistas: valor a un decimal (`pctKgMerma` se redondea con `*1000)/10` y se pinta con `.toFixed(1)`) y color por `rfrColMerma()`. Se pasó a un decimal porque con entero un 6.6% se mostraba como "7%" y salía rojo cuando le tocaba naranja. Ojo: las tres vistas tienen su **propia** variable `pctKgMerma` en funciones distintas — al tocar una hay que tocar las tres.
+
+**Merma y costo/cubeta cosechadores no usan `rfrPuntoCol()`**, tienen helper propio. `rfrPuntoCol` corta con `<=` en las tres bandas, y estas dos se pidieron con el primer límite **inclusivo** y los otros dos **exclusivos** (verde `<=3`, pero el 7 y el 10 caen en la banda de arriba). No cambiar el operador de `rfrPuntoCol` para arreglar esto: lo comparten todas las demás series y movería también los límites de precio por caja.
+
+Precio por caja sí pasa por `rfrPuntoCol` con `altoBueno=true`, que corta con `>=` y da exactamente los límites pedidos.
 - **Mediana histórica** (`rfrRefsHistoricas()` + `rfrCortesDesde(ref, altoBueno)`) para las demás, porque no hay meta definida. `rfrRefsHistoricas()` agrega por semana **todo** `framRegistros` (todos los ciclos, no solo el filtrado) y saca la mediana. Se usa mediana y no promedio porque la temporada alta lo jala mucho hacia arriba (677 kg contra 470 de mediana) y dejaría casi todo en rojo. `rfrCortesDesde` abre las bandas en proporción: `[ref, ref×0.6, ref×0.35]` cuando más alto es mejor, `[ref, ref×1.5, ref×2.5]` cuando más alto es peor.
 
 | Gráfica | referencia | sentido |
 |---|---|---|
-| % de merma | **meta `[2,4,7]` vía `rfrColMerma()`** | más alto es peor |
+| % de merma | **meta `RFR_CORTES_MERMA` vía `rfrColMerma()`** | más alto es peor |
 | Kg cosechados | mediana `refs.kg` | más alto es mejor |
 | Kg de proceso | mediana `refs.proceso` | más alto es peor |
 | Cajas por semana | mediana `refs.cajas` | más alto es mejor |
 | Costo/cubeta general | mediana `refs.costoGen` | más alto es peor |
-| Costo/cubeta cosechadores | **meta $15** | más alto es peor |
-| Precio por caja | **normal $170** | más alto es mejor |
+| Costo/cubeta cosechadores | **meta `RFR_CORTES_COSTO_COSECH`** | más alto es peor |
+| Precio por caja | **meta `RFR_CORTES_PRECIO_CAJA`** | más alto es mejor |
 | Total facturado | mediana `refs.facturado` | más alto es mejor |
 
 La gráfica de Kg conserva el color propio de sus dos líneas (es lo que las distingue en su leyenda del markup) y cada una lleva su propio semáforo. "Por día" y "Por semana" no llevan semáforo: siguen con color sólido por serie.
+
+**Las 7 gráficas de línea pasan por `mkFrozenAxisLineChart()`, que fija `layout.padding.right` en 40px.** Ese margen no es estético: la etiqueta de valor se dibuja centrada sobre su punto, y con el área de trazo pegada al borde derecho la del último punto salía cortada a la mitad. Si algún día se alargan las etiquetas (más decimales, un prefijo), hay que subir ese número.
 
 ### Semáforo de las tarjetas KPI del mismo resumen
 
@@ -184,19 +196,21 @@ Por eso `var refs=rfrRefsHistoricas()` se calcula **antes** de armar `cont.inner
 
 **Meta de cajas: 8,000 por conjunto de sectores**, o sea 16,000 el total del ciclo. La tarjeta de Total cajas lleva tres barras de avance — total contra 16,000, y una por cada conjunto (sectores 1-2 y 3-4) contra 8,000 — cada una con su propio color. Los cortes de meta van al 100/75/50% (`cortesMeta()`), no por `rfrCortesDesde`.
 
+Esa tarjeta se **reparte en dos columnas solo en escritorio**: `.rfr-cajas-row` es `display:block` por defecto (móvil apila total arriba y sectores abajo, que es como se quiere ver ahí) y pasa a `flex` dentro del `@media (min-width:700px)`, con el total a la izquierda (`.rfr-cajas-total`, 34%) y el `.kpi-split` de los dos conjuntos a la derecha separado por un borde. Al tocar el markup hay que respetar que `.rfr-cajas-total` y `.kpi-split` sean **hermanos directos** de `.rfr-cajas-row`.
+
 | Tarjeta | cortes | sentido |
 |---|---|---|
 | Total cajas | meta **16,000** al 100/75/50% | más alto es mejor |
 | Sectores 1 y 2 / 3 y 4 | meta **8,000** cada uno | más alto es mejor |
 | Prom. cajas/día | mediana `refs.cajasDia` | más alto es mejor |
 | Prom. cajas/semana | mediana `refs.cajas` | más alto es mejor |
-| Merma | **meta `[2,4,7]` vía `rfrColMerma()`** | más alto es peor |
+| Merma | **meta `RFR_CORTES_MERMA` vía `rfrColMerma()`** | más alto es peor |
 | Promedio costo/cubeta general | derivado de la meta de cosechadores (ver abajo) | más alto es peor |
-| Promedio costo/cubeta cosechadores | **meta $15** → `[15,20,30]` | más alto es peor |
-| Promedio precio/caja | **normal $170** → `[170,130,60]` | más alto es mejor |
+| Promedio costo/cubeta cosechadores | **meta `RFR_CORTES_COSTO_COSECH`** | más alto es peor |
+| Promedio precio/caja | **meta `RFR_CORTES_PRECIO_CAJA`** | más alto es mejor |
 | Promedio facturado | mediana `refs.facturado` | más alto es mejor |
 
-**Costo/cubeta general no tiene meta propia**, y es la misma métrica que la de cosechadores más el resto de la nómina. Su meta se **convierte** desde los $15: `razon = refs.costoGen / refs.costoCosech` (≈1.84 hoy) y `metaCostoGen = 15 × razon` (≈$27.64), con las mismas proporciones de banda que `[15,20,30]` → `[meta, meta×20/15, meta×2]`. Si algún día se define una meta real para el general, sustituir esa conversión por el número duro.
+**Costo/cubeta general no tiene meta propia**, y es la misma métrica que la de cosechadores más el resto de la nómina. Su meta se **convierte** desde los $15 de cosechadores: `razon = refs.costoGen / refs.costoCosech` (≈1.84 hoy) y `metaCostoGen = 15 × razon` (≈$27.64), con bandas `[meta, meta×20/15, meta×2]`. Ojo: esas proporciones vienen de los cortes viejos `[15,20,30]` de cosechadores y **ya no coinciden** con los `[15,18,20]` actuales; se dejaron así a propósito porque el general no tiene meta pedida y reapretar sus bandas lo pintaría casi siempre en rojo. Si algún día se define una meta real para el general, sustituir toda esa conversión por el número duro.
 
 Ojo: la tarjeta antes llamada "Promedio costo/caja" ahora se llama **"Promedio precio/caja"** — es un precio de venta, no un costo, y por eso más alto es mejor.
 
@@ -204,11 +218,17 @@ Ojo: la tarjeta antes llamada "Promedio costo/caja" ahora se llama **"Promedio p
 
 `refs.mermaPct` quedó sin uso al pasar la merma a meta fija; se conserva en `rfrRefsHistoricas()` por si vuelve a ocuparse.
 
-### Mismo semáforo en Por día y Por semana, más variación semana-a-semana
+### Mismo semáforo en Por día y Por semana, más variación contra el periodo anterior
 
 **Por día** (`renderRfrDiaDetalle`) y **Por semana** (`renderRfrSemDetalle`) llevan el mismo semáforo que Por ciclo, contra la mediana histórica del **mismo nivel** (día compara con día, semana con semana) — nunca contra la mediana semanal usada por Por ciclo, que es una escala distinta. `rfrRefsHistoricas()` por eso trae, además de lo semanal: `cubetas` (mediana semanal de cubetas, para "Cubetas cosechadas" en Por semana), y a nivel día `cubetasDia`, `kgDia`, `mermaKgDia` (para las 4 tarjetas de Por día que no tienen equivalente semanal que usar). Costo/cubeta general usa el mismo truco de conversión que Por ciclo, factorizado en `rfrMetaCostoGen(refs)` / `rfrColCostoGen(valor, refs)` para que las tres vistas no se desincronicen si cambia la meta de cosechadores.
 
-**Por semana además lleva una insignia de variación contra la semana anterior**, estilo precio de acción: flecha + % en la esquina superior derecha de cada una de las 8 tarjetas (`.kpi-wow`, generado por `rfrWowBadge(actual, anterior, altoBueno)`). Verde/rojo nada más, sin banda intermedia — sube+altoBueno o baja+¬altoBueno es verde, lo contrario es rojo. `rfrSemAnteriorKey(sk)` saca la semana anterior de las opciones **ya pobladas** del `<select>` (mismo ciclo/negocio que se está viendo, y es la misma semana a la que llevaría el botón "◀"), y `rfrComputeSemMetrics(sk)` recalcula las 8 métricas de esa semana reusando `rfrSemanaAgrup`/`rfrSemanaAcum`. Si no hay semana anterior (o a esa métrica le falta dato, ej. `precioCaja` sin captura en Finanzas), `rfrWowBadge` regresa `''` y no se pinta nada — no inventa una variación con dato faltante.
+**Por semana y Por día llevan una insignia de variación contra el periodo anterior**, estilo precio de acción: flechas + % en la esquina superior derecha de la tarjeta (`.kpi-wow`, generado por `rfrWowBadge(actual, anterior, altoBueno)`) — las 8 tarjetas de Por semana (contra la semana anterior) y las 5 de Por día (contra el registro anterior). Verde/rojo nada más, sin banda intermedia — sube+altoBueno o baja+¬altoBueno es verde, lo contrario es rojo.
+
+El **número de flechas marca la magnitud**: 1 hasta 33%, 2 hasta 66%, 3 arriba de 66%. El conteo va contra el porcentaje **ya redondeado**, el mismo que se imprime; si se usa el crudo, un 33.4% se muestra como "33%" pero sale con dos flechas y se lee como error. Las flechas van dentro de un `.kpi-wow-fls` con `letter-spacing` negativo para que se encabalguen y dos o tres no ocupen el doble o triple de esquina — el traslape está calibrado para que sigan contándose de un vistazo (a −1.8px en móvil / −2.6px en escritorio quedan a ~35% de traslape; con −3.5px se veían como una sola flecha gruesa).
+
+Cada vista tiene su par de helpers, con la misma forma: `rfrSemAnteriorKey(sk)`/`rfrComputeSemMetrics(sk)` y `rfrDiaAnteriorKey(fecha)`/`rfrComputeDiaMetrics(fecha)`. Los dos `…AnteriorKey` sacan el periodo previo de las opciones **ya pobladas** del `<select>` (mismo ciclo/negocio que se está viendo, y es el mismo al que llevaría el botón "◀") — no de `framRegistros` crudo, que ignoraría el filtro. Si no hay periodo anterior (o a esa métrica le falta dato, ej. `precioCaja` sin captura en Finanzas), `rfrWowBadge` regresa `''` y no se pinta nada — no inventa una variación con dato faltante.
+
+Ojo con el orden en el markup: la insignia tiene que ir **antes** del `.kpi-lbl` porque la regla `.kpi-wow~.kpi-lbl{padding-right:…}` (la que evita que un título largo se meta debajo de la insignia) usa el combinador de hermano posterior.
 
 **Trampa en la que ya se cayó una vez:** los colores/insignias de Por semana se calculan usando `precioCajaSem`/`totalFacturadoSem`/`costoCubetaGeneral`/etc., variables `var` que la función declara **más abajo**, junto al `finRegSem`. Por hoisting no truena, pero si el bloque de colores se pone *antes* de esa declaración quedan todas `undefined` y el semáforo sale "sin dato" aunque sí haya cifra en pantalla (pasó con "Precio por caja": mostraba $77.16 pero en gris). El bloque de colores/insignias de Por semana tiene que ir **después** de que `finRegSem`/`precioCajaSem`/`totalFacturadoSem` ya estén asignados.
 

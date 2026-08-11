@@ -416,12 +416,19 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
    superior derecha de la tarjeta. Ver rfrWowBadge — verde/rojo según si a esa
    métrica le conviene subir o bajar, sin banda intermedia (solo dos estados). */
 .kpi-wow{position:absolute;top:12px;right:12px;font-size:10.5px;font-weight:700;font-family:var(--mono);white-space:nowrap}
+/* Las flechas se encavalgan a proposito: dos o tres seguidas deben leerse como
+   un solo simbolo mas "fuerte", no ocupar el triple de ancho en la esquina. */
+.kpi-wow-fls{letter-spacing:-1.8px;margin-right:4px}
 /* Reserva espacio para que un título largo (ej. "Cubetas cosechadas") no
    quede debajo de la insignia en tarjetas angostas. */
 .kpi-wow~.kpi-lbl{padding-right:36px}
 /* Resumen por ciclo: titulos y cifras centrados */
 #rfr-res-detalle .kpi-lbl,#rfr-res-detalle .kpi-val,
 #rfr-res-detalle .kpi-split-lbl{text-align:center}
+/* Tarjeta de Total cajas del resumen por ciclo. En movil se apila (el total arriba,
+   los dos conjuntos de sectores abajo); el reparto en dos columnas es solo de
+   escritorio — ver la regla de min-width:700px. */
+.rfr-cajas-row{display:block}
 .deuda-card{display:flex;align-items:center;gap:8px;background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:10px;cursor:pointer}
 .deuda-card:active{background:var(--surface2)}
 .deuda-nom{font-size:15px;font-weight:600;color:var(--text)}
@@ -554,7 +561,13 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   #rep-cam-sec .kpi-val,#rep-fin-sec .kpi-val,#rep-fram-sec .kpi-val{font-size:33px}
   .kpi-split-lbl{font-size:11px}
   .kpi-wow{font-size:15px}
+  .kpi-wow-fls{letter-spacing:-2.6px;margin-right:5px}
   .kpi-wow~.kpi-lbl{padding-right:50px}
+  /* Total cajas del resumen por ciclo: el total a la izquierda y los dos conjuntos
+     de sectores a la derecha, en la misma fila. */
+  .rfr-cajas-row{display:flex;align-items:center;gap:28px}
+  .rfr-cajas-row>.rfr-cajas-total{flex:0 0 34%}
+  .rfr-cajas-row>.kpi-split{flex:1;margin-top:0;padding-left:28px;border-left:1px solid var(--border)}
   #rep-cam-sec .rcm-nay-charts-grid{
     max-width:1400px;margin:0 auto;
     display:grid;grid-template-columns:3fr 2fr;grid-template-rows:260px 260px;gap:12px;
@@ -3814,6 +3827,28 @@ function rfrPoblarSelectDia(){
   else document.getElementById('rfr-dia-detalle').innerHTML='';
 }
 
+// Registro inmediato anterior a fechaActual dentro de las opciones YA POBLADAS del
+// selector (mismo ciclo/negocio que se está viendo). El <select> se llena en orden
+// descendente, así que el anterior en el tiempo es la SIGUIENTE opción en el DOM.
+// Es el mismo registro al que lleva el botón "‹".
+function rfrDiaAnteriorKey(fechaActual){
+  var sel=document.getElementById('rfr-sel-dia'); if(!sel) return null;
+  var opts=Array.prototype.slice.call(sel.options).filter(function(o){return o.value;});
+  var i=opts.findIndex(function(o){return o.value===fechaActual;});
+  if(i<0 || i+1>=opts.length) return null;
+  return opts[i+1].value;
+}
+// Métricas de un día, para comparar el registro actual contra el anterior en las
+// tarjetas de "Por día" (ver rfrWowBadge).
+function rfrComputeDiaMetrics(fecha){
+  if(!fecha) return null;
+  var r=rfrDataCache.find(function(x){return x.fecha===fecha;});
+  if(!r) return null;
+  var kg=r.totalKg||0, merma=r.merma||0;
+  return {cubetas:r.totalCubetas||0, cajas:r.totalCajas||0, kg:kg, merma:merma,
+    pctKgMerma:(kg+merma)>0?(merma/(kg+merma))*100:null};
+}
+
 function renderRfrDiaDetalle(){
   var sel=document.getElementById('rfr-sel-dia'); if(!sel||!sel.value) return;
   var r=rfrDataCache.find(function(x){return x.fecha===sel.value;});
@@ -3854,6 +3889,14 @@ function renderRfrDiaDetalle(){
   var colKgDia = rfrPuntoCol(kgCosechados, rfrCortesDesde(refsDia.kgDia,true), true);
   var colProcesoDia = rfrPuntoCol(r.merma||0, rfrCortesDesde(refsDia.mermaKgDia,false), false);
 
+  // Variación contra el registro anterior, estilo "acción en bolsa" (ver rfrWowBadge).
+  var prevDiaMetrics=rfrComputeDiaMetrics(rfrDiaAnteriorKey(r.fecha));
+  var wowCubetasDia=prevDiaMetrics?rfrWowBadge(r.totalCubetas,prevDiaMetrics.cubetas,true):'';
+  var wowCajasDia=prevDiaMetrics?rfrWowBadge(r.totalCajas,prevDiaMetrics.cajas,true):'';
+  var wowKgDia=prevDiaMetrics?rfrWowBadge(kgCosechados,prevDiaMetrics.kg,true):'';
+  var wowProcesoDia=prevDiaMetrics?rfrWowBadge(r.merma||0,prevDiaMetrics.merma,false):'';
+  var wowMermaDia=prevDiaMetrics?rfrWowBadge(pctKgMerma,prevDiaMetrics.pctKgMerma,false):'';
+
   var secMapDia={}; (r.cajas||[]).forEach(function(c){
     var sec='S'+(c.sector||1); secMapDia[sec]=(secMapDia[sec]||0)+(c.cantidad||0);
   });
@@ -3863,27 +3906,27 @@ function renderRfrDiaDetalle(){
   document.getElementById('rfr-dia-detalle').innerHTML=
     // ── Fila 1: KPIs compactos en una sola línea ──
     '<div class="kpi-grid rfr-dia-kpis">'+
-      '<div class="kpi-card">'+
+      '<div class="kpi-card">'+wowCubetasDia+
         '<div class="kpi-accent" style="background:'+colCubetasDia+'"></div>'+
         '<div class="kpi-lbl">Cubetas cosechadas</div>'+
         '<div class="kpi-val" style="color:'+colCubetasDia+'">'+r.totalCubetas+'</div>'+
       '</div>'+
-      '<div class="kpi-card">'+
+      '<div class="kpi-card">'+wowCajasDia+
         '<div class="kpi-accent" style="background:'+colCajasDia+'"></div>'+
         '<div class="kpi-lbl">Total cajas</div>'+
         '<div class="kpi-val" style="color:'+colCajasDia+'">'+r.totalCajas+'</div>'+
       '</div>'+
-      '<div class="kpi-card">'+
+      '<div class="kpi-card">'+wowKgDia+
         '<div class="kpi-accent" style="background:'+colKgDia+'"></div>'+
         '<div class="kpi-lbl">Kg cosechados</div>'+
         '<div class="kpi-val" style="color:'+colKgDia+'">'+kgCosechados+' <span style="font-size:14px;font-weight:400;color:var(--text3)">kg</span></div>'+
       '</div>'+
-      '<div class="kpi-card">'+
+      '<div class="kpi-card">'+wowProcesoDia+
         '<div class="kpi-accent" style="background:'+colProcesoDia+'"></div>'+
         '<div class="kpi-lbl">Proceso (merma)</div>'+
         '<div class="kpi-val" style="color:'+colProcesoDia+'">'+(r.merma||0)+' <span style="font-size:14px;font-weight:400;color:var(--text3)">kg</span></div>'+
       '</div>'+
-      '<div class="kpi-card">'+
+      '<div class="kpi-card">'+wowMermaDia+
         '<div class="kpi-accent" style="background:'+colMerma+'"></div>'+
         '<div class="kpi-lbl">Merma</div>'+
         '<div class="kpi-val" style="color:'+colMerma+'">'+(pctKgMerma===null?'—':pctKgMerma.toFixed(1)+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>')+'</div>'+
@@ -4126,16 +4169,23 @@ function rfrComputeSemMetrics(sk){
     costoCubetaGeneral:costoCubetaGeneral, costoCubetaCosechadores:costoCubetaCosechadores,
     precioCaja:precioCaja, totalFacturado:totalFacturado};
 }
-// Insignia estilo "precio de acción": flecha + % de variación contra la semana anterior.
+// Insignia estilo "precio de acción": flechas + % de variación contra el periodo
+// anterior (semana anterior en Por semana, registro anterior en Por día).
 // altoBueno=true -> sube=verde/baja=rojo; altoBueno=false (merma, costos) -> al revés.
+// El número de flechas marca la magnitud del cambio: 1 hasta 33%, 2 hasta 66%, 3 arriba.
 function rfrWowBadge(cur, prev, altoBueno){
   if(cur===null||cur===undefined||prev===null||prev===undefined||!prev) return '';
   var delta=(cur-prev)/Math.abs(prev)*100;
   var redondeado=Math.round(delta);
   if(redondeado===0) return '<span class="kpi-wow" style="color:var(--text3)">0%</span>';
   var subio=delta>0;
+  // El conteo va contra el % YA REDONDEADO, el mismo que se imprime: si no, un
+  // 33.4% se muestra como "33%" y saldria con dos flechas.
+  var mag=Math.abs(redondeado);
+  var n=mag<=33?1:(mag<=66?2:3);
+  var flechas=new Array(n+1).join(subio?'▲':'▼');
   var col=altoBueno?(subio?RFR_SEM_COLS.bien:RFR_SEM_COLS.problema):(subio?RFR_SEM_COLS.problema:RFR_SEM_COLS.bien);
-  return '<span class="kpi-wow" style="color:'+col+'">'+(subio?'▲':'▼')+' '+Math.abs(redondeado)+'%</span>';
+  return '<span class="kpi-wow" style="color:'+col+'"><span class="kpi-wow-fls">'+flechas+'</span>'+Math.abs(redondeado)+'%</span>';
 }
 
 function renderRfrSemDetalle(){
@@ -4221,8 +4271,8 @@ function renderRfrSemDetalle(){
   var colCajasSem=rfrPuntoCol(s.cajas,rfrCortesDesde(refsSem.cajas,true),true);
   var colPromCajasSem=rfrPuntoCol(promCajas,rfrCortesDesde(refsSem.cajasDia,true),true);
   var colCostoGenSem=rfrColCostoGen(costoCubetaGeneral,refsSem);
-  var colCostoCosSem=rfrPuntoCol(costoCubetaCosechadores,[15,20,30],false);
-  var colPrecioCajaSem=rfrPuntoCol(precioCajaSem,[170,130,60],true);
+  var colCostoCosSem=rfrColCostoCosech(costoCubetaCosechadores);
+  var colPrecioCajaSem=rfrPuntoCol(precioCajaSem,RFR_CORTES_PRECIO_CAJA,true);
   var colFacturadoSem=rfrPuntoCol(totalFacturadoSem,rfrCortesDesde(refsSem.facturado,true),true);
 
   // Variación contra la semana anterior, estilo "acción en bolsa" (ver rfrWowBadge).
@@ -4512,13 +4562,14 @@ function renderRfrSemDetalle(){
 var RFR_SEM_COLS={bien:'#1baf7a', vigilar:'#eda100', preocupa:'#ec835a', problema:'#d03b3b', sinDato:'#c3c2b7'};
 var RFR_LINEA_NEUTRA='#898781';
 var RFR_LINEA_NEUTRA_BG='rgba(137,135,129,0.10)';
-// Meta real del negocio para % de merma (mas alto es peor). Los limites son
-// EXCLUSIVOS por arriba: verde [0,2), amarillo [2,4), naranja [4,7), rojo de 7 en adelante.
-// Por eso no pasa por rfrPuntoCol, que corta con <= y dejaria el 7% en naranja.
-var RFR_CORTES_MERMA=[2,4,7];
+// Meta real del negocio para % de merma (mas alto es peor):
+// verde <=3, amarillo (3,7), naranja [7,10), rojo >=10.
+// No pasa por rfrPuntoCol porque ese corta con <= en las tres bandas y dejaria
+// el 7 y el 10 una banda mas abajo de lo pedido.
+var RFR_CORTES_MERMA=[3,7,10];
 function rfrColMerma(v){
   if(v===null||v===undefined||isNaN(v)) return RFR_SEM_COLS.sinDato;
-  if(v<RFR_CORTES_MERMA[0]) return RFR_SEM_COLS.bien;
+  if(v<=RFR_CORTES_MERMA[0]) return RFR_SEM_COLS.bien;
   if(v<RFR_CORTES_MERMA[1]) return RFR_SEM_COLS.vigilar;
   if(v<RFR_CORTES_MERMA[2]) return RFR_SEM_COLS.preocupa;
   return RFR_SEM_COLS.problema;
@@ -4526,6 +4577,24 @@ function rfrColMerma(v){
 function rfrColsMerma(arr){
   return (arr||[]).map(function(v){ return rfrColMerma(v); });
 }
+// Meta real del negocio para costo/cubeta de cosechadores (mas alto es peor):
+// verde <=15, amarillo (15,18), naranja [18,20), rojo >=20. Mismo motivo que la
+// merma para no reusar rfrPuntoCol: el 18 y el 20 deben caer en la banda de arriba.
+var RFR_CORTES_COSTO_COSECH=[15,18,20];
+function rfrColCostoCosech(v){
+  if(v===null||v===undefined||isNaN(v)) return RFR_SEM_COLS.sinDato;
+  if(v<=RFR_CORTES_COSTO_COSECH[0]) return RFR_SEM_COLS.bien;
+  if(v<RFR_CORTES_COSTO_COSECH[1]) return RFR_SEM_COLS.vigilar;
+  if(v<RFR_CORTES_COSTO_COSECH[2]) return RFR_SEM_COLS.preocupa;
+  return RFR_SEM_COLS.problema;
+}
+function rfrColsCostoCosech(arr){
+  return (arr||[]).map(function(v){ return rfrColCostoCosech(v); });
+}
+// Meta real del negocio para precio por caja (mas alto es mejor):
+// verde >=220, amarillo [200,220), naranja [180,200), rojo <180. Aqui si aplica
+// rfrPuntoCol tal cual, que en altoBueno corta con >=.
+var RFR_CORTES_PRECIO_CAJA=[220,200,180];
 // cortes = [bien, vigilar, preocupa]; altoBueno=true cuando más alto es mejor.
 function rfrPuntoCol(v, cortes, altoBueno){
   if(v===null||v===undefined) return RFR_SEM_COLS.sinDato;
@@ -4761,15 +4830,15 @@ function renderRfrResumen(data){
   var promCajasSemana = semKeys.length>0 ? Math.round(totalCajas/semKeys.length*10)/10 : 0;
 
   // ── Semáforo de las demás tarjetas ──
-  // Donde hay meta real del negocio se usa tal cual (cosechadores $15, precio/caja $170);
+  // Donde hay meta real del negocio se usa tal cual (merma, cosechadores, precio/caja);
   // el resto sale de la mediana histórica vía rfrCortesDesde, igual que las gráficas,
   // para que tarjeta y gráfica de la misma métrica cuenten lo mismo.
   var colPromDia=rfrPuntoCol(promCajas,rfrCortesDesde(refs.cajasDia,true),true);
   var colPromSem=rfrPuntoCol(promCajasSemana,rfrCortesDesde(refs.cajas,true),true);
   var colMerma=rfrColMerma(pctKgMerma);
   var colCostoGen=rfrColCostoGen(costoGeneralPonderado,refs);
-  var colCostoCos=rfrPuntoCol(costoCosechadoresPonderado,[15,20,30],false);
-  var colPrecioCaja=rfrPuntoCol(precioCajaPonderado,[170,130,60],true);
+  var colCostoCos=rfrColCostoCosech(costoCosechadoresPonderado);
+  var colPrecioCaja=rfrPuntoCol(precioCajaPonderado,RFR_CORTES_PRECIO_CAJA,true);
   var colFacturado=rfrPuntoCol(facturadoPonderado,rfrCortesDesde(refs.facturado,true),true);
 
   cont.innerHTML=
@@ -4777,9 +4846,12 @@ function renderRfrResumen(data){
     '<div class="kpi-grid rfr-dia-kpis" style="grid-template-columns:1fr">'+
       '<div class="kpi-card" style="padding:12px 14px 10px">'+
         '<div class="kpi-accent" style="background:'+colMeta+'"></div>'+
+        '<div class="rfr-cajas-row">'+
+        '<div class="rfr-cajas-total">'+
         '<div class="kpi-lbl">Total cajas</div>'+
         '<div class="kpi-val" style="color:'+colMeta+'">'+totalCajas.toLocaleString('es-MX')+'</div>'+
         '<div class="rfr-meta-row"><div class="rfr-meta-bar"><div class="rfr-meta-fill" style="width:'+Math.min(100,Math.max(0,pctMeta))+'%;background:'+colMeta+'"></div></div><span class="rfr-meta-pct" style="color:'+colMeta+'">'+Math.round(pctMeta)+'%</span></div>'+
+        '</div>'+
         '<div class="kpi-split">'+
           '<div>'+
             '<div class="kpi-val" style="color:'+colMeta12+'">'+cajasSec12.toLocaleString('es-MX')+'</div>'+
@@ -4791,6 +4863,7 @@ function renderRfrResumen(data){
             '<div class="rfr-meta-row"><div class="rfr-meta-bar"><div class="rfr-meta-fill" style="width:'+Math.min(100,Math.max(0,pctMeta34))+'%;background:'+colMeta34+'"></div></div><span class="rfr-meta-pct" style="color:'+colMeta34+'">'+Math.round(pctMeta34)+'%</span></div>'+
             '<div class="kpi-split-lbl">Sectores 3 y 4</div>'+
           '</div>'+
+        '</div>'+
         '</div>'+
       '</div>'+
     '</div>'+
@@ -5065,7 +5138,9 @@ function renderRfrResumen(data){
       cfg.options.scales.y.ticks = Object.assign({}, cfg.options.scales.y.ticks, {display:false});
       cfg.options.scales.y.border = {display:false};
       cfg.options.scales.y.ticks.padding = 0;
-      if(!cfg.options.layout) cfg.options.layout={padding:{left:0,right:4,top:8,bottom:0}};
+      // El padding derecho deja aire para la etiqueta del ultimo punto, que se dibuja
+      // centrada sobre el: con el area de trazo pegada al borde salia cortada a la mitad.
+      if(!cfg.options.layout) cfg.options.layout={padding:{left:0,right:40,top:8,bottom:0}};
 
       mkRfrChart(mainId, cfg);
 
@@ -5227,8 +5302,8 @@ function renderRfrResumen(data){
       plugins:[costoLineLabelPlugin],
       data:{
         labels:semNumLbls,
-        // Meta real del negocio: $15 por cubeta.
-        datasets:[{label:'Costo/cubeta cosechadores',data:costoCosechadoresPorSemana,borderColor:RFR_LINEA_NEUTRA,backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(costoCosechadoresPorSemana,[15,20,30],false),pointBorderColor:rfrPuntoCols(costoCosechadoresPorSemana,[15,20,30],false),fill:true,tension:0.3,spanGaps:true}]
+        // Meta real del negocio: $15 por cubeta (ver RFR_CORTES_COSTO_COSECH).
+        datasets:[{label:'Costo/cubeta cosechadores',data:costoCosechadoresPorSemana,borderColor:RFR_LINEA_NEUTRA,backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrColsCostoCosech(costoCosechadoresPorSemana),pointBorderColor:rfrColsCostoCosech(costoCosechadoresPorSemana),fill:true,tension:0.3,spanGaps:true}]
       },
       options:{
         responsive:true,maintainAspectRatio:false,
@@ -5247,8 +5322,8 @@ function renderRfrResumen(data){
       plugins:[costoLineLabelPlugin],
       data:{
         labels:semNumLbls,
-        // Precio normal del negocio: $170 por caja.
-        datasets:[{label:'Precio/caja',data:precioPorSemana,borderColor:RFR_LINEA_NEUTRA,backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(precioPorSemana,[170,130,60],true),pointBorderColor:rfrPuntoCols(precioPorSemana,[170,130,60],true),fill:true,tension:0.3,spanGaps:true}]
+        // Precio normal del negocio: $220 por caja (ver RFR_CORTES_PRECIO_CAJA).
+        datasets:[{label:'Precio/caja',data:precioPorSemana,borderColor:RFR_LINEA_NEUTRA,backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(precioPorSemana,RFR_CORTES_PRECIO_CAJA,true),pointBorderColor:rfrPuntoCols(precioPorSemana,RFR_CORTES_PRECIO_CAJA,true),fill:true,tension:0.3,spanGaps:true}]
       },
       options:{
         responsive:true,maintainAspectRatio:false,
