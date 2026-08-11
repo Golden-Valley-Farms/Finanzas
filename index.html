@@ -11319,10 +11319,12 @@ function confirmarDespachoGeneral(){
       id:despachoId+900+idxGlobal, num:numEnvio, folio:'', fecha:fechaISO, fechaLbl:fechaLbl,
       cliente:cliente, loc:loc, ciclo:cicloV, flete:fleteGrp, fleteCompra:0, factura:'',
       loteIds:grp.items.map(function(it){return it.lote.id;}), esDespachoAlm:true,
+      esComer: loc==='com', // clasifica en Ventas/reportes como operacion comer; sin proveedor (la por pagar nacio con el lote)
       partidas:partidas, totalVenta:grp.totalVenta, total:totalConFlete
     };
     envios.unshift(envioObj);
     sbSaveEnvio(envioObj);
+    sincronizarDeudasEnvio(envioObj); // cuenta por cobrar del cliente (jal/nay con flete, com sin flete)
     numEnviosCreados.push(numEnvio);
   });
   saveAlmLotes();
