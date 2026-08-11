@@ -10297,15 +10297,15 @@ function confirmarNuevoTrabajador(){
   showToast('Trabajador agregado');
 }
 
-function agregarTrabajadorRow(){
+function agregarTrabajadorRow(refocus){
   var sel = document.getElementById('fr-trab-select');
   var cubInp = document.getElementById('fr-trab-cubetas-input');
   var procInp = document.getElementById('fr-trab-proceso-input');
   var nomRaw = sel.value.trim();
   var nom = nomRaw ? (trabajadores.find(function(t){return sselNorm(t)===sselNorm(nomRaw);})||'') : '';
-  if(!nom){ showToast('Selecciona un trabajador'); return; }
+  if(!nom){ showToast('Selecciona un trabajador'); return false; }
   if(trabsTemp.find(function(t){return t.nombre===nom;})){
-    showToast('Ya está en la lista'); sel.value=''; if(cubInp) cubInp.value=''; if(procInp) procInp.value=''; return;
+    showToast('Ya está en la lista'); sel.value=''; if(cubInp) cubInp.value=''; if(procInp) procInp.value=''; return false;
   }
   var cubetas = cubInp ? (parseFloat(cubInp.value)||0) : 0;
   var proceso = procInp ? (parseFloat(procInp.value)||0) : 0;
@@ -10314,7 +10314,10 @@ function agregarTrabajadorRow(){
   if(cubInp) cubInp.value='';
   if(procInp) procInp.value='';
   renderTrabajadoresRows();
-  setTimeout(function(){ sel.focus(); }, 50);
+  if(refocus !== false){
+    setTimeout(function(){ sel.focus(); }, 50);
+  }
+  return true;
 }
 function removeTrab(idx){
   trabsTemp.splice(idx,1);
@@ -10449,11 +10452,11 @@ function agregarCajaRow(refocusName){
   var secInp = document.getElementById('fr-caja-sector-input');
   var cantInp = document.getElementById('fr-caja-cantidad-input');
   var p = inp.value.trim();
-  if(!p){ showToast('Escribe o selecciona una presentación'); return; }
-  if(secInp && !secInp.value){ showToast('Selecciona un sector'); secInp.focus(); return; }
+  if(!p){ showToast('Escribe o selecciona una presentación'); return false; }
+  if(secInp && !secInp.value){ showToast('Selecciona un sector'); secInp.focus(); return false; }
   var sector = secInp ? parseInt(secInp.value)||1 : 1;
   if(cajasTemp.find(function(c){return c.presentacion===p && c.sector===sector;})){
-    showToast('Ya existe esa presentación en el sector '+sector); return;
+    showToast('Ya existe esa presentación en el sector '+sector); return false;
   }
   // save new presentacion if not already in list
   if(presentacionesCaja.indexOf(p)<0){
@@ -10470,6 +10473,7 @@ function agregarCajaRow(refocusName){
   if(refocusName !== false){
     setTimeout(function(){ inp.focus(); }, 50);
   }
+  return true;
 }
 
 function updateCajaSelect(){ /* kept for compatibility */ }
@@ -10504,9 +10508,35 @@ function recalcDefectos(){
 }
 
 // ---- Guardar registro ----
+// Las filas de captura (las del boton verde "+") no viven en trabsTemp/cajasTemp
+// hasta que se presiona "+" o Enter, pero actualizarTotalCubetas/actualizarTotalCajas
+// SI las suman al total en pantalla. Si el usuario llena la fila y guarda sin
+// confirmarla, el total prometia una cifra y el registro se guardaba con menos.
+// Por eso el guardado las incorpora antes de armar el registro: si estan completas
+// se agregan solas, y si les falta algo aborta con el mismo aviso que daria el "+"
+// en vez de descartarlas en silencio.
+function hayCajaPendiente(){
+  var inp=document.getElementById('fr-caja-input');
+  var secInp=document.getElementById('fr-caja-sector-input');
+  var cantInp=document.getElementById('fr-caja-cantidad-input');
+  return !!((inp&&inp.value.trim())||(secInp&&secInp.value)||(cantInp&&cantInp.value.trim()));
+}
+function hayTrabajadorPendiente(){
+  var sel=document.getElementById('fr-trab-select');
+  var cubInp=document.getElementById('fr-trab-cubetas-input');
+  var procInp=document.getElementById('fr-trab-proceso-input');
+  return !!((sel&&sel.value.trim())||(cubInp&&cubInp.value.trim())||(procInp&&procInp.value.trim()));
+}
+function confirmarFilasPendientesFram(){
+  if(hayTrabajadorPendiente() && agregarTrabajadorRow(false)===false) return false;
+  if(hayCajaPendiente() && agregarCajaRow(false)===false) return false;
+  return true;
+}
+
 function guardarRegistroFram(){
   var fecha = document.getElementById('fr-fecha').value;
   if(!fecha){ showToast('Selecciona una fecha'); return; }
+  if(!confirmarFilasPendientesFram()) return;
   if(!trabsTemp.length){ showToast('Agrega al menos un trabajador'); return; }
   var totalCubetas = trabsTemp.reduce(function(a,t){return a+(parseFloat(t.cubetas)||0)+(parseFloat(t.proceso)||0);},0);
   var totalCajas = cajasTemp.reduce(function(a,c){return a+(parseFloat(c.cantidad)||0);},0);
