@@ -2100,6 +2100,8 @@ async function cargarDesdeSB(){
         cliente:e.cliente, proveedor:e.proveedor,
         flete:parseFloat(e.flete||0), fleteCompra:parseFloat(e.flete_compra||0),
         factura:e.factura, esComer:e.es_comer,
+        cancelado:e.cancelado||false, motivoCancelacion:e.motivo_cancelacion||'',
+        fechaCancelacion:e.fecha_cancelacion||'',
         total:parseFloat(e.total||0), partidas:e.partidas||[]};
     });
     localStorage.setItem('cc_envios', JSON.stringify(envios));
@@ -2237,7 +2239,9 @@ async function sbSaveEnvio(e){
     cliente:e.cliente||'', proveedor:e.proveedor||'',
     flete:e.flete||0, flete_compra:e.fleteCompra||0,
     factura:e.factura||'', es_comer:e.esComer||false,
-    total:e.total||0, partidas:e.partidas||[]
+    total:e.total||0, partidas:e.partidas||[],
+    cancelado:e.cancelado||false, motivo_cancelacion:e.motivoCancelacion||'',
+    fecha_cancelacion:e.fechaCancelacion||''
   });
 }
 
@@ -9017,6 +9021,10 @@ function confirmarNuevoBanco(){
 
 // ---- envioTotal ----
 function envioTotal(e){
+  // Un envio cancelado no es ingreso. Aqui se corta una sola vez: esta funcion
+  // la suman los 8 puntos donde aparecen ventas (reportes, EDR, resumen por
+  // negocio, ingresos por mes/ciclo), asi que no hay que filtrar en cada uno.
+  if(e && e.cancelado) return 0;
   return (e.partidas||[]).reduce(function(a,p){
     if(e.esComer||p.kgRecibidos!==undefined){
       return a+(parseFloat(p.kgRecibidos||0)*parseFloat(p.precioVenta||0));
