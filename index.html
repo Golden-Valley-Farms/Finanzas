@@ -7650,6 +7650,7 @@ function renderEnvios(){
   var locNames={jal:'Jalisco',nay:'Nayarit',com:'Comercial.'};
   data.forEach(function(e){
     var item=document.createElement('div'); item.className='envio-item';
+    if(e.cancelado) item.style.opacity='.6';
     var miniRows = e.partidas.map(function(p){
       if(!p.pesoNeto && !p.hectareas && !p.precio) return '';
       return '<tr>'+
@@ -7674,11 +7675,12 @@ function renderEnvios(){
           '<div class="envio-num">'+(e.num||'Sin folio')+'</div>'+
           '<div class="envio-meta">'+e.fechaLbl+' · '+e.cliente+'</div>'+
         '</div>'+
-        '<div class="envio-total">'+fmt(e.total)+'</div>'+
+        '<div class="envio-total"'+(e.cancelado?' style="text-decoration:line-through;color:var(--text3)"':'')+'>'+fmt(e.total)+'</div>'+
       '</div>'+
       '<div class="envio-tags" style="margin-bottom:8px">'+
         '<span class="tag '+(e.loc||'jal')+'">'+(locNames[e.loc]||e.loc)+'</span>'+
         '<span class="tag general">'+e.ciclo+'</span>'+
+        (e.cancelado?'<span class="tag" style="background:var(--camote-bg);color:var(--camote)">🚫 Cancelado</span>':'')+
       '</div>'+
       (miniRows?
         '<table class="ven-modal-table" style="margin-top:0">'+
