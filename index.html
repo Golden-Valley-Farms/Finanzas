@@ -2102,6 +2102,11 @@ async function cargarDesdeSB(){
         factura:e.factura, esComer:e.es_comer,
         cancelado:e.cancelado||false, motivoCancelacion:e.motivo_cancelacion||'',
         fechaCancelacion:e.fecha_cancelacion||'',
+        totalVenta:parseFloat(e.total_venta||0),
+        gastosCosechaTotales:e.gastos_cosecha_totales||null,
+        gastoCosechaIds:e.gasto_cosecha_ids||null,
+        esDespachoAlm:e.es_despacho_alm||false,
+        loteIds:e.lote_ids||null,
         total:parseFloat(e.total||0), partidas:e.partidas||[]};
     });
     localStorage.setItem('cc_envios', JSON.stringify(envios));
@@ -2241,7 +2246,15 @@ async function sbSaveEnvio(e){
     factura:e.factura||'', es_comer:e.esComer||false,
     total:e.total||0, partidas:e.partidas||[],
     cancelado:e.cancelado||false, motivo_cancelacion:e.motivoCancelacion||'',
-    fecha_cancelacion:e.fechaCancelacion||''
+    fecha_cancelacion:e.fechaCancelacion||'',
+    // Estos cinco vivian SOLO en localStorage. Sin ellos, al recargar desde
+    // Supabase el envio perdia el vinculo con sus gastos de cosecha y reeditarlo
+    // los duplicaba en vez de actualizarlos.
+    total_venta:e.totalVenta||0,
+    gastos_cosecha_totales:e.gastosCosechaTotales||null,
+    gasto_cosecha_ids:e.gastoCosechaIds||null,
+    es_despacho_alm:e.esDespachoAlm||false,
+    lote_ids:e.loteIds||null
   });
 }
 

@@ -18,6 +18,16 @@ Ojo: local y producción **comparten la misma base de Supabase**. Probar local n
 
 Las tres dependencias llegan por CDN: `@supabase/supabase-js@2`, `Chart.js@4.4.1`, `html-to-image@1.11.13`.
 
+## Supabase es la fuente de verdad — localStorage no es respaldo
+
+**Regla dura: nada puede vivir solo en `localStorage`.** Todo campo de toda entidad tiene que estar respaldado en Supabase. Si el usuario después borra o edita registros en Supabase, es su decisión — lo que no se vale es que un dato quede flotando donde nadie lo respalda.
+
+`localStorage` es **caché de arranque**, no almacenamiento. Se pierde al cambiar de equipo, de navegador o al limpiar datos del sitio. Y algo más traicionero: **`cargarDesdeSB()` sobrescribe las claves `cc_*` con lo que viene de Supabase**, así que cualquier campo que no viaje a Supabase se borra solo en la siguiente recarga — no hace falta ni cambiar de equipo.
+
+Antes de dar por terminado un cambio que agrega o modifica un campo, verificar el **viaje redondo**: guardar → recargar desde Supabase → el campo sigue ahí. Si no sobrevive, falta la columna o falta el mapeo.
+
+Este problema ya mordió una vez (ago-2026): la tabla `envios` no guardaba `gastoCosechaIds` ni `gastosCosechaTotales`. Al recargar, el envío perdía el vínculo con sus gastos de cosecha, así que reeditarlo **creaba gastos duplicados** en vez de actualizarlos, y los montos de cosecha desaparecían del formulario. Se corrigió agregando `total_venta`, `gastos_cosecha_totales`, `gasto_cosecha_ids`, `es_despacho_alm` y `lote_ids`. Auditadas todas las demás entidades: lotes, frambuesa (registros y finanzas), deudas, pagos y contrapartes ya persistían todo.
+
 ## Persistencia dual — la regla más importante
 
 Cada entidad se guarda **en dos lugares**: un arreglo global en memoria espejado a `localStorage`, y una tabla de Supabase. Toda mutación tiene que escribir a ambos:
@@ -28,7 +38,7 @@ save();              // -> localStorage 'cc_gastos3'
 sbSaveGasto(gasto);  // -> tabla 'gastos' (no-op si sbOnline es false)
 ```
 
-Si agregas un campo nuevo a una entidad, hay que tocar **cuatro** lugares o el dato se pierde en el siguiente refresh:
+Si agregas un campo nuevo a una entidad, hay que tocar **cuatro** lugares o el dato se pierde en el siguiente refresh (ver la regla de arriba: no basta con guardarlo en el arreglo en memoria):
 1. el objeto que se construye al guardar
 2. el `sbSaveX()` correspondiente (mapeo a snake_case)
 3. el `.map()` de esa tabla dentro de `cargarDesdeSB()` (mapeo de vuelta a camelCase)
@@ -257,7 +267,7 @@ Ojo con el orden en el markup: la insignia tiene que ir **antes** del `.kpi-lbl`
 
   `abrirCancelarEnvio()` / `confirmarCancelarEnvio()` / `reactivarEnvio()`. Al cancelar: las **deudas siempre se borran** (nadie cobra ni paga un envío cancelado, no se pregunta), y de los gastos `autoGen` se elige uno por uno cuáles borrar — hay casos reales donde el flete de compra sí se pagó aunque la venta se cancelara. Los gastos conservados **pierden `autoGen`** para que una reedición del envío no los regenere encima. **Cancelar no toca el almacén**: la ruta real es almacén → venta → cancelación, o sea que la mercancía ya salió y los kg siguen descontados del lote.
 
-  **`gastosAutoGenDeEnvio(e)` no puede confiar en `e.gastoCosechaIds`**: `sbSaveEnvio()` no persiste ese campo (la tabla `envios` solo guarda id, num, folio, fecha, fecha_lbl, loc, ciclo, cliente, proveedor, flete, flete_compra, factura, es_comer, total, partidas y las tres marcas de cancelación) y `cargarDesdeSB()` sobrescribe `cc_envios`, así que la lista de ids se pierde en cada recarga. Lo usa como fuente adicional y además identifica por criterios propios: `desc` exacto en comercializadora y en el flete único (el `num` los hace únicos), y en jal/nay `desc` + `fechaVal` + `proveedor`/cliente, porque ahí el `desc` (`'Cosecha Camote Jalisco Sector 1'`) se repite entre envíos. **Efecto secundario conocido de que `gastoCosechaIds` no se persista:** reeditar un envío jal/nay después de una recarga duplica sus gastos de cosecha en vez de actualizarlos. No está arreglado.
+  **`gastosAutoGenDeEnvio(e)` no depende solo de `e.gastoCosechaIds`.** Ese campo ya se persiste (columna `gasto_cosecha_ids`, ago-2026), pero los envíos guardados antes de esa migración no lo traen, así que la función lo usa como fuente adicional y además identifica por criterios propios: `desc` exacto en comercializadora y en el flete único (el `num` los hace únicos), y en jal/nay `desc` + `fechaVal` + `proveedor`/cliente, porque ahí el `desc` (`'Cosecha Camote Jalisco Sector 1'`) se repite entre envíos. Mantener las dos vías: la heurística cubre el histórico.
 
 ## Trampas conocidas (no son bugs a "arreglar" sin avisar)
 
