@@ -10821,6 +10821,49 @@ try{ var _sal=localStorage.getItem('cc_alm_lotes'); if(_sal) almLotes=JSON.parse
 
 function saveAlmLotes(){ try{localStorage.setItem('cc_alm_lotes',JSON.stringify(almLotes));}catch(e){} }
 
+// Gastos autoGen y cuenta por pagar que nacen de la COMPRA de un lote de
+// comercializadora. Espejo de sincronizarDeudasEnvio: limpia lo previo y recrea.
+// Se llama al guardar el lote (alta y edicion) y con soloLimpiar=true al borrarlo.
+// La cuenta por pagar lleva SOLO la mercancia: el flete de compra se paga aparte
+// (regla del negocio, igual que en sincronizarDeudasEnvio).
+function sincronizarCompraLote(lote, soloLimpiar){
+  if(!lote) return;
+  var ids=lote.gastoIds||[];
+  if(ids.length){
+    gastos=gastos.filter(function(g){
+      if(ids.indexOf(g.id)>=0){ sbDeleteGasto(g.id); return false; }
+      return true;
+    });
+  }
+  lote.gastoIds=[];
+  deudas=deudas.filter(function(d){
+    if(d.refId===lote.id && d.refKind==='alm_compra_pagar'){ sbDeleteDeuda(d.id); return false; }
+    return true;
+  });
+  if(!soloLimpiar && lote.loc==='com' && lote.proveedor && (parseFloat(lote.precioCompra)||0)>0){
+    var montoCompra=Math.round(lote.kgTotal*lote.precioCompra*100)/100;
+    var gastoCompra={id:Date.now()+1,fechaVal:lote.fecha,fechaLbl:lote.fechaLbl,
+      loc:'com',cultivo:'com',cat:'Compra Mercancia',
+      desc:'Compra mercancia lote '+lote.variedad+' '+lote.fechaLbl,
+      monto:montoCompra,ciclo:lote.ciclo||'',sector:'',autoGen:true};
+    gastos.unshift(gastoCompra); sbSaveGasto(gastoCompra); lote.gastoIds.push(gastoCompra.id);
+    if((parseFloat(lote.fleteCompra)||0)>0){
+      var gastoFlete={id:Date.now()+2,fechaVal:lote.fecha,fechaLbl:lote.fechaLbl,
+        loc:'com',cultivo:'com',cat:'Fletes',
+        desc:'Flete compra lote '+lote.variedad+' '+lote.fechaLbl,
+        monto:lote.fleteCompra,ciclo:lote.ciclo||'',sector:'',autoGen:true};
+      gastos.unshift(gastoFlete); sbSaveGasto(gastoFlete); lote.gastoIds.push(gastoFlete.id);
+    }
+    var deudaP={id:lote.id*10+1, tipo:'pagar', contraparte:lote.proveedor, fecha:lote.fecha,
+      ciclo:lote.ciclo||'', origen:'comercializadora', folioExterno:'', refId:lote.id,
+      refKind:'alm_compra_pagar', items:[{concepto:'Compra '+(lote.variedad||''), monto:montoCompra}],
+      monto:montoCompra, desc:''};
+    deudas.push(deudaP); sbSaveDeuda(deudaP); registrarContraparte(deudaP.contraparte,'pagar');
+    agregarProveedorComerSiNuevo(lote.proveedor);
+  }
+  save(); saveDeudas();
+}
+
 async function sbSaveAlmLote(l){
   if(!sbOnline||!sb) return;
   await sb.from('alm_lotes').upsert({
@@ -11076,6 +11119,7 @@ function guardarLote(){
       almLotes[idx].hectareas=hectareas; almLotes[idx].sector=sector;
       almLotes[idx].proveedor=proveedor; almLotes[idx].precioCompra=precioCompra;
       almLotes[idx].fleteCompra=fleteCompra;
+      sincronizarCompraLote(almLotes[idx]); // muta gastoIds: va antes del upsert
       sbSaveAlmLote(almLotes[idx]);
     }
     showToast('Lote actualizado');
@@ -11085,6 +11129,7 @@ function guardarLote(){
       proveedor:proveedor,precioCompra:precioCompra,fleteCompra:fleteCompra,gastoIds:[],
       despachos:[],cerrado:false};
     almLotes.unshift(lote);
+    sincronizarCompraLote(lote); // muta gastoIds: va antes del upsert
     sbSaveAlmLote(lote);
     showToast('Lote guardado: '+kg.toLocaleString('es-MX')+' kg');
   }
@@ -11329,6 +11374,8 @@ function verLote(loteId){
 function confirmDelLote(loteId){
   var btn=event.target;
   if(btn.dataset.confirm==='1'){
+    var loteDel=almLotes.find(function(l){return l.id===loteId;});
+    if(loteDel) sincronizarCompraLote(loteDel, true); // limpia sus gastos y su deuda
     almLotes=almLotes.filter(function(l){return l.id!==loteId;});
     saveAlmLotes();
     sbDeleteAlmLote(loteId);
