@@ -238,7 +238,11 @@ Ojo con el orden en el markup: la insignia tiene que ir **antes** del `.kpi-lbl`
 
 - **Envío → gastos.** `generarGastosCosechaDesdeEnvio()` crea gastos con `autoGen:true` a partir de un envío de camote, prorrateando flete/cosecha/arado/desvarada por hectáreas de cada sector. Los ids resultantes se guardan en el envío para poder actualizarlos o borrarlos al reeditar. **No editar a mano un gasto con `autoGen:true`**: se sobreescribe al guardar el envío de origen.
 - **Envío → deudas.** `sincronizarDeudasEnvio()` crea/actualiza las deudas del envío (cobrar en camote jal/nay; cobrar + pagar en comercializadora, esta última sin flete de compra); `borrarDeudasDeEnvio()` las limpia. Si el cliente/proveedor no existe en el catálogo de contrapartes, se crea solo con modo `fifo` y clave vacía.
-- **Almacén → envíos.** Un despacho de lotes puede generar **varios** envíos de golpe, uno por ubicación de origen, con el flete prorrateado entre ellos.
+- **Almacén → envíos.** Un despacho de lotes puede generar **varios** envíos de golpe, uno por negocio de origen, con el flete prorrateado entre ellos.
+
+  El campo del lote se sigue llamando `loc` en los datos, pero en la UI la etiqueta es **Negocio** y acepta tres valores: `jal`, `nay` y `com` (Comercializadora, agregada en ago-2026). **`ALM_LOC_LBL` es la fuente única**: de ahí salen la etiqueta con emoji (`almLocLbl()`), la clase CSS del chip y del color de kg (`almLocCls()`) y los grupos del modal de despacho (`renderDgLotesList()`). Agregar un negocio al almacén es agregar una línea a ese objeto — antes la etiqueta se resolvía con un ternario `loc==='nay'?Nayarit:Jalisco` repetido en tres lugares, que rotulaba como Jalisco cualquier valor nuevo, y la lista del despacho tenía los grupos en duro, así que los lotes del negocio faltante quedaban **invisibles para despachar** aunque estuvieran en almacén.
+
+  Comercializadora no tiene sectores propios: `SECTORES` no trae `com_camote`, así que `buildAlmSectorSelect()` deja solo "— Sin sector —". La numeración de sus envíos ya funcionaba (`PREFIJOS.com='Comer'`).
 - **Frambuesa: registros → nómina → finanzas.** `framFinanzas` guarda en `gastoIds` las referencias a los gastos que generó, para el mismo ciclo de vida que arriba.
 
 ## Trampas conocidas (no son bugs a "arreglar" sin avisar)

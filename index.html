@@ -217,6 +217,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .alm-lote-num{font-size:13px;font-weight:600;color:var(--text);font-family:var(--mono)}
 .alm-lote-kg{font-size:15px;font-weight:600;color:var(--jal);font-family:var(--mono)}
 .alm-lote-kg.nay{color:var(--nay)}
+.alm-lote-kg.com{color:var(--com)}
 .alm-lote-meta{font-size:12px;color:var(--text3);margin-bottom:8px}
 .alm-progress-wrap{background:var(--surface2);border-radius:20px;height:7px;overflow:hidden;margin-bottom:6px}
 .alm-progress-bar{height:100%;border-radius:20px;background:var(--green);transition:width .3s}
@@ -1433,10 +1434,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="card" style="margin-bottom:12px">
           <div class="field-row">
             <div class="field">
-              <label>Ubicación</label>
+              <label>Negocio</label>
               <select id="af-loc" style="font-weight:600" onchange="buildAlmSectorSelect()">
                 <option value="jal">🌾 Jalisco</option>
                 <option value="nay">🌿 Nayarit</option>
+                <option value="com">🛒 Comercializadora</option>
               </select>
             </div>
             <div class="field">
@@ -10890,8 +10892,8 @@ function renderAlmLotes(){
     var kgDisp=almKgDisponibles(lote);
     var kgDesp=almKgDespachados(lote);
     var pct=kgTotal>0?Math.round((kgDesp/kgTotal)*100):0;
-    var locColor=lote.loc==='nay'?'nay':'';
-    var locLbl=lote.loc==='nay'?'🌿 Nayarit':'🌾 Jalisco';
+    var locColor=lote.loc==='jal'?'':almLocCls(lote.loc);
+    var locLbl=almLocLbl(lote.loc);
     var item=document.createElement('div');
     item.className='alm-lote'+(lote.cerrado?' alm-closed':'');
     item.innerHTML=
@@ -10914,6 +10916,15 @@ function renderAlmLotes(){
     list.appendChild(item);
   });
 }
+
+// Negocio de un lote de almacen. Antes cada lugar resolvia la etiqueta con un
+// ternario loc==='nay'?Nayarit:Jalisco, que pintaba como Jalisco cualquier valor
+// que no fuera 'nay' — al agregar Comercializadora sus lotes salian mal rotulados.
+// Centralizado aqui para que agregar un negocio nuevo sea una sola linea.
+var ALM_LOC_LBL = {jal:'🌾 Jalisco', nay:'🌿 Nayarit', com:'🛒 Comercializadora'};
+function almLocLbl(loc){ return ALM_LOC_LBL[loc] || ALM_LOC_LBL.jal; }
+// Clase CSS del negocio (.chip.jal/.nay/.com, .alm-lote-kg.nay/.com).
+function almLocCls(loc){ return ALM_LOC_LBL[loc] ? loc : 'jal'; }
 
 // ── init form ──
 var editandoLoteId = null;
@@ -11072,7 +11083,9 @@ function renderDgLotesList(){
   var cont=document.getElementById('dg-lotes-list'); if(!cont) return;
   var data=almLotes.filter(function(l){return !l.cerrado && almKgDisponibles(l)>0.009;});
   if(!data.length){ cont.innerHTML='<div style="font-size:12px;color:var(--text3);padding:10px 0">Sin lotes disponibles en almacén.</div>'; return; }
-  var grupos=[{loc:'jal',lbl:'🌾 Jalisco'},{loc:'nay',lbl:'🌿 Nayarit'}];
+  // Un negocio que falte aqui deja sus lotes invisibles en el despacho, aunque
+  // esten en almacen: se derivan de ALM_LOC_LBL para que no se pueda olvidar.
+  var grupos=Object.keys(ALM_LOC_LBL).map(function(k){return {loc:k, lbl:ALM_LOC_LBL[k]};});
   cont.innerHTML = grupos.map(function(grp){
     var lotesGrp=data.filter(function(l){return l.loc===grp.loc;});
     if(!lotesGrp.length) return '';
@@ -11231,7 +11244,7 @@ function verLote(loteId){
   var kgDisp=almKgDisponibles(lote);
   var kgDesp=almKgDespachados(lote);
   var pct=kgTotal>0?Math.round((kgDesp/kgTotal)*100):0;
-  var locLbl=lote.loc==='nay'?'🌿 Nayarit':'🌾 Jalisco';
+  var locLbl=almLocLbl(lote.loc);
   var despRows=(lote.despachos||[]).map(function(d){
     return '<div class="alm-despacho-item">'+
       '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'+
@@ -11241,7 +11254,7 @@ function verLote(loteId){
       '<div style="color:var(--text3)">'+d.fechaLbl+' · '+d.kg.toLocaleString('es-MX')+' kg · $'+d.precio+'/kg'+(d.flete?' · Flete '+fmt(d.flete):'')+(d.hectareas?' · '+d.hectareas+' ha':'')+'</div>'+
     '</div>';
   }).join('');
-  document.getElementById('mo-title').innerHTML='🧊 '+lote.variedad+' &nbsp;<span class="chip '+(lote.loc==='nay'?'nay':'jal')+'">'+locLbl+'</span>';
+  document.getElementById('mo-title').innerHTML='🧊 '+lote.variedad+' &nbsp;<span class="chip '+almLocCls(lote.loc)+'">'+locLbl+'</span>';
   document.getElementById('mo-body').innerHTML=
     '<div class="modal-row"><span class="modal-key">Fecha entrada</span><span class="modal-val">'+lote.fechaLbl+'</span></div>'+
     '<div class="modal-row"><span class="modal-key">Ciclo</span><span class="modal-val">'+lote.ciclo+'</span></div>'+
