@@ -415,10 +415,13 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 /* Insignia de variación semana contra semana (estilo precio de acción), esquina
    superior derecha de la tarjeta. Ver rfrWowBadge — verde/rojo según si a esa
    métrica le conviene subir o bajar, sin banda intermedia (solo dos estados). */
-.kpi-wow{position:absolute;top:12px;right:12px;font-size:10.5px;font-weight:700;font-family:var(--mono);white-space:nowrap}
-/* Las flechas se encavalgan a proposito: dos o tres seguidas deben leerse como
-   un solo simbolo mas "fuerte", no ocupar el triple de ancho en la esquina. */
-.kpi-wow-fls{letter-spacing:-1.8px;margin-right:4px}
+.kpi-wow{position:absolute;top:12px;right:12px;font-size:10.5px;font-weight:700;font-family:var(--mono);white-space:nowrap;display:flex;align-items:center;gap:3px}
+/* Las flechas se apilan en VERTICAL y encimadas, como las capas de un pino: dos o
+   tres se leen como un solo simbolo mas "fuerte" en vez de ocupar el doble o triple
+   de esquina. El traslape lo da el line-height menor que 1 (la caja de linea queda
+   mas baja que el glifo, asi que cada triangulo se mete sobre el anterior). */
+.kpi-wow-fls{display:inline-flex;flex-direction:column;align-items:center;line-height:.4}
+.kpi-wow-fls i{font-style:normal}
 /* Reserva espacio para que un título largo (ej. "Cubetas cosechadas") no
    quede debajo de la insignia en tarjetas angostas. */
 .kpi-wow~.kpi-lbl{padding-right:36px}
@@ -561,7 +564,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   #rep-cam-sec .kpi-val,#rep-fin-sec .kpi-val,#rep-fram-sec .kpi-val{font-size:33px}
   .kpi-split-lbl{font-size:11px}
   .kpi-wow{font-size:15px}
-  .kpi-wow-fls{letter-spacing:-2.6px;margin-right:5px}
   .kpi-wow~.kpi-lbl{padding-right:50px}
   /* Total cajas del resumen por ciclo: el total a la izquierda y los dos conjuntos
      de sectores a la derecha, en la misma fila. */
@@ -4180,10 +4182,11 @@ function rfrWowBadge(cur, prev, altoBueno){
   if(redondeado===0) return '<span class="kpi-wow" style="color:var(--text3)">0%</span>';
   var subio=delta>0;
   // El conteo va contra el % YA REDONDEADO, el mismo que se imprime: si no, un
-  // 33.4% se muestra como "33%" y saldria con dos flechas.
+  // 25.4% se muestra como "25%" y saldria con dos flechas.
   var mag=Math.abs(redondeado);
-  var n=mag<=33?1:(mag<=66?2:3);
-  var flechas=new Array(n+1).join(subio?'▲':'▼');
+  var n=mag<=25?1:(mag<=50?2:3);
+  var fl=subio?'▲':'▼';
+  var flechas=''; for(var i=0;i<n;i++) flechas+='<i>'+fl+'</i>';
   var col=altoBueno?(subio?RFR_SEM_COLS.bien:RFR_SEM_COLS.problema):(subio?RFR_SEM_COLS.problema:RFR_SEM_COLS.bien);
   return '<span class="kpi-wow" style="color:'+col+'"><span class="kpi-wow-fls">'+flechas+'</span>'+Math.abs(redondeado)+'%</span>';
 }
