@@ -7744,6 +7744,35 @@ function verEnvio(e){
   document.getElementById('overlay').classList.add('open');
 }
 
+// Gastos autoGen que creo un envio. NO se puede confiar solo en e.gastoCosechaIds:
+// sbSaveEnvio no lo persiste y cargarDesdeSB sobreescribe cc_envios, asi que esa
+// lista desaparece en cada recarga desde Supabase. Se usa como fuente adicional
+// y se complementa con los criterios de cada tipo de envio.
+function gastosAutoGenDeEnvio(e){
+  if(!e) return [];
+  var num=e.num||'';
+  var vistos={}, out=[];
+  function push(g){ if(g && !vistos[g.id]){ vistos[g.id]=1; out.push(g); } }
+  (e.gastoCosechaIds ? objValues(e.gastoCosechaIds) : []).forEach(function(id){
+    push(gastos.find(function(g){return g.id===id;}));
+  });
+  var descsCom=['Compra mercancia op. '+num, 'Flete compra op. '+num];
+  gastos.forEach(function(g){
+    if(!g.autoGen) return;
+    if(e.esComer===true && g.loc==='com' && descsCom.indexOf(g.desc)>=0){ push(g); return; }
+    if(g.desc==='Flete compra envio '+num){ push(g); return; }
+    if((e.loc==='jal'||e.loc==='nay') && g.loc===e.loc && g.cultivo==='camote' &&
+       g.tipoCamote==='cosecha' && g.fechaVal===e.fecha && g.proveedor===e.cliente &&
+       ['Flete Cosecha','Cosecha','Arado','Desvarada'].indexOf(g.cat)>=0){ push(g); return; }
+  });
+  return out;
+}
+// gastoCosechaIds es un objeto {sector_key: id}, no un arreglo.
+function objValues(o){
+  var r=[]; for(var k in o){ if(Object.prototype.hasOwnProperty.call(o,k)) r.push(o[k]); }
+  return r;
+}
+
 function delEnvio(id){
   // Si es operación de comercializadora, limpia también los gastos auto-generados
   // (Compra Mercancia / Flete compra) que creó al guardarse.
