@@ -1450,10 +1450,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           </div>
           <!-- Datos de la COMPRA: solo lotes de Comercializadora (ver onAlmLocChange) -->
           <div id="af-com-fields" style="display:none">
-            <div class="field">
+            <div class="field" style="position:relative">
               <label>Proveedor</label>
-              <input type="text" id="af-proveedor" list="af-proveedor-dl" placeholder="Nombre del proveedor" autocomplete="off">
-              <datalist id="af-proveedor-dl"></datalist>
+              <input type="text" id="af-proveedor" placeholder="Nombre del proveedor" autocomplete="off" style="width:100%" oninput="onAfProveedorInput()" onclick="showAfProveedorDropdown()" onblur="setTimeout(hideAfProveedorDropdown,150)">
+              <div id="af-proveedor-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:200px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
             </div>
             <div class="field-row">
               <div class="field">
@@ -9398,7 +9398,7 @@ function renderProveedorDropdown(){
   addRow.textContent='+ Agregar nuevo...';
   addRow.onmouseenter=function(){this.style.background='var(--green-bg)';};
   addRow.onmouseleave=function(){this.style.background='';};
-  addRow.onmousedown=function(e){e.preventDefault();hideProveedorDropdown();abrirModalNuevoCfProveedor();};
+  addRow.onmousedown=function(e){e.preventDefault();hideProveedorDropdown();abrirModalNuevoProveedorComer('cf-proveedor');};
   dd.appendChild(addRow);
   dd.style.display='block';
 }
@@ -9406,7 +9406,50 @@ function showProveedorDropdown(){renderProveedorDropdown();}
 function hideProveedorDropdown(){var dd=document.getElementById('proveedor-dropdown');if(dd)dd.style.display='none';}
 function onProveedorInput(){renderProveedorDropdown();}
 
-function abrirModalNuevoCfProveedor(){
+// ---- PROVEEDOR DROPDOWN (Almacén > Nuevo lote > Comercializadora) ----
+// Mismo catálogo proveedoresComer que cf-proveedor (Cosechas > Comercializadora):
+// un solo lugar donde se guardan y se leen los proveedores de comercializadora.
+function renderAfProveedorDropdown(){
+  var dd=document.getElementById('af-proveedor-dropdown'); if(!dd) return;
+  var q=(document.getElementById('af-proveedor').value||'').toLowerCase();
+  var filtered=proveedoresComer.filter(function(p){return p.toLowerCase().indexOf(q)>=0;});
+  dd.innerHTML='';
+  filtered.forEach(function(p){
+    var row=document.createElement('div');
+    row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px';
+    row.onmouseenter=function(){this.style.background='var(--green-bg)';};
+    row.onmouseleave=function(){this.style.background='';};
+    var name=document.createElement('span'); name.textContent=p; name.style.flex='1';
+    name.onmousedown=function(e){e.preventDefault();document.getElementById('af-proveedor').value=p;hideAfProveedorDropdown();};
+    var btn=document.createElement('button');
+    btn.textContent='×'; btn.title='Eliminar';
+    btn.style.cssText='background:none;border:none;color:var(--text3);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0';
+    btn.onmousedown=function(e){e.preventDefault();e.stopPropagation();
+      proveedoresComer=proveedoresComer.filter(function(x){return x!==p;});saveProveedoresComer();sbDeleteProveedorComer(p);
+      renderAfProveedorDropdown();
+      if(document.getElementById('af-proveedor').value===p) document.getElementById('af-proveedor').value='';
+      showToast('Proveedor eliminado');};
+    row.appendChild(name); row.appendChild(btn); dd.appendChild(row);
+  });
+  var addRow=document.createElement('div');
+  addRow.style.cssText='padding:10px 12px;cursor:pointer;font-size:13px;color:var(--green);font-weight:600';
+  addRow.textContent='+ Agregar nuevo...';
+  addRow.onmouseenter=function(){this.style.background='var(--green-bg)';};
+  addRow.onmouseleave=function(){this.style.background='';};
+  addRow.onmousedown=function(e){e.preventDefault();hideAfProveedorDropdown();abrirModalNuevoProveedorComer('af-proveedor');};
+  dd.appendChild(addRow);
+  dd.style.display='block';
+}
+function showAfProveedorDropdown(){renderAfProveedorDropdown();}
+function hideAfProveedorDropdown(){var dd=document.getElementById('af-proveedor-dropdown');if(dd)dd.style.display='none';}
+function onAfProveedorInput(){renderAfProveedorDropdown();}
+
+// targetId: campo de texto donde queda el nombre elegido (cf-proveedor o af-proveedor).
+// Ambos comparten el catálogo proveedoresComer, así que agregar desde cualquiera
+// de los dos lo deja disponible de inmediato en el otro.
+var nuevoProveedorComerTarget = 'cf-proveedor';
+function abrirModalNuevoProveedorComer(targetId){
+  nuevoProveedorComerTarget = targetId || 'cf-proveedor';
   document.getElementById('mo-title').innerHTML = '👤 Nuevo proveedor';
   document.getElementById('mo-body').innerHTML =
     '<div class="field" style="margin-bottom:14px"><label>Nombre del proveedor</label>'+
@@ -9421,7 +9464,8 @@ function confirmarNuevoCfProveedor(){
   if(!nom){ showToast('Escribe un nombre'); return; }
   agregarProveedorComerSiNuevo(nom);
   closeModal();
-  document.getElementById('cf-proveedor').value = nom;
+  var target=document.getElementById(nuevoProveedorComerTarget);
+  if(target) target.value = nom;
   showToast('Proveedor agregado');
 }
 
@@ -11163,8 +11207,6 @@ function initAlmForm(){
   document.getElementById('af-proveedor').value='';
   document.getElementById('af-precio-compra').value='';
   document.getElementById('af-flete-compra').value='';
-  var dl=document.getElementById('af-proveedor-dl');
-  if(dl) dl.innerHTML=proveedoresComer.map(function(p){return '<option value="'+p.replace(/"/g,'&quot;')+'">';}).join('');
   document.getElementById('af-loc').value='jal';
   onAlmLocChange();
 }
