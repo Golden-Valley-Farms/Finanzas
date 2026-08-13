@@ -10982,7 +10982,8 @@ function sincronizarCompraLote(lote, soloLimpiar){
     var gastoCompra={id:Date.now()+1,fechaVal:lote.fecha,fechaLbl:lote.fechaLbl,
       loc:'com',cultivo:'com',cat:'Compra Mercancia',
       desc:'Compra mercancia lote '+lote.variedad+' '+lote.fechaLbl,
-      monto:montoCompra,ciclo:lote.ciclo||'',sector:'',autoGen:true};
+      monto:montoCompra,ciclo:lote.ciclo||'',sector:'',autoGen:true,
+      proveedor:lote.proveedor};
     gastos.unshift(gastoCompra); sbSaveGasto(gastoCompra); lote.gastoIds.push(gastoCompra.id);
     if((parseFloat(lote.fleteCompra)||0)>0){
       var gastoFlete={id:Date.now()+2,fechaVal:lote.fecha,fechaLbl:lote.fechaLbl,
