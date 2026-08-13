@@ -254,6 +254,14 @@ Ojo con el orden en el markup: la insignia tiene que ir **antes** del `.kpi-lbl`
 
   Comercializadora no tiene sectores propios: `SECTORES` no trae `com_camote`, así que `buildAlmSectorSelect()` deja solo "— Sin sector —". La numeración de sus envíos ya funcionaba (`PREFIJOS.com='Comer'`).
 
+  **El formulario del lote cambia de forma según el negocio** (ago-2026). Está partido en secciones con `step-label` + `card`, igual que la pantalla de operación de Comercializadora (`comer-form-sec`), para que las dos se vean como la misma app: Encabezado → Compra (solo com) → Entrada al almacén → Resumen.
+
+  `onAlmLocChange()` es el interruptor: muestra `#af-com-fields` (proveedor, precio y flete de compra) y **oculta `#af-cosecha-fields`** (hectáreas y sector) cuando el negocio es `com`, porque ahí la mercancía se compra, no se cosecha. Al ocultarlos **también los limpia**, y `guardarLote()` además fuerza `hectareas:0`/`sector:''` cuando `esCom` — las dos cosas hacen falta: `editarLote()` asigna hectáreas *después* de llamar a `onAlmLocChange()`, así que un lote com viejo con hectáreas guardadas las deja en el input oculto y sin ese candado se reguardarían solas.
+
+  Ojo al restaurar `#af-cosecha-fields`: `.field-row` es `display:grid`, no `flex`. Devolverlo como `flex` apila los campos en una sola columna en jal/nay.
+
+  El resumen (`#af-resumen`) imita al de la operación comer y **reusa sus mismos colores**: TOTAL COMPRA en `--fram-bg`, VALOR ESTIMADO en `--green-bg` y MARGEN ESTIMADO en `--surface2`. Las dos primeras tarjetas solo aparecen en com; en jal/nay queda únicamente VALOR ESTIMADO a ancho completo (`grid-column:span 2`), que es como se veía antes.
+
 - **Almacén: lote com = compra de comercializadora** (ago-2026, spec en `docs/superpowers/specs/2026-08-11-compra-almacen-comercializadora-design.md`). El lote lleva 4 campos extra — `proveedor`, `precioCompra`, `fleteCompra`, `gastoIds` — visibles solo cuando el Negocio es `com` (`onAlmLocChange()` muestra/oculta `#af-com-fields`; en jal/nay se ignoran al guardar). Persistencia dual ya cableada en los cuatro lugares (columnas `proveedor`/`precio_compra`/`flete_compra`/`gasto_ids` en `alm_lotes`).
 
   `sincronizarCompraLote(lote, soloLimpiar)` — espejo de `sincronizarDeudasEnvio` — genera al guardar el lote: gasto "Compra Mercancia" (kg × precio compra), gasto "Fletes" (si hay), ambos `autoGen` con ids en `lote.gastoIds`, y la **cuenta por pagar** al proveedor (`refKind:'alm_compra_pagar'`, `refId: lote.id`) con SOLO la mercancía — el flete de compra nunca va a la cuenta del proveedor. Limpia y recrea en cada guardado; con `soloLimpiar=true` la usa `confirmDelLote()`. En `guardarLote()` va **antes** de `sbSaveAlmLote()` porque muta `gastoIds`. No editar a mano los gastos `autoGen` del lote: se regeneran al guardarlo.

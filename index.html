@@ -1448,28 +1448,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
               </div>
             </div>
           </div>
-          <!-- Datos de la COMPRA: solo lotes de Comercializadora (ver onAlmLocChange) -->
-          <div id="af-com-fields" style="display:none">
-            <div class="field" style="position:relative">
-              <label>Proveedor</label>
-              <input type="text" id="af-proveedor" placeholder="Nombre del proveedor" autocomplete="off" style="width:100%" oninput="onAfProveedorInput()" onclick="showAfProveedorDropdown()" onblur="setTimeout(hideAfProveedorDropdown,150)">
-              <div id="af-proveedor-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:200px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
-            </div>
-            <div class="field-row">
-              <div class="field">
-                <label>Precio compra $/kg</label>
-                <div class="monto-wrap"><span class="monto-prefix">$</span>
-                  <input type="number" id="af-precio-compra" placeholder="0" min="0" step="0.01">
-                </div>
-              </div>
-              <div class="field">
-                <label>Flete de compra $</label>
-                <div class="monto-wrap"><span class="monto-prefix">$</span>
-                  <input type="number" id="af-flete-compra" placeholder="0" min="0" step="0.01">
-                </div>
-              </div>
-            </div>
-          </div>
           <div class="field-row">
             <div class="field">
               <label>Ciclo</label>
@@ -1480,6 +1458,34 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
               <select id="af-variedad"></select>
             </div>
           </div>
+        </div>
+        <!-- Datos de la COMPRA: solo lotes de Comercializadora (ver onAlmLocChange) -->
+        <div id="af-com-fields" style="display:none">
+          <div class="step-label">Compra</div>
+          <div class="card" style="margin-bottom:12px">
+            <div class="field" style="position:relative">
+              <label>Proveedor</label>
+              <input type="text" id="af-proveedor" placeholder="Nombre del proveedor" autocomplete="off" style="width:100%" oninput="onAfProveedorInput()" onclick="showAfProveedorDropdown()" onblur="setTimeout(hideAfProveedorDropdown,150)">
+              <div id="af-proveedor-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:200px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Precio de compra ($/kg)</label>
+                <div class="monto-wrap"><span class="monto-prefix">$</span>
+                  <input type="number" id="af-precio-compra" placeholder="0" min="0" step="0.01" style="padding-left:24px" oninput="recalcAlmForm()">
+                </div>
+              </div>
+              <div class="field">
+                <label>Flete de compra ($)</label>
+                <div class="monto-wrap"><span class="monto-prefix">$</span>
+                  <input type="number" id="af-flete-compra" placeholder="0" min="0" step="0.01" style="padding-left:24px" oninput="recalcAlmForm()">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="step-label">Entrada al almacén</div>
+        <div class="card" style="margin-bottom:12px">
           <div class="field-row">
             <div class="field">
               <label>Kg ingresados</label>
@@ -1488,11 +1494,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <div class="field">
               <label>Precio est. $/kg</label>
               <div class="monto-wrap"><span class="monto-prefix">$</span>
-                <input type="number" id="af-precio" placeholder="0" min="0" step="0.01" oninput="recalcAlmForm()">
+                <input type="number" id="af-precio" placeholder="0" min="0" step="0.01" style="padding-left:24px" oninput="recalcAlmForm()">
               </div>
             </div>
           </div>
-          <div class="field-row">
+          <!-- Hectáreas y sector son de cosecha propia: se ocultan en Comercializadora -->
+          <div class="field-row" id="af-cosecha-fields">
             <div class="field">
               <label>Hectáreas cosechadas</label>
               <input type="number" id="af-hectareas" placeholder="0.00" min="0" step="0.01" oninput="recalcAlmForm()">
@@ -1507,10 +1514,22 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <input type="text" id="af-notas" placeholder="Ej: Cámara 2, sector norte">
           </div>
           <div id="af-rinde-hint" class="sector-hint" style="display:none"></div>
-          <!-- resumen estimado -->
-          <div id="af-resumen" style="display:none;margin-top:10px;padding:10px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--radius)">
-            <div style="font-size:11px;color:var(--text3);margin-bottom:2px">VALOR ESTIMADO</div>
-            <div id="af-resumen-val" style="font-size:16px;font-weight:700;color:var(--green);font-family:var(--mono)">$0</div>
+        </div>
+        <div class="step-label" id="af-resumen-label" style="display:none">Resumen del lote</div>
+        <div class="card" id="af-resumen" style="display:none;margin-bottom:12px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div id="af-resumen-compra-card" style="display:none;padding:10px;background:var(--fram-bg);border-radius:var(--radius);border:1px solid var(--fram-border)">
+              <div style="font-size:11px;color:var(--text3);margin-bottom:4px">TOTAL COMPRA</div>
+              <div id="af-resumen-compra" style="font-size:15px;font-weight:600;color:var(--fram);font-family:var(--mono)">$0</div>
+            </div>
+            <div id="af-resumen-val-card" style="grid-column:span 2;padding:10px;background:var(--green-bg);border-radius:var(--radius);border:1px solid var(--green-border)">
+              <div style="font-size:11px;color:var(--text3);margin-bottom:4px">VALOR ESTIMADO</div>
+              <div id="af-resumen-val" style="font-size:15px;font-weight:600;color:var(--green);font-family:var(--mono)">$0</div>
+            </div>
+            <div id="af-resumen-margen-card" style="display:none;grid-column:span 2;padding:10px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border)">
+              <div style="font-size:11px;color:var(--text3);margin-bottom:4px">MARGEN ESTIMADO</div>
+              <div id="af-resumen-margen" style="font-size:17px;font-weight:700;font-family:var(--mono)">$0</div>
+            </div>
           </div>
         </div>
         <button class="btn-main" id="btn-alm-guardar" onclick="guardarLote()">
@@ -11215,8 +11234,19 @@ function initAlmForm(){
 // Comercializadora: en jal/nay la compra no existe (el lote es cosecha propia).
 function onAlmLocChange(){
   buildAlmSectorSelect();
+  var esCom = document.getElementById('af-loc').value==='com';
   var box=document.getElementById('af-com-fields');
-  if(box) box.style.display = document.getElementById('af-loc').value==='com' ? 'block' : 'none';
+  if(box) box.style.display = esCom ? 'block' : 'none';
+  // Comercializadora compra mercancia, no cosecha: hectareas y sector no aplican.
+  // Se limpian ademas de ocultarse porque guardarLote los lee del DOM y si el
+  // usuario los capturo en jal/nay antes de cambiar a com se guardarian igual.
+  var cos=document.getElementById('af-cosecha-fields');
+  if(cos) cos.style.display = esCom ? 'none' : 'grid'; // .field-row es grid, no flex
+  if(esCom){
+    document.getElementById('af-hectareas').value='';
+    document.getElementById('af-sector').value='';
+  }
+  recalcAlmForm();
 }
 
 function buildAlmSectorSelect(){
@@ -11261,9 +11291,30 @@ function recalcAlmForm(){
   var kg=parseFloat(document.getElementById('af-kg').value)||0;
   var precio=parseFloat(document.getElementById('af-precio').value)||0;
   var ha=parseFloat(document.getElementById('af-hectareas').value)||0;
+  var esCom=document.getElementById('af-loc').value==='com';
+  var precioCompra=parseFloat(document.getElementById('af-precio-compra').value)||0;
+  var fleteCompra=parseFloat(document.getElementById('af-flete-compra').value)||0;
+  var totalCompra=kg*precioCompra+fleteCompra;
+  var valorEst=kg*precio;
+  // En comercializadora el resumen imita al de la operacion comer: compra,
+  // valor estimado y margen. En jal/nay no hay compra, solo el valor estimado.
+  var mostrarCompra=esCom && totalCompra>0;
+  document.getElementById('af-resumen-compra-card').style.display=mostrarCompra?'block':'none';
+  document.getElementById('af-resumen-margen-card').style.display=mostrarCompra?'block':'none';
+  document.getElementById('af-resumen-val-card').style.gridColumn=mostrarCompra?'auto':'span 2';
+  if(mostrarCompra){
+    document.getElementById('af-resumen-compra').textContent=fmt(totalCompra);
+    var margen=valorEst-totalCompra;
+    var elMargen=document.getElementById('af-resumen-margen');
+    elMargen.textContent=fmt(margen);
+    elMargen.style.color=margen>=0?'var(--green)':'var(--fram)';
+  }
+  document.getElementById('af-resumen-val').textContent=fmt(valorEst);
   var res=document.getElementById('af-resumen');
-  if(kg&&precio){ res.style.display='block'; document.getElementById('af-resumen-val').textContent=fmt(kg*precio); }
-  else { res.style.display='none'; }
+  var resLbl=document.getElementById('af-resumen-label');
+  var verResumen=(kg&&precio)||mostrarCompra;
+  res.style.display=verResumen?'block':'none';
+  resLbl.style.display=verResumen?'block':'none';
   var hint=document.getElementById('af-rinde-hint');
   if(kg&&ha){ hint.style.display='block'; hint.textContent='Rendimiento: '+(kg/ha/1000).toFixed(2)+' ton/ha · '+(kg/ha).toFixed(0)+' kg/ha'; }
   else { hint.style.display='none'; }
@@ -11278,11 +11329,12 @@ function guardarLote(){
   var variedad=document.getElementById('af-variedad').value;
   var kg=parseFloat(document.getElementById('af-kg').value)||0;
   var precio=parseFloat(document.getElementById('af-precio').value)||0;
-  var hectareas=parseFloat(document.getElementById('af-hectareas').value)||0;
-  var sector=document.getElementById('af-sector').value||'';
   var notas=document.getElementById('af-notas').value.trim();
   // Datos de compra: solo tienen sentido en Comercializadora; en jal/nay se ignoran.
   var esCom = loc==='com';
+  // Hectareas y sector son de cosecha propia: en com el form los oculta y no se guardan.
+  var hectareas=esCom ? 0 : (parseFloat(document.getElementById('af-hectareas').value)||0);
+  var sector=esCom ? '' : (document.getElementById('af-sector').value||'');
   var proveedor = esCom ? document.getElementById('af-proveedor').value.trim() : '';
   var precioCompra = esCom ? (parseFloat(document.getElementById('af-precio-compra').value)||0) : 0;
   var fleteCompra = esCom ? (parseFloat(document.getElementById('af-flete-compra').value)||0) : 0;
