@@ -1453,67 +1453,76 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
               <label>Ciclo</label>
               <select id="af-ciclo"></select>
             </div>
-            <div class="field">
+            <!-- jal/nay: una variedad por lote. En com la variedad va por partida. -->
+            <div class="field" id="af-variedad-field">
               <label>Variedad</label>
               <select id="af-variedad"></select>
             </div>
-          </div>
-        </div>
-        <!-- Datos de la COMPRA: solo lotes de Comercializadora (ver onAlmLocChange) -->
-        <div id="af-com-fields" style="display:none">
-          <div class="step-label">Compra</div>
-          <div class="card" style="margin-bottom:12px">
-            <div class="field" style="position:relative">
+            <!-- com: el proveedor va en el encabezado, igual que en la operación comer -->
+            <div class="field" id="af-proveedor-field" style="display:none;position:relative">
               <label>Proveedor</label>
               <input type="text" id="af-proveedor" placeholder="Nombre del proveedor" autocomplete="off" style="width:100%" oninput="onAfProveedorInput()" onclick="showAfProveedorDropdown()" onblur="setTimeout(hideAfProveedorDropdown,150)">
               <div id="af-proveedor-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:200px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
             </div>
-            <div class="field-row">
-              <div class="field">
-                <label>Precio de compra ($/kg)</label>
-                <div class="monto-wrap"><span class="monto-prefix">$</span>
-                  <input type="number" id="af-precio-compra" placeholder="0" min="0" step="0.01" style="padding-left:24px" oninput="recalcAlmForm()">
-                </div>
-              </div>
-              <div class="field">
-                <label>Flete de compra ($)</label>
-                <div class="monto-wrap"><span class="monto-prefix">$</span>
-                  <input type="number" id="af-flete-compra" placeholder="0" min="0" step="0.01" style="padding-left:24px" oninput="recalcAlmForm()">
-                </div>
+          </div>
+        </div>
+        <!-- COMPRA POR VARIEDAD: solo Comercializadora (ver onAlmLocChange).
+             Cada variedad se guarda como su propio lote, todas con el mismo compraId,
+             para poder despacharlas por separado sin perder que fueron una sola compra. -->
+        <div id="af-com-fields" style="display:none">
+          <div class="step-label">Compra — por variedad</div>
+          <div id="af-partidas"></div>
+          <div id="af-add-var-wrap" style="margin-bottom:12px">
+            <div style="display:flex;gap:8px;align-items:center">
+              <select id="af-var-select" style="flex:1;padding:10px 12px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:13px">
+                <option value="">— Selecciona variedad —</option>
+              </select>
+              <button onclick="addAlmVariedad()" style="padding:10px 16px;border-radius:var(--radius);border:1.5px solid var(--green-border);background:var(--green-bg);color:var(--green);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">+ Agregar</button>
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:12px">
+            <div class="field" style="margin-bottom:0">
+              <label>Flete de compra ($)</label>
+              <div class="monto-wrap"><span class="monto-prefix">$</span>
+                <input type="number" id="af-flete-compra" placeholder="0" min="0" step="0.01" style="padding-left:24px" oninput="recalcAlmForm()">
               </div>
             </div>
           </div>
         </div>
-        <div class="step-label">Entrada al almacén</div>
-        <div class="card" style="margin-bottom:12px">
-          <div class="field-row">
-            <div class="field">
-              <label>Kg ingresados</label>
-              <input type="number" id="af-kg" placeholder="0" min="0" step="0.01" oninput="recalcAlmForm()">
-            </div>
-            <div class="field">
-              <label>Precio est. $/kg</label>
-              <div class="monto-wrap"><span class="monto-prefix">$</span>
-                <input type="number" id="af-precio" placeholder="0" min="0" step="0.01" style="padding-left:24px" oninput="recalcAlmForm()">
+        <!-- jal/nay: cosecha propia, un solo lote por captura -->
+        <div id="af-simple-fields">
+          <div class="step-label">Entrada al almacén</div>
+          <div class="card" style="margin-bottom:12px">
+            <div class="field-row">
+              <div class="field">
+                <label>Kg ingresados</label>
+                <input type="number" id="af-kg" placeholder="0" min="0" step="0.01" oninput="recalcAlmForm()">
+              </div>
+              <div class="field">
+                <label>Precio est. $/kg</label>
+                <div class="monto-wrap"><span class="monto-prefix">$</span>
+                  <input type="number" id="af-precio" placeholder="0" min="0" step="0.01" style="padding-left:24px" oninput="recalcAlmForm()">
+                </div>
               </div>
             </div>
-          </div>
-          <!-- Hectáreas y sector son de cosecha propia: se ocultan en Comercializadora -->
-          <div class="field-row" id="af-cosecha-fields">
-            <div class="field">
-              <label>Hectáreas cosechadas</label>
-              <input type="number" id="af-hectareas" placeholder="0.00" min="0" step="0.01" oninput="recalcAlmForm()">
+            <div class="field-row">
+              <div class="field">
+                <label>Hectáreas cosechadas</label>
+                <input type="number" id="af-hectareas" placeholder="0.00" min="0" step="0.01" oninput="recalcAlmForm()">
+              </div>
+              <div class="field">
+                <label>Sector</label>
+                <select id="af-sector" class="no-ssel"></select>
+              </div>
             </div>
-            <div class="field">
-              <label>Sector</label>
-              <select id="af-sector" class="no-ssel"></select>
-            </div>
+            <div id="af-rinde-hint" class="sector-hint" style="display:none"></div>
           </div>
-          <div class="field">
+        </div>
+        <div class="card" style="margin-bottom:12px">
+          <div class="field" style="margin-bottom:0">
             <label>Notas (opcional)</label>
             <input type="text" id="af-notas" placeholder="Ej: Cámara 2, sector norte">
           </div>
-          <div id="af-rinde-hint" class="sector-hint" style="display:none"></div>
         </div>
         <div class="step-label" id="af-resumen-label" style="display:none">Resumen del lote</div>
         <div class="card" id="af-resumen" style="display:none;margin-bottom:12px">
@@ -2138,6 +2147,8 @@ async function cargarDesdeSB(){
         hectareas:parseFloat(l.hectareas||0), sector:l.sector||'',
         proveedor:l.proveedor||'', precioCompra:parseFloat(l.precio_compra||0),
         fleteCompra:parseFloat(l.flete_compra||0), gastoIds:l.gasto_ids||[],
+        compraId:l.compra_id||null, kgPagar:parseFloat(l.kg_pagar||0),
+        descPct:parseFloat(l.desc_pct||0),
         despachos:l.despachos||[], cerrado:l.cerrado||false};
     });
     saveAlmLotes();
@@ -11026,41 +11037,90 @@ function saveAlmLotes(){ try{localStorage.setItem('cc_alm_lotes',JSON.stringify(
 // Se llama al guardar el lote (alta y edicion) y con soloLimpiar=true al borrarlo.
 // La cuenta por pagar lleva SOLO la mercancia: el flete de compra se paga aparte
 // (regla del negocio, igual que en sincronizarDeudasEnvio).
-function sincronizarCompraLote(lote, soloLimpiar){
-  if(!lote) return;
-  var ids=lote.gastoIds||[];
-  if(ids.length){
+// Los lotes creados antes de la compra por variedad no traen compraId: su compra
+// es el lote mismo, y su deuda quedo con refId = lote.id. Por eso el fallback.
+function loteCompraId(l){ return l.compraId || l.id; }
+
+// Crear varios lotes en el mismo milisegundo con Date.now() les daria el mismo
+// id, asi que se avanza hasta encontrar uno libre.
+function almNuevoId(ocupados){
+  var id=Date.now();
+  while(ocupados[id]) id++;
+  ocupados[id]=true;
+  return id;
+}
+function almIdsOcupados(){
+  var o={};
+  almLotes.forEach(function(l){o[l.id]=true;});
+  gastos.forEach(function(g){o[g.id]=true;});
+  return o;
+}
+function almMontoPartida(l){
+  var kg=(l.kgPagar!=null && l.kgPagar!=='')?parseFloat(l.kgPagar):parseFloat(l.kgTotal||0);
+  return Math.round((kg||0)*(parseFloat(l.precioCompra)||0)*100)/100;
+}
+
+// Gastos autoGen y cuenta por pagar de una COMPRA de comercializadora. La unidad
+// es la compra, no el lote: sus variedades son lotes distintos (para despacharlas
+// por separado) pero generan un solo gasto de mercancia, uno de flete y una sola
+// cuenta por pagar. Limpia lo previo y recrea, igual que sincronizarDeudasEnvio.
+// El flete de compra nunca va a la cuenta del proveedor (regla del negocio).
+// idsHuerfanos: gastoIds de lotes que ya se quitaron de almLotes antes de llamar.
+// Sin esto, borrar el ULTIMO lote de una compra dejaba sus gastos vivos para
+// siempre: los ids se juntan recorriendo los lotes de la compra, y si no queda
+// ninguno no hay de donde sacarlos (la deuda si se limpiaba, va por refId).
+function sincronizarCompra(compraId, soloLimpiar, idsHuerfanos){
+  if(!compraId) return;
+  var lotes=almLotes.filter(function(l){return l.loc==='com' && loteCompraId(l)===compraId;});
+  var idsPrevios=(idsHuerfanos||[]).slice();
+  lotes.forEach(function(l){
+    (l.gastoIds||[]).forEach(function(id){ if(idsPrevios.indexOf(id)<0) idsPrevios.push(id); });
+    l.gastoIds=[];
+  });
+  if(idsPrevios.length){
     gastos=gastos.filter(function(g){
-      if(ids.indexOf(g.id)>=0){ sbDeleteGasto(g.id); return false; }
+      if(idsPrevios.indexOf(g.id)>=0){ sbDeleteGasto(g.id); return false; }
       return true;
     });
   }
-  lote.gastoIds=[];
   deudas=deudas.filter(function(d){
-    if(d.refId===lote.id && d.refKind==='alm_compra_pagar'){ sbDeleteDeuda(d.id); return false; }
+    if(d.refId===compraId && d.refKind==='alm_compra_pagar'){ sbDeleteDeuda(d.id); return false; }
     return true;
   });
-  if(!soloLimpiar && lote.loc==='com' && lote.proveedor && (parseFloat(lote.precioCompra)||0)>0){
-    var montoCompra=Math.round(lote.kgTotal*lote.precioCompra*100)/100;
-    var gastoCompra={id:Date.now()+1,fechaVal:lote.fecha,fechaLbl:lote.fechaLbl,
-      loc:'com',cultivo:'com',cat:'Compra Mercancia',
-      desc:'Compra mercancia lote '+lote.variedad+' '+lote.fechaLbl,
-      monto:montoCompra,ciclo:lote.ciclo||'',sector:'',autoGen:true,
-      proveedor:lote.proveedor};
-    gastos.unshift(gastoCompra); sbSaveGasto(gastoCompra); lote.gastoIds.push(gastoCompra.id);
-    if((parseFloat(lote.fleteCompra)||0)>0){
-      var gastoFlete={id:Date.now()+2,fechaVal:lote.fecha,fechaLbl:lote.fechaLbl,
-        loc:'com',cultivo:'com',cat:'Fletes',
-        desc:'Flete compra lote '+lote.variedad+' '+lote.fechaLbl,
-        monto:lote.fleteCompra,ciclo:lote.ciclo||'',sector:'',autoGen:true};
-      gastos.unshift(gastoFlete); sbSaveGasto(gastoFlete); lote.gastoIds.push(gastoFlete.id);
+  if(!soloLimpiar && lotes.length){
+    var base=lotes[0];
+    var proveedor=base.proveedor||'';
+    var montoMercancia=Math.round(lotes.reduce(function(a,l){return a+almMontoPartida(l);},0)*100)/100;
+    var fleteTotal=Math.round(lotes.reduce(function(a,l){return a+(parseFloat(l.fleteCompra)||0);},0)*100)/100;
+    if(proveedor && montoMercancia>0){
+      var ocupados=almIdsOcupados();
+      var variedades=lotes.map(function(l){return l.variedad;}).join(', ');
+      var nuevos=[];
+      var gastoCompra={id:almNuevoId(ocupados),fechaVal:base.fecha,fechaLbl:base.fechaLbl,
+        loc:'com',cultivo:'com',cat:'Compra Mercancia',
+        desc:'Compra mercancia '+variedades+' '+base.fechaLbl,
+        monto:montoMercancia,ciclo:base.ciclo||'',sector:'',autoGen:true,
+        proveedor:proveedor};
+      gastos.unshift(gastoCompra); sbSaveGasto(gastoCompra); nuevos.push(gastoCompra.id);
+      if(fleteTotal>0){
+        var gastoFlete={id:almNuevoId(ocupados),fechaVal:base.fecha,fechaLbl:base.fechaLbl,
+          loc:'com',cultivo:'com',cat:'Fletes',
+          desc:'Flete compra '+variedades+' '+base.fechaLbl,
+          monto:fleteTotal,ciclo:base.ciclo||'',sector:'',autoGen:true,
+          proveedor:proveedor};
+        gastos.unshift(gastoFlete); sbSaveGasto(gastoFlete); nuevos.push(gastoFlete.id);
+      }
+      // El mismo arreglo en todos los lotes de la compra: asi cualquiera de ellos
+      // alcanza para limpiarla completa aunque se borren en cualquier orden.
+      lotes.forEach(function(l){ l.gastoIds=nuevos.slice(); });
+      var deudaP={id:compraId*10+1, tipo:'pagar', contraparte:proveedor, fecha:base.fecha,
+        ciclo:base.ciclo||'', origen:'comercializadora', folioExterno:'', refId:compraId,
+        refKind:'alm_compra_pagar',
+        items:lotes.map(function(l){return {concepto:'Compra '+(l.variedad||''), monto:almMontoPartida(l)};}),
+        monto:montoMercancia, desc:''};
+      deudas.push(deudaP); sbSaveDeuda(deudaP); registrarContraparte(proveedor,'pagar');
+      agregarProveedorComerSiNuevo(proveedor);
     }
-    var deudaP={id:lote.id*10+1, tipo:'pagar', contraparte:lote.proveedor, fecha:lote.fecha,
-      ciclo:lote.ciclo||'', origen:'comercializadora', folioExterno:'', refId:lote.id,
-      refKind:'alm_compra_pagar', items:[{concepto:'Compra '+(lote.variedad||''), monto:montoCompra}],
-      monto:montoCompra, desc:''};
-    deudas.push(deudaP); sbSaveDeuda(deudaP); registrarContraparte(deudaP.contraparte,'pagar');
-    agregarProveedorComerSiNuevo(lote.proveedor);
   }
   save(); saveDeudas();
 }
@@ -11074,6 +11134,7 @@ async function sbSaveAlmLote(l){
     hectareas:l.hectareas||0, sector:l.sector||'',
     proveedor:l.proveedor||'', precio_compra:l.precioCompra||0,
     flete_compra:l.fleteCompra||0, gasto_ids:l.gastoIds||[],
+    compra_id:l.compraId||null, kg_pagar:l.kgPagar||0, desc_pct:l.descPct||0,
     despachos:l.despachos||[], cerrado:l.cerrado||false
   });
 }
@@ -11129,16 +11190,36 @@ function editarLote(loteId){
   document.getElementById('af-fecha').value=isoToDisplay(lote.fecha);
   document.getElementById('af-fecha-picker').value=lote.fecha;
   document.getElementById('af-ciclo').value=lote.ciclo;
-  document.getElementById('af-variedad').value=lote.variedad;
-  document.getElementById('af-kg').value=lote.kgTotal;
-  document.getElementById('af-precio').value=lote.precioEst;
-  document.getElementById('af-hectareas').value=lote.hectareas||'';
-  document.getElementById('af-sector').value=lote.sector||'';
   document.getElementById('af-notas').value=lote.notas||'';
-  document.getElementById('af-proveedor').value=lote.proveedor||'';
-  document.getElementById('af-precio-compra').value=lote.precioCompra||'';
-  document.getElementById('af-flete-compra').value=lote.fleteCompra||'';
-  recalcAlmForm();
+  if(lote.loc==='com'){
+    // Editar un lote com abre la COMPRA completa (todas las variedades que
+    // entraron juntas), porque el gasto y la cuenta por pagar son de la compra,
+    // no del lote: recalcularlos con una sola variedad los dejaria incompletos.
+    editandoCompraId=loteCompraId(lote);
+    document.getElementById('alm-form-title').textContent='Editar compra';
+    var hermanos=almLotes.filter(function(l){return l.loc==='com' && loteCompraId(l)===editandoCompraId;});
+    document.getElementById('af-proveedor').value=lote.proveedor||'';
+    var fleteTot=hermanos.reduce(function(a,l){return a+(parseFloat(l.fleteCompra)||0);},0);
+    document.getElementById('af-flete-compra').value=fleteTot||'';
+    almPartidasTemp=hermanos.map(function(l){
+      return {loteId:l.id, variedad:l.variedad,
+        kgRecibidos:(l.kgTotal!=null?l.kgTotal:''),
+        descPct:(l.descPct?l.descPct:''),
+        precioCompra:(l.precioCompra||''),
+        precioEst:(l.precioEst||''),
+        despachos:(l.despachos||[]).length};
+    });
+    renderAlmPartidas();
+  } else {
+    editandoCompraId=null;
+    almPartidasTemp=[];
+    document.getElementById('af-variedad').value=lote.variedad;
+    document.getElementById('af-kg').value=lote.kgTotal;
+    document.getElementById('af-precio').value=lote.precioEst;
+    document.getElementById('af-hectareas').value=lote.hectareas||'';
+    document.getElementById('af-sector').value=lote.sector||'';
+    recalcAlmForm();
+  }
 }
 
 function almFiltro(f){
@@ -11224,8 +11305,9 @@ function initAlmForm(){
   document.getElementById('af-resumen').style.display='none';
   document.getElementById('af-rinde-hint').style.display='none';
   document.getElementById('af-proveedor').value='';
-  document.getElementById('af-precio-compra').value='';
   document.getElementById('af-flete-compra').value='';
+  editandoCompraId=null;
+  almPartidasTemp=[];
   document.getElementById('af-loc').value='jal';
   onAlmLocChange();
 }
@@ -11235,17 +11317,93 @@ function initAlmForm(){
 function onAlmLocChange(){
   buildAlmSectorSelect();
   var esCom = document.getElementById('af-loc').value==='com';
-  var box=document.getElementById('af-com-fields');
-  if(box) box.style.display = esCom ? 'block' : 'none';
-  // Comercializadora compra mercancia, no cosecha: hectareas y sector no aplican.
-  // Se limpian ademas de ocultarse porque guardarLote los lee del DOM y si el
+  document.getElementById('af-com-fields').style.display    = esCom?'block':'none';
+  document.getElementById('af-simple-fields').style.display = esCom?'none':'block';
+  document.getElementById('af-variedad-field').style.display  = esCom?'none':'block';
+  document.getElementById('af-proveedor-field').style.display = esCom?'block':'none';
+  // Comercializadora compra mercancia, no cosecha: los campos de cosecha propia
+  // se limpian ademas de ocultarse, porque el guardado los lee del DOM y si el
   // usuario los capturo en jal/nay antes de cambiar a com se guardarian igual.
-  var cos=document.getElementById('af-cosecha-fields');
-  if(cos) cos.style.display = esCom ? 'none' : 'grid'; // .field-row es grid, no flex
   if(esCom){
-    document.getElementById('af-hectareas').value='';
-    document.getElementById('af-sector').value='';
+    ['af-hectareas','af-sector','af-kg','af-precio'].forEach(function(id){
+      document.getElementById(id).value='';
+    });
+    renderAlmPartidas(); // refresca el select de variedades disponibles
+  } else {
+    recalcAlmForm();
   }
+}
+
+// ── compra por variedad (solo Comercializadora) ──
+// Cada partida termina siendo su propio lote; todas comparten compraId.
+var almPartidasTemp=[]; // {loteId,variedad,kgRecibidos,descPct,precioCompra,precioEst,despachos}
+var editandoCompraId=null;
+
+function almKgPagarPartida(p){
+  var kgR=parseFloat(p.kgRecibidos)||0;
+  var d=(p.descPct===''||p.descPct==null)?0:(parseFloat(p.descPct)||0);
+  return kgR*(1-d/100);
+}
+function almValorEstPartida(p){
+  return (parseFloat(p.kgRecibidos)||0)*(parseFloat(p.precioEst)||0);
+}
+function updateAlmVarSelect(){
+  var sel=document.getElementById('af-var-select'); if(!sel) return;
+  var usadas=almPartidasTemp.map(function(p){return p.variedad;});
+  sel.innerHTML='<option value="">— Selecciona variedad —</option>';
+  VARIEDADES.forEach(function(v){
+    if(usadas.indexOf(v)<0){var o=document.createElement('option');o.value=v;o.textContent=v;sel.appendChild(o);}
+  });
+  var wrap=document.getElementById('af-add-var-wrap');
+  if(wrap) wrap.style.display=usadas.length>=VARIEDADES.length?'none':'block';
+}
+function addAlmVariedad(){
+  var sel=document.getElementById('af-var-select');
+  var v=sel?sel.value:'';
+  if(!v){showToast('Selecciona una variedad');return;}
+  almPartidasTemp.push({loteId:null,variedad:v,kgRecibidos:'',descPct:'',precioCompra:'',precioEst:'',despachos:0});
+  renderAlmPartidas();
+}
+function removeAlmPartida(idx){
+  var p=almPartidasTemp[idx];
+  // La mercancia de esa variedad ya salio del almacen: quitarla descuadraria el stock.
+  if(p&&p.despachos){ showToast('«'+p.variedad+'» ya tiene despachos: no se puede quitar'); return; }
+  almPartidasTemp.splice(idx,1);
+  renderAlmPartidas();
+}
+function renderAlmPartidas(){
+  var cont=document.getElementById('af-partidas'); if(!cont) return;
+  cont.innerHTML='';
+  almPartidasTemp.forEach(function(p,idx){
+    var kgPagar=almKgPagarPartida(p);
+    var d=document.createElement('div');
+    d.className='card'; d.style.marginBottom='10px';
+    d.innerHTML=
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">'+
+        '<span style="font-size:13px;font-weight:600">'+p.variedad+
+          (p.despachos?' <span style="font-size:10px;color:var(--text3);font-weight:500">· ya despachada</span>':'')+'</span>'+
+        '<button onclick="removeAlmPartida('+idx+')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;padding:2px 6px">×</button>'+
+      '</div>'+
+      '<div style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:6px">COMPRA</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">'+
+        '<div><label>Kg recibidos</label><input type="number" placeholder="0" min="0" step="0.01" value="'+(p.kgRecibidos||'')+'" oninput="almPartidasTemp['+idx+'].kgRecibidos=this.value;recalcAlmForm()"></div>'+
+        '<div><label>% descuento</label><input type="number" placeholder="0" min="0" max="100" step="0.1" value="'+(p.descPct!==''?p.descPct:'')+'" oninput="almPartidasTemp['+idx+'].descPct=this.value;recalcAlmForm()"></div>'+
+        '<div><label>Kg a pagar</label><input type="number" id="akp-'+idx+'" tabindex="-1" value="'+kgPagar.toFixed(2)+'" readonly style="background:var(--surface2);color:var(--text3)"></div>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'+
+        '<div><label>Precio compra $/kg</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" placeholder="0" min="0" step="0.01" value="'+(p.precioCompra||'')+'" style="padding-left:24px" oninput="almPartidasTemp['+idx+'].precioCompra=this.value;recalcAlmForm()"></div></div>'+
+        '<div><label>Subtotal compra</label><div id="asc-'+idx+'" style="padding:10px 12px;background:var(--fram-bg);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--fram);font-family:var(--mono)">'+fmt2(kgPagar*(parseFloat(p.precioCompra)||0))+'</div></div>'+
+      '</div>'+
+      // La venta real se captura hasta el despacho; aqui solo se estima para
+      // saber si la compra tiene sentido y para sugerir el precio al despachar.
+      '<div style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:6px">ESTIMADO DE VENTA</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+        '<div><label>Precio est. $/kg</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" placeholder="0" min="0" step="0.01" value="'+(p.precioEst||'')+'" style="padding-left:24px" oninput="almPartidasTemp['+idx+'].precioEst=this.value;recalcAlmForm()"></div></div>'+
+        '<div><label>Valor estimado</label><div id="ave-'+idx+'" style="padding:10px 12px;background:var(--green-bg);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--green);font-family:var(--mono)">'+fmt2(almValorEstPartida(p))+'</div></div>'+
+      '</div>';
+    cont.appendChild(d);
+  });
+  updateAlmVarSelect();
   recalcAlmForm();
 }
 
@@ -11288,14 +11446,29 @@ function onAlfPickerChange(){
   }
 }
 function recalcAlmForm(){
-  var kg=parseFloat(document.getElementById('af-kg').value)||0;
-  var precio=parseFloat(document.getElementById('af-precio').value)||0;
-  var ha=parseFloat(document.getElementById('af-hectareas').value)||0;
   var esCom=document.getElementById('af-loc').value==='com';
-  var precioCompra=parseFloat(document.getElementById('af-precio-compra').value)||0;
-  var fleteCompra=parseFloat(document.getElementById('af-flete-compra').value)||0;
-  var totalCompra=kg*precioCompra+fleteCompra;
-  var valorEst=kg*precio;
+  var totalCompra=0, valorEst=0;
+  if(esCom){
+    var mercancia=0;
+    almPartidasTemp.forEach(function(p,idx){
+      var kgPagar=almKgPagarPartida(p);
+      var sub=kgPagar*(parseFloat(p.precioCompra)||0);
+      mercancia+=sub;
+      valorEst+=almValorEstPartida(p);
+      var elKg=document.getElementById('akp-'+idx); if(elKg) elKg.value=kgPagar.toFixed(2);
+      var elSC=document.getElementById('asc-'+idx); if(elSC) elSC.textContent=fmt2(sub);
+      var elVE=document.getElementById('ave-'+idx); if(elVE) elVE.textContent=fmt2(almValorEstPartida(p));
+    });
+    totalCompra=mercancia+(parseFloat(document.getElementById('af-flete-compra').value)||0);
+  } else {
+    var kg=parseFloat(document.getElementById('af-kg').value)||0;
+    var precio=parseFloat(document.getElementById('af-precio').value)||0;
+    var ha=parseFloat(document.getElementById('af-hectareas').value)||0;
+    valorEst=kg*precio;
+    var hint=document.getElementById('af-rinde-hint');
+    if(kg&&ha){ hint.style.display='block'; hint.textContent='Rendimiento: '+(kg/ha/1000).toFixed(2)+' ton/ha · '+(kg/ha).toFixed(0)+' kg/ha'; }
+    else { hint.style.display='none'; }
+  }
   // En comercializadora el resumen imita al de la operacion comer: compra,
   // valor estimado y margen. En jal/nay no hay compra, solo el valor estimado.
   var mostrarCompra=esCom && totalCompra>0;
@@ -11310,14 +11483,9 @@ function recalcAlmForm(){
     elMargen.style.color=margen>=0?'var(--green)':'var(--fram)';
   }
   document.getElementById('af-resumen-val').textContent=fmt(valorEst);
-  var res=document.getElementById('af-resumen');
-  var resLbl=document.getElementById('af-resumen-label');
-  var verResumen=(kg&&precio)||mostrarCompra;
-  res.style.display=verResumen?'block':'none';
-  resLbl.style.display=verResumen?'block':'none';
-  var hint=document.getElementById('af-rinde-hint');
-  if(kg&&ha){ hint.style.display='block'; hint.textContent='Rendimiento: '+(kg/ha/1000).toFixed(2)+' ton/ha · '+(kg/ha).toFixed(0)+' kg/ha'; }
-  else { hint.style.display='none'; }
+  var verResumen=valorEst>0||mostrarCompra;
+  document.getElementById('af-resumen').style.display=verResumen?'block':'none';
+  document.getElementById('af-resumen-label').style.display=verResumen?'block':'none';
 }
 
 // ── guardar lote ──
@@ -11330,18 +11498,14 @@ function guardarLote(){
   var kg=parseFloat(document.getElementById('af-kg').value)||0;
   var precio=parseFloat(document.getElementById('af-precio').value)||0;
   var notas=document.getElementById('af-notas').value.trim();
-  // Datos de compra: solo tienen sentido en Comercializadora; en jal/nay se ignoran.
-  var esCom = loc==='com';
-  // Hectareas y sector son de cosecha propia: en com el form los oculta y no se guardan.
-  var hectareas=esCom ? 0 : (parseFloat(document.getElementById('af-hectareas').value)||0);
-  var sector=esCom ? '' : (document.getElementById('af-sector').value||'');
-  var proveedor = esCom ? document.getElementById('af-proveedor').value.trim() : '';
-  var precioCompra = esCom ? (parseFloat(document.getElementById('af-precio-compra').value)||0) : 0;
-  var fleteCompra = esCom ? (parseFloat(document.getElementById('af-flete-compra').value)||0) : 0;
   if(!fechaISO){showToast('Selecciona una fecha');return;}
+  var fechaLbl=new Date(fechaISO+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+  // Comercializadora captura una compra con varias variedades: camino aparte.
+  if(loc==='com'){ guardarCompraAlm(fechaISO,fechaLbl,cicloV,notas); return; }
   if(!variedad){showToast('Selecciona una variedad');return;}
   if(!kg){showToast('Ingresa los kg');return;}
-  var fechaLbl=new Date(fechaISO+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+  var hectareas=parseFloat(document.getElementById('af-hectareas').value)||0;
+  var sector=document.getElementById('af-sector').value||'';
   if(editandoLoteId){
     var idx=almLotes.findIndex(function(l){return l.id===editandoLoteId;});
     if(idx>=0){
@@ -11349,23 +11513,72 @@ function guardarLote(){
       almLotes[idx].ciclo=cicloV; almLotes[idx].variedad=variedad;
       almLotes[idx].kgTotal=kg; almLotes[idx].precioEst=precio; almLotes[idx].notas=notas;
       almLotes[idx].hectareas=hectareas; almLotes[idx].sector=sector;
-      almLotes[idx].proveedor=proveedor; almLotes[idx].precioCompra=precioCompra;
-      almLotes[idx].fleteCompra=fleteCompra;
-      sincronizarCompraLote(almLotes[idx]); // muta gastoIds: va antes del upsert
       sbSaveAlmLote(almLotes[idx]);
     }
     showToast('Lote actualizado');
   } else {
     var lote={id:Date.now(),loc:loc,fecha:fechaISO,fechaLbl:fechaLbl,ciclo:cicloV,
       variedad:variedad,kgTotal:kg,precioEst:precio,notas:notas,hectareas:hectareas,sector:sector,
-      proveedor:proveedor,precioCompra:precioCompra,fleteCompra:fleteCompra,gastoIds:[],
+      proveedor:'',precioCompra:0,fleteCompra:0,gastoIds:[],
       despachos:[],cerrado:false};
     almLotes.unshift(lote);
-    sincronizarCompraLote(lote); // muta gastoIds: va antes del upsert
     sbSaveAlmLote(lote);
     showToast('Lote guardado: '+kg.toLocaleString('es-MX')+' kg');
   }
   saveAlmLotes();
+  almTab('lista');
+}
+
+// Guarda una COMPRA de comercializadora: cada partida es un lote propio, todos
+// con el mismo compraId. De ahi cuelgan un solo gasto de mercancia, uno de flete
+// y una sola cuenta por pagar (ver sincronizarCompra).
+function guardarCompraAlm(fechaISO,fechaLbl,cicloV,notas){
+  var proveedor=document.getElementById('af-proveedor').value.trim();
+  var fleteTotal=parseFloat(document.getElementById('af-flete-compra').value)||0;
+  if(!proveedor){showToast('Elige un proveedor');return;}
+  var validas=almPartidasTemp.filter(function(p){return (parseFloat(p.kgRecibidos)||0)>0;});
+  if(!validas.length){showToast('Agrega al menos una variedad con kg');return;}
+  var sinPrecio=validas.filter(function(p){return !((parseFloat(p.precioCompra)||0)>0);});
+  if(sinPrecio.length){showToast('Falta el precio de compra de «'+sinPrecio[0].variedad+'»');return;}
+  var compraId=editandoCompraId||Date.now();
+  var conservados=validas.map(function(p){return p.loteId;});
+  // Una variedad que se quita del formulario borra su lote. Si ya tiene despachos
+  // la mercancia salio del almacen: borrarla descuadraria el stock y el envio.
+  var bloqueado=null;
+  almLotes.forEach(function(l){
+    if(l.loc==='com' && loteCompraId(l)===compraId && conservados.indexOf(l.id)<0 && (l.despachos||[]).length)
+      bloqueado=l.variedad;
+  });
+  if(bloqueado){showToast('«'+bloqueado+'» ya tiene despachos: no se puede quitar');return;}
+  almLotes=almLotes.filter(function(l){
+    if(l.loc==='com' && loteCompraId(l)===compraId && conservados.indexOf(l.id)<0){ sbDeleteAlmLote(l.id); return false; }
+    return true;
+  });
+  var kgCompra=validas.reduce(function(a,p){return a+(parseFloat(p.kgRecibidos)||0);},0);
+  var ocupados=almIdsOcupados();
+  validas.forEach(function(p){
+    var kgR=parseFloat(p.kgRecibidos)||0;
+    var existente=p.loteId?almLotes.find(function(l){return l.id===p.loteId;}):null;
+    var lote=existente||{id:almNuevoId(ocupados),gastoIds:[],despachos:[],cerrado:false};
+    lote.loc='com'; lote.compraId=compraId;
+    lote.fecha=fechaISO; lote.fechaLbl=fechaLbl; lote.ciclo=cicloV;
+    lote.variedad=p.variedad; lote.notas=notas;
+    lote.kgTotal=kgR;
+    lote.descPct=(p.descPct===''||p.descPct==null)?0:(parseFloat(p.descPct)||0);
+    lote.kgPagar=almKgPagarPartida(p);
+    lote.precioCompra=parseFloat(p.precioCompra)||0;
+    lote.precioEst=parseFloat(p.precioEst)||0;
+    lote.proveedor=proveedor;
+    // El flete es de la compra completa: se prorratea por kg entre sus lotes para
+    // que sumarlos de vuelta de el total y ninguno lo cuente entero.
+    lote.fleteCompra=kgCompra?Math.round(fleteTotal*(kgR/kgCompra)*100)/100:0;
+    lote.hectareas=0; lote.sector='';
+    if(!existente) almLotes.unshift(lote);
+  });
+  sincronizarCompra(compraId); // muta gastoIds: va antes de subir los lotes
+  almLotes.forEach(function(l){ if(l.loc==='com' && loteCompraId(l)===compraId) sbSaveAlmLote(l); });
+  saveAlmLotes();
+  showToast(editandoCompraId?'Compra actualizada':'Compra guardada: '+validas.length+(validas.length>1?' lotes':' lote'));
   almTab('lista');
 }
 
@@ -11443,6 +11656,15 @@ function dgToggleLote(loteId, isChecked){
   var fields=document.getElementById('dg-fields-'+loteId);
   if(isChecked){
     if(!dgSel[loteId]) dgSel[loteId]={kg:'',precio:''};
+    // Sugerir el precio estimado que se capturo al comprar el lote; queda editable.
+    if(!dgSel[loteId].precio){
+      var loteSel=almLotes.find(function(l){return l.id===loteId;});
+      if(loteSel && parseFloat(loteSel.precioEst)>0){
+        dgSel[loteId].precio=loteSel.precioEst;
+        var pEl=document.getElementById('dg-precio-'+loteId);
+        if(pEl) pEl.value=loteSel.precioEst;
+      }
+    }
     if(fields) fields.style.display='flex';
     var chk=document.getElementById('dg-chk-'+loteId); if(chk) chk.checked=true;
   } else {
@@ -11609,9 +11831,14 @@ function confirmDelLote(loteId){
   var btn=event.target;
   if(btn.dataset.confirm==='1'){
     var loteDel=almLotes.find(function(l){return l.id===loteId;});
-    if(loteDel) sincronizarCompraLote(loteDel, true); // limpia sus gastos y su deuda
+    var compraDel=(loteDel&&loteDel.loc==='com')?loteCompraId(loteDel):null;
+    var idsDel=(loteDel&&loteDel.gastoIds)?loteDel.gastoIds.slice():[];
     almLotes=almLotes.filter(function(l){return l.id!==loteId;});
+    // Se resincroniza DESPUES de quitarlo: si quedan hermanos, el gasto y la
+    // cuenta por pagar se recalculan sin esta variedad; si era el ultimo, se limpian.
+    if(compraDel) sincronizarCompra(compraDel, false, idsDel);
     saveAlmLotes();
+    if(compraDel) almLotes.forEach(function(l){ if(l.loc==='com' && loteCompraId(l)===compraDel) sbSaveAlmLote(l); });
     sbDeleteAlmLote(loteId);
     closeModal();
     renderAlmLotes();
