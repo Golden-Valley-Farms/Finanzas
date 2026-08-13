@@ -14,7 +14,9 @@ No hay build, ni npm, ni tests. El repo se publica por **GitHub Pages** en <http
 
 **Cada push a `main` sale en vivo.** No hay staging ni preview. Antes de pushear, abrir `index.html` local en el navegador y revisar la consola: debe aparecer `Supabase conectado ✅`. Los errores de la app se reportan por `console.error` y por `showToast()`.
 
-Ojo: local y producción **comparten la misma base de Supabase**. Probar local no aísla los datos — cualquier cosa que guardes en la prueba se escribe en la base real.
+Ojo: local y producción **comparten la misma base de Supabase**. Probar local no aísla los datos — cualquier cosa que guardes en la prueba se escribe en la base real. Por eso, al verificar desde el navegador, mirar y calcular está bien, pero **no completar guardados de prueba**: si hace falta probar un flujo de alta o edición, armar el objeto en memoria y quitarlo al terminar, sin llamar a `save*()` ni a `sbSave*()`.
+
+Hay un `.claude/launch.json` con la configuración `gvf-local`, que sirve `index.html` por `python -m http.server 8777`. Es solo andamio de pruebas — no forma parte de la app y GitHub Pages lo ignora. Existe porque el navegador integrado no abre rutas `file://`, así que sin servidor no hay forma de revisar la consola ni el render.
 
 Las tres dependencias llegan por CDN: `@supabase/supabase-js@2`, `Chart.js@4.4.1`, `html-to-image@1.11.13`.
 
