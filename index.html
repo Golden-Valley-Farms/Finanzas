@@ -1948,18 +1948,13 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div id="drsub-deuda">
         <div class="field" style="margin-bottom:12px"><label>Fecha</label>
           <input type="date" id="dr-fecha" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none"></div>
-        <div class="field" style="margin-bottom:12px"><label>Movimiento</label>
-          <select id="dr-mov" onchange="onDrMovChange()" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none">
-            <option value="cargo">Cargo (nueva deuda)</option>
-            <option value="abono">Abono / pago</option>
-          </select></div>
         <div class="field" style="margin-bottom:12px"><label>Tipo de deuda</label>
           <select id="dr-tipo" onchange="onDrTipoChange()" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none">
             <option value="cobrar">Por cobrar</option>
             <option value="pagar">Por pagar</option>
           </select></div>
         <div class="field-row" style="margin-bottom:12px">
-          <div class="field" style="margin-bottom:0"><label id="dr-contraparte-lbl">Deudor</label>
+          <div class="field" style="margin-bottom:0"><label>Cliente</label>
             <select id="dr-contraparte" onchange="onDrContraparteElegida()" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none">
               <option value="">Selecciona...</option>
             </select></div>
@@ -1987,11 +1982,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <input type="text" id="drc-nombre" placeholder="Nombre completo" style="width:100%"></div>
           <div class="field" style="margin-bottom:12px"><label>ID</label>
             <input type="text" id="drc-clave" placeholder="ID corto, ej. Clem" style="width:100%;font-family:var(--mono)"></div>
-          <div class="field" style="margin-bottom:16px"><label>Tipo</label>
-            <select id="drc-tipo" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none">
-              <option value="cobrar">Deudor (nos debe)</option>
-              <option value="pagar">Acreedor (le debemos)</option>
-            </select></div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:16px">El mismo cliente sirve para cuentas por cobrar y por pagar.</div>
           <button class="btn-main" onclick="registrarClienteForm()">Agregar cliente</button>
         </div>
         <div id="drc-historial" style="display:none"></div>
@@ -2202,8 +2193,8 @@ async function cargarDesdeSB(){
     savePagosDeuda();
   }
   if(cpData && cpData.length){
-    contrapartes = cpData.map(function(c){ return {nombre:c.nombre, tipo:c.tipo,
-      clave:c.clave||'', modo:c.modo||'fifo', moneda:c.moneda||'MXN', tipoCambio:parseFloat(c.tipo_cambio||0)}; });
+    contrapartes = dedupContrapartes(cpData.map(function(c){ return {nombre:c.nombre, tipo:c.tipo,
+      clave:c.clave||'', modo:c.modo||'fifo', moneda:c.moneda||'MXN', tipoCambio:parseFloat(c.tipo_cambio||0)}; }));
     saveContrapartes();
   }
   if(typeof renderDeudas==='function' && document.getElementById('sc-deudas') && document.getElementById('sc-deudas').classList.contains('active')) renderDeudas();
@@ -7963,7 +7954,7 @@ function confirmDelEnvio(id){
 var deudas=[], pagosDeuda=[], contrapartes=[];
 try{var _dd=localStorage.getItem('cc_deudas'); if(_dd) deudas=JSON.parse(_dd);}catch(e){}
 try{var _dp=localStorage.getItem('cc_pagosdeuda'); if(_dp) pagosDeuda=JSON.parse(_dp);}catch(e){}
-try{var _dc=localStorage.getItem('cc_contrapartes'); if(_dc) contrapartes=JSON.parse(_dc);}catch(e){}
+try{var _dc=localStorage.getItem('cc_contrapartes'); if(_dc) contrapartes=dedupContrapartes(JSON.parse(_dc));}catch(e){}
 function saveDeudas(){try{localStorage.setItem('cc_deudas',JSON.stringify(deudas));}catch(e){}}
 function savePagosDeuda(){try{localStorage.setItem('cc_pagosdeuda',JSON.stringify(pagosDeuda));}catch(e){}}
 function saveContrapartes(){try{localStorage.setItem('cc_contrapartes',JSON.stringify(contrapartes));}catch(e){}}
@@ -8000,25 +7991,54 @@ async function sbSavePagoDeuda(p){
 async function sbDeletePagoDeuda(id){ if(!sbOnline||!sb) return; await sb.from('pagos_deuda').delete().eq('id', id); }
 async function sbSaveContraparte(c){
   if(!sbOnline||!sb) return;
-  var full={nombre:c.nombre, tipo:c.tipo, clave:c.clave||'', modo:c.modo||'fifo',
+  // Siempre CP_TIPO, nunca c.tipo: una ficha vieja en un cache de localStorage
+  // todavia trae 'cobrar'/'pagar', y escribirla con eso crearia una SEGUNDA fila
+  // en Supabase junto a la unificada, porque la llave es (nombre,tipo).
+  var full={nombre:c.nombre, tipo:CP_TIPO, clave:c.clave||'', modo:c.modo||'fifo',
     moneda:c.moneda||'MXN', tipo_cambio:parseFloat(c.tipoCambio)||0};
   var r=await sb.from('contrapartes').upsert(full, {onConflict:'nombre,tipo'});
-  if(r && r.error){ await sb.from('contrapartes').upsert({nombre:c.nombre, tipo:c.tipo}, {onConflict:'nombre,tipo'}); }
+  if(r && r.error){ await sb.from('contrapartes').upsert({nombre:c.nombre, tipo:CP_TIPO}, {onConflict:'nombre,tipo'}); }
 }
 
-function getContraparte(tipo, nombre){
+// El catalogo de clientes es UNO SOLO (ago-2026): el mismo cliente sirve para
+// cuentas por cobrar y por pagar, con un solo ID, modo, moneda y tipo de cambio.
+// El 'cobrar'/'pagar' sigue existiendo, pero como direccion de CADA MOVIMIENTO
+// (deuda o pago), nunca como clasificacion del cliente.
+//
+// La tabla 'contrapartes' de Supabase esta llaveada por (nombre,tipo), asi que la
+// columna sigue ahi y se escribe siempre con este valor fijo. No volver a usarla
+// para clasificar: buscar por nombre es lo unico correcto.
+var CP_TIPO='cliente';
+
+// Antes de unificar, un mismo nombre podia tener dos fichas (una por tipo). Quedan
+// en cachés de localStorage viejos, asi que se colapsan al leer: gana la que tenga
+// ID, y entre esas la de modo corriente, que es la que alguien configuró a mano.
+function dedupContrapartes(arr){
+  var porNombre={}, orden=[];
+  (arr||[]).forEach(function(c){
+    if(!c || !c.nombre) return;
+    var prev=porNombre[c.nombre];
+    if(!prev){ porNombre[c.nombre]=c; orden.push(c.nombre); return; }
+    var ganaNuevo = (!prev.clave && c.clave) ||
+                    (!!prev.clave===!!c.clave && prev.modo!=='corriente' && c.modo==='corriente');
+    if(ganaNuevo) porNombre[c.nombre]=c;
+  });
+  return orden.map(function(n){ var c=porNombre[n]; c.tipo=CP_TIPO; return c; });
+}
+
+function getContraparte(nombre){
   for(var i=0;i<contrapartes.length;i++){
-    if(contrapartes[i].tipo===tipo && contrapartes[i].nombre===nombre) return contrapartes[i];
+    if(contrapartes[i].nombre===nombre) return contrapartes[i];
   }
   return null;
 }
-function cpModo(tipo, nombre){ var c=getContraparte(tipo,nombre); return (c&&c.modo==='corriente')?'corriente':'fifo'; }
-function cpMoneda(tipo, nombre){ var c=getContraparte(tipo,nombre); return (c&&c.moneda==='USD')?'USD':'MXN'; }
+function cpModo(nombre){ var c=getContraparte(nombre); return (c&&c.modo==='corriente')?'corriente':'fifo'; }
+function cpMoneda(nombre){ var c=getContraparte(nombre); return (c&&c.moneda==='USD')?'USD':'MXN'; }
 
-function registrarContraparte(nombre, tipo){
+function registrarContraparte(nombre){
   if(!nombre) return;
-  if(!getContraparte(tipo, nombre)){
-    var c={nombre:nombre, tipo:tipo, clave:'', modo:'fifo', moneda:'MXN', tipoCambio:0};
+  if(!getContraparte(nombre)){
+    var c={nombre:nombre, tipo:CP_TIPO, clave:'', modo:'fifo', moneda:'MXN', tipoCambio:0};
     contrapartes.push(c); saveContrapartes(); sbSaveContraparte(c);
   }
 }
@@ -8074,7 +8094,7 @@ function sincronizarDeudasEnvio(e){
         origen:'camote', folioExterno:folioExt, refId:e.id, refKind:'camote_cobrar', items:itK, monto:r2(totK), desc:''});
     }
   }
-  nuevas.forEach(function(d){ deudas.push(d); sbSaveDeuda(d); registrarContraparte(d.contraparte, d.tipo); });
+  nuevas.forEach(function(d){ deudas.push(d); sbSaveDeuda(d); registrarContraparte(d.contraparte); });
   saveDeudas();
   if(document.getElementById('sc-deudas') && document.getElementById('sc-deudas').classList.contains('active')) renderDeudas();
 }
@@ -8128,8 +8148,8 @@ function calcCorriente(tipo, nombre){
   return {movs:movs, saldoTotal:saldo, nMovs:movs.length};
 }
 function calcSaldoCuenta(tipo, nombre){
-  var c=getContraparte(tipo, nombre)||{};
-  if(cpModo(tipo,nombre)==='corriente'){
+  var c=getContraparte(nombre)||{};
+  if(cpModo(nombre)==='corriente'){
     var r=calcCorriente(tipo, nombre);
     return {saldo:Math.max(0,r.saldoTotal), aFavor:Math.max(0,-r.saldoTotal), n:r.nMovs, moneda:c.moneda||'MXN', clave:c.clave||''};
   }
@@ -8151,8 +8171,8 @@ function registrarPagoDeuda(tipo, contraparte, monto, fecha, desc){
   monto=parseFloat(monto)||0;
   if(monto<=0){ showToast('Ingresa un monto válido'); return null; }
   if(!fecha){ showToast('Selecciona una fecha'); return null; }
-  var p={id:Date.now(), tipo:tipo, contraparte:contraparte, monto:monto, fecha:fecha, folio:generarFolioPago(tipo,contraparte,fecha), desc:desc||'', moneda:cpMoneda(tipo,contraparte), tipoCambio:0, dirigidoA:''};
-  pagosDeuda.push(p); savePagosDeuda(); sbSavePagoDeuda(p); registrarContraparte(contraparte, tipo);
+  var p={id:Date.now(), tipo:tipo, contraparte:contraparte, monto:monto, fecha:fecha, folio:generarFolioPago(tipo,contraparte,fecha), desc:desc||'', moneda:cpMoneda(contraparte), tipoCambio:0, dirigidoA:''};
+  pagosDeuda.push(p); savePagosDeuda(); sbSavePagoDeuda(p); registrarContraparte(contraparte);
   return p;
 }
 function borrarPagoDeuda(id){ pagosDeuda=pagosDeuda.filter(function(p){return p.id!==id;}); savePagosDeuda(); sbDeletePagoDeuda(id); }
@@ -8163,8 +8183,8 @@ function agregarDeudaManual(tipo, contraparte, monto, fecha, concepto, factura, 
   if(monto<=0){ showToast('Ingresa un monto válido'); return null; }
   var d={id:Date.now(), tipo:tipo, contraparte:contraparte, fecha:fecha||new Date().toISOString().substring(0,10), ciclo:'',
     origen:'manual', folioExterno:'', refId:null, refKind:'manual', items:[{concepto:concepto||'Deuda', monto:monto}], monto:monto, desc:concepto||'', factura:factura||'',
-    moneda:cpMoneda(tipo,contraparte), tipoCambio:0, interes:parseFloat(interes)||0, nc:0, negocio:''};
-  deudas.push(d); saveDeudas(); sbSaveDeuda(d); registrarContraparte(contraparte, tipo);
+    moneda:cpMoneda(contraparte), tipoCambio:0, interes:parseFloat(interes)||0, nc:0, negocio:''};
+  deudas.push(d); saveDeudas(); sbSaveDeuda(d); registrarContraparte(contraparte);
   return d;
 }
 function borrarDeudaManual(id){ deudas=deudas.filter(function(x){return x.id!==id;}); saveDeudas(); sbDeleteDeuda(id); }
@@ -8197,38 +8217,27 @@ function setDeudaTab(t){
   if(reg) reg.style.display=esReg?'block':'none';
   if(esReg) initDeudaRegistrarForm(); else renderDeudas();
 }
-function drRefreshContraparteLabel(){
-  var esCobrar=((document.getElementById('dr-tipo')||{}).value||'cobrar')==='cobrar';
-  var lbl=document.getElementById('dr-contraparte-lbl');
-  if(lbl) lbl.textContent=esCobrar?'Deudor':'Acreedor';
-}
-function onDrTipoChange(){
-  drRefreshContraparteLabel();
-  renderDrContraparteSelect();
-}
-function onDrMovChange(){ onDrContraparteElegida(); }
+// El tipo solo decide la direccion del cargo; la lista de clientes ya no depende
+// de el, asi que no hay que repoblar el select al cambiarlo.
+function onDrTipoChange(){ onDrContraparteElegida(); }
 function onDrContraparteElegida(){
-  var tipo=(((document.getElementById('dr-tipo')||{}).value||'cobrar')==='cobrar')?'cobrar':'pagar';
   var nom=(document.getElementById('dr-contraparte').value||'').trim();
-  var esCargo=((document.getElementById('dr-mov')||{}).value||'cargo')==='cargo';
   var row=document.getElementById('dr-interes-row');
-  if(row) row.style.display=(esCargo && nom && cpModo(tipo,nom)==='corriente')?'':'none';
+  if(row) row.style.display=(nom && cpModo(nom)==='corriente')?'':'none';
   var pref=document.getElementById('dr-monto-prefix');
-  if(pref) pref.textContent=(nom && cpMoneda(tipo,nom)==='USD')?'US$':'$';
-  var cpc=getContraparte(tipo,nom);
+  if(pref) pref.textContent=(nom && cpMoneda(nom)==='USD')?'US$':'$';
+  var cpc=getContraparte(nom);
   var claveView=document.getElementById('dr-clave-view');
   if(claveView) claveView.value=cpc?(cpc.clave||'(sin ID)'):'';
 }
 function initDeudaRegistrarForm(){
   var f=document.getElementById('dr-fecha');
   if(f && !f.value) f.value=new Date().toISOString().substring(0,10);
-  drRefreshContraparteLabel();
   setDrSubTab(drSubTabSel);
 }
-// Catálogo de contrapartes filtrado por el tipo elegido, para el select de Deuda
+// Catalogo completo: el mismo cliente sirve para cobrar y para pagar.
 function drContraparteLista(){
-  var tipo=(((document.getElementById('dr-tipo')||{}).value||'cobrar')==='cobrar')?'cobrar':'pagar';
-  return contrapartes.filter(function(c){return c.tipo===tipo;}).slice().sort(function(a,b){return a.nombre.localeCompare(b.nombre);});
+  return contrapartes.slice().sort(function(a,b){return a.nombre.localeCompare(b.nombre);});
 }
 function renderDrContraparteSelect(){
   var sel=document.getElementById('dr-contraparte'); if(!sel) return;
@@ -8240,10 +8249,10 @@ function renderDrContraparteSelect(){
   sel.value=lista.some(function(c){return c.nombre===valPrevio;})?valPrevio:'';
   onDrContraparteElegida();
 }
-function claveDuplicada(clave, exceptoTipo, exceptoNombre){
+function claveDuplicada(clave, exceptoNombre){
   if(!clave) return false;
   return contrapartes.some(function(c){
-    return c.clave===clave && !(c.tipo===exceptoTipo && c.nombre===exceptoNombre);
+    return c.clave===clave && c.nombre!==exceptoNombre;
   });
 }
 var drSubTabSel='deuda';
@@ -8272,12 +8281,11 @@ function setDrClientesTab(t){
 function registrarClienteForm(){
   var nombre=(document.getElementById('drc-nombre').value||'').trim();
   var clave=(document.getElementById('drc-clave').value||'').trim();
-  var tipo=document.getElementById('drc-tipo').value||'cobrar';
   if(!nombre){ showToast('Escribe un nombre'); return; }
   if(!clave){ showToast('Asigna un ID'); return; }
   if(claveDuplicada(clave)){ showToast('El ID '+clave+' ya está usado'); return; }
-  if(getContraparte(tipo, nombre)){ showToast('Ese cliente ya existe'); return; }
-  var c={nombre:nombre, tipo:tipo, clave:clave, modo:'fifo', moneda:'MXN', tipoCambio:0};
+  if(getContraparte(nombre)){ showToast('Ese cliente ya existe'); return; }
+  var c={nombre:nombre, tipo:CP_TIPO, clave:clave, modo:'fifo', moneda:'MXN', tipoCambio:0};
   contrapartes.push(c); saveContrapartes(); sbSaveContraparte(c);
   document.getElementById('drc-nombre').value='';
   document.getElementById('drc-clave').value='';
@@ -8285,10 +8293,7 @@ function registrarClienteForm(){
 }
 function renderClientesHistorial(){
   var cont=document.getElementById('drc-historial'); if(!cont) return;
-  var lista=contrapartes.slice().sort(function(a,b){
-    if(a.tipo!==b.tipo) return a.tipo==='cobrar'?-1:1;
-    return a.nombre.localeCompare(b.nombre);
-  });
+  var lista=contrapartes.slice().sort(function(a,b){ return a.nombre.localeCompare(b.nombre); });
   if(!lista.length){
     cont.innerHTML='<div class="empty" style="padding:30px 20px;text-align:center"><div class="empty-icon" style="font-size:36px">👤</div><div class="empty-text" style="margin-top:8px">Aún no hay clientes registrados.</div></div>';
     return;
@@ -8303,22 +8308,28 @@ function renderClientesHistorial(){
           '<span style="font-family:var(--mono);font-size:11px;color:var(--text3)">'+(c.clave||'—')+'</span> · '+c.nombre+
         '</div>'+
         '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+
-          (c.tipo==='cobrar'?'Deudor':'Acreedor')+' · '+(c.modo==='corriente'?'Cargos y abonos':'Facturas')+(c.moneda==='USD'?' · USD':'')+
+          (c.modo==='corriente'?'Cargos y abonos':'Facturas')+(c.moneda==='USD'?' · USD':'')+
         '</div>'+
       '</div>';
     var btn=document.createElement('button');
     btn.innerHTML='✏️'; btn.title='Editar';
     btn.style.cssText='background:none;border:none;cursor:pointer;font-size:16px;padding:4px 6px;flex-shrink:0';
-    btn.onclick=function(){ abrirEditarContraparte(c.tipo, c.nombre, 'clientes'); };
+    btn.onclick=function(){ abrirEditarContraparte(c.nombre, 'clientes'); };
     card.appendChild(btn);
     cont.appendChild(card);
   });
 }
+// _ecTipo ya no identifica al cliente: solo recuerda a que vista de cuenta
+// (cobrar/pagar) hay que regresar al cerrar, cuando se abrio desde una cuenta.
 var _ecTipo='', _ecNombre='', _ecContexto='cuenta';
-function abrirEditarContraparte(tipo, nombre, contexto){
-  var c=getContraparte(tipo, nombre);
-  if(!c){ showToast('Contraparte no encontrada'); return; }
-  _ecTipo=tipo; _ecNombre=nombre; _ecContexto=contexto||'cuenta';
+function abrirEditarContraparte(nombre, contexto, tipoRetorno){
+  var c=getContraparte(nombre);
+  if(!c){ showToast('Cliente no encontrado'); return; }
+  _ecNombre=nombre; _ecContexto=contexto||'cuenta';
+  // Solo cobrar/pagar son vistas de cuenta validas: deudaTabSel puede venir en
+  // 'registrar' y abrirDeudaContraparte('registrar') no pinta nada.
+  var ret=tipoRetorno||deudaTabSel;
+  _ecTipo=(ret==='pagar')?'pagar':'cobrar';
   document.getElementById('mo-title').innerHTML='⚙️ '+nombre;
   document.getElementById('mo-body').innerHTML=
     '<div class="field" style="margin-bottom:10px"><label>ID</label><input type="text" id="ec-clave" value="'+(c.clave||'')+'" style="width:100%;font-family:var(--mono)"></div>'+
@@ -8341,10 +8352,10 @@ function cancelarEdicionContraparte(){
   else abrirDeudaContraparte(_ecTipo, _ecNombre);
 }
 function guardarEdicionContraparte(){
-  var c=getContraparte(_ecTipo, _ecNombre); if(!c) return;
+  var c=getContraparte(_ecNombre); if(!c) return;
   var clave=(document.getElementById('ec-clave').value||'').trim();
   if(!clave){ showToast('Asigna un ID'); return; }
-  if(claveDuplicada(clave, _ecTipo, _ecNombre)){ showToast('El ID '+clave+' ya está usado'); return; }
+  if(claveDuplicada(clave, _ecNombre)){ showToast('El ID '+clave+' ya está usado'); return; }
   c.clave=clave;
   c.modo=document.getElementById('ec-modo').value;
   c.moneda=document.getElementById('ec-moneda').value;
@@ -8357,20 +8368,16 @@ function guardarEdicionContraparte(){
 function registrarDeudaManualForm(){
   var tipo=(document.getElementById('dr-tipo')||{}).value||'cobrar';
   var contraparte=(document.getElementById('dr-contraparte').value||'').trim();
-  var mov=(document.getElementById('dr-mov')||{}).value||'cargo';
   var monto=document.getElementById('dr-monto').value;
   var fecha=document.getElementById('dr-fecha').value;
   var concepto=(document.getElementById('dr-concepto').value||'').trim();
   var factura=(document.getElementById('dr-factura').value||'').trim();
   var interes=document.getElementById('dr-interes').value;
-  if(!getContraparte(tipo, contraparte)){ showToast('Selecciona una contraparte del catálogo'); return; }
+  if(!getContraparte(contraparte)){ showToast('Selecciona un cliente del catálogo'); return; }
   if(!fecha){ showToast('Selecciona una fecha'); return; }
-  var ok;
-  if(mov==='abono'){
-    ok=registrarPagoDeuda(tipo, contraparte, monto, fecha, concepto);
-  } else {
-    ok=agregarDeudaManual(tipo, contraparte, monto, fecha, concepto, factura, interes);
-  }
+  // Solo cargos: los abonos y pagos se registran entrando a la cuenta, donde se
+  // ve el saldo contra el que se aplican.
+  var ok=agregarDeudaManual(tipo, contraparte, monto, fecha, concepto, factura, interes);
   if(!ok) return;
   document.getElementById('dr-contraparte').value='';
   document.getElementById('dr-monto').value='';
@@ -8378,7 +8385,7 @@ function registrarDeudaManualForm(){
   document.getElementById('dr-factura').value='';
   document.getElementById('dr-interes').value='';
   onDrContraparteElegida();
-  showToast(mov==='abono'?'Abono registrado':'Cargo registrado');
+  showToast('Cargo registrado');
   setDeudaTab(tipo);
 }
 function renderDeudas(){
@@ -8391,11 +8398,13 @@ function renderDeudas(){
   var nombres={};
   deudas.forEach(function(d){ if(d.tipo===tipo) nombres[d.contraparte]=true; });
   pagosDeuda.forEach(function(p){ if(p.tipo===tipo) nombres[p.contraparte]=true; });
-  contrapartes.forEach(function(c){ if(c.tipo===tipo) nombres[c.nombre]=true; });
+  // El catalogo ya no se siembra aqui: es uno solo para cobrar y pagar, asi que
+  // hacerlo pondria los 11 clientes en las DOS pestañas con saldo cero. Una cuenta
+  // aparece cuando tiene su primer movimiento de esa direccion.
   var lista=Object.keys(nombres).map(function(nom){
     var r=calcSaldoCuenta(tipo,nom);
     return {nombre:nom, saldo:r.saldo, aFavor:r.aFavor, n:r.n, moneda:r.moneda, clave:r.clave,
-      tc:(getContraparte(tipo,nom)||{}).tipoCambio||0};
+      tc:(getContraparte(nom)||{}).tipoCambio||0};
   }).sort(function(a,b){ return b.saldo-a.saldo; });
   var totalSaldo=lista.reduce(function(a,x){
     return a+(x.moneda==='USD'?x.saldo*(x.tc||0):x.saldo);
@@ -8455,14 +8464,14 @@ function deudaFolioNegocio(d){
 
 function abrirDeudaContraparte(tipo, nombre){
   deudaModalTipo=tipo; deudaModalNombre=nombre;
-  if(cpModo(tipo,nombre)==='corriente') renderModalCorriente(tipo,nombre);
+  if(cpModo(nombre)==='corriente') renderModalCorriente(tipo,nombre);
   else renderModalFifo(tipo,nombre);
 }
 function tituloModalCuenta(tipo, nombre){
-  var cpc=getContraparte(tipo,nombre)||{};
+  var cpc=getContraparte(nombre)||{};
   return (cpc.clave?'<span style="font-family:var(--mono);font-size:13px;color:var(--text3)">'+cpc.clave+'</span> ':'')+nombre+
     '&nbsp;<span class="chip '+(tipo==='cobrar'?'jal':'com')+'">'+(tipo==='cobrar'?'Por cobrar':'Por pagar')+'</span>'+
-    '&nbsp;<button onclick="abrirEditarContraparte(\''+tipo+'\',deudaModalNombre)" style="background:none;border:none;cursor:pointer;font-size:14px">⚙️</button>';
+    '&nbsp;<button onclick="abrirEditarContraparte(deudaModalNombre,\'cuenta\',\''+tipo+'\')" style="background:none;border:none;cursor:pointer;font-size:14px">⚙️</button>';
 }
 function renderModalFifo(tipo, nombre){
   var r=calcContraparte(tipo,nombre);
@@ -8526,7 +8535,7 @@ function renderModalFifo(tipo, nombre){
 
 function renderModalCorriente(tipo, nombre){
   var r=calcCorriente(tipo, nombre);
-  var c=getContraparte(tipo,nombre)||{};
+  var c=getContraparte(nombre)||{};
   var mon=c.moneda==='USD'?'USD':'MXN';
   var accent=(tipo==='cobrar')?'var(--green)':'var(--fram)';
   var st=r.saldoTotal;
@@ -8600,7 +8609,7 @@ function abrirAgregarDeuda(){
 }
 function confirmarDeudaManual(){
   var nom=document.getElementById('dd-nom').value.trim();
-  if(!getContraparte(deudaTabSel, nom)){ showToast('Primero da de alta la contraparte en Registrar'); return; }
+  if(!getContraparte(nom)){ showToast('Primero da de alta el cliente en Registrar'); return; }
   var d=agregarDeudaManual(deudaTabSel, nom, document.getElementById('dd-monto').value, document.getElementById('dd-fecha').value, document.getElementById('dd-concepto').value.trim());
   if(!d) return;
   closeModal(); renderDeudas(); showToast('Cuenta agregada');
@@ -11156,7 +11165,7 @@ function sincronizarCompra(compraId, soloLimpiar, idsHuerfanos){
         refKind:'alm_compra_pagar',
         items:lotes.map(function(l){return {concepto:'Compra '+(l.variedad||''), monto:almMontoPartida(l)};}),
         monto:montoMercancia, desc:''};
-      deudas.push(deudaP); sbSaveDeuda(deudaP); registrarContraparte(proveedor,'pagar');
+      deudas.push(deudaP); sbSaveDeuda(deudaP); registrarContraparte(proveedor);
       agregarProveedorComerSiNuevo(proveedor);
     }
   }
