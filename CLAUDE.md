@@ -130,7 +130,11 @@ Rediseñado en ago-2026 (spec en `docs/superpowers/specs/2026-08-07-modulo-deuda
 
 **Moneda.** Cuentas USD (Bioterra): movimientos y saldo en dólares (`fmtMon`/`fmtUSD`); el equivalente MXN es informativo con `contraparte.tipoCambio` editable. Los KPIs convierten USD→MXN con ese tipo de cambio.
 
-**Regla de negocio (fletes):** el flete de compra NO se carga a la cuenta por pagar del proveedor (se paga aparte); `sincronizarDeudasEnvio()` ya no lo incluye. Solo el flete de venta de camote jal/nay va a la cuenta por cobrar del cliente.
+**Regla de negocio (fletes):** el flete de **compra** NO se carga a la cuenta por pagar del proveedor (se paga aparte); `sincronizarDeudasEnvio()` no lo incluye. El flete de **venta** SÍ se le carga siempre al cliente, en los tres negocios de camote — jal, nay y com por igual.
+
+Ojo (ago-2026): hasta este cambio, la rama `com` de `sincronizarDeudasEnvio()` excluía el flete de venta, así que el envío sumaba el flete a su total pero la cuenta por cobrar salía sin él — **toda** operación de comercializadora cobraba de menos, no solo los despachos de almacén. No hubo migración: el único caso histórico con flete de venta ya estaba capturado bien.
+
+**Folio Negocio junto al Folio Cliente en la cuenta.** `deudaFolioNegocio(d)` busca el envío por `d.refId` y devuelve su `e.num` (vacío si no hay envío, o si ya es igual al `folioExterno`). Se pinta en las dos vistas de cuenta — `abrirDeudaContraparte()` (fifo) y `renderModalCorriente()` (corriente) — porque el modo depende de la contraparte, no del origen del movimiento. Hace falta porque un despacho que cruza negocios crea **dos** cargos con el **mismo** Folio Cliente, y sin distinguirlos se leen como una captura duplicada. Es derivado: sin campos ni columnas nuevas.
 
 **Histórico importado.** Los movimientos migrados del Excel original tienen `ref_kind:'importado'` e ids `9000000000000xx`. La migración fue única (ago-2026); no hay código de importación de Excel en la app.
 
@@ -249,10 +253,10 @@ Ojo con el orden en el markup: la insignia tiene que ir **antes** del `.kpi-lbl`
 ## Acoplamientos entre módulos
 
 - **Envío → gastos.** `generarGastosCosechaDesdeEnvio()` crea gastos con `autoGen:true` a partir de un envío de camote, prorrateando flete/cosecha/arado/desvarada por hectáreas de cada sector. Los ids resultantes se guardan en el envío para poder actualizarlos o borrarlos al reeditar. **No editar a mano un gasto con `autoGen:true`**: se sobreescribe al guardar el envío de origen.
-- **Envío → deudas.** `sincronizarDeudasEnvio()` crea/actualiza las deudas del envío (cobrar en camote jal/nay; cobrar + pagar en comercializadora, esta última sin flete de compra); `borrarDeudasDeEnvio()` las limpia. Si el cliente/proveedor no existe en el catálogo de contrapartes, se crea solo con modo `fifo` y clave vacía.
+- **Envío → deudas.** `sincronizarDeudasEnvio()` crea/actualiza las deudas del envío (cobrar en camote jal/nay; cobrar + pagar en comercializadora, esta última sin flete de compra); `borrarDeudasDeEnvio()` las limpia. Si el cliente/proveedor no existe en el catálogo de contrapartes, se crea solo con modo `fifo` y clave vacía. La cuenta por cobrar lleva el flete de venta en los tres negocios (ver "Regla de negocio (fletes)").
 - **Almacén → envíos.** Un despacho de lotes puede generar **varios** envíos de golpe, uno por negocio de origen, con el flete prorrateado entre ellos.
 
-  El campo del lote se sigue llamando `loc` en los datos, pero en la UI la etiqueta es **Negocio** y acepta tres valores: `jal`, `nay` y `com` (Comercializadora, agregada en ago-2026). **`ALM_LOC_LBL` es la fuente única**: de ahí salen la etiqueta con emoji (`almLocLbl()`), la clase CSS del chip y del color de kg (`almLocCls()`) y los grupos del modal de despacho (`renderDgLotesList()`). Agregar un negocio al almacén es agregar una línea a ese objeto — antes la etiqueta se resolvía con un ternario `loc==='nay'?Nayarit:Jalisco` repetido en tres lugares, que rotulaba como Jalisco cualquier valor nuevo, y la lista del despacho tenía los grupos en duro, así que los lotes del negocio faltante quedaban **invisibles para despachar** aunque estuvieran en almacén.
+  El campo del lote se sigue llamando `loc` en los datos, pero en la UI la etiqueta es **Negocio** y acepta tres valores: `jal`, `nay` y `com` (Comercializadora, agregada en ago-2026). **`ALM_LOC_LBL` es la fuente única**: de ahí salen la etiqueta con emoji (`almLocLbl()`), la clase CSS del chip y del color de kg (`almLocCls()`) y los chips del reparto del despacho (`dgRepartoHtml()`). Agregar un negocio al almacén es agregar una línea a ese objeto — antes la etiqueta se resolvía con un ternario `loc==='nay'?Nayarit:Jalisco` repetido en tres lugares, que rotulaba como Jalisco cualquier valor nuevo.
 
   Comercializadora no tiene sectores propios: `SECTORES` no trae `com_camote`, así que `buildAlmSectorSelect()` deja solo "— Sin sector —". La numeración de sus envíos ya funcionaba (`PREFIJOS.com='Comer'`).
 
@@ -274,7 +278,19 @@ Ojo con el orden en el markup: la insignia tiene que ir **antes** del `.kpi-lbl`
 
   **Editar un lote com abre la compra completa**, no ese lote suelto (`editarLote()` carga todos sus hermanos por `compraId` y el título dice "Editar compra"). Es obligatorio: recalcular el gasto y la cuenta por pagar viendo una sola variedad los dejaría incompletos. Quitar una variedad que ya tiene despachos está bloqueado — la mercancía ya salió del almacén.
 
-  **El despacho sugiere `precioEst`**: `dgToggleLote()` prellena el precio con el estimado que se capturó al comprar el lote, y queda editable.
+  **El despacho se captura por variedad, no por lote** (ago-2026, spec en `docs/superpowers/specs/2026-08-14-despacho-almacen-por-variedad-design.md`). El usuario escribe lo que *vendió* — variedad, kg, precio — y la app resuelve de qué lotes sale. Estado en `dgVentas` (`[{variedad, kg, precio, reparto:[{loteId,kg}], manual}]`).
+
+  El reparto es **FIFO puro**: `dgLotesDeVariedad()` ordena por `fecha` ascendente **sin importar el negocio** (empates por `id`, o sea por orden de captura) y `dgRepartoFifo()` va llenando hasta completar los kg. Es lo correcto con producto en frío: sale primero lo que lleva más tiempo guardado. El reparto se pinta siempre y es editable; tocarlo pone `manual:true` y aparece un botón "↺ automático" para volver al FIFO.
+
+  `dgVariedadesDisp()` **unifica negocios**: una variedad que está en un lote de com y en otro de jal aparece una sola vez, con la suma de sus kg. Esa unificación es el punto del cambio — el usuario piensa "vendí 1,500 kg de blanco", no "500 de este lote y 1,000 del otro".
+
+  **Dos renglones de la misma variedad están bloqueados**: cada uno repartiría sobre los mismos lotes y se descontarían kg de más.
+
+  El precio se sugiere con el `precioEst` del lote más viejo (`dgPrecioSugerido()`), que es el primero que va a salir, y queda editable. El precio es **por variedad**, uno solo para toda la venta aunque salga de varios lotes.
+
+  **`dgSetKg()` repinta solo el bloque del reparto** (`renderDgReparto`), no la línea completa, y `dgSetRepartoKg()` solo el aviso: repintar todo en cada tecla le quitaría el foco al input que se está escribiendo. Mismo motivo por el que el precio se muta inline con `dgVentas[i].precio=this.value;recalcDespachoGeneral()`, como ya hacía el formulario comer.
+
+  **El despacho captura Folio Cliente** (`dg-folio`) y lo escribe **igual en todos** los envíos que genere. Es lo único que amarra como una sola venta a los dos envíos que salen cuando el reparto cruza negocios.
 
 - **Almacén: lote com = compra de comercializadora** (ago-2026, spec en `docs/superpowers/specs/2026-08-11-compra-almacen-comercializadora-design.md`). El lote lleva campos extra — `proveedor`, `precioCompra`, `fleteCompra`, `gastoIds`, más `compraId`/`kgPagar`/`descPct` — visibles solo cuando el Negocio es `com` (`onAlmLocChange()` muestra/oculta `#af-com-fields`; en jal/nay se ignoran al guardar). Persistencia dual cableada en los cuatro lugares (columnas `proveedor`/`precio_compra`/`flete_compra`/`gasto_ids`/`compra_id`/`kg_pagar`/`desc_pct` en `alm_lotes`).
 
@@ -282,7 +298,11 @@ Ojo con el orden en el markup: la insignia tiene que ir **antes** del `.kpi-lbl`
 
   **`idsHuerfanos` no es opcional cuando se borra un lote.** La función junta los `gastoIds` recorriendo los lotes vivos de la compra; si se borra el **último**, no queda de dónde sacarlos y sus gastos sobrevivirían para siempre (la deuda sí se limpia, va por `refId`). Por eso `confirmDelLote()` captura `loteDel.gastoIds` *antes* de quitarlo y los pasa. Ese bug existió y se corrigió al detectarlo probando.
 
-  **Todo despacho de almacén genera la cuenta por cobrar del cliente** vía `sincronizarDeudasEnvio(envioObj)` (jal/nay con flete de venta; com sin flete). Los envíos de lotes com llevan `esComer:true` (se clasifican como operación comer en Ventas/reportes) y **sin** `proveedor` — la por pagar nació con el lote. Borrar el envío limpia su cobrar (`delEnvio` → `borrarDeudasDeEnvio`, ya existía).
+  **Todo despacho de almacén genera la cuenta por cobrar del cliente** vía `sincronizarDeudasEnvio(envioObj)`, **con el flete de venta en los tres negocios**. Los envíos de lotes com llevan `esComer:true` (se clasifican como operación comer en Ventas/reportes) y **sin** `proveedor` — la por pagar nació con el lote. Borrar el envío limpia su cobrar (`delEnvio` → `borrarDeudasDeEnvio`, ya existía).
+
+  **No agregarle `proveedor` al envío de un despacho**, por dos razones: con reparto FIFO un envío puede traer camote de varias compras a proveedores distintos, así que un campo de un solo valor mentiría; y `sincronizarDeudasEnvio()` dispara la cuenta por pagar con solo ver que el envío traiga `proveedor`, así que crearía una **segunda** por pagar por el mismo monto. El origen se **deriva** de `loteIds` en `envioOrigenHtml()`, que lo pinta en el detalle del envío (negocio, fecha de entrada, kg y proveedor si es com). `partidas[k]` corresponde a `loteIds[k]` — `confirmarDespachoGeneral()` los arma juntos.
+
+  **La venta por almacén queda idéntica a una operación comer directa.** Verificado con 1,000 kg a $80 de compra y $110 de venta: mismos gastos (Compra Mercancía $80,000 + Fletes $5,000), misma por pagar ($80,000 sin flete de compra), misma por cobrar ($122,000 con flete de venta), mismo folio `Comer/…` y mismo margen. La única diferencia es que el gasto y la por pagar llevan la **fecha de entrada al almacén**, no la de la venta — es lo correcto (se debe desde que se recibió), pero si la entrada y la venta caen en ciclos distintos, gasto e ingreso se reportan en periodos distintos.
 - **Frambuesa: registros → nómina → finanzas.** `framFinanzas` guarda en `gastoIds` las referencias a los gastos que generó, para el mismo ciclo de vida que arriba.
 
 - **Envíos cancelados** (ago-2026, spec en `docs/superpowers/specs/2026-08-11-envios-cancelados-design.md`). El envío lleva `cancelado` / `motivoCancelacion` / `fechaCancelacion` (persistencia dual completa). Un envío cancelado **no se borra**: conserva sus dos folios y, sobre todo, **mantiene el consecutivo reservado** — `getNextNumEnvio()` saca el siguiente número escaneando los envíos existentes, así que borrarlo haría que otro envío heredara ese folio.

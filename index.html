@@ -7743,6 +7743,31 @@ function renderEnvios(){
   });
 }
 
+// De donde salio un envio de despacho. Se DERIVA de loteIds y no se guarda un
+// campo proveedor en el envio, por dos razones: con reparto FIFO un envio puede
+// traer camote de varias compras a proveedores distintos, y ademas ponerle
+// proveedor dispararia una SEGUNDA cuenta por pagar en sincronizarDeudasEnvio,
+// cuando la del almacen ya nacio con la compra (sincronizarCompra).
+// partidas[k] corresponde a loteIds[k]: confirmarDespachoGeneral los arma juntos.
+function envioOrigenHtml(e){
+  if(!e || !e.esDespachoAlm || !(e.loteIds||[]).length) return '';
+  var filas=e.loteIds.map(function(id, k){
+    var l=almLotes.filter(function(x){return String(x.id)===String(id);})[0];
+    if(!l) return '';
+    var p=(e.partidas||[])[k];
+    var kg=p?(parseFloat(p.pesoNeto)||0):0;
+    return '<div style="display:flex;align-items:center;gap:8px;padding:3px 0">'+
+      '<span class="chip '+almLocCls(l.loc)+'" style="flex-shrink:0">'+almLocLbl(l.loc)+'</span>'+
+      '<span style="flex:1;min-width:0;font-size:11px;color:var(--text3)">entró '+(l.fechaLbl||'')+(l.proveedor?' · '+l.proveedor:'')+'</span>'+
+      (kg?'<span style="font-family:var(--mono);font-size:12px;color:var(--text)">'+kg.toLocaleString('es-MX')+' kg</span>':'')+
+    '</div>';
+  }).join('');
+  if(!filas) return '';
+  return '<div style="margin-top:12px;padding-top:8px;border-top:1px solid var(--border)">'+
+    '<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Origen · Almacén</div>'+
+    filas+'</div>';
+}
+
 function verEnvio(e){
   envioActual=e;
   var locNames={jal:'Jalisco',nay:'Nayarit',com:'Comercial.'};
@@ -7783,6 +7808,7 @@ function verEnvio(e){
       '</tr></thead>'+
       '<tbody>'+rows+'</tbody>'+
     '</table></div>'+
+    envioOrigenHtml(e)+
     '<div style="display:flex;gap:8px;margin-top:14px">'+
     '<button class="ven-del-btn" style="flex:1;margin-top:0;border-color:var(--green-border);color:var(--green)" onmouseover="this.style.background=\'var(--green-bg)\'" onmouseout="this.style.background=\'none\'" onclick="editarEnvio(envioActual)">✏️ Editar</button>'+
     (e.cancelado?
@@ -8028,7 +8054,9 @@ function sincronizarDeudasEnvio(e){
         var m=r2((parseFloat(p.kgRecibidos)||parseFloat(p.pesoNeto)||0)*(parseFloat(p.precioVenta)||parseFloat(p.precio)||0));
         if(m>0) itC.push({concepto:'Venta '+(p.variedad||''), monto:m});
       });
-      // Comercializadora: cuentas por cobrar = solo la venta del camote, SIN el flete de venta.
+      // El flete de VENTA siempre se le cobra al cliente, en los tres negocios de camote.
+      // El que nunca se le carga a la contraparte es el flete de COMPRA: se paga aparte.
+      var fcv=parseFloat(e.flete)||0; if(fcv>0) itC.push({concepto:'Fletes', monto:r2(fcv)});
       var totC=itC.reduce(function(a,i){return a+i.monto;},0);
       if(totC>0) nuevas.push({id:e.id*10+2, tipo:'cobrar', contraparte:e.cliente, fecha:e.fecha, ciclo:e.ciclo||'',
         origen:'comercializadora', folioExterno:folioExt, refId:e.id, refKind:'com_cobrar', items:itC, monto:r2(totC), desc:''});
@@ -8415,6 +8443,16 @@ function renderDeudas(){
   }
 }
 
+// El Folio Cliente se repite entre los envios de una misma venta: un despacho de
+// almacen crea un envio por negocio y les pone el mismo a todos. Sin el Folio
+// Negocio al lado, esos cargos se ven identicos y se leen como captura duplicada.
+function deudaFolioNegocio(d){
+  if(!d || !d.refId) return '';
+  var e=envios.find(function(x){return String(x.id)===String(d.refId);});
+  if(!e || !e.num) return '';
+  return (e.num===d.folioExterno)?'':e.num;
+}
+
 function abrirDeudaContraparte(tipo, nombre){
   deudaModalTipo=tipo; deudaModalNombre=nombre;
   if(cpModo(tipo,nombre)==='corriente') renderModalCorriente(tipo,nombre);
@@ -8442,7 +8480,7 @@ function renderModalFifo(tipo, nombre){
     html+='<div style="border:0.5px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden">';
     html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px">'+
       '<div style="min-width:0"><div style="font-size:13px;font-weight:600;font-family:var(--mono);color:var(--text)">'+(d.folioExterno||(d.origen==='manual'?'Manual':d.origen))+'</div>'+
-      '<div style="font-size:11px;color:var(--text3)">'+fmtFechaCorta(d.fecha)+'</div></div>'+
+      '<div style="font-size:11px;color:var(--text3)">'+fmtFechaCorta(d.fecha)+(deudaFolioNegocio(d)?' · '+deudaFolioNegocio(d):'')+'</div></div>'+
       '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">'+
       ((!s.liquidada && tipo==='cobrar' && (d.origen==='camote'||d.origen==='comercializadora')) ? diasDeudaBadge(d.fecha) : '')+
       '<span class="deuda-estatus" style="background:'+(s.liquidada?'var(--green-bg)':'var(--fram-bg)')+';color:'+(s.liquidada?'var(--green)':'var(--fram)')+'">'+(s.liquidada?'Liquidado':'Pendiente')+'</span>'+
@@ -8508,7 +8546,7 @@ function renderModalCorriente(tipo, nombre){
     var esAuto=m.esCargo && m.obj.origen && m.obj.origen!=='manual' && m.obj.origen!=='importado';
     html+='<tr style="border-top:0.5px solid var(--border)">'+
       '<td style="padding:6px 4px;white-space:nowrap;color:var(--text3)">'+fmtFechaCorta(m.fecha)+'</td>'+
-      '<td style="padding:6px 4px;color:var(--text2)">'+m.concepto+(m.ref?' <span style="color:var(--text3);font-family:var(--mono);font-size:10px">'+m.ref+'</span>':'')+(esAuto?' <span style="font-size:9px;color:var(--text3)">auto · envío</span>':'')+'</td>'+
+      '<td style="padding:6px 4px;color:var(--text2)">'+m.concepto+(m.ref?' <span style="color:var(--text3);font-family:var(--mono);font-size:10px">'+m.ref+'</span>':'')+((m.esCargo&&deudaFolioNegocio(m.obj))?' <span style="color:var(--text3);font-family:var(--mono);font-size:10px">'+deudaFolioNegocio(m.obj)+'</span>':'')+(esAuto?' <span style="font-size:9px;color:var(--text3)">auto · envío</span>':'')+'</td>'+
       '<td style="padding:6px 4px;text-align:right;font-family:var(--mono);color:'+(m.esCargo?'var(--fram)':'var(--text3)')+'">'+(m.esCargo?fmtMon(m.cargo,mon):'')+'</td>'+
       (tieneInteres?'<td style="padding:6px 4px;text-align:right;font-family:var(--mono);color:var(--text3)">'+(m.interes>0?fmtMon(m.interes,mon):'')+'</td>':'')+
       '<td style="padding:6px 4px;text-align:right;font-family:var(--mono);color:'+(!m.esCargo?'var(--green)':'var(--text3)')+'">'+(!m.esCargo?fmtMon(m.abono,mon):'')+'</td>'+
@@ -11583,10 +11621,65 @@ function guardarCompraAlm(fechaISO,fechaLbl,cicloV,notas){
 }
 
 // ── modal despacho general (multi-lote, multi-ubicación) ──
-var dgSel = {}; // {loteId: {kg, precio}}
+// ── despacho: se captura lo que se VENDIO, no de que lote sale ──
+// El usuario escribe variedad + kg + precio; la app propone de que lotes salen
+// esos kg por fecha de entrada al almacen (el mas viejo primero, sin importar el
+// negocio) y el reparto queda editable. Es lo correcto con producto en frio.
+var dgVentas = []; // [{variedad, kg, precio, reparto:[{loteId,kg}], manual}]
+
+function dgLotesDisponibles(){
+  return almLotes.filter(function(l){ return !l.cerrado && almKgDisponibles(l)>0.009; });
+}
+
+// Lotes de una variedad en orden FIFO. Empates de fecha se desempatan por id,
+// o sea por orden de captura.
+function dgLotesDeVariedad(variedad){
+  return dgLotesDisponibles().filter(function(l){ return l.variedad===variedad; })
+    .sort(function(a,b){
+      var fa=a.fecha||'', fb=b.fecha||'';
+      if(fa!==fb) return fa<fb?-1:1;
+      return (a.id||0)-(b.id||0);
+    });
+}
+
+// Variedades con existencia, UNIFICANDO negocios: una variedad que esta en un
+// lote de com y en otro de jal aparece una sola vez, con la suma de sus kg.
+function dgVariedadesDisp(){
+  var mapa={}, orden=[];
+  dgLotesDisponibles().forEach(function(l){
+    var v=l.variedad||'';
+    if(!mapa[v]){ mapa[v]={variedad:v, kgDisp:0}; orden.push(v); }
+    mapa[v].kgDisp+=almKgDisponibles(l);
+  });
+  return orden.sort().map(function(v){ return mapa[v]; });
+}
+
+function dgKgDispVariedad(variedad){
+  return dgLotesDeVariedad(variedad).reduce(function(a,l){ return a+almKgDisponibles(l); },0);
+}
+
+// Precio sugerido: el estimado del lote mas viejo, que es el primero que sale.
+function dgPrecioSugerido(variedad){
+  var ls=dgLotesDeVariedad(variedad);
+  return (ls.length && parseFloat(ls[0].precioEst)>0) ? ls[0].precioEst : '';
+}
+
+function dgRepartoFifo(variedad, kg){
+  var falta=parseFloat(kg)||0, out=[];
+  dgLotesDeVariedad(variedad).forEach(function(l){
+    if(falta<=0.009) return;
+    var toma=Math.round(Math.min(almKgDisponibles(l), falta)*100)/100;
+    if(toma>0.009){ out.push({loteId:l.id, kg:toma}); falta-=toma; }
+  });
+  return out;
+}
+
+function dgSumaReparto(v){
+  return (v.reparto||[]).reduce(function(a,r){ return a+(parseFloat(r.kg)||0); },0);
+}
 
 function abrirDespachoGeneral(preselectLoteId){
-  dgSel = {};
+  dgVentas = [];
   document.getElementById('mo-title').innerHTML='📦 Nuevo despacho';
   document.getElementById('mo-body').innerHTML=
     '<div style="margin-bottom:8px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Datos del despacho</div>'+
@@ -11597,15 +11690,22 @@ function abrirDespachoGeneral(preselectLoteId){
       '</div></div>'+
     '<div class="field" style="margin-bottom:10px"><label>Cliente</label>'+
       '<input type="text" id="dg-cliente" placeholder="Nombre del cliente" style="width:100%"></div>'+
+    '<div class="field" style="margin-bottom:10px"><label>Folio Cliente</label>'+
+      '<input type="text" id="dg-folio" placeholder="B&amp;M/2026/017" style="width:100%">'+
+      '<div class="sector-hint">Si la venta sale de lotes de varios negocios se crea un envío por negocio; este folio es el mismo en todos y es lo que los amarra como una sola venta.</div>'+
+    '</div>'+
     '<div class="field" style="margin-bottom:14px"><label>Flete de venta ($)</label>'+
       '<div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="dg-flete" placeholder="0" min="0" step="0.01" oninput="recalcDespachoGeneral()"></div>'+
-      '<div class="sector-hint">Si despachas lotes de Jalisco y Nayarit a la vez, el flete se reparte entre ambos envíos según su valor.</div>'+
+      '<div class="sector-hint">Siempre se le cobra al cliente. Si salen varios envíos, se reparte entre ellos según su valor.</div>'+
     '</div>'+
-    '<div style="margin-bottom:8px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Lotes a despachar</div>'+
-    '<div id="dg-lotes-list"></div>'+
+    '<div style="margin-bottom:8px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Venta — por variedad</div>'+
+    '<div id="dg-ventas"></div>'+
     '<div id="dg-resumen" style="display:none;padding:10px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--radius);margin:14px 0">'+
-      '<div style="font-size:11px;color:var(--text3);margin-bottom:2px">TOTAL ESTIMADO (incluye flete)</div>'+
-      '<div id="dg-resumen-val" style="font-size:16px;font-weight:700;color:var(--green);font-family:var(--mono)">$0</div>'+
+      '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:2px"><span>Total venta</span><span id="dg-res-venta" style="font-family:var(--mono)">$0</span></div>'+
+      '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:4px"><span>Flete de venta</span><span id="dg-res-flete" style="font-family:var(--mono)">$0</span></div>'+
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--green-border);padding-top:4px">'+
+        '<span style="font-size:11px;color:var(--text3)">TOTAL</span>'+
+        '<span id="dg-resumen-val" style="font-size:16px;font-weight:700;color:var(--green);font-family:var(--mono)">$0</span></div>'+
     '</div>'+
     '<button onclick="confirmarDespachoGeneral()" class="btn-main">📦 Confirmar despacho y crear envío</button>';
   // fecha hoy
@@ -11615,92 +11715,156 @@ function abrirDespachoGeneral(preselectLoteId){
     var df=document.getElementById('dg-fecha'); if(df) df.value=isoToDisplay(isoStr);
     var dfp=document.getElementById('dg-fecha-picker'); if(dfp) dfp.value=isoStr;
   },10);
-  renderDgLotesList();
-  if(preselectLoteId){ dgToggleLote(preselectLoteId, true); }
+  // Despachar desde un lote concreto: se prellena con lo que le queda y el reparto
+  // se fija a ese lote, para no sorprender sacando de otro distinto por FIFO.
+  if(preselectLoteId){
+    var lp=almLotes.find(function(l){return l.id===preselectLoteId;});
+    if(lp){
+      var kgp=Math.round(almKgDisponibles(lp)*100)/100;
+      dgVentas.push({variedad:lp.variedad, kg:kgp, precio:(lp.precioEst||''), reparto:[{loteId:lp.id, kg:kgp}], manual:true});
+    }
+  }
+  if(!dgVentas.length) dgVentas.push({variedad:'', kg:'', precio:'', reparto:[], manual:false});
+  renderDgVentas();
   document.getElementById('overlay').classList.add('open');
 }
 
-function renderDgLotesList(){
-  var cont=document.getElementById('dg-lotes-list'); if(!cont) return;
-  var data=almLotes.filter(function(l){return !l.cerrado && almKgDisponibles(l)>0.009;});
-  if(!data.length){ cont.innerHTML='<div style="font-size:12px;color:var(--text3);padding:10px 0">Sin lotes disponibles en almacén.</div>'; return; }
-  // Un negocio que falte aqui deja sus lotes invisibles en el despacho, aunque
-  // esten en almacen: se derivan de ALM_LOC_LBL para que no se pueda olvidar.
-  var grupos=Object.keys(ALM_LOC_LBL).map(function(k){return {loc:k, lbl:ALM_LOC_LBL[k]};});
-  cont.innerHTML = grupos.map(function(grp){
-    var lotesGrp=data.filter(function(l){return l.loc===grp.loc;});
-    if(!lotesGrp.length) return '';
-    return '<div style="font-size:11px;font-weight:600;color:var(--text3);margin:10px 0 6px">'+grp.lbl+'</div>'+
-      lotesGrp.map(function(lote){
-        var kgDisp=almKgDisponibles(lote);
-        var checked = !!dgSel[lote.id];
-        return '<div class="alm-lote" style="padding:10px 12px;margin-bottom:8px" id="dg-row-'+lote.id+'">'+
-          '<label style="display:flex;align-items:center;gap:8px;cursor:pointer">'+
-            '<input type="checkbox" id="dg-chk-'+lote.id+'" '+(checked?'checked':'')+' onchange="dgToggleLote('+lote.id+',this.checked)" style="width:16px;height:16px;flex-shrink:0">'+
-            '<div style="flex:1">'+
-              '<div style="font-size:13px;font-weight:600;color:var(--text)">'+lote.variedad+(lote.sector?' · Sector '+lote.sector:'')+'</div>'+
-              '<div style="font-size:11px;color:var(--text3)">Disponible: '+kgDisp.toLocaleString('es-MX')+' kg'+(lote.hectareas?' · '+lote.hectareas+' ha':'')+'</div>'+
-            '</div>'+
-          '</label>'+
-          '<div id="dg-fields-'+lote.id+'" style="display:'+(checked?'flex':'none')+';gap:8px;margin-top:10px">'+
-            '<div class="field" style="flex:1;margin-bottom:0"><label>Kg a despachar</label><input type="number" id="dg-kg-'+lote.id+'" placeholder="0" max="'+kgDisp+'" min="0" step="0.01" value="'+(checked&&dgSel[lote.id].kg?dgSel[lote.id].kg:'')+'" oninput="dgUpdateField('+lote.id+')"></div>'+
-            '<div class="field" style="flex:1;margin-bottom:0"><label>Precio $/kg</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="dg-precio-'+lote.id+'" placeholder="'+lote.precioEst+'" min="0" step="0.01" value="'+(checked&&dgSel[lote.id].precio?dgSel[lote.id].precio:'')+'" oninput="dgUpdateField('+lote.id+')"></div></div>'+
-          '</div>'+
-          (lote.hectareas?'<div id="dg-ha-'+lote.id+'" class="sector-hint" style="display:none;margin-top:6px"></div>':'')+
-        '</div>';
-      }).join('');
-  }).join('');
+function renderDgVentas(){
+  var cont=document.getElementById('dg-ventas'); if(!cont) return;
+  var vars=dgVariedadesDisp();
+  if(!vars.length){ cont.innerHTML='<div style="font-size:12px;color:var(--text3);padding:10px 0">Sin lotes disponibles en almacén.</div>'; return; }
+  cont.innerHTML = dgVentas.map(function(v, idx){
+    var opts='<option value="">— Variedad —</option>'+vars.map(function(o){
+      return '<option value="'+o.variedad+'"'+(v.variedad===o.variedad?' selected':'')+'>'+o.variedad+' ('+Math.round(o.kgDisp).toLocaleString('es-MX')+' kg)</option>';
+    }).join('');
+    return '<div class="alm-lote" style="padding:10px 12px;margin-bottom:8px">'+
+      '<div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:8px">'+
+        '<div class="field" style="flex:1;margin-bottom:0"><label>Variedad</label>'+
+          '<select onchange="dgSetVariedad('+idx+',this.value)" style="width:100%">'+opts+'</select></div>'+
+        (dgVentas.length>1?'<button onclick="dgDelVenta('+idx+')" style="padding:9px 10px;border-radius:var(--radius);border:1px solid var(--fram-border);background:none;color:var(--fram);font-size:13px;cursor:pointer;font-family:var(--font);flex-shrink:0">🗑</button>':'')+
+      '</div>'+
+      '<div style="display:flex;gap:8px">'+
+        '<div class="field" style="flex:1;margin-bottom:0"><label>Kg vendidos</label>'+
+          '<input type="number" placeholder="0" min="0" step="0.01" value="'+(v.kg||'')+'" oninput="dgSetKg('+idx+',this.value)"></div>'+
+        '<div class="field" style="flex:1;margin-bottom:0"><label>Precio $/kg</label>'+
+          '<div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" placeholder="0" min="0" step="0.01" value="'+(v.precio||'')+'" oninput="dgVentas['+idx+'].precio=this.value;recalcDespachoGeneral()"></div></div>'+
+        '<div class="field" style="flex:1;margin-bottom:0"><label>Subtotal</label>'+
+          '<div id="dg-sub-'+idx+'" style="padding:10px 12px;background:var(--green-bg);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--green);font-family:var(--mono)">$0.00</div></div>'+
+      '</div>'+
+      '<div id="dg-rep-'+idx+'">'+dgRepartoHtml(idx)+'</div>'+
+    '</div>';
+  }).join('')+
+  '<button onclick="dgAddVenta()" style="width:100%;padding:9px;border-radius:var(--radius);border:1.5px dashed var(--green-border);background:none;color:var(--green);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">+ Agregar variedad</button>';
+  recalcDespachoGeneral();
 }
 
-function dgToggleLote(loteId, isChecked){
-  var fields=document.getElementById('dg-fields-'+loteId);
-  if(isChecked){
-    if(!dgSel[loteId]) dgSel[loteId]={kg:'',precio:''};
-    // Sugerir el precio estimado que se capturo al comprar el lote; queda editable.
-    if(!dgSel[loteId].precio){
-      var loteSel=almLotes.find(function(l){return l.id===loteId;});
-      if(loteSel && parseFloat(loteSel.precioEst)>0){
-        dgSel[loteId].precio=loteSel.precioEst;
-        var pEl=document.getElementById('dg-precio-'+loteId);
-        if(pEl) pEl.value=loteSel.precioEst;
-      }
-    }
-    if(fields) fields.style.display='flex';
-    var chk=document.getElementById('dg-chk-'+loteId); if(chk) chk.checked=true;
-  } else {
-    delete dgSel[loteId];
-    if(fields) fields.style.display='none';
+// El reparto se pinta siempre que haya variedad elegida: es la unica forma de
+// que el usuario vea de donde va a salir el camote antes de confirmar.
+function dgRepartoHtml(idx){
+  var v=dgVentas[idx]; if(!v || !v.variedad) return '';
+  var lotes=dgLotesDeVariedad(v.variedad);
+  if(!lotes.length) return '';
+  var filas=lotes.map(function(l){
+    var r=(v.reparto||[]).find(function(x){return x.loteId===l.id;});
+    return '<div style="display:flex;align-items:center;gap:8px;padding:3px 0">'+
+      '<span class="chip '+almLocCls(l.loc)+'" style="flex-shrink:0">'+almLocLbl(l.loc)+'</span>'+
+      '<span style="flex:1;min-width:0;font-size:11px;color:var(--text3)">entró '+(l.fechaLbl||'')+' · '+Math.round(almKgDisponibles(l)).toLocaleString('es-MX')+' kg disp.'+(l.proveedor?' · '+l.proveedor:'')+'</span>'+
+      '<input type="number" placeholder="0" min="0" step="0.01" value="'+(r?r.kg:'')+'" oninput="dgSetRepartoKg('+idx+','+l.id+',this.value)" style="width:88px;flex-shrink:0">'+
+    '</div>';
+  }).join('');
+  return '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'+
+      '<span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">De dónde sale</span>'+
+      (v.manual?'<button onclick="dgResetReparto('+idx+')" style="background:none;border:none;color:var(--green);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);padding:0">↺ automático</button>'
+               :'<span style="font-size:10px;color:var(--text3)">más viejo primero</span>')+
+    '</div>'+filas+
+    '<div id="dg-avi-'+idx+'"></div></div>';
+}
+
+function dgAvisoHtml(idx){
+  var v=dgVentas[idx]; if(!v || !v.variedad) return '';
+  var kg=parseFloat(v.kg)||0;
+  if(!kg) return '';
+  var dif=Math.round((kg-dgSumaReparto(v))*100)/100;
+  if(Math.abs(dif)<=0.01) return '';
+  return '<div style="font-size:11px;color:var(--fram);margin-top:4px">'+
+    (dif>0?'Faltan '+dif.toLocaleString('es-MX')+' kg por repartir':'Sobran '+Math.abs(dif).toLocaleString('es-MX')+' kg en el reparto')+'</div>';
+}
+
+function renderDgReparto(idx){
+  var el=document.getElementById('dg-rep-'+idx);
+  if(el) el.innerHTML=dgRepartoHtml(idx);
+}
+
+function dgAddVenta(){
+  dgVentas.push({variedad:'', kg:'', precio:'', reparto:[], manual:false});
+  renderDgVentas();
+}
+
+function dgDelVenta(idx){
+  dgVentas.splice(idx,1);
+  if(!dgVentas.length) dgVentas.push({variedad:'', kg:'', precio:'', reparto:[], manual:false});
+  renderDgVentas();
+}
+
+function dgSetVariedad(idx, val){
+  var v=dgVentas[idx]; if(!v) return;
+  v.variedad=val; v.manual=false;
+  if(!v.precio) v.precio=dgPrecioSugerido(val);
+  v.reparto=dgRepartoFifo(val, v.kg);
+  renderDgVentas();
+}
+
+// Solo se repinta el bloque del reparto, no la linea completa: repintar todo en
+// cada tecla le quitaria el foco al input de kg que el usuario esta escribiendo.
+function dgSetKg(idx, val){
+  var v=dgVentas[idx]; if(!v) return;
+  v.kg=val;
+  if(!v.manual) v.reparto=dgRepartoFifo(v.variedad, val);
+  renderDgReparto(idx);
+  recalcDespachoGeneral();
+}
+
+// Tocar el reparto a mano lo saca del automatico hasta que se pida volver.
+function dgSetRepartoKg(idx, loteId, val){
+  var v=dgVentas[idx]; if(!v) return;
+  v.manual=true;
+  var r=(v.reparto||[]).find(function(x){return x.loteId===loteId;});
+  if(r) r.kg=val; else v.reparto.push({loteId:loteId, kg:val});
+  var enc=document.getElementById('dg-rep-'+idx);
+  if(enc){ // repintar solo el encabezado costaria el foco: basta actualizar el aviso
+    var av=document.getElementById('dg-avi-'+idx); if(av) av.innerHTML=dgAvisoHtml(idx);
   }
   recalcDespachoGeneral();
 }
 
-function dgUpdateField(loteId){
-  var kgEl=document.getElementById('dg-kg-'+loteId), precioEl=document.getElementById('dg-precio-'+loteId);
-  if(!dgSel[loteId]) dgSel[loteId]={kg:'',precio:''};
-  dgSel[loteId].kg = kgEl?kgEl.value:'';
-  dgSel[loteId].precio = precioEl?precioEl.value:'';
-  var lote=almLotes.find(function(l){return l.id===loteId;});
-  var hint=document.getElementById('dg-ha-'+loteId);
-  if(hint && lote){
-    var kg=parseFloat(dgSel[loteId].kg)||0;
-    var ha=almHectareasDespacho(lote, kg);
-    if(kg && ha){ hint.style.display='block'; hint.textContent='≈ '+ha+' ha despachadas (de '+lote.hectareas+' ha del lote)'; }
-    else { hint.style.display='none'; }
-  }
+function dgResetReparto(idx){
+  var v=dgVentas[idx]; if(!v) return;
+  v.manual=false;
+  v.reparto=dgRepartoFifo(v.variedad, v.kg);
+  renderDgReparto(idx);
   recalcDespachoGeneral();
 }
 
 function recalcDespachoGeneral(){
-  var flete=parseFloat(document.getElementById('dg-flete')?document.getElementById('dg-flete').value:0)||0;
+  var fEl=document.getElementById('dg-flete');
+  var flete=parseFloat(fEl?fEl.value:0)||0;
   var total=0, anySel=false;
-  Object.keys(dgSel).forEach(function(loteId){
-    var kg=parseFloat(dgSel[loteId].kg)||0, precio=parseFloat(dgSel[loteId].precio)||0;
-    if(kg&&precio){ total+=kg*precio; anySel=true; }
+  dgVentas.forEach(function(v, idx){
+    var kg=parseFloat(v.kg)||0, precio=parseFloat(v.precio)||0;
+    var sub=kg*precio;
+    var el=document.getElementById('dg-sub-'+idx); if(el) el.textContent=fmt2(sub);
+    var av=document.getElementById('dg-avi-'+idx); if(av) av.innerHTML=dgAvisoHtml(idx);
+    if(kg&&precio){ total+=sub; anySel=true; }
   });
   var res=document.getElementById('dg-resumen');
   if(res){
-    if(anySel){ res.style.display='block'; document.getElementById('dg-resumen-val').textContent=fmt(total+flete); }
-    else { res.style.display='none'; }
+    if(anySel){
+      res.style.display='block';
+      document.getElementById('dg-res-venta').textContent=fmt(total);
+      document.getElementById('dg-res-flete').textContent=fmt(flete);
+      document.getElementById('dg-resumen-val').textContent=fmt(total+flete);
+    } else { res.style.display='none'; }
   }
 }
 
@@ -11715,25 +11879,39 @@ function confirmarDespachoGeneral(){
   var fechaDisplay=document.getElementById('dg-fecha').value;
   var fechaISO=fechaEnvioToISO(fechaDisplay);
   var cliente=(document.getElementById('dg-cliente').value||'').trim();
+  var folioCliente=(document.getElementById('dg-folio').value||'').trim();
   var flete=parseFloat(document.getElementById('dg-flete').value)||0;
   if(!fechaISO){showToast('Selecciona la fecha del despacho');return;}
   if(!cliente){showToast('Ingresa el cliente');return;}
-  var loteIds=Object.keys(dgSel).map(function(k){return parseInt(k);});
-  if(!loteIds.length){showToast('Selecciona al menos un lote');return;}
-  // validar cada lote seleccionado
-  var items=[];
-  for(var i=0;i<loteIds.length;i++){
-    var loteId=loteIds[i];
-    var lote=almLotes.find(function(l){return l.id===loteId;});
-    if(!lote) continue;
-    var kg=parseFloat(dgSel[loteId].kg)||0;
-    var precio=parseFloat(dgSel[loteId].precio)||0;
-    if(!kg||!precio){showToast('Completa kg y precio de '+lote.variedad);return;}
-    var kgDisp=almKgDisponibles(lote);
-    if(kg>kgDisp+0.01){showToast('No hay suficientes kg en '+lote.variedad+' ('+kgDisp.toLocaleString('es-MX')+' kg)');return;}
-    items.push({lote:lote, kg:kg, precio:precio});
+  var lineas=dgVentas.filter(function(v){return v.variedad;});
+  if(!lineas.length){showToast('Agrega al menos una variedad');return;}
+  // Dos renglones de la misma variedad repartirian dos veces sobre los mismos
+  // lotes y se descontarian kg de mas: se capturan en un solo renglon.
+  var vistas={};
+  for(var d=0;d<lineas.length;d++){
+    if(vistas[lineas[d].variedad]){showToast('La variedad '+lineas[d].variedad+' está dos veces: júntala en un solo renglón');return;}
+    vistas[lineas[d].variedad]=1;
   }
-  if(!items.length){showToast('Selecciona al menos un lote');return;}
+  // El reparto se aplana a un item por lote; de ahi salen los envios por negocio.
+  var items=[];
+  for(var i=0;i<lineas.length;i++){
+    var v=lineas[i];
+    var kg=parseFloat(v.kg)||0, precio=parseFloat(v.precio)||0;
+    if(!kg||!precio){showToast('Completa kg y precio de '+v.variedad);return;}
+    var dispVar=dgKgDispVariedad(v.variedad);
+    if(kg>dispVar+0.01){showToast('No hay suficientes kg de '+v.variedad+' ('+dispVar.toLocaleString('es-MX')+' kg en almacén)');return;}
+    if(Math.abs(dgSumaReparto(v)-kg)>0.01){showToast('El reparto de '+v.variedad+' no suma '+kg.toLocaleString('es-MX')+' kg');return;}
+    for(var j=0;j<(v.reparto||[]).length;j++){
+      var r=v.reparto[j];
+      var kgR=parseFloat(r.kg)||0;
+      if(kgR<=0.009) continue;
+      var lote=almLotes.filter(function(l){return l.id===r.loteId;})[0];
+      if(!lote){showToast('Un lote del reparto ya no existe: vuelve a abrir el despacho');return;}
+      if(kgR>almKgDisponibles(lote)+0.01){showToast('No hay suficientes kg en el lote de '+lote.variedad+' de '+almLocLbl(lote.loc));return;}
+      items.push({lote:lote, kg:kgR, precio:precio});
+    }
+  }
+  if(!items.length){showToast('Completa el reparto');return;}
   var fechaLbl=new Date(fechaISO+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
   var despachoId=Date.now();
   agregarClienteSiNuevo(cliente);
@@ -11770,7 +11948,9 @@ function confirmarDespachoGeneral(){
     var totalConFlete=grp.totalVenta+fleteGrp;
     totalConFleteGeneral+=totalConFlete;
     var envioObj={
-      id:despachoId+900+idxGlobal, num:numEnvio, folio:'', fecha:fechaISO, fechaLbl:fechaLbl,
+      // Mismo Folio Cliente en todos los envios del despacho: es lo que los amarra
+      // como una sola venta cuando el reparto cruza negocios.
+      id:despachoId+900+idxGlobal, num:numEnvio, folio:folioCliente, fecha:fechaISO, fechaLbl:fechaLbl,
       cliente:cliente, loc:loc, ciclo:cicloV, flete:fleteGrp, fleteCompra:0, factura:'',
       loteIds:grp.items.map(function(it){return it.lote.id;}), esDespachoAlm:true,
       esComer: loc==='com', // clasifica en Ventas/reportes como operacion comer; sin proveedor (la por pagar nacio con el lote)
