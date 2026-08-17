@@ -1766,14 +1766,24 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
       <div class="step-label">2. Facturación</div>
       <div class="card" style="margin-bottom:12px">
-        <div class="field-row">
-          <div class="field">
-            <label>Cajas facturadas</label>
-            <input type="number" id="ff-cajas" placeholder="0" min="0" oninput="recalcFramFin()">
+        <div style="display:grid;grid-template-columns:1fr 1fr 28px;gap:8px;margin-bottom:6px;padding:0 2px">
+          <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Cajas facturadas</span>
+          <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Precio por caja</span>
+          <span></span>
+        </div>
+        <div id="ff-fact-list"></div>
+        <div style="margin-top:6px">
+          <button onclick="agregarFramFactRow()" title="Agregar precio"
+            style="width:28px;height:28px;border-radius:50%;border:none;background:var(--fram);color:#fff;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">+</button>
+        </div>
+        <div id="ff-fact-resumen" style="display:none;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;font-size:13px;padding:2px 0">
+            <span style="color:var(--text2);font-weight:500">Total cajas</span>
+            <span id="ff-fact-total-cajas" style="font-family:var(--mono);color:var(--text);font-weight:700">0</span>
           </div>
-          <div class="field">
-            <label>Precio por caja</label>
-            <div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="ff-precio" placeholder="0" min="0" step="0.01" style="padding-left:24px" oninput="recalcFramFin()"></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;padding:2px 0">
+            <span style="color:var(--text2);font-weight:500">Precio promedio ponderado</span>
+            <span id="ff-fact-precio-pond" style="font-family:var(--mono);color:var(--fram);font-weight:700">$0.00</span>
           </div>
         </div>
       </div>
@@ -2165,7 +2175,8 @@ async function cargarDesdeSB(){
   if(ffData && ffData.length){
     framFinanzas = ffData.map(function(f){
       return {id:f.id, ciclo:f.ciclo||'', semanaKey:f.semana_key||'', cliente:f.cliente||'',
-        cajas:f.cajas||0, precio:f.precio||0, nominaCosechadores:f.nomina_cosechadores||0,
+        cajas:f.cajas||0, precio:f.precio||0, facturacion:f.facturacion||[],
+        nominaCosechadores:f.nomina_cosechadores||0,
         nominaCosechadoresDetalle:f.nomina_cosechadores_detalle||[],
         descPrestamo:f.desc_prestamo||0, descIntereses:f.desc_intereses||0,
         descPlanta:f.desc_planta||0, descInocuidad:f.desc_inocuidad||0,
@@ -9753,6 +9764,57 @@ try{ var sff=localStorage.getItem('cc_fram_fin'); if(sff) framFinanzas=JSON.pars
 function saveFramFinanzas(){ try{localStorage.setItem('cc_fram_fin',JSON.stringify(framFinanzas));}catch(e){} }
 var framFinEditId = null;
 
+var ffFactTemp = [];
+
+function ffFactTotales(){
+  var cajas=0, monto=0;
+  ffFactTemp.forEach(function(p){
+    var c=parseFloat(p.cajas)||0, pr=parseFloat(p.precio)||0;
+    cajas+=c; monto+=c*pr;
+  });
+  return {cajas:cajas, monto:monto, precio: cajas>0 ? monto/cajas : 0};
+}
+
+function renderFramFactRows(){
+  var cont = document.getElementById('ff-fact-list');
+  if(!cont) return;
+  cont.innerHTML='';
+  ffFactTemp.forEach(function(p, idx){
+    var row = document.createElement('div');
+    row.style.cssText='display:grid;grid-template-columns:1fr 1fr 28px;gap:8px;align-items:center;margin-bottom:6px';
+    row.innerHTML =
+      '<input type="number" value="'+(p.cajas||'')+'" placeholder="0" min="0" step="1"'+
+      ' oninput="ffFactTemp['+idx+'].cajas=parseFloat(this.value)||0;recalcFramFin()"'+
+      ' style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:600;color:var(--text);font-family:var(--mono);outline:none">'+
+      '<div class="monto-wrap"><span class="monto-prefix">$</span>'+
+      '<input type="number" value="'+(p.precio||'')+'" placeholder="0" min="0" step="0.01"'+
+      ' oninput="ffFactTemp['+idx+'].precio=parseFloat(this.value)||0;recalcFramFin()"'+
+      ' style="padding-left:24px"></div>'+
+      (idx>0
+        ? '<button onclick="removeFramFactRow('+idx+')" title="Eliminar"'+
+          ' style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:none;cursor:pointer;color:var(--text3);font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0">×</button>'
+        : '<span></span>');
+    cont.appendChild(row);
+  });
+  recalcFramFin();
+}
+
+function agregarFramFactRow(){
+  ffFactTemp.push({cajas:0, precio:0});
+  renderFramFactRows();
+  setTimeout(function(){
+    var inps = document.querySelectorAll('#ff-fact-list input[type="number"]');
+    var i = (ffFactTemp.length-1)*2;
+    if(inps[i]) inps[i].focus();
+  }, 50);
+}
+
+function removeFramFactRow(idx){
+  ffFactTemp.splice(idx,1);
+  if(!ffFactTemp.length) ffFactTemp.push({cajas:0, precio:0});
+  renderFramFactRows();
+}
+
 var PRESENTACIONES_CAJA = ['6 oz','12 oz'];
 var framSectorSel = 1; // kept for compatibility
 var trabsTemp = []; // [{nombre, cubetas}]
@@ -9812,7 +9874,8 @@ async function sbSaveFramFinanza(f){
   if(!sbOnline||!sb) return;
   await sb.from('fram_finanzas').upsert({
     id:f.id, ciclo:f.ciclo||'', semana_key:f.semanaKey||'', cliente:f.cliente||'',
-    cajas:f.cajas||0, precio:f.precio||0, nomina_cosechadores:f.nominaCosechadores||0,
+    cajas:f.cajas||0, precio:f.precio||0, facturacion:f.facturacion||[],
+    nomina_cosechadores:f.nominaCosechadores||0,
     nomina_cosechadores_detalle:f.nominaCosechadoresDetalle||[],
     desc_prestamo:f.descPrestamo||0, desc_intereses:f.descIntereses||0,
     desc_planta:f.descPlanta||0, desc_inocuidad:f.descInocuidad||0,
@@ -9872,8 +9935,9 @@ function initFramFinForm(editF){
   });
 
   document.getElementById('ff-cliente').value = editF ? (editF.cliente||'') : '';
-  document.getElementById('ff-cajas').value = editF ? (editF.cajas||'') : '';
-  document.getElementById('ff-precio').value = editF ? (editF.precio||'') : '';
+  ffFactTemp = (editF && editF.facturacion && editF.facturacion.length)
+    ? editF.facturacion.map(function(p){ return {cajas:parseFloat(p.cajas)||0, precio:parseFloat(p.precio)||0}; })
+    : (editF ? [{cajas:parseFloat(editF.cajas)||0, precio:parseFloat(editF.precio)||0}] : [{cajas:0, precio:0}]);
   document.getElementById('ff-desc-prestamo').value = editF ? (editF.descPrestamo||'') : '';
   document.getElementById('ff-desc-intereses').value = editF ? (editF.descIntereses||'') : '';
   document.getElementById('ff-desc-planta').value = editF ? (editF.descPlanta||'') : '';
@@ -9885,20 +9949,28 @@ function initFramFinForm(editF){
     : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"/></svg> Guardar registro';
   if(editF) mostrarCancelarEdicion('btn-framfin-guardar', function(){ framFinEditId=null; ocultarCancelarEdicion('btn-framfin-guardar'); framTab('finhist'); });
   else ocultarCancelarEdicion('btn-framfin-guardar');
-  recalcFramFin();
+  renderFramFactRows();
 }
 
 function recalcFramFin(){
-  var cajas = parseFloat(document.getElementById('ff-cajas').value)||0;
-  var precio = parseFloat(document.getElementById('ff-precio').value)||0;
+  var t = ffFactTotales();
   var dPrestamo = parseFloat(document.getElementById('ff-desc-prestamo').value)||0;
   var dIntereses = parseFloat(document.getElementById('ff-desc-intereses').value)||0;
   var dPlanta = parseFloat(document.getElementById('ff-desc-planta').value)||0;
   var dInocuidad = parseFloat(document.getElementById('ff-desc-inocuidad').value)||0;
   var dMaterial = parseFloat(document.getElementById('ff-desc-material').value)||0;
-  var totalFacturado = cajas*precio;
   var totalDescuentos = dPrestamo+dIntereses+dPlanta+dInocuidad+dMaterial;
-  document.getElementById('ff-total-facturado').textContent = '$'+totalFacturado.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+  var res = document.getElementById('ff-fact-resumen');
+  if(res){
+    if(ffFactTemp.length>1){
+      res.style.display='block';
+      document.getElementById('ff-fact-total-cajas').textContent = t.cajas.toLocaleString('es-MX');
+      document.getElementById('ff-fact-precio-pond').textContent = '$'+t.precio.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+    } else {
+      res.style.display='none';
+    }
+  }
+  document.getElementById('ff-total-facturado').textContent = '$'+t.monto.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
   document.getElementById('ff-total-descuentos').textContent = '$'+totalDescuentos.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 
@@ -9908,8 +9980,14 @@ function guardarRegistroFinanzasFram(){
   if(!semanaKey){ showToast('Selecciona una semana'); return; }
   var cliente = document.getElementById('ff-cliente').value.trim();
   agregarClienteSiNuevo(cliente);
-  var cajas = parseFloat(document.getElementById('ff-cajas').value)||0;
-  var precio = parseFloat(document.getElementById('ff-precio').value)||0;
+  var facturacion = ffFactTemp.filter(function(p){
+    return (parseFloat(p.cajas)||0)>0 || (parseFloat(p.precio)||0)>0;
+  }).map(function(p){
+    return {cajas:parseFloat(p.cajas)||0, precio:parseFloat(p.precio)||0};
+  });
+  var montoFacturado = facturacion.reduce(function(a,p){ return a+p.cajas*p.precio; },0);
+  var cajas = facturacion.reduce(function(a,p){ return a+p.cajas; },0);
+  var precio = cajas>0 ? montoFacturado/cajas : 0;
   var descPrestamo = parseFloat(document.getElementById('ff-desc-prestamo').value)||0;
   var descIntereses = parseFloat(document.getElementById('ff-desc-intereses').value)||0;
   var descPlanta = parseFloat(document.getElementById('ff-desc-planta').value)||0;
@@ -9926,6 +10004,7 @@ function guardarRegistroFinanzasFram(){
   }
   if(!reg.gastoIds) reg.gastoIds = {};
   reg.ciclo = ciclo; reg.semanaKey = semanaKey; reg.cliente = cliente; reg.cajas = cajas; reg.precio = precio;
+  reg.facturacion = facturacion;
   reg.descPrestamo = descPrestamo; reg.descIntereses = descIntereses;
   reg.descPlanta = descPlanta; reg.descInocuidad = descInocuidad; reg.descMaterial = descMaterial;
 
