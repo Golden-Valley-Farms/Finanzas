@@ -47,7 +47,9 @@ Con el ponderado guardado sin redondear, `cajas × precio` reconstruye exactamen
 
 Suma donde se suma, ponderado donde se pondera. El semáforo de "Precio por caja" (`RFR_CORTES_PRECIO_CAJA = [220,200,180]`) y las insignias `.kpi-wow` operan igual, sobre el ponderado.
 
-**Precisión.** Reconstruir el total en flotante deja un error del orden de 1e-9 pesos (1,500 × 206.6666… = 309,999.99999999994 en vez de 310,000). Todo se imprime redondeado a 2 decimales — `toLocaleString` o `Math.round(x*100)/100` — así que nunca se ve. Se descartó la alternativa de guardar el total y cambiar los 8 sitios a un helper: es exacta pero mucho más riesgosa para lo que gana.
+**Precisión.** Reconstruir el total como `cajas × precio` con el ponderado en flotante puede diferir del original en los últimos bits. Verificado con el caso real (1,000 × $220 + 500 × $180): `1500 × 206.66666666666666` da **exactamente** 310,000, sin desviación. Aun cuando la hubiera, todo se imprime redondeado a 2 decimales — `toLocaleString` o `Math.round(x*100)/100` — así que un error del orden de 1e-9 nunca sería visible. Se descartó la alternativa de guardar el total y cambiar los 8 sitios a un helper: es exacta por construcción pero mucho más riesgosa para lo que gana.
+
+Lo que **sí** importa es no redondear `precio` al guardarlo: con el ponderado truncado a 2 decimales, `1500 × 206.67` daría 310,005 y el total facturado se desviaría en las ocho pantallas a la vez.
 
 ### Registros anteriores
 
