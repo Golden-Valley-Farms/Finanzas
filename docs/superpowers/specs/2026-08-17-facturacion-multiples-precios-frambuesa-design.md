@@ -63,12 +63,12 @@ No hay migración de datos ni recálculo masivo.
 
 Caja "2. Facturación":
 
-- Encabezado de columnas: **CAJAS · PRECIO POR CAJA · (hueco de 28px para la ×)**, con el mismo estilo que las otras dos pantallas (`font-size:11px`, `--text3`, mayúsculas).
-- Lista de renglones en `#ff-fact-list`, pintada por `renderFramFactRows()`.
+- Encabezado de columnas: **CAJAS · PRECIO POR CAJA · (hueco ×) · (hueco +)**, con el mismo estilo que las otras dos pantallas (`font-size:11px`, `--text3`, mayúsculas).
+- Lista de renglones en `#ff-fact-list`, pintada por `renderFramFactRows()`, en una rejilla de 4 columnas (`1fr 1fr 28px 28px`).
 - Arranca con **un renglón editable**: capturar un solo precio se siente idéntico a hoy, sin clics extra.
-- La **×** solo aparece del segundo renglón en adelante; nunca se puede quedar en cero renglones.
-- Debajo de la lista, botón redondo **+** de 28px en `var(--fram)`, igual al de `agregarFramNominaRow()`. Agrega un renglón vacío y le da foco a su campo de cajas.
-- Cuando hay 2 o más renglones, aparece dentro de la caja un sub-resumen con **Total cajas** y **Precio promedio ponderado**, para que se vea el número que van a recibir las gráficas. Con un solo renglón no se pinta.
+- El botón redondo **+** de 28px en `var(--fram)` vive **en la misma fila que el último renglón**, no debajo de la lista — igual que el patrón de "Cajas" en Cosecha → Registro. Al hacer clic agrega un renglón vacío, que se vuelve el nuevo último, y le da foco a su campo de cajas.
+- La **×** aparece del segundo renglón en adelante, en su propia columna junto al +; nunca se puede quedar en cero renglones. Un renglón intermedio (ni el primero ni el último) no lleva ni × ni +.
+- Debajo de la lista, un sub-resumen **siempre visible** con **Total cajas** y **Precio promedio ponderado** — igual que el patrón de "Total cajas" en Cosecha → Registro —, para que se vea el número que van a recibir las gráficas incluso con un solo renglón.
 
 Los inputs mutan `ffFactTemp[i]` inline y llaman `recalcFramFin()`, que **solo actualiza los totales, no repinta la lista** — repintar en cada tecla le quitaría el foco al input, la misma trampa que ya documenta `dgSetKg()` en el despacho de almacén.
 

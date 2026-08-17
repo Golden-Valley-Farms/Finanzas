@@ -1766,19 +1766,14 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
       <div class="step-label">2. Facturación</div>
       <div class="card" style="margin-bottom:12px">
-        <div style="display:grid;grid-template-columns:1fr 1fr 28px;gap:8px;margin-bottom:6px;padding:0 2px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 28px 28px;gap:8px;margin-bottom:6px;padding:0 2px">
           <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Cajas facturadas</span>
           <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Precio por caja</span>
           <span></span>
+          <span></span>
         </div>
         <div id="ff-fact-list"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 28px;gap:8px;align-items:center;margin-top:6px">
-          <span></span>
-          <span></span>
-          <button onclick="agregarFramFactRow()" title="Agregar precio"
-            style="width:28px;height:28px;border-radius:50%;border:none;background:var(--fram);color:#fff;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">+</button>
-        </div>
-        <div id="ff-fact-resumen" style="display:none;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+        <div id="ff-fact-resumen" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
           <div style="display:flex;justify-content:space-between;font-size:13px;padding:2px 0">
             <span style="color:var(--text2);font-weight:500">Total cajas</span>
             <span id="ff-fact-total-cajas" style="font-family:var(--mono);color:var(--text);font-weight:700">0</span>
@@ -9782,8 +9777,9 @@ function renderFramFactRows(){
   if(!cont) return;
   cont.innerHTML='';
   ffFactTemp.forEach(function(p, idx){
+    var isLast = idx === ffFactTemp.length-1;
     var row = document.createElement('div');
-    row.style.cssText='display:grid;grid-template-columns:1fr 1fr 28px;gap:8px;align-items:center;margin-bottom:6px';
+    row.style.cssText='display:grid;grid-template-columns:1fr 1fr 28px 28px;gap:8px;align-items:center;margin-bottom:6px';
     row.innerHTML =
       '<input type="number" value="'+(p.cajas||'')+'" placeholder="0" min="0" step="1"'+
       ' oninput="ffFactTemp['+idx+'].cajas=parseFloat(this.value)||0;recalcFramFin()"'+
@@ -9795,6 +9791,10 @@ function renderFramFactRows(){
       (idx>0
         ? '<button onclick="removeFramFactRow('+idx+')" title="Eliminar"'+
           ' style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:none;cursor:pointer;color:var(--text3);font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0">×</button>'
+        : '<span></span>')+
+      (isLast
+        ? '<button onclick="agregarFramFactRow()" title="Agregar precio"'+
+          ' style="width:28px;height:28px;border-radius:50%;border:none;background:var(--fram);color:#fff;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">+</button>'
         : '<span></span>');
     cont.appendChild(row);
   });
@@ -9964,13 +9964,8 @@ function recalcFramFin(){
   var totalDescuentos = dPrestamo+dIntereses+dPlanta+dInocuidad+dMaterial;
   var res = document.getElementById('ff-fact-resumen');
   if(res){
-    if(ffFactTemp.length>1){
-      res.style.display='block';
-      document.getElementById('ff-fact-total-cajas').textContent = t.cajas.toLocaleString('es-MX');
-      document.getElementById('ff-fact-precio-pond').textContent = '$'+t.precio.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
-    } else {
-      res.style.display='none';
-    }
+    document.getElementById('ff-fact-total-cajas').textContent = t.cajas.toLocaleString('es-MX');
+    document.getElementById('ff-fact-precio-pond').textContent = '$'+t.precio.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
   }
   document.getElementById('ff-total-facturado').textContent = '$'+t.monto.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
   document.getElementById('ff-total-descuentos').textContent = '$'+totalDescuentos.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
