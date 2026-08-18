@@ -1,8 +1,20 @@
-# Cosecha de Maíz — Plan de implementación
+﻿# Cosecha de Maíz — Plan de implementación
+
+> **Ejecutado el 18-ago-2026.** Dos desviaciones, ambas deliberadas:
+>
+> 1. **Tarea 4, paso 4:** el plan pedía dar de alta un intermediario real en Supabase y
+>    borrarlo. `CLAUDE.md` prohíbe completar guardados de prueba, así que el dropdown se
+>    verificó sembrando `intermediarios` **solo en memoria**. La base quedó en 0 filas.
+> 2. **Tarea 7:** el precio por kg del historial pasó de `fmt()` a `fmtDec()`. Con `fmt()`
+>    un precio de $6.50 se pintaba como **$7** — redondeo inaceptable en una cifra por kg.
+>
+> El viaje redondo (tarea 8, paso 1) sí se cerró: se insertó una fila por SQL, se leyó con
+> el cliente real del navegador y se comparó campo por campo en los dos sentidos —
+> 14 de 14, sin faltantes ni sobrantes— y se borró.
 
 > **Para quien ejecute esto:** el spec está en
 > `docs/superpowers/specs/2026-08-18-cosecha-maiz-registro-historial-design.md`.
-> Los pasos usan casillas (`- [ ]`) para llevar el avance.
+> Los pasos usan casillas (`- [x]`) para llevar el avance.
 
 **Meta:** Convertir la pantalla vacía de Maíz en un módulo de Cosecha con sub-pestañas
 Registro e Historial, que capture ventas de maíz a intermediarios con partidas por variedad.
@@ -79,13 +91,13 @@ funcione igual estando al final.
 **Produce:** las tablas `maiz_registros` e `intermediarios`, que consumen las tareas 2 en
 adelante.
 
-- [ ] **Paso 1: Ubicar el proyecto**
+- [x] **Paso 1: Ubicar el proyecto**
 
 Usar `mcp__99749bfd-fc48-43f3-8ae6-100cbedd8b4d__list_projects` y quedarse con el `id` del
 proyecto de Golden Valley Farms. Confirmarlo con `list_tables` — debe traer `gastos`,
 `envios`, `fram_registros`, etc.
 
-- [ ] **Paso 2: Aplicar la migración**
+- [x] **Paso 2: Aplicar la migración**
 
 Con `apply_migration`, nombre `maiz_registros_e_intermediarios`:
 
@@ -120,13 +132,13 @@ fallaría.
 **RLS queda desactivado a propósito**, igual que las otras 12 tablas: con RLS activo y sin
 políticas la app no podría leer ni escribir. No agregar `enable row level security`.
 
-- [ ] **Paso 3: Verificar**
+- [x] **Paso 3: Verificar**
 
 `list_tables` debe mostrar las dos tablas nuevas con sus columnas. Después, un
 `execute_sql` con `select count(*) from public.maiz_registros;` debe devolver `0` sin error
 de permisos — si diera error de RLS, la tabla se creó mal.
 
-- [ ] **Paso 4: Sin commit**
+- [x] **Paso 4: Sin commit**
 
 No hay cambios en archivos. Se sigue a la tarea 2.
 
@@ -145,7 +157,7 @@ No hay cambios en archivos. Se sigue a la tarea 2.
   `sbSaveMaizReg(reg)`, `sbDeleteMaizReg(id)`, `sbSaveIntermediario(nombre)`,
   `sbDeleteIntermediario(nombre)`. Las tareas 4, 6 y 7 dependen de estos nombres exactos.
 
-- [ ] **Paso 1: Crear el bloque del módulo al final del script**
+- [x] **Paso 1: Crear el bloque del módulo al final del script**
 
 Localizar el final del archivo con `grep -n "</script>"`. Justo **antes** de esa etiqueta,
 insertar:
@@ -206,7 +218,7 @@ async function sbDeleteIntermediario(nombre){
 }
 ```
 
-- [ ] **Paso 2: Leer las dos tablas en `cargarDesdeSB()`**
+- [x] **Paso 2: Leer las dos tablas en `cargarDesdeSB()`**
 
 En la lista de lecturas (línea ~2084, después de `var cpData = await fetchAllRows('contrapartes', ...)`)
 agregar:
@@ -221,7 +233,7 @@ Y junto a los catálogos de una columna (línea ~2092, después de la línea de 
   var rInt = await sb.from('intermediarios').select('nombre').order('nombre');
 ```
 
-- [ ] **Paso 3: Mapear de vuelta a camelCase**
+- [x] **Paso 3: Mapear de vuelta a camelCase**
 
 Después del bloque `if(dData && dData.length){...}` (termina en la línea ~2194), agregar:
 
@@ -247,7 +259,7 @@ Y junto a los demás catálogos (línea ~2216, después de la línea de `trabaja
   if(rInt && rInt.data){ intermediarios = rInt.data.map(function(i){return i.nombre;}); saveIntermediarios(); }
 ```
 
-- [ ] **Paso 4: Verificar en el navegador**
+- [x] **Paso 4: Verificar en el navegador**
 
 Recargar la app local. En la consola:
 
@@ -259,7 +271,7 @@ Recargar la app local. En la consola:
 
 Si alguno da `undefined`, el bloque quedó dentro de otra función o después de `</script>`.
 
-- [ ] **Paso 5: Commit**
+- [x] **Paso 5: Commit**
 
 ```bash
 git add index.html && git commit -m "Agregar estado y persistencia del modulo de maiz"
@@ -281,7 +293,7 @@ git add index.html && git commit -m "Agregar estado y persistencia del modulo de
 - Produce: `maizTabSel`, `maizMainTab(main)`, `maizTab(t, forceNew)`, y los contenedores
   `#maiz-form-sec` y `#maiz-hist-sec` que llenan las tareas 4-7.
 
-- [ ] **Paso 1: Reemplazar el cuerpo de `#sc-maiz`**
+- [x] **Paso 1: Reemplazar el cuerpo de `#sc-maiz`**
 
 Sustituir las líneas 1922-1928 completas (el `.empty` de "módulo en blanco") por:
 
@@ -311,7 +323,7 @@ Sustituir las líneas 1922-1928 completas (el `.empty` de "módulo en blanco") p
 
 `#maiz-form-sec` queda vacío en esta tarea; lo llena la tarea 4.
 
-- [ ] **Paso 2: Agregar el router al bloque del módulo**
+- [x] **Paso 2: Agregar el router al bloque del módulo**
 
 Al final del bloque `// ==== MÓDULO MAÍZ ====`, agregar:
 
@@ -347,7 +359,7 @@ function initMaizForm(reg){}
 function renderMaizHist(){}
 ```
 
-- [ ] **Paso 3: Enganchar en `goSc()`**
+- [x] **Paso 3: Enganchar en `goSc()`**
 
 En `goSc()` (línea ~2888), junto a las líneas que despachan el render de cada pantalla
 (`if(s==='his') renderHis();` etc., línea ~2912), agregar:
@@ -359,7 +371,7 @@ En `goSc()` (línea ~2888), junto a las líneas que despachan el render de cada 
 No tocar nada más de `goSc`: `sc-maiz` ya está en el arreglo de pantallas de la línea 2889
 y ya cuenta como pantalla de cosechas en `esCosecha`.
 
-- [ ] **Paso 4: Verificar en el navegador**
+- [x] **Paso 4: Verificar en el navegador**
 
 Recargar y navegar a Cosechas → 🌽 Maíz:
 
@@ -371,7 +383,7 @@ Recargar y navegar a Cosechas → 🌽 Maíz:
 4. Cambiar a otra pantalla y regresar a Maíz: debe volver a la sub-pestaña donde estaba.
 5. La consola no reporta errores.
 
-- [ ] **Paso 5: Commit**
+- [x] **Paso 5: Commit**
 
 ```bash
 git add index.html && git commit -m "Agregar pantalla de maiz con pestanas Registro e Historial"
@@ -393,7 +405,7 @@ git add index.html && git commit -m "Agregar pantalla de maiz con pestanas Regis
   `#mz-receptor`, `#mz-chofer`, `#mz-placa`, `#mz-factura`, que lee `guardarMaiz()` en la
   tarea 6; y `renderMzIntermediarioDropdown()`.
 
-- [ ] **Paso 1: Markup del encabezado**
+- [x] **Paso 1: Markup del encabezado**
 
 Reemplazar `<div id="maiz-form-sec"></div>` por:
 
@@ -448,7 +460,7 @@ Reemplazar `<div id="maiz-form-sec"></div>` por:
     </div>
 ```
 
-- [ ] **Paso 2: Poblar el select de ciclo**
+- [x] **Paso 2: Poblar el select de ciclo**
 
 En el bloque del módulo, agregar:
 
@@ -463,7 +475,7 @@ function initMzCicloSelect(){
 Se llama desde `initMaizForm()` en la tarea 6. El `if(s.options.length) return;` evita
 duplicar las opciones cada vez que se reabre el formulario.
 
-- [ ] **Paso 3: Dropdown de intermediarios**
+- [x] **Paso 3: Dropdown de intermediarios**
 
 Clon del de proveedores comer (`renderProveedorDropdown`, línea ~9459), con su catálogo:
 
@@ -530,7 +542,7 @@ function confirmarNuevoIntermediario(){
 Nota: los handlers usan `onmousedown` con `preventDefault()` a propósito. Con `onclick`, el
 `onblur` del input cierra el dropdown antes de que el clic llegue a la fila.
 
-- [ ] **Paso 4: Verificar en el navegador**
+- [x] **Paso 4: Verificar en el navegador**
 
 En Maíz → Registro:
 
@@ -546,7 +558,7 @@ En Maíz → Registro:
 5. Confirmar en Supabase con `execute_sql`: `select * from public.intermediarios;` debe
    devolver 0 filas al final.
 
-- [ ] **Paso 5: Commit**
+- [x] **Paso 5: Commit**
 
 ```bash
 git add index.html && git commit -m "Agregar encabezado y catalogo de intermediarios en maiz"
@@ -567,7 +579,7 @@ git add index.html && git commit -m "Agregar encabezado y catalogo de intermedia
   `removeMzPartida(idx)`, `mzAutoCalc(idx)`, `recalcMzResumen()`, `mzCalcTotalPartida(p)`.
   La tarea 6 lee `mzPartidasTemp` para guardar.
 
-- [ ] **Paso 1: Markup de partidas y resumen**
+- [x] **Paso 1: Markup de partidas y resumen**
 
 Dentro de `#maiz-form-sec`, **después** del `</div>` que cierra la `.card` del encabezado y
 antes del `</div>` que cierra `#maiz-form-sec`:
@@ -606,7 +618,7 @@ antes del `</div>` que cierra `#maiz-form-sec`:
       <button class="btn-main" id="mz-guardar-btn" onclick="guardarMaiz()">Guardar registro</button>
 ```
 
-- [ ] **Paso 2: Estado y render de partidas**
+- [x] **Paso 2: Estado y render de partidas**
 
 En el bloque del módulo:
 
@@ -702,7 +714,7 @@ Los `onchange` mutan `mzPartidasTemp` y solo actualizan los tres nodos calculado
 llaman a `renderMzPartidas()`. Repintar la lista en cada cambio le quitaría el foco al
 input, la misma trampa documentada en `dgSetKg()` y `recalcFramFin()`.
 
-- [ ] **Paso 3: Verificar en el navegador**
+- [x] **Paso 3: Verificar en el navegador**
 
 Recargar y en Maíz → Registro, con la consola abierta ejecutar `updateMzVarSelect()` y
 `renderMzPartidas()` una vez (todavía no hay `initMaizForm()` real):
@@ -720,7 +732,7 @@ Recargar y en Maíz → Registro, con la consola abierta ejecutar `updateMzVarSe
 
 Nada de esto llama a `guardarMaiz()`, así que no escribe en la base.
 
-- [ ] **Paso 4: Commit**
+- [x] **Paso 4: Commit**
 
 ```bash
 git add index.html && git commit -m "Agregar partidas por variedad y resumen en maiz"
@@ -740,7 +752,7 @@ git add index.html && git commit -m "Agregar partidas por variedad y resumen en 
 - Produce: `mzEditId`, `initMaizForm(reg)`, `resetMaizForm()`, `guardarMaiz()`,
   `mzTotalesDesdeTemp()`. La tarea 7 llama a `initMaizForm(reg)` para editar.
 
-- [ ] **Paso 1: Borrar los stubs**
+- [x] **Paso 1: Borrar los stubs**
 
 Quitar del bloque las dos líneas stub de la tarea 3:
 
@@ -751,7 +763,7 @@ function initMaizForm(reg){}
 `var mzEditId = null;` se **conserva** y `function renderMaizHist(){}` se conserva hasta la
 tarea 7.
 
-- [ ] **Paso 2: Init, reset y totales**
+- [x] **Paso 2: Init, reset y totales**
 
 ```js
 // ---- Guardar / inicializar ----
@@ -809,7 +821,7 @@ function resetMaizForm(){ initMaizForm(null); }
 respeta el ciclo guardado. No hay ningún punto donde se recalcule el ciclo a partir de la
 fecha.
 
-- [ ] **Paso 3: Guardar**
+- [x] **Paso 3: Guardar**
 
 ```js
 function guardarMaiz(){
@@ -866,7 +878,7 @@ Ojo: `mzTotalesDesdeTemp()` suma sobre `mzPartidasTemp` completo, incluyendo par
 peso o sin precio — pero esas aportan cero al total, así que el resultado coincide con la
 suma de `validas`. Las partidas incompletas simplemente no se guardan.
 
-- [ ] **Paso 4: Verificar en el navegador**
+- [x] **Paso 4: Verificar en el navegador**
 
 Recargar y en Maíz → Registro:
 
@@ -880,7 +892,7 @@ Recargar y en Maíz → Registro:
    el formulario y ejecutar en consola el cuerpo de `guardarMaiz()` hasta el `reg`, o más
    simple: llenar el formulario y verificar `mzPartidasTemp` en consola.
 
-- [ ] **Paso 5: Commit**
+- [x] **Paso 5: Commit**
 
 ```bash
 git add index.html && git commit -m "Agregar guardado y edicion del registro de maiz"
@@ -898,11 +910,11 @@ git add index.html && git commit -m "Agregar guardado y edicion del registro de 
   `initMaizForm(reg)` (tarea 6), `maizTab()` (tarea 3), `fmt()`, `showToast()`.
 - Produce: `renderMaizHist()`, `editarMaizReg(id)`, `confirmDelMaiz(id)`.
 
-- [ ] **Paso 1: Borrar el stub**
+- [x] **Paso 1: Borrar el stub**
 
 Quitar `function renderMaizHist(){}` del bloque.
 
-- [ ] **Paso 2: Render del historial**
+- [x] **Paso 2: Render del historial**
 
 ```js
 // ---- Historial ----
@@ -951,7 +963,7 @@ function renderMaizHist(){
 }
 ```
 
-- [ ] **Paso 3: Editar y borrar**
+- [x] **Paso 3: Editar y borrar**
 
 ```js
 function editarMaizReg(id){
@@ -983,7 +995,7 @@ llamaría `initMaizForm()` en blanco y borraría lo que acaba de cargar `editarM
 cumple y `maizTab` reinicia el formulario — por eso `initMaizForm(reg)` va **después**, y
 es quien deja el estado bueno.
 
-- [ ] **Paso 4: Verificar en el navegador**
+- [x] **Paso 4: Verificar en el navegador**
 
 Con la base todavía vacía de registros, verificar contra datos **en memoria**, sin guardar:
 
@@ -1006,7 +1018,7 @@ memoria y desaparece al recargar.
 6. Recargar la página: el historial vuelve a estar vacío (el registro falso nunca se
    persistió).
 
-- [ ] **Paso 5: Commit**
+- [x] **Paso 5: Commit**
 
 ```bash
 git add index.html && git commit -m "Agregar historial de maiz con editar y borrar"
@@ -1019,7 +1031,7 @@ git add index.html && git commit -m "Agregar historial de maiz con editar y borr
 **Archivos:**
 - Modificar: `CLAUDE.md`
 
-- [ ] **Paso 1: Revisar el mapeo campo por campo**
+- [x] **Paso 1: Revisar el mapeo campo por campo**
 
 Con los tres puntos abiertos a la vez —`sbSaveMaizReg()`, el `.map()` de `mzData` en
 `cargarDesdeSB()`, y las columnas de la migración— confirmar que los **catorce** campos
@@ -1030,7 +1042,7 @@ chofer, placa, factura, partidas, totalKg↔total_kg, totalTon↔total_ton, tota
 
 Cualquiera que falte en uno de los tres se borra solo en la siguiente recarga.
 
-- [ ] **Paso 2: Repaso final en el navegador**
+- [x] **Paso 2: Repaso final en el navegador**
 
 Recargar con la consola abierta:
 
@@ -1040,7 +1052,7 @@ Recargar con la consola abierta:
    dropdown de proveedores de Comercializadora sigue funcionando (comparte el patrón, no el
    catálogo).
 
-- [ ] **Paso 3: Actualizar `CLAUDE.md`**
+- [x] **Paso 3: Actualizar `CLAUDE.md`**
 
 Cuatro ediciones:
 
@@ -1053,7 +1065,7 @@ Cuatro ediciones:
    fijas, el catálogo de intermediarios como cuarto catálogo por nombre, y —explícito— que
    el módulo **no genera deudas, gastos ni entra en reportes**, con el enlace al spec.
 
-- [ ] **Paso 4: Commit y push**
+- [x] **Paso 4: Commit y push**
 
 ```bash
 git add index.html CLAUDE.md && git commit -m "Documentar el modulo de cosecha de maiz en CLAUDE.md"
@@ -1066,7 +1078,7 @@ git push origin main
 El push despliega en vivo a GitHub Pages. Confirmar que el workflow de Pages terminó bien
 antes de dar la tarea por cerrada.
 
-- [ ] **Paso 5: Avisar al usuario qué falta probar con datos reales**
+- [x] **Paso 5: Avisar al usuario qué falta probar con datos reales**
 
 El viaje redondo completo (guardar → recargar desde Supabase → el campo sigue ahí) solo se
 puede cerrar con un registro real, porque local y producción comparten la base. Decirle al

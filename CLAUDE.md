@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Qué es
 
-App de gestión agroindustrial de Golden Valley Farms: gastos, ventas/envíos, cosecha de frambuesa, almacén frío, cuentas por cobrar/pagar y reportes financieros. Todo en español (UI, datos, comentarios y nombres de funciones).
+App de gestión agroindustrial de Golden Valley Farms: gastos, ventas/envíos, cosecha de frambuesa, cosecha de maíz, almacén frío, cuentas por cobrar/pagar y reportes financieros. Todo en español (UI, datos, comentarios y nombres de funciones).
 
-Es **un solo archivo**: `index.html` (~10,700 líneas). CSS en `<style>` (líneas ~14-554), markup del cuerpo (~555-1908), y toda la lógica en un `<script>` monolítico (~1909-10712).
+Es **un solo archivo**: `index.html` (~11,800 líneas). CSS en `<style>` (líneas ~14-554), markup del cuerpo (~555-1955), y toda la lógica en un `<script>` monolítico (~1956-11812).
 
 ## Desplegar y probar
 
@@ -58,7 +58,7 @@ JS usa camelCase, Supabase usa snake_case: `fechaVal`↔`fecha`, `tipoCamote`↔
 
 ### Claves de localStorage
 
-`cc_gastos3`, `cc_envios`, `cc_alm_lotes`, `cc_fram`, `cc_fram_fin`, `cc_deudas`, `cc_pagosdeuda`, `cc_contrapartes`, `cc_clientes`, `cc_proveedores`, `cc_proveedores_comer`, `cc_clientes_comer`, `cc_deudores`, `cc_acreedores`, `cc_bancos`, `cc_trabajadores`, `cc_cats`, `cc_presentaciones`.
+`cc_gastos3`, `cc_envios`, `cc_alm_lotes`, `cc_fram`, `cc_fram_fin`, `cc_maiz`, `cc_intermediarios`, `cc_deudas`, `cc_pagosdeuda`, `cc_contrapartes`, `cc_clientes`, `cc_proveedores`, `cc_proveedores_comer`, `cc_clientes_comer`, `cc_deudores`, `cc_acreedores`, `cc_bancos`, `cc_trabajadores`, `cc_cats`, `cc_presentaciones`.
 
 ## Modelo de negocios (`NEGOCIOS`)
 
@@ -148,6 +148,39 @@ Ojo (ago-2026): hasta este cambio, la rama `com` de `sincronizarDeudasEnvio()` e
 **Folio Negocio junto al Folio Cliente en la cuenta.** `deudaFolioNegocio(d)` busca el envío por `d.refId` y devuelve su `e.num` (vacío si no hay envío, o si ya es igual al `folioExterno`). Se pinta en las dos vistas de cuenta — `abrirDeudaContraparte()` (fifo) y `renderModalCorriente()` (corriente) — porque el modo depende de la contraparte, no del origen del movimiento. Hace falta porque un despacho que cruza negocios crea **dos** cargos con el **mismo** Folio Cliente, y sin distinguirlos se leen como una captura duplicada. Es derivado: sin campos ni columnas nuevas.
 
 **Histórico importado.** Los movimientos migrados del Excel original tienen `ref_kind:'importado'` e ids `9000000000000xx`. La migración fue única (ago-2026); no hay código de importación de Excel en la app.
+
+## Módulo de maíz
+
+Agregado en ago-2026 (spec en `docs/superpowers/specs/2026-08-18-cosecha-maiz-registro-historial-design.md`). Toda su lógica vive junta en el bloque `// ==== MÓDULO MAÍZ ====` al **final del `<script>`**, no repartida por el archivo. Funciona por hoisting y es lo único que lo mantiene legible.
+
+**Solo captura y consulta.** El módulo **no genera deudas, ni gastos, ni movimientos `autoGen`, ni suma en reportes, EDR o resumen por negocio.** Eso es deliberado, no un pendiente olvidado: se dejaron los datos completos y persistidos para que un módulo de reportes posterior los lea sin migraciones extra. Tampoco hay filtros ni totales en el Historial, ni pestañas de Finanzas o Nómina.
+
+**Pantalla.** `#sc-maiz` replica el patrón de `#sc-fram`: `maizMainTab('cosecha')` marca la única pestaña principal (existe por simetría, para que agregar una segunda sea trivial) y `maizTab(t, forceNew)` alterna Registro / Historial, con el estado en `maizTabSel`. `goSc('maiz')` llama `maizTab(maizTabSel)`.
+
+`maizTab('nuevo')` solo reinicia el formulario si `!mzEditId || forceNew`. Por eso `editarMaizReg()` la llama **sin** `forceNew` y pone `initMaizForm(reg)` **después**: `mzEditId` todavía es `null` en ese momento, así que `maizTab` limpia y es `initMaizForm(reg)` quien deja el estado bueno.
+
+**Listas fijas en código**, decisión del usuario — si cambian, se edita la línea:
+
+```js
+var MZ_VARIEDADES = ['Blanco','Antylope','Waxy'];
+var MZ_PARCELAS   = ['Cuata Grande','Cuata Chica','Mesita','Camino'];
+```
+
+**Catálogo de intermediarios.** Cuarto catálogo por nombre del proyecto, propio: no reusa `clientes`, `proveedores` ni `contrapartes`. `renderMzIntermediarioDropdown()` es un clon de `renderProveedorDropdown()` (línea ~9537) con `intermediarios`; hereda su comportamiento tal cual, incluido que la × limpia el input *después* de repintar. `agregarIntermediarioSiNuevo()` normaliza, evita duplicados y ordena con `localeCompare(...,'es')`.
+
+**Partidas.** Estado en `mzPartidasTemp`; se puede repetir una variedad, porque la misma puede venir de dos parcelas. Los `onchange` mutan el arreglo y solo tocan los tres nodos calculados (`mzAutoCalc`) — **no** repintan la lista, la misma trampa de foco que `dgSetKg()` y `recalcFramFin()`. `toneladas` es derivado (`pesoNeto/1000`) y va `readonly`.
+
+**Modelo de datos y mapeo.** Los tres totales (`totalKg`/`totalTon`/`total`) se guardan aunque sean derivados, igual que `envios.total_venta`, para que los reportes futuros no tengan que recorrer el `jsonb`. Se recalculan íntegros en cada guardado. Las llaves *dentro* de `partidas` quedan en camelCase (`pesoNeto`), como `facturacion` de frambuesa: es un blob que solo lee y escribe el JS.
+
+| JS | `maiz_registros` |
+|---|---|
+| `fechaVal` | `fecha` |
+| `receptorFactura` | `receptor_factura` |
+| `totalKg` / `totalTon` | `total_kg` / `total_ton` |
+| `partidas` | `partidas` (jsonb) |
+| resto | mismo nombre en minúsculas |
+
+El precio por kg se pinta con `fmtDec()` (2 decimales solo si hay centavos), no con `fmt()`: en maíz el precio por kg trae centavos y `fmt()` redondearía $6.50 a $7. Los totales grandes sí usan `fmt()`, como en toda la app.
 
 ## Navegación
 
@@ -346,7 +379,7 @@ Antes de modificar cualquier función, `grep` por `function nombre(` para confir
 
 URL y clave publicable están en duro al inicio del script (líneas ~1911-1912). La clave es *publishable*, no secreta — la seguridad real depende de las políticas RLS del proyecto, no de ocultarla. El repo es público, así que ese archivo es visible para cualquiera: **RLS es la única defensa real de los datos.**
 
-Tablas: `gastos`, `envios`, `alm_lotes`, `fram_registros`, `fram_finanzas`, `deudas`, `pagos_deuda`, `contrapartes`, `clientes`, `proveedores`, `proveedores_comer`, `clientes_comer`, `deudores`, `acreedores`, `bancos`, `trabajadores`, `categorias`.
+Tablas: `gastos`, `envios`, `alm_lotes`, `fram_registros`, `fram_finanzas`, `maiz_registros`, `intermediarios`, `deudas`, `pagos_deuda`, `contrapartes`, `clientes`, `proveedores`, `proveedores_comer`, `clientes_comer`, `deudores`, `acreedores`, `bancos`, `trabajadores`, `categorias`.
 
 Si una tabla regresa vacía teniendo datos, casi siempre es RLS — el código ya avisa esto por consola para `fram_registros`.
 
