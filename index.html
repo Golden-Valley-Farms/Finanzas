@@ -12307,7 +12307,6 @@ function maizTab(t, forceNew){
 }
 
 var mzEditId = null;
-function renderMaizHist(){}
 
 // ---- Formulario: encabezado ----
 function initMzCicloSelect(){
@@ -12556,6 +12555,73 @@ function guardarMaiz(){
   var eraEdicion = !!mzEditId;
   resetMaizForm();
   showToast(eraEdicion ? 'Registro actualizado' : 'Registro guardado');
+}
+
+// ---- Historial ----
+function mzFechaLbl(fv){
+  if(!fv) return '';
+  return new Date(fv+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+}
+
+function renderMaizHist(){
+  var cont=document.getElementById('maiz-hist-list'); if(!cont) return;
+  var lista = maizRegistros.slice().sort(function(a,b){
+    return (b.fechaVal||'').localeCompare(a.fechaVal||'');
+  });
+  if(!lista.length){
+    cont.innerHTML='<div class="empty"><div class="empty-icon">🌽</div><div class="empty-text">Sin registros de maíz aún.</div></div>';
+    return;
+  }
+  var h='';
+  lista.forEach(function(r){
+    var parts='';
+    (r.partidas||[]).forEach(function(p){
+      parts+='<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--text2);padding:3px 0">'+
+        '<span>'+p.variedad+(p.parcela?' · '+p.parcela:'')+'</span>'+
+        '<span style="font-family:var(--mono)">'+(p.pesoNeto||0).toLocaleString('es-MX')+' kg · '+fmtDec(p.precio||0)+'/kg</span>'+
+      '</div>';
+    });
+    h+='<div class="card" style="margin-bottom:10px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">'+
+        '<div>'+
+          '<div style="font-size:14px;font-weight:600;color:var(--text)">'+(r.intermediario||'—')+'</div>'+
+          '<div style="font-size:12px;color:var(--text3)">'+mzFechaLbl(r.fechaVal)+' · '+(r.ciclo||'')+(r.boleta?' · Boleta '+r.boleta:'')+'</div>'+
+        '</div>'+
+        '<div style="display:flex;gap:4px;flex-shrink:0">'+
+          '<button onclick="editarMaizReg('+r.id+')" style="background:none;border:none;cursor:pointer;font-size:15px;padding:2px 6px" title="Editar">✏️</button>'+
+          '<button onclick="confirmDelMaiz('+r.id+')" style="background:none;border:none;cursor:pointer;font-size:15px;padding:2px 6px" title="Eliminar">🗑</button>'+
+        '</div>'+
+      '</div>'+
+      '<div style="border-top:1px solid var(--border);padding-top:6px;margin-bottom:8px">'+parts+'</div>'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--green-bg);border-radius:var(--radius)">'+
+        '<span style="font-size:11px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:.04em">'+(r.totalKg||0).toLocaleString('es-MX')+' kg · '+(r.totalTon||0).toFixed(3)+' t</span>'+
+        '<span style="font-size:15px;font-weight:700;font-family:var(--mono);color:var(--green)">'+fmt(r.total||0)+'</span>'+
+      '</div>'+
+    '</div>';
+  });
+  cont.innerHTML=h;
+}
+
+function editarMaizReg(id){
+  var reg = maizRegistros.find(function(r){return r.id===id;});
+  if(!reg) return;
+  maizTab('nuevo');
+  initMaizForm(reg);
+  window.scrollTo(0,0);
+}
+
+function confirmDelMaiz(id){
+  var btn=event.target;
+  if(btn.dataset.confirm==='1'){
+    maizRegistros = maizRegistros.filter(function(r){return r.id!==id;});
+    saveMaiz();
+    sbDeleteMaizReg(id);
+    renderMaizHist();
+    showToast('Registro eliminado');
+  } else {
+    btn.dataset.confirm='1'; btn.textContent='⚠️';
+    setTimeout(function(){if(btn){btn.dataset.confirm='';btn.textContent='🗑';}},2500);
+  }
 }
 // ============================================================
 
