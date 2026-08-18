@@ -12494,7 +12494,7 @@ function mzCalcTotalPartida(p){
   var kg=parseFloat(p.pesoNeto)||0;
   var precio=parseFloat(p.precio)||0;
   if(!kg||!precio) return '$0';
-  return fmt(kg*precio);
+  return fmtDec(kg*precio);
 }
 
 function mzAutoCalc(idx){
@@ -12518,7 +12518,7 @@ function recalcMzResumen(){
   var eTot=document.getElementById('mz-resumen-total');
   if(eK) eK.textContent = kg.toLocaleString('es-MX');
   if(eT) eT.textContent = (kg/1000).toFixed(3);
-  if(eTot) eTot.textContent = fmt(total);
+  if(eTot) eTot.textContent = fmtDec(total);
 }
 
 // ---- Guardar / inicializar ----
@@ -12556,6 +12556,7 @@ function initMaizForm(reg){
         precio:p.precio!=null?String(p.precio):''};
     });
     if(btn) btn.textContent='Actualizar registro';
+    mostrarCancelarEdicion('mz-guardar-btn', function(){ mzEditId=null; ocultarCancelarEdicion('mz-guardar-btn'); maizTab('hist'); });
   } else {
     mzEditId = null;
     f.value = hoy;
@@ -12565,6 +12566,7 @@ function initMaizForm(reg){
     });
     mzPartidasTemp = [];
     if(btn) btn.textContent='Guardar registro';
+    ocultarCancelarEdicion('mz-guardar-btn');
   }
   renderMzPartidas();
 }
@@ -12660,7 +12662,7 @@ function renderMaizHist(){
       '<div style="border-top:1px solid var(--border);padding-top:6px;margin-bottom:8px">'+parts+'</div>'+
       '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--green-bg);border-radius:var(--radius)">'+
         '<span style="font-size:11px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:.04em">'+(r.totalKg||0).toLocaleString('es-MX')+' kg · '+(r.totalTon||0).toFixed(3)+' t</span>'+
-        '<span style="font-size:15px;font-weight:700;font-family:var(--mono);color:var(--green)">'+fmt(r.total||0)+'</span>'+
+        '<span style="font-size:15px;font-weight:700;font-family:var(--mono);color:var(--green)">'+fmtDec(r.total||0)+'</span>'+
       '</div>'+
     '</div>';
   });
