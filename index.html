@@ -1933,7 +1933,54 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
 
     <!-- FORMULARIO DE REGISTRO -->
-    <div id="maiz-form-sec"></div>
+    <div id="maiz-form-sec">
+      <div class="step-label">1. Datos del envío</div>
+      <div class="card" style="margin-bottom:12px">
+        <div class="field-row">
+          <div class="field">
+            <label>Fecha</label>
+            <input type="date" id="mz-fecha" style="width:100%">
+          </div>
+          <div class="field">
+            <label>Ciclo</label>
+            <select id="mz-ciclo" style="width:100%"></select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Intermediario</label>
+            <div style="position:relative">
+              <input type="text" id="mz-intermediario" placeholder="Nombre del intermediario" autocomplete="off" style="width:100%" oninput="onMzIntermediarioInput()" onclick="showMzIntermediarioDropdown()" onblur="setTimeout(hideMzIntermediarioDropdown,150)">
+              <div id="mz-intermediario-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:200px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
+            </div>
+          </div>
+          <div class="field">
+            <label>N° de Boleta</label>
+            <input type="text" id="mz-boleta" placeholder="0000">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Receptor Factura</label>
+            <input type="text" id="mz-receptor" placeholder="Razón social">
+          </div>
+          <div class="field">
+            <label>Chofer</label>
+            <input type="text" id="mz-chofer" placeholder="Nombre">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>N° de Placa</label>
+            <input type="text" id="mz-placa" placeholder="ABC-123">
+          </div>
+          <div class="field">
+            <label>Factura</label>
+            <input type="text" id="mz-factura" placeholder="F-000">
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- HISTORIAL -->
     <div id="maiz-hist-sec" style="display:none">
@@ -12230,6 +12277,70 @@ function maizTab(t, forceNew){
 var mzEditId = null;
 function initMaizForm(reg){}
 function renderMaizHist(){}
+
+// ---- Formulario: encabezado ----
+function initMzCicloSelect(){
+  var s=document.getElementById('mz-ciclo'); if(!s || s.options.length) return;
+  CICLOS.forEach(function(c){ var o=document.createElement('option'); o.value=c; o.textContent=c; s.appendChild(o); });
+}
+
+// ---- Dropdown de intermediarios ----
+function renderMzIntermediarioDropdown(){
+  var dd=document.getElementById('mz-intermediario-dropdown'); if(!dd) return;
+  var inp=document.getElementById('mz-intermediario');
+  var q=(inp.value||'').toLowerCase();
+  var filtered=intermediarios.filter(function(n){return n.toLowerCase().indexOf(q)>=0;});
+  dd.innerHTML='';
+  filtered.forEach(function(n){
+    var row=document.createElement('div');
+    row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px';
+    row.onmouseenter=function(){this.style.background='var(--green-bg)';};
+    row.onmouseleave=function(){this.style.background='';};
+    var name=document.createElement('span'); name.textContent=n; name.style.flex='1';
+    name.onmousedown=function(e){e.preventDefault();inp.value=n;hideMzIntermediarioDropdown();};
+    var btn=document.createElement('button');
+    btn.textContent='×'; btn.title='Eliminar';
+    btn.style.cssText='background:none;border:none;color:var(--text3);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0';
+    btn.onmousedown=function(e){e.preventDefault();e.stopPropagation();
+      intermediarios=intermediarios.filter(function(x){return x!==n;});
+      saveIntermediarios(); sbDeleteIntermediario(n);
+      renderMzIntermediarioDropdown();
+      if(inp.value===n) inp.value='';
+      showToast('Intermediario eliminado');};
+    row.appendChild(name); row.appendChild(btn); dd.appendChild(row);
+  });
+  var addRow=document.createElement('div');
+  addRow.style.cssText='padding:10px 12px;cursor:pointer;font-size:13px;color:var(--green);font-weight:600';
+  addRow.textContent='+ Agregar nuevo...';
+  addRow.onmouseenter=function(){this.style.background='var(--green-bg)';};
+  addRow.onmouseleave=function(){this.style.background='';};
+  addRow.onmousedown=function(e){e.preventDefault();hideMzIntermediarioDropdown();abrirModalNuevoIntermediario();};
+  dd.appendChild(addRow);
+  dd.style.display='block';
+}
+function showMzIntermediarioDropdown(){renderMzIntermediarioDropdown();}
+function hideMzIntermediarioDropdown(){var dd=document.getElementById('mz-intermediario-dropdown');if(dd)dd.style.display='none';}
+function onMzIntermediarioInput(){renderMzIntermediarioDropdown();}
+
+function abrirModalNuevoIntermediario(){
+  document.getElementById('mo-title').innerHTML = '🚚 Nuevo intermediario';
+  document.getElementById('mo-body').innerHTML =
+    '<div class="field" style="margin-bottom:14px"><label>Nombre del intermediario</label>'+
+    '<input type="text" id="nuevo-intermediario-input" placeholder="Nombre" style="width:100%" onkeydown="if(event.key===\'Enter\'){event.preventDefault();confirmarNuevoIntermediario();}"></div>'+
+    '<button class="btn-main" onclick="confirmarNuevoIntermediario()">Agregar intermediario</button>';
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(function(){ var i=document.getElementById('nuevo-intermediario-input'); if(i) i.focus(); }, 100);
+}
+function confirmarNuevoIntermediario(){
+  var inp = document.getElementById('nuevo-intermediario-input');
+  var nom = inp.value.trim();
+  if(!nom){ showToast('Escribe un nombre'); return; }
+  agregarIntermediarioSiNuevo(nom);
+  closeModal();
+  var target=document.getElementById('mz-intermediario');
+  if(target) target.value = nom;
+  showToast('Intermediario agregado');
+}
 // ============================================================
 
 </script>
