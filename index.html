@@ -2021,8 +2021,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
 
     <!-- HISTORIAL -->
-    <div id="maiz-hist-sec" style="display:none">
-      <div id="maiz-hist-list"><div class="empty"><div class="empty-icon">🌽</div><div class="empty-text">Sin registros de maíz aún.</div></div></div>
+    <div id="maiz-hist-sec" class="maiz-form-wrap" style="display:none">
+      <div id="maiz-hist-list" style="width:100%;max-width:448px"><div class="empty"><div class="empty-icon">🌽</div><div class="empty-text">Sin registros de maíz aún.</div></div></div>
     </div>
   </div>
 
@@ -12593,9 +12593,9 @@ function renderMaizHist(){
           '<div style="font-size:14px;font-weight:600;color:var(--text)">'+(r.intermediario||'—')+'</div>'+
           '<div style="font-size:12px;color:var(--text3)">'+mzFechaLbl(r.fechaVal)+' · '+(r.ciclo||'')+(r.boleta?' · Boleta '+r.boleta:'')+'</div>'+
         '</div>'+
-        '<div style="display:flex;gap:4px;flex-shrink:0">'+
-          '<button onclick="editarMaizReg('+r.id+')" style="background:none;border:none;cursor:pointer;font-size:15px;padding:2px 6px" title="Editar">✏️</button>'+
-          '<button onclick="confirmDelMaiz('+r.id+')" style="background:none;border:none;cursor:pointer;font-size:15px;padding:2px 6px" title="Eliminar">🗑</button>'+
+        '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">'+
+          '<button onclick="editarMaizReg('+r.id+')" style="padding:6px 12px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Editar</button>'+
+          '<button id="mzdelbtn-'+r.id+'" onclick="confirmDelMaiz('+r.id+')" style="padding:6px 12px;border-radius:var(--radius);border:1px solid var(--green-border);background:transparent;color:var(--green);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Eliminar</button>'+
         '</div>'+
       '</div>'+
       '<div style="border-top:1px solid var(--border);padding-top:6px;margin-bottom:8px">'+parts+'</div>'+
@@ -12617,7 +12617,8 @@ function editarMaizReg(id){
 }
 
 function confirmDelMaiz(id){
-  var btn=event.target;
+  var btn=document.getElementById('mzdelbtn-'+id);
+  if(!btn) return;
   if(btn.dataset.confirm==='1'){
     maizRegistros = maizRegistros.filter(function(r){return r.id!==id;});
     saveMaiz();
@@ -12625,8 +12626,8 @@ function confirmDelMaiz(id){
     renderMaizHist();
     showToast('Registro eliminado');
   } else {
-    btn.dataset.confirm='1'; btn.textContent='⚠️';
-    setTimeout(function(){if(btn){btn.dataset.confirm='';btn.textContent='🗑';}},2500);
+    btn.dataset.confirm='1'; btn.textContent='⚠️ Confirmar';
+    setTimeout(function(){if(btn){btn.dataset.confirm='';btn.textContent='Eliminar';}},2500);
   }
 }
 // ============================================================
