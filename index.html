@@ -12307,7 +12307,6 @@ function maizTab(t, forceNew){
 }
 
 var mzEditId = null;
-function initMaizForm(reg){}
 function renderMaizHist(){}
 
 // ---- Formulario: encabezado ----
@@ -12458,6 +12457,105 @@ function recalcMzResumen(){
   if(eK) eK.textContent = kg.toLocaleString('es-MX');
   if(eT) eT.textContent = (kg/1000).toFixed(3);
   if(eTot) eTot.textContent = fmt(total);
+}
+
+// ---- Guardar / inicializar ----
+function mzTotalesDesdeTemp(){
+  var kg=0, total=0;
+  mzPartidasTemp.forEach(function(p){
+    var k=parseFloat(p.pesoNeto)||0;
+    kg+=k;
+    total+=k*(parseFloat(p.precio)||0);
+  });
+  return {kg:kg, ton:kg/1000, total:total};
+}
+
+function initMaizForm(reg){
+  initMzCicloSelect();
+  var hoy=new Date().toISOString().slice(0,10);
+  var f=document.getElementById('mz-fecha');
+  var c=document.getElementById('mz-ciclo');
+  var btn=document.getElementById('mz-guardar-btn');
+  if(reg){
+    mzEditId = reg.id;
+    f.value = reg.fechaVal||hoy;
+    c.value = reg.ciclo||cicloFromFecha(f.value);
+    document.getElementById('mz-intermediario').value = reg.intermediario||'';
+    document.getElementById('mz-boleta').value = reg.boleta||'';
+    document.getElementById('mz-receptor').value = reg.receptorFactura||'';
+    document.getElementById('mz-chofer').value = reg.chofer||'';
+    document.getElementById('mz-placa').value = reg.placa||'';
+    document.getElementById('mz-factura').value = reg.factura||'';
+    mzPartidasTemp = (reg.partidas||[]).map(function(p){
+      return {variedad:p.variedad||'', parcela:p.parcela||'',
+        hectareas:p.hectareas!=null?String(p.hectareas):'',
+        pesoNeto:p.pesoNeto!=null?String(p.pesoNeto):'',
+        toneladas:p.toneladas!=null?String(p.toneladas):'',
+        precio:p.precio!=null?String(p.precio):''};
+    });
+    if(btn) btn.textContent='Actualizar registro';
+  } else {
+    mzEditId = null;
+    f.value = hoy;
+    c.value = cicloFromFecha(hoy);
+    ['mz-intermediario','mz-boleta','mz-receptor','mz-chofer','mz-placa','mz-factura'].forEach(function(id){
+      var el=document.getElementById(id); if(el) el.value='';
+    });
+    mzPartidasTemp = [];
+    if(btn) btn.textContent='Guardar registro';
+  }
+  renderMzPartidas();
+}
+
+function resetMaizForm(){ initMaizForm(null); }
+
+function guardarMaiz(){
+  var fechaVal = document.getElementById('mz-fecha').value;
+  var intermediario = document.getElementById('mz-intermediario').value.trim();
+  if(!fechaVal){ showToast('Falta la fecha'); return; }
+  if(!intermediario){ showToast('Falta el intermediario'); return; }
+  var validas = mzPartidasTemp.filter(function(p){
+    return (parseFloat(p.pesoNeto)||0)>0 && (parseFloat(p.precio)||0)>0;
+  });
+  if(!validas.length){ showToast('Agrega al menos una variedad con peso y precio'); return; }
+
+  agregarIntermediarioSiNuevo(intermediario);
+
+  var partidas = validas.map(function(p){
+    var kg=parseFloat(p.pesoNeto)||0;
+    return {variedad:p.variedad, parcela:p.parcela||'',
+      hectareas:parseFloat(p.hectareas)||0,
+      pesoNeto:kg, toneladas:kg/1000,
+      precio:parseFloat(p.precio)||0};
+  });
+  var tot = mzTotalesDesdeTemp();
+
+  var reg = {
+    id: mzEditId || Date.now(),
+    fechaVal: fechaVal,
+    ciclo: document.getElementById('mz-ciclo').value,
+    intermediario: intermediario,
+    boleta: document.getElementById('mz-boleta').value.trim(),
+    receptorFactura: document.getElementById('mz-receptor').value.trim(),
+    chofer: document.getElementById('mz-chofer').value.trim(),
+    placa: document.getElementById('mz-placa').value.trim(),
+    factura: document.getElementById('mz-factura').value.trim(),
+    partidas: partidas,
+    totalKg: tot.kg, totalTon: tot.ton, total: tot.total,
+    ts: Date.now()
+  };
+
+  if(mzEditId){
+    var i = maizRegistros.findIndex(function(r){return r.id===mzEditId;});
+    if(i>=0) maizRegistros[i]=reg; else maizRegistros.unshift(reg);
+  } else {
+    maizRegistros.unshift(reg);
+  }
+  saveMaiz();
+  sbSaveMaizReg(reg);
+  var eraEdicion = !!mzEditId;
+  resetMaizForm();
+  showToast(eraEdicion ? 'Registro actualizado' : 'Registro guardado');
 }
 // ============================================================
 
