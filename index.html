@@ -545,8 +545,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   #rep-fram-sec .rfr-dia-full{max-width:1400px;margin:10px auto 0}
   #rep-fram-sec .rfr-topbar{max-width:1400px;margin-left:auto;margin-right:auto}
 
-  /* Camote: mismo breakout de ancho que Gastos y Frambuesa */
-  #rep-cam-sec{
+  /* Camote y Maíz: mismo breakout de ancho que Gastos y Frambuesa */
+  #rep-cam-sec,#rep-maiz-sec{
     width:100vw;
     position:relative;
     left:50%;
@@ -555,18 +555,18 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     box-sizing:border-box;
   }
   #rep-cam-sec .rcm-neg-grid{max-width:1400px;margin:0 auto 14px}
-  #rep-cam-sec .kpi-grid{
+  #rep-cam-sec .kpi-grid,#rep-maiz-sec .kpi-grid{
     max-width:1400px;margin:0 auto 14px;
     grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
   }
-  #rep-cam-sec .fin-charts-grid{
+  #rep-cam-sec .fin-charts-grid,#rep-maiz-sec .fin-charts-grid{
     max-width:1400px;margin:0 auto;
     display:grid;grid-template-columns:repeat(2,1fr);gap:12px;
   }
-  #rep-cam-sec .fin-charts-grid .dash-card{margin-bottom:0}
-  #rep-cam-sec .fin-chart-full{grid-column:1/-1}
-  #rep-cam-sec .rfr-topbar{max-width:1400px;margin-left:auto;margin-right:auto}
-  #rep-cam-sec .kpi-val,#rep-fin-sec .kpi-val,#rep-fram-sec .kpi-val{font-size:33px}
+  #rep-cam-sec .fin-charts-grid .dash-card,#rep-maiz-sec .fin-charts-grid .dash-card{margin-bottom:0}
+  #rep-cam-sec .fin-chart-full,#rep-maiz-sec .fin-chart-full{grid-column:1/-1}
+  #rep-cam-sec .rfr-topbar,#rep-maiz-sec .rfr-topbar{max-width:1400px;margin-left:auto;margin-right:auto}
+  #rep-cam-sec .kpi-val,#rep-fin-sec .kpi-val,#rep-fram-sec .kpi-val,#rep-maiz-sec .kpi-val{font-size:33px}
   .kpi-split-lbl{font-size:11px}
   .kpi-wow{font-size:15px}
   .kpi-wow~.kpi-lbl{padding-right:50px}
@@ -575,15 +575,15 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   .rfr-cajas-row{display:flex;align-items:center;gap:28px}
   .rfr-cajas-row>.rfr-cajas-total{flex:0 0 34%}
   .rfr-cajas-row>.kpi-split{flex:1;margin-top:0;padding-left:28px;border-left:1px solid var(--border)}
-  #rep-cam-sec .rcm-nay-charts-grid{
+  #rep-cam-sec .rcm-nay-charts-grid,#rep-maiz-sec .rcm-nay-charts-grid{
     max-width:1400px;margin:0 auto;
     display:grid;grid-template-columns:3fr 2fr;grid-template-rows:260px 260px;gap:12px;
   }
-  #rep-cam-sec .rcm-nay-charts-grid .dash-card{margin-bottom:0;display:flex;flex-direction:column;min-height:0}
-  #rep-cam-sec .rcm-nay-charts-grid .rcm-tonha-card{grid-column:1;grid-row:1/3}
-  #rep-cam-sec .rcm-nay-charts-grid .rcm-ton-card{grid-column:2;grid-row:1}
-  #rep-cam-sec .rcm-nay-charts-grid .rcm-ha-card{grid-column:2;grid-row:2}
-  #rep-cam-sec .rcm-nay-charts-grid .rcm-chart-wrap{position:relative;flex:1;min-height:0}
+  #rep-cam-sec .rcm-nay-charts-grid .dash-card,#rep-maiz-sec .rcm-nay-charts-grid .dash-card{margin-bottom:0;display:flex;flex-direction:column;min-height:0}
+  #rep-cam-sec .rcm-nay-charts-grid .rcm-tonha-card,#rep-maiz-sec .rcm-nay-charts-grid .rcm-tonha-card{grid-column:1;grid-row:1/3}
+  #rep-cam-sec .rcm-nay-charts-grid .rcm-ton-card,#rep-maiz-sec .rcm-nay-charts-grid .rcm-ton-card{grid-column:2;grid-row:1}
+  #rep-cam-sec .rcm-nay-charts-grid .rcm-ha-card,#rep-maiz-sec .rcm-nay-charts-grid .rcm-ha-card{grid-column:2;grid-row:2}
+  #rep-cam-sec .rcm-nay-charts-grid .rcm-chart-wrap,#rep-maiz-sec .rcm-nay-charts-grid .rcm-chart-wrap{position:relative;flex:1;min-height:0}
 }
 .rcm-neg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
 .rcm-neg-card{
@@ -3596,13 +3596,23 @@ function repTab(t){
 // de Maíz viven en Reportes -> Gastos -> Maíz y en Resultados -> Estado de
 // Resultados -> Maíz. El financiero (ingresos/utilidad) se agrega cuando exista
 // la captura de cosecha/ventas de maíz.
+// Espejo de renderRcmCosecha (Camote jal/nay) con el eje de agrupación cambiado de
+// SECTOR a PARCELA, que es como se captura el maíz. Sin la tabla "Ganancias x Sector":
+// el maíz no genera gastos prorrateables por parcela, así que no hay costo que restar.
+// Reusa mkRcmChart (el registro rcmCharts está llaveado por id y los de aquí van con
+// prefijo rmz-, así que no colisionan con los de camote).
 function renderRepMaiz(){
-  // Poblar selector de ciclos con los ciclos presentes en gastos de maíz.
+  // El ciclo se puebla con lo que exista en gastos de maíz Y en registros de cosecha:
+  // un ciclo con cosecha capturada pero sin gastos también tiene que poder verse.
   var cicloSel = document.getElementById('rmz-ciclo');
   if(cicloSel){
     var ciclosPresentes = [];
     (gastos||[]).filter(function(g){return g.loc==='maiz';}).forEach(function(g){
       var c = g.ciclo || cicloFromFecha(g.fechaVal);
+      if(c && ciclosPresentes.indexOf(c)<0) ciclosPresentes.push(c);
+    });
+    (typeof maizRegistros!=='undefined' ? maizRegistros : []).forEach(function(r){
+      var c = r.ciclo || cicloFromFecha(r.fechaVal);
       if(c && ciclosPresentes.indexOf(c)<0) ciclosPresentes.push(c);
     });
     ciclosPresentes.sort().reverse();
@@ -3615,13 +3625,308 @@ function renderRepMaiz(){
   }
   var cont = document.getElementById('rmz-content');
   if(!cont) return;
-  // Sección de Cosecha — en blanco por ahora (pendiente de definir).
-  cont.innerHTML =
-    '<div style="text-align:center;padding:70px 20px;color:var(--text3)">'+
-      '<div style="font-size:34px;margin-bottom:10px">🌽</div>'+
-      '<div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:4px">Cosecha de Maíz</div>'+
-      '<div style="font-size:13px">Sección pendiente de configurar.</div>'+
+
+  var filtroCiclo = cicloSel ? cicloSel.value : '';
+  var regs = (typeof maizRegistros!=='undefined' ? maizRegistros : []).filter(function(r){
+    if(!filtroCiclo) return true;
+    return (r.ciclo || cicloFromFecha(r.fechaVal)) === filtroCiclo;
+  });
+
+  var totalTon = 0, totalHa = 0;
+  var tonPorParcela = {}, haPorParcela = {}, ingresoPorParcela = {};
+  regs.forEach(function(r){
+    (r.partidas||[]).forEach(function(p){
+      var ton = parseFloat(p.toneladas)||0;
+      var ha  = parseFloat(p.hectareas)||0;
+      var ing = (parseFloat(p.pesoNeto)||0)*(parseFloat(p.precio)||0);
+      var parc = p.parcela || '—';
+      if(ton || ha){
+        totalTon += ton; totalHa += ha;
+        tonPorParcela[parc] = (tonPorParcela[parc]||0) + ton;
+        haPorParcela[parc]  = (haPorParcela[parc]||0) + ha;
+      }
+      if(ing) ingresoPorParcela[parc] = (ingresoPorParcela[parc]||0) + ing;
+    });
+  });
+
+  if(!totalTon && !totalHa){
+    cont.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--text3);font-size:13px">Sin registros de cosecha para este ciclo</div>';
+    return;
+  }
+
+  var promTonHa = totalHa>0 ? totalTon/totalHa : 0;
+
+  // Orden fijo por MZ_PARCELAS para que el color de cada parcela no baile entre ciclos;
+  // cualquier parcela fuera de esa lista (o vacía) va al final, alfabética.
+  var ordenBase = (typeof MZ_PARCELAS!=='undefined' ? MZ_PARCELAS : []);
+  var parcelas = Object.keys(tonPorParcela).sort(function(a,b){
+    var ia=ordenBase.indexOf(a), ib=ordenBase.indexOf(b);
+    if(ia<0) ia=999; if(ib<0) ib=999;
+    if(ia!==ib) return ia-ib;
+    return String(a).localeCompare(String(b));
+  });
+  var tonVals   = parcelas.map(function(s){return Math.round(tonPorParcela[s]*100)/100;});
+  var haVals    = parcelas.map(function(s){return Math.round((haPorParcela[s]||0)*100)/100;});
+  var tonHaVals = parcelas.map(function(s,i){return haVals[i]>0 ? Math.round((tonVals[i]/haVals[i])*100)/100 : 0;});
+  var parcCols  = parcelas.map(function(s,i){
+    var idx = ordenBase.indexOf(s);
+    return SEC_COLS_RCM[(idx>=0?idx:i)%SEC_COLS_RCM.length];
+  });
+
+  // Eficiencia x Parcela: un punto por parcela — Ton/Ha (x) vs Ingreso/Ha (y),
+  // con el radio proporcional a las toneladas de esa parcela.
+  var scatterPts = parcelas.map(function(s,i){
+    var ha = haVals[i];
+    var ingresoHa = ha>0 ? (ingresoPorParcela[s]||0)/ha : 0;
+    return {x: tonHaVals[i], y: Math.round(ingresoHa*100)/100, lbl: s};
+  });
+  var maxTonParcela = Math.max.apply(null, tonVals.concat([1]));
+  var scatterRadii = tonVals.map(function(t){
+    var minR=6, maxR=18;
+    return maxTonParcela>0 ? Math.round(minR + (t/maxTonParcela)*(maxR-minR)) : minR;
+  });
+  var scatterHoverRadii = scatterRadii.map(function(r){return r+2;});
+
+  // Ingreso x Parcela (barra horizontal). Sin tabla de ganancias al lado -> ancho completo.
+  var ingParcelas = Object.keys(ingresoPorParcela).sort(function(a,b){
+    var ia=ordenBase.indexOf(a), ib=ordenBase.indexOf(b);
+    if(ia<0) ia=999; if(ib<0) ib=999;
+    if(ia!==ib) return ia-ib;
+    return String(a).localeCompare(String(b));
+  });
+  var ingVals = ingParcelas.map(function(s){return Math.round((ingresoPorParcela[s]||0)*100)/100;});
+  var ingCols = ingParcelas.map(function(s,i){
+    var idx = ordenBase.indexOf(s);
+    return SEC_COLS_RCM[(idx>=0?idx:i)%SEC_COLS_RCM.length];
+  });
+
+  // Cosecha por Variedad (% de toneladas)
+  var tonPorVariedad = {};
+  regs.forEach(function(r){
+    (r.partidas||[]).forEach(function(p){
+      var ton = parseFloat(p.toneladas)||0;
+      if(!ton) return;
+      var v = p.variedad || 'Sin variedad';
+      tonPorVariedad[v] = (tonPorVariedad[v]||0) + ton;
+    });
+  });
+  var variedades = Object.keys(tonPorVariedad).sort(function(a,b){return tonPorVariedad[b]-tonPorVariedad[a];});
+  var variedadVals = variedades.map(function(v){return Math.round(tonPorVariedad[v]*100)/100;});
+  var variedadSum = variedadVals.reduce(function(a,v){return a+v;},0);
+  var ordenVar = (typeof MZ_VARIEDADES!=='undefined' ? MZ_VARIEDADES : []);
+  var variedadCols = variedades.map(function(v,i){
+    var idx = ordenVar.indexOf(v);
+    return SEC_COLS_RCM[(idx>=0?idx:i)%SEC_COLS_RCM.length];
+  });
+  var variedadRows = variedades.map(function(v,i){
+    var pct = variedadSum>0 ? Math.round(variedadVals[i]/variedadSum*100) : 0;
+    var kg = Math.round(variedadVals[i]*1000).toLocaleString('es-MX');
+    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0">'+
+      '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+variedadCols[i]+';border:1px solid var(--border);flex-shrink:0"></span>'+
+      '<span style="font-size:12px;color:var(--text2);width:130px;flex-shrink:0">'+v+'</span>'+
+      '<span style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--maiz)">'+pct+'%</span>'+
+      '<span style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-left:4px">('+kg+' kg)</span>'+
     '</div>';
+  }).join('');
+
+  cont.innerHTML =
+    '<div class="kpi-grid">'+
+      '<div class="kpi-card">'+
+        '<div class="kpi-accent" style="background:var(--maiz)"></div>'+
+        '<div class="kpi-lbl">Toneladas cosechadas</div>'+
+        '<div class="kpi-val" style="color:var(--maiz)">'+(Math.round(totalTon*100)/100).toLocaleString('es-MX')+'</div>'+
+      '</div>'+
+      '<div class="kpi-card">'+
+        '<div class="kpi-accent" style="background:var(--maiz)"></div>'+
+        '<div class="kpi-lbl">Hectáreas cosechadas</div>'+
+        '<div class="kpi-val" style="color:var(--maiz)">'+(Math.round(totalHa*100)/100).toLocaleString('es-MX')+'</div>'+
+      '</div>'+
+      '<div class="kpi-card">'+
+        '<div class="kpi-accent" style="background:var(--maiz)"></div>'+
+        '<div class="kpi-lbl">Promedio Ton/Ha</div>'+
+        '<div class="kpi-val" style="color:var(--maiz)">'+(Math.round(promTonHa*100)/100).toLocaleString('es-MX')+'</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="rcm-nay-charts-grid">'+
+      '<div class="dash-card rcm-tonha-card">'+
+        '<div class="dash-card-title">Promedio de Toneladas x Hectarea</div>'+
+        '<div class="rcm-chart-wrap" style="margin-top:8px"><canvas id="rmz-tonha-parc-chart"></canvas></div>'+
+      '</div>'+
+      '<div class="dash-card rcm-ton-card">'+
+        '<div class="dash-card-title">Toneladas x Parcela</div>'+
+        '<div class="rcm-chart-wrap" style="margin-top:8px"><canvas id="rmz-ton-parc-chart"></canvas></div>'+
+      '</div>'+
+      '<div class="dash-card rcm-ha-card">'+
+        '<div class="dash-card-title">Hectareas x Parcela</div>'+
+        '<div class="rcm-chart-wrap" style="margin-top:8px"><canvas id="rmz-ha-parc-chart"></canvas></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="fin-charts-grid" style="margin-top:12px">'+
+      '<div class="dash-card">'+
+        '<div class="dash-card-title">Eficiencia x Parcela</div>'+
+        '<div style="position:relative;height:260px;margin-top:8px"><canvas id="rmz-scatter-chart"></canvas></div>'+
+      '</div>'+
+      '<div class="dash-card">'+
+        '<div class="dash-card-title">Cosecha por Variedad</div>'+
+        '<div style="display:flex;align-items:center;gap:14px;margin-top:8px;flex-wrap:wrap">'+
+          '<div style="flex:0 0 auto">'+variedadRows+'</div>'+
+          '<div style="position:relative;flex:1;min-width:160px;height:200px"><canvas id="rmz-variedad-pie-chart"></canvas></div>'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+    (ingParcelas.length ?
+      '<div class="fin-charts-grid" style="margin-top:12px">'+
+        '<div class="dash-card fin-chart-full">'+
+          '<div class="dash-card-title">Ingreso x Parcela</div>'+
+          '<div style="position:relative;height:'+Math.max(200, ingParcelas.length*46)+'px;margin-top:8px"><canvas id="rmz-ingreso-parc-chart"></canvas></div>'+
+        '</div>'+
+      '</div>' : '');
+
+  var gridCol = rfrGridCol(); var textMuted = '#898781';
+
+  var barLabelPlugin = function(suffix, sufTxt){
+    return {
+      id:'rmzBarLabels'+suffix,
+      afterDatasetsDraw:function(chart){
+        var ctx=chart.ctx; var ds=chart.data.datasets[0]; var meta=chart.getDatasetMeta(0);
+        meta.data.forEach(function(bar,i){
+          var v=ds.data[i]; if(!v) return;
+          ctx.save(); ctx.fillStyle='#1a7a4a'; ctx.font='bold 11px monospace';
+          ctx.textAlign='center'; ctx.textBaseline='bottom';
+          ctx.fillText(v, bar.x, bar.y-4); ctx.restore();
+        });
+      }
+    };
+  };
+  function proximoMultiploConAire(m, step){ return Math.ceil(m/step)*step + step; }
+
+  mkRcmChart('rmz-ton-parc-chart', {
+    type:'bar',
+    plugins:[barLabelPlugin('Ton')],
+    data:{labels:parcelas, datasets:[{data:tonVals, backgroundColor:parcCols, borderRadius:3}]},
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+c.raw+' ton';}}}},
+      scales:{
+        x:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}},
+        y:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:10}}, beginAtZero:true,
+           suggestedMax:(function(){var m=Math.max.apply(null,tonVals.concat([1])); return m+Math.ceil(m*0.15)+1;})()}
+      }
+    }
+  });
+
+  mkRcmChart('rmz-ha-parc-chart', {
+    type:'bar',
+    plugins:[barLabelPlugin('Ha')],
+    data:{labels:parcelas, datasets:[{data:haVals, backgroundColor:parcCols, borderRadius:3}]},
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+c.raw+' ha';}}}},
+      scales:{
+        x:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}},
+        y:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:10}, stepSize:0.5}, beginAtZero:true,
+           suggestedMax:(function(){var m=Math.max.apply(null,haVals.concat([1])); return proximoMultiploConAire(m,0.5);})()}
+      }
+    }
+  });
+
+  mkRcmChart('rmz-tonha-parc-chart', {
+    type:'bar',
+    plugins:[barLabelPlugin('TonHa')],
+    data:{labels:parcelas, datasets:[{data:tonHaVals, backgroundColor:parcCols, borderRadius:3}]},
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+c.raw+' ton/ha';}}}},
+      scales:{
+        x:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}},
+        y:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:10}}, beginAtZero:true,
+           suggestedMax:(function(){var m=Math.max.apply(null,tonHaVals.concat([1])); return m+Math.ceil(m*0.15)+1;})()}
+      }
+    }
+  });
+
+  var scatterLabelPlugin = {
+    id:'rmzScatterLabels',
+    afterDatasetsDraw:function(chart){
+      var ctx=chart.ctx; var meta=chart.getDatasetMeta(0);
+      meta.data.forEach(function(pt,i){
+        if(!pt) return;
+        var r = pt.options && pt.options.radius ? pt.options.radius : scatterRadii[i];
+        ctx.save();
+        ctx.fillStyle = parcCols[i];
+        ctx.font = 'bold 11px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(parcelas[i], pt.x, pt.y - r - 4);
+        ctx.restore();
+      });
+    }
+  };
+
+  mkRcmChart('rmz-scatter-chart', {
+    type:'scatter',
+    plugins:[scatterLabelPlugin],
+    data:{datasets:[{
+      data:scatterPts,
+      backgroundColor:parcCols,
+      pointRadius:scatterRadii,
+      pointHoverRadius:scatterHoverRadii
+    }]},
+    options:{responsive:true, maintainAspectRatio:false,
+      layout:{padding:{top:14, right:14}},
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{
+          title:function(items){return items.length ? scatterPts[items[0].dataIndex].lbl : '';},
+          label:function(c){return ' Ton/Ha: '+c.parsed.x+' · Ingreso/Ha: '+fmt(c.parsed.y);}
+        }}},
+      scales:{
+        x:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:11}}, title:{display:true, text:'Toneladas x Hectarea', color:textMuted, font:{size:11}}},
+        y:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:11}, callback:function(v){return fmtCompact(v);}}, beginAtZero:true, title:{display:true, text:'Ingreso x Hectarea', color:textMuted, font:{size:11}}}
+      }
+    }
+  });
+
+  mkRcmChart('rmz-variedad-pie-chart', {
+    type:'pie',
+    data:{labels:variedades, datasets:[{data:variedadVals, backgroundColor:variedadCols, hoverOffset:6}]},
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:function(c){return ' '+c.label+': '+(variedadSum>0?Math.round(c.raw/variedadSum*100):0)+'% ('+Math.round(c.raw*1000).toLocaleString('es-MX')+' kg)';}}}
+      },
+      layout:{padding:{top:8}}
+    }
+  });
+
+  if(ingParcelas.length){
+    mkRcmChart('rmz-ingreso-parc-chart', {
+      type:'bar',
+      plugins:[{
+        id:'rmzIngresoBarLabels',
+        afterDatasetsDraw:function(chart){
+          var ctx=chart.ctx, ds=chart.data.datasets[0], meta=chart.getDatasetMeta(0);
+          meta.data.forEach(function(bar,i){
+            var v=ds.data[i]; if(v==null) return;
+            ctx.save();
+            ctx.fillStyle='#1a7a4a';
+            ctx.font='bold 11px monospace';
+            ctx.textAlign='left'; ctx.textBaseline='middle';
+            ctx.fillText(fmt(v), bar.x+8, bar.y);
+            ctx.restore();
+          });
+        }
+      }],
+      data:{labels:ingParcelas, datasets:[{data:ingVals, backgroundColor:ingCols, borderRadius:3}]},
+      options:{
+        indexAxis:'y',
+        responsive:true, maintainAspectRatio:false,
+        layout:{padding:{right:80}},
+        plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+fmt(c.raw);}}}},
+        scales:{
+          x:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:11}, callback:function(v){return fmtCompact(v);}}, beginAtZero:true,
+             suggestedMax:(function(){var m=Math.max.apply(null,ingVals.concat([1])); return m+Math.ceil(m*0.2)+1;})()},
+          y:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}}
+        }
+      }
+    });
+  }
 }
 
 // ============================================================

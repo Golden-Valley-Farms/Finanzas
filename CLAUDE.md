@@ -153,7 +153,19 @@ Ojo (ago-2026): hasta este cambio, la rama `com` de `sincronizarDeudasEnvio()` e
 
 Agregado en ago-2026 (spec en `docs/superpowers/specs/2026-08-18-cosecha-maiz-registro-historial-design.md`). Toda su lógica vive junta en el bloque `// ==== MÓDULO MAÍZ ====` al **final del `<script>`**, no repartida por el archivo. Funciona por hoisting y es lo único que lo mantiene legible.
 
-**Solo captura y consulta.** El módulo **no genera deudas, ni gastos, ni movimientos `autoGen`, ni suma en reportes, EDR o resumen por negocio.** Eso es deliberado, no un pendiente olvidado: se dejaron los datos completos y persistidos para que un módulo de reportes posterior los lea sin migraciones extra. Tampoco hay filtros ni totales en el Historial, ni pestañas de Finanzas o Nómina.
+**Captura, consulta y reporte de cosecha.** El módulo **no genera deudas, ni gastos, ni movimientos `autoGen`, ni suma en el EDR o el resumen por negocio.** Eso es deliberado: los ingresos de maíz no entran al financiero, solo se reportan como cosecha. Tampoco hay filtros ni totales en el Historial, ni pestañas de Finanzas o Nómina.
+
+### Reporte de cosecha (Reportes → Maíz)
+
+`renderRepMaiz()` (línea ~3599) es el **espejo de `renderRcmCosecha()`** (camote jal/nay) con el eje de agrupación cambiado de **sector a parcela**, que es como se captura el maíz. Mismas tres tarjetas KPI y mismas seis visualizaciones: Promedio Ton/Ha, Toneladas x Parcela, Hectáreas x Parcela, Eficiencia x Parcela (dispersión), Cosecha por Variedad (pastel) e Ingreso x Parcela.
+
+**No lleva la tabla "Ganancias x Sector"** que sí tiene camote: esa tabla resta el costo prorrateado por sector (`rcmCostoPorSector`), y el maíz no tiene gastos prorrateables por parcela. Por eso "Ingreso x Parcela" va a ancho completo (`fin-chart-full`) en vez de compartir fila.
+
+- **Reusa `mkRcmChart()`**, no un cuarto registro de gráficas: `rcmCharts` está llaveado por id y los de aquí van con prefijo `rmz-`, así que no colisionan con los `rcm-` de camote. Al alternar entre las pestañas Camote y Maíz cada una destruye y recrea las suyas.
+- **El ingreso se calcula `pesoNeto × precio`**, no se lee de un campo: las partidas de maíz no guardan `total` (a diferencia de las de envíos de camote, que sí traen `p.total`).
+- **El orden y el color de las parcelas salen de `MZ_PARCELAS`**, no del orden de aparición, para que el color de cada parcela no cambie entre ciclos. Lo mismo para las variedades con `MZ_VARIEDADES`. Una parcela fuera de esa lista cae al final.
+- El selector de ciclo se puebla con los ciclos presentes en **gastos de maíz y en `maizRegistros`**: un ciclo con cosecha capturada pero sin gastos también tiene que poder verse.
+- Las reglas CSS del breakout a ancho completo y de `.rcm-nay-charts-grid` están compartidas entre `#rep-cam-sec` y `#rep-maiz-sec`; al tocarlas hay que respetar los dos selectores.
 
 **Pantalla.** `#sc-maiz` replica el patrón de `#sc-fram`: `maizMainTab('cosecha')` marca la única pestaña principal (existe por simetría, para que agregar una segunda sea trivial) y `maizTab(t, forceNew)` alterna Registro / Historial, con el estado en `maizTabSel`. `goSc('maiz')` llama `maizTab(maizTabSel)`.
 
