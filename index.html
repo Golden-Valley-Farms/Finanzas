@@ -3591,11 +3591,20 @@ function repTab(t){
 // ============================================================
 // ---- REPORTE MAÍZ ----
 // ============================================================
-// Estructura espejo de Camote: por ahora solo la vista de Cosecha, que se deja
-// en blanco a propósito (Fernando definirá después cómo se acomoda). Los gastos
-// de Maíz viven en Reportes -> Gastos -> Maíz y en Resultados -> Estado de
-// Resultados -> Maíz. El financiero (ingresos/utilidad) se agrega cuando exista
-// la captura de cosecha/ventas de maíz.
+// Los gastos de Maíz viven en Reportes -> Gastos -> Maíz y en Resultados ->
+// Estado de Resultados -> Maíz; esta pantalla es solo la cosecha.
+//
+// Colores de variedad: se toman prestados de las variedades de camote para que
+// el mismo tono signifique lo mismo en las dos pantallas (decisión del usuario).
+// Blanco <- Blanco Criollo, Antylope <- Amarillo Nylon, Waxy <- Amarillo Covington.
+// Sorgo no tiene equivalente en camote y lleva un café claro propio.
+var MZ_VARIEDAD_COLS = {
+  'Blanco':   '#faf0e1',
+  'Antylope': '#FFC933',
+  'Waxy':     '#f5964a',
+  'Sorgo':    '#B08968'
+};
+//
 // Espejo de renderRcmCosecha (Camote jal/nay) con el eje de agrupación cambiado de
 // SECTOR a PARCELA, que es como se captura el maíz. Sin la tabla "Ganancias x Sector":
 // el maíz no genera gastos prorrateables por parcela, así que no hay costo que restar.
@@ -3715,6 +3724,7 @@ function renderRepMaiz(){
   var variedadSum = variedadVals.reduce(function(a,v){return a+v;},0);
   var ordenVar = (typeof MZ_VARIEDADES!=='undefined' ? MZ_VARIEDADES : []);
   var variedadCols = variedades.map(function(v,i){
+    if(MZ_VARIEDAD_COLS[v]) return MZ_VARIEDAD_COLS[v];
     var idx = ordenVar.indexOf(v);
     return SEC_COLS_RCM[(idx>=0?idx:i)%SEC_COLS_RCM.length];
   });
