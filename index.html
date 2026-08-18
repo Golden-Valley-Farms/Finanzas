@@ -1920,10 +1920,24 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 </div>
 
   <div id="sc-maiz" class="screen">
-    <div class="empty" style="padding:60px 20px;text-align:center">
-      <div class="empty-icon" style="font-size:48px">🌽</div>
-      <div class="empty-text" style="margin-top:12px;font-size:15px;font-weight:600;color:var(--text2)">Maíz</div>
-      <div style="margin-top:8px;font-size:13px;color:var(--text3);max-width:280px;margin-left:auto;margin-right:auto">Este módulo está en blanco por ahora. Aquí irán los registros de maíz cuando definamos cómo capturarlos.</div>
+    <div class="fram-subnav-wrap">
+      <div class="fram-subnav" id="maiz-maintabs">
+        <button class="fram-tab active" id="mzt-cosecha" onclick="maizMainTab('cosecha')">Cosecha</button>
+      </div>
+    </div>
+    <div class="fram-subnav-wrap">
+      <div class="fram-subnav fram-subnav-sub" id="maiz-subtabs-cosecha">
+        <button class="fram-tab active" id="mst-cosecha-reg" onclick="maizTab('nuevo', true)">Registro</button>
+        <button class="fram-tab" id="mst-cosecha-hist" onclick="maizTab('hist')">Historial</button>
+      </div>
+    </div>
+
+    <!-- FORMULARIO DE REGISTRO -->
+    <div id="maiz-form-sec"></div>
+
+    <!-- HISTORIAL -->
+    <div id="maiz-hist-sec" style="display:none">
+      <div id="maiz-hist-list"><div class="empty"><div class="empty-icon">🌽</div><div class="empty-text">Sin registros de maíz aún.</div></div></div>
     </div>
   </div>
 
@@ -2929,6 +2943,7 @@ function goSc(s){
   if(s==='rep') repTab(repTabActual||'cam');
   if(s==='ven'){ venTab('lista'); }
   if(s==='fram'){ framTab('nuevo'); }
+  if(s==='maiz'){ maizTab(maizTabSel); }
   if(s==='deudas'){ renderDeudas(); }
   window.scrollTo(0,0);
 }
@@ -12192,6 +12207,29 @@ async function sbDeleteIntermediario(nombre){
   if(!sbOnline||!sb) return;
   await sb.from('intermediarios').delete().eq('nombre', nombre);
 }
+
+// ---- Navegación ----
+var maizTabSel = 'nuevo';
+
+function maizMainTab(main){
+  document.getElementById('mzt-cosecha').classList.toggle('active', main==='cosecha');
+  document.getElementById('maiz-subtabs-cosecha').style.display = main==='cosecha'?'flex':'none';
+  if(main==='cosecha') maizTab('nuevo', true);
+}
+
+function maizTab(t, forceNew){
+  maizTabSel = t;
+  document.getElementById('mst-cosecha-reg').classList.toggle('active', t==='nuevo');
+  document.getElementById('mst-cosecha-hist').classList.toggle('active', t==='hist');
+  document.getElementById('maiz-form-sec').style.display = t==='nuevo'?'block':'none';
+  document.getElementById('maiz-hist-sec').style.display = t==='hist'?'block':'none';
+  if(t==='nuevo' && (!mzEditId || forceNew)){ mzEditId=null; initMaizForm(); }
+  if(t==='hist') renderMaizHist();
+}
+
+var mzEditId = null;
+function initMaizForm(reg){}
+function renderMaizHist(){}
 // ============================================================
 
 </script>
