@@ -1980,6 +1980,38 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           </div>
         </div>
       </div>
+
+      <div class="step-label">2. Partidas por variedad</div>
+      <div id="mz-partidas"></div>
+      <div class="card" style="margin-bottom:12px" id="mz-add-variedad-wrap">
+        <div style="display:flex;gap:8px;align-items:flex-end">
+          <div class="field" style="flex:1;margin:0">
+            <label>Variedad</label>
+            <select id="mz-var-select" style="width:100%"></select>
+          </div>
+          <button class="btn-main" style="width:auto;padding:10px 16px;margin:0;flex-shrink:0" onclick="addMzPartidaDesdeSelect()">+ Agregar</button>
+        </div>
+      </div>
+
+      <div class="step-label">3. Resumen</div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Total kg</div>
+            <div id="mz-resumen-kg" style="font-size:15px;font-weight:600;font-family:var(--mono);color:var(--text)">0</div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Total toneladas</div>
+            <div id="mz-resumen-ton" style="font-size:15px;font-weight:600;font-family:var(--mono);color:var(--text)">0.000</div>
+          </div>
+        </div>
+        <div style="padding:12px;background:var(--green-bg);border-radius:var(--radius);display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:.04em">Total</span>
+          <span id="mz-resumen-total" style="font-size:17px;font-weight:700;font-family:var(--mono);color:var(--green)">$0</span>
+        </div>
+      </div>
+
+      <button class="btn-main" id="mz-guardar-btn" onclick="guardarMaiz()">Guardar registro</button>
     </div>
 
     <!-- HISTORIAL -->
@@ -12340,6 +12372,92 @@ function confirmarNuevoIntermediario(){
   var target=document.getElementById('mz-intermediario');
   if(target) target.value = nom;
   showToast('Intermediario agregado');
+}
+
+// ---- Partidas por variedad ----
+var mzPartidasTemp = [];
+
+function updateMzVarSelect(){
+  var sel=document.getElementById('mz-var-select'); if(!sel) return;
+  sel.innerHTML='<option value="">— Selecciona variedad —</option>';
+  MZ_VARIEDADES.forEach(function(v){
+    var o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o);
+  });
+}
+
+function addMzPartidaDesdeSelect(){
+  var sel=document.getElementById('mz-var-select');
+  var v=sel?sel.value:'';
+  if(!v){ showToast('Selecciona una variedad'); return; }
+  mzPartidasTemp.push({variedad:v, parcela:'', hectareas:'', pesoNeto:'', toneladas:'', precio:''});
+  if(sel) sel.value='';
+  renderMzPartidas();
+}
+
+function removeMzPartida(idx){
+  mzPartidasTemp.splice(idx,1);
+  renderMzPartidas();
+}
+
+function renderMzPartidas(){
+  var cont=document.getElementById('mz-partidas'); if(!cont) return;
+  cont.innerHTML='';
+  mzPartidasTemp.forEach(function(p,idx){
+    var d=document.createElement('div'); d.className='partida-card';
+    var parcOpts='<option value="">—</option>';
+    MZ_PARCELAS.forEach(function(pc){
+      parcOpts+='<option value="'+pc+'"'+(p.parcela===pc?' selected':'')+'>'+pc+'</option>';
+    });
+    d.innerHTML=
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">'+
+        '<span style="font-size:13px;font-weight:600;color:var(--green)">'+p.variedad+'</span>'+
+        '<button onclick="removeMzPartida('+idx+')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;padding:2px 6px;border-radius:6px" title="Quitar variedad">×</button>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">'+
+        '<div><label>Parcela</label><select onchange="mzPartidasTemp['+idx+'].parcela=this.value">'+parcOpts+'</select></div>'+
+        '<div><label>Hectáreas</label><input type="number" placeholder="0.00" min="0" step="0.01" value="'+p.hectareas+'" onchange="mzPartidasTemp['+idx+'].hectareas=this.value"></div>'+
+        '<div><label>Peso Neto (kg)</label><input type="number" placeholder="0" min="0" value="'+p.pesoNeto+'" onchange="mzPartidasTemp['+idx+'].pesoNeto=this.value;mzAutoCalc('+idx+')"></div>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">'+
+        '<div><label>Toneladas</label><input type="number" id="mztn-'+idx+'" placeholder="0.000" min="0" step="0.001" value="'+p.toneladas+'" readonly style="background:var(--surface2);color:var(--text3)"></div>'+
+        '<div><label>Precio x kg</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" placeholder="0" min="0" step="0.01" value="'+p.precio+'" style="padding-left:24px" onchange="mzPartidasTemp['+idx+'].precio=this.value;mzAutoCalc('+idx+')"></div></div>'+
+        '<div><label>Total</label><div id="mztot-'+idx+'" style="padding:10px 12px;background:var(--green-bg);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--green);font-family:var(--mono)">'+mzCalcTotalPartida(p)+'</div></div>'+
+      '</div>';
+    cont.appendChild(d);
+  });
+  updateMzVarSelect();
+  recalcMzResumen();
+}
+
+function mzCalcTotalPartida(p){
+  var kg=parseFloat(p.pesoNeto)||0;
+  var precio=parseFloat(p.precio)||0;
+  if(!kg||!precio) return '$0';
+  return fmt(kg*precio);
+}
+
+function mzAutoCalc(idx){
+  var p=mzPartidasTemp[idx]; if(!p) return;
+  var kg=parseFloat(p.pesoNeto)||0;
+  p.toneladas = kg>0 ? (kg/1000).toFixed(3) : '';
+  var t=document.getElementById('mztn-'+idx); if(t) t.value=p.toneladas;
+  var el=document.getElementById('mztot-'+idx); if(el) el.textContent=mzCalcTotalPartida(p);
+  recalcMzResumen();
+}
+
+function recalcMzResumen(){
+  var kg=0, total=0;
+  mzPartidasTemp.forEach(function(p){
+    var k=parseFloat(p.pesoNeto)||0;
+    kg+=k;
+    total+=k*(parseFloat(p.precio)||0);
+  });
+  var eK=document.getElementById('mz-resumen-kg');
+  var eT=document.getElementById('mz-resumen-ton');
+  var eTot=document.getElementById('mz-resumen-total');
+  if(eK) eK.textContent = kg.toLocaleString('es-MX');
+  if(eT) eT.textContent = (kg/1000).toFixed(3);
+  if(eTot) eTot.textContent = fmt(total);
 }
 // ============================================================
 
