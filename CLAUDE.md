@@ -58,7 +58,7 @@ JS usa camelCase, Supabase usa snake_case: `fechaVal`↔`fecha`, `tipoCamote`↔
 
 ### Claves de localStorage
 
-`cc_gastos3`, `cc_envios`, `cc_alm_lotes`, `cc_fram`, `cc_fram_fin`, `cc_maiz`, `cc_intermediarios`, `cc_deudas`, `cc_pagosdeuda`, `cc_contrapartes`, `cc_clientes`, `cc_proveedores`, `cc_proveedores_comer`, `cc_clientes_comer`, `cc_deudores`, `cc_acreedores`, `cc_bancos`, `cc_trabajadores`, `cc_cats`, `cc_presentaciones`.
+`cc_gastos3`, `cc_envios`, `cc_alm_lotes`, `cc_fram`, `cc_fram_fin`, `cc_maiz`, `cc_intermediarios`, `cc_receptores_factura`, `cc_choferes`, `cc_deudas`, `cc_pagosdeuda`, `cc_contrapartes`, `cc_clientes`, `cc_proveedores`, `cc_proveedores_comer`, `cc_clientes_comer`, `cc_deudores`, `cc_acreedores`, `cc_bancos`, `cc_trabajadores`, `cc_cats`, `cc_presentaciones`.
 
 ## Modelo de negocios (`NEGOCIOS`)
 
@@ -162,11 +162,25 @@ Agregado en ago-2026 (spec en `docs/superpowers/specs/2026-08-18-cosecha-maiz-re
 **Listas fijas en código**, decisión del usuario — si cambian, se edita la línea:
 
 ```js
-var MZ_VARIEDADES = ['Blanco','Antylope','Waxy'];
+var MZ_VARIEDADES = ['Blanco','Antylope','Waxy','Sorgo'];
 var MZ_PARCELAS   = ['Cuata Grande','Cuata Chica','Mesita','Camino'];
 ```
 
-**Catálogo de intermediarios.** Cuarto catálogo por nombre del proyecto, propio: no reusa `clientes`, `proveedores` ni `contrapartes`. `renderMzIntermediarioDropdown()` es un clon de `renderProveedorDropdown()` (línea ~9537) con `intermediarios`; hereda su comportamiento tal cual, incluido que la × limpia el input *después* de repintar. `agregarIntermediarioSiNuevo()` normaliza, evita duplicados y ordena con `localeCompare(...,'es')`.
+**Tres catálogos por nombre, un solo camino de código.** Intermediario, Receptor Factura y Chofer son catálogos propios del módulo — no reusan `clientes`, `proveedores` ni `contrapartes`. En vez de clonar el dropdown tres veces, los tres comparten `mzRenderCatDropdown(k)` / `mzShowCatDropdown(k)` / `mzHideCatDropdown(k)` / `mzOnCatInput(k)` / `mzAbrirModalNuevoCat(k)` / `mzConfirmarNuevoCat(k)` / `mzAgregarCatSiNuevo(k, nombre)`, donde `k` es `'intermediario'` | `'receptor'` | `'chofer'`.
+
+`MZ_CATS` guarda por clave el `inputId` y los textos (título del modal, etiqueta, toasts). El **arreglo** no se guarda ahí: las mutaciones lo reasignan (`lista.filter(...)`), así que se accede por función — `mzCatGet(k)` / `mzCatSet(k,v)` / `mzCatSave(k)` / `mzCatSbSave(k,n)` / `mzCatSbDelete(k,n)`. Agregar un cuarto catálogo es agregar una línea a `MZ_CATS`, una rama a esas cinco funciones y el par input+dropdown en el markup.
+
+| clave | arreglo | localStorage | tabla |
+|---|---|---|---|
+| `intermediario` | `intermediarios` | `cc_intermediarios` | `intermediarios` |
+| `receptor` | `receptoresFactura` | `cc_receptores_factura` | `receptores_factura` |
+| `chofer` | `choferes` | `cc_choferes` | `choferes` |
+
+El markup usa el id del dropdown por convención: `<inputId>-dropdown`. Los handlers van en `onmousedown` con `preventDefault()` a propósito — con `onclick`, el `onblur` del input cierra el dropdown antes de que el clic llegue a la fila.
+
+`guardarMaiz()` da de alta los tres al guardar, así que el catálogo se llena solo con lo que el usuario captura. El intermediario es obligatorio; receptor y chofer pueden ir vacíos y entonces no se agrega nada (`mzAgregarCatSiNuevo` sale temprano con cadena vacía).
+
+`agregarIntermediarioSiNuevo()` se conserva como alias delgado de `mzAgregarCatSiNuevo('intermediario', …)`.
 
 **Partidas.** Estado en `mzPartidasTemp`; se puede repetir una variedad, porque la misma puede venir de dos parcelas. Los `onchange` mutan el arreglo y solo tocan los tres nodos calculados (`mzAutoCalc`) — **no** repintan la lista, la misma trampa de foco que `dgSetKg()` y `recalcFramFin()`. `toneladas` es derivado (`pesoNeto/1000`) y va `readonly`.
 
@@ -379,7 +393,7 @@ Antes de modificar cualquier función, `grep` por `function nombre(` para confir
 
 URL y clave publicable están en duro al inicio del script (líneas ~1911-1912). La clave es *publishable*, no secreta — la seguridad real depende de las políticas RLS del proyecto, no de ocultarla. El repo es público, así que ese archivo es visible para cualquiera: **RLS es la única defensa real de los datos.**
 
-Tablas: `gastos`, `envios`, `alm_lotes`, `fram_registros`, `fram_finanzas`, `maiz_registros`, `intermediarios`, `deudas`, `pagos_deuda`, `contrapartes`, `clientes`, `proveedores`, `proveedores_comer`, `clientes_comer`, `deudores`, `acreedores`, `bancos`, `trabajadores`, `categorias`.
+Tablas: `gastos`, `envios`, `alm_lotes`, `fram_registros`, `fram_finanzas`, `maiz_registros`, `intermediarios`, `receptores_factura`, `choferes`, `deudas`, `pagos_deuda`, `contrapartes`, `clientes`, `proveedores`, `proveedores_comer`, `clientes_comer`, `deudores`, `acreedores`, `bancos`, `trabajadores`, `categorias`.
 
 Si una tabla regresa vacía teniendo datos, casi siempre es RLS — el código ya avisa esto por consola para `fram_registros`.
 
