@@ -2082,6 +2082,7 @@ async function cargarDesdeSB(){
   var dData = await fetchAllRows('deudas', 'created_at', false);
   var pData = await fetchAllRows('pagos_deuda', 'created_at', false);
   var cpData = await fetchAllRows('contrapartes', 'created_at', false);
+  var mzData = await fetchAllRows('maiz_registros', 'created_at', false);
   var rC = await sb.from('clientes').select('nombre').order('nombre');
   var rP = await sb.from('proveedores').select('nombre').order('nombre');
   var rPC = await sb.from('proveedores_comer').select('nombre').order('nombre');
@@ -2090,6 +2091,7 @@ async function cargarDesdeSB(){
   var rAc = await sb.from('acreedores').select('nombre').order('nombre');
   var rB = await sb.from('bancos').select('nombre').order('nombre');
   var rT = await sb.from('trabajadores').select('nombre').order('nombre');
+  var rInt = await sb.from('intermediarios').select('nombre').order('nombre');
   var rCat = await sb.from('categorias').select('lista,nombre').order('nombre');
 
   if(gData && gData.length){
@@ -2192,6 +2194,19 @@ async function cargarDesdeSB(){
     });
     saveDeudas();
   }
+  if(mzData && mzData.length){
+    maizRegistros = mzData.map(function(m){
+      return {id:m.id, fechaVal:m.fecha||'', ciclo:m.ciclo||'',
+        intermediario:m.intermediario||'', boleta:m.boleta||'',
+        receptorFactura:m.receptor_factura||'', chofer:m.chofer||'',
+        placa:m.placa||'', factura:m.factura||'',
+        partidas:m.partidas||[],
+        totalKg:parseFloat(m.total_kg||0), totalTon:parseFloat(m.total_ton||0),
+        total:parseFloat(m.total||0), ts:m.ts||0};
+    });
+    saveMaiz();
+    if(typeof renderMaizHist==='function') renderMaizHist();
+  }
   if(pData && pData.length){
     pagosDeuda = pData.map(function(p){
       return {id:p.id, tipo:p.tipo, contraparte:p.contraparte, fecha:p.fecha||'',
@@ -2214,6 +2229,7 @@ async function cargarDesdeSB(){
   if(rAc && rAc.data){ acreedores = rAc.data.map(function(a){return a.nombre;}); saveAcreedores(); }
   if(rB.data) bancos = rB.data.map(function(b){return b.nombre;});
   if(rT.data && rT.data.length){ trabajadores = rT.data.map(function(t){return t.nombre;}); saveTrabajadores(); }
+  if(rInt && rInt.data){ intermediarios = rInt.data.map(function(i){return i.nombre;}); saveIntermediarios(); }
 
   // Categorías: la tabla manda. Si viene vacía es la primera vez -> se siembra con las de fábrica.
   if(rCat && !rCat.error && rCat.data){
@@ -12121,6 +12137,61 @@ function confirmDelLote(loteId){
 }
 // ============================================================
 
+// ============================================================
+
+// ============================================================
+// ==== MÓDULO MAÍZ ====
+// Cosecha de maíz: registro de ventas a intermediarios e historial.
+// Spec: docs/superpowers/specs/2026-08-18-cosecha-maiz-registro-historial-design.md
+// ============================================================
+
+var MZ_VARIEDADES = ['Blanco','Antylope','Waxy'];
+var MZ_PARCELAS   = ['Cuata Grande','Cuata Chica','Mesita','Camino'];
+
+var maizRegistros = [];
+try{ var smz=localStorage.getItem('cc_maiz'); if(smz) maizRegistros=JSON.parse(smz); }catch(e){}
+function saveMaiz(){ try{localStorage.setItem('cc_maiz',JSON.stringify(maizRegistros));}catch(e){} }
+
+var intermediarios = [];
+try{ var smi=localStorage.getItem('cc_intermediarios'); if(smi) intermediarios=JSON.parse(smi); }catch(e){}
+function saveIntermediarios(){ try{localStorage.setItem('cc_intermediarios',JSON.stringify(intermediarios));}catch(e){} }
+
+function agregarIntermediarioSiNuevo(nombre){
+  if(!nombre) return;
+  var nom=nombre.trim(); if(!nom) return;
+  if(intermediarios.indexOf(nom)<0){
+    intermediarios.push(nom);
+    intermediarios.sort(function(a,b){return a.localeCompare(b,'es');});
+    saveIntermediarios();
+    sbSaveIntermediario(nom);
+  }
+}
+
+async function sbSaveMaizReg(r){
+  if(!sbOnline||!sb) return;
+  await sb.from('maiz_registros').upsert({
+    id:r.id, fecha:r.fechaVal||null, ciclo:r.ciclo||'',
+    intermediario:r.intermediario||'', boleta:r.boleta||'',
+    receptor_factura:r.receptorFactura||'', chofer:r.chofer||'',
+    placa:r.placa||'', factura:r.factura||'',
+    partidas:r.partidas||[],
+    total_kg:r.totalKg||0, total_ton:r.totalTon||0, total:r.total||0,
+    ts:r.ts||0
+  });
+}
+async function sbDeleteMaizReg(id){
+  if(!sbOnline||!sb){ showToast('Sin conexión a Supabase'); return; }
+  var res = await sb.from('maiz_registros').delete().eq('id', id);
+  if(res.error) showToast('Error al borrar en Supabase: '+res.error.message);
+}
+async function sbSaveIntermediario(nombre){
+  if(!sbOnline||!sb) return;
+  await sb.from('intermediarios').upsert({nombre:nombre},{onConflict:'nombre'});
+}
+async function sbDeleteIntermediario(nombre){
+  if(!sbOnline||!sb) return;
+  await sb.from('intermediarios').delete().eq('nombre', nombre);
+}
 // ============================================================
 
 </script>
