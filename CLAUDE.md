@@ -246,10 +246,13 @@ Desactivar la leyenda nativa además le devolvió espacio a la dona (el radio pa
 - **Los defectos se escalan.** Se capturan sobre una muestra chica (`r.muestra`, ej. 3.6 kg), no sobre todo el proceso, así que su proporción dentro de la muestra se aplica a los kg de proceso reales. Sin ese escalado el anillo no sumaría el total y los dos tramos no serían comparables.
 - Si hay proceso pero **ningún defecto capturado**, el tramo va entero como "Proceso" en `RFR_COL_PROCESO_SD`. Si no hay merma, solo se pinta "Buenos".
 - Colores (`DEF_COLS_RFR`, definidos por el usuario): sobremadura morado `#7E57C2`, deforme rosa apagado `#C97B93`, irregular amarillo pollo `#E8D06A`, desgrane frambuesa `#ea3155`, hongos gris `#888780`; y `RFR_COL_BUENOS` es verde `#1baf7a`, con etiqueta `RFR_LBL_BUENOS` = "kg bueno". Esa constante alimenta tanto la dona como los puntitos de las filas de defectos, así que cambiarla actualiza los dos a la vez.
-- El tramo de "kg bueno" va **sin borde** (`borderWidth:0` solo en `d.idxBuenos`); los defectos conservan el suyo de 2px, que es lo que los separa entre sí cuando son rebanadas delgadas y contiguas.
+- El tramo de "kg bueno" va **sin borde** (`borderWidth:0` y `borderColor:'transparent'` solo en `d.idxBuenos`); los defectos llevan borde de 2px en `RFR_COL_BORDE_DEF` (`#e34948`), que es lo que los separa entre sí cuando son rebanadas delgadas y contiguas.
+- La tarjeta **no lleva subtítulo** bajo "Control de calidad" en ninguna de las tres vistas.
 - El porcentaje de proceso de la dona **coincide por construcción con la tarjeta de Merma** de esa misma vista (ambos son `merma / (totalKg + merma)`). Si algún día dejan de cuadrar, uno de los dos cambió de fórmula.
 
-Las filas de texto al lado (`defRows`) siguen mostrando el peso de cada defecto **dentro de la muestra**, no escalado — son dos lecturas distintas del mismo dato y por eso sus porcentajes no coinciden con los de la dona.
+Las filas de texto al lado (`defRows`) muestran **el mismo porcentaje que la dona**: el de cada defecto sobre el total cosechado, vía `rfrPctPorDefecto(dona)`, que lo saca del arreglo ya escalado. No muestran los kg de la muestra. Por eso en las tres vistas la dona **se calcula antes que `defRows`** — si se mueve después, los porcentajes salen en cero.
+
+Suma cruzada útil para detectar regresiones: los porcentajes de los defectos deben sumar exactamente el de la tarjeta de Merma de esa vista (en el ciclo 2025-2026, 3.9+2.1+1.5+0.9 = 8.4%).
 
 ### Semáforo de las gráficas de línea en Frambuesa → Cosecha → Por ciclo
 
