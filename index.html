@@ -4026,8 +4026,11 @@ function rfrDonaLeyendaHtml(d){
 function rfrDonaCalidadCfg(d){
   // Leyenda nativa desactivada: la pinta rfrDonaLeyendaHtml() para poder poner
   // "kg bueno" primero y separado, sin alterar el orden del anillo.
+  // El tramo de kg bueno va sin borde (los defectos conservan el suyo, que es lo
+  // que los separa entre sí cuando son rebanadas delgadas y contiguas).
+  var bordes = d.data.map(function(_,i){ return i===d.idxBuenos ? 0 : 2; });
   return {type:'doughnut',
-    data:{labels:d.labels, datasets:[{data:d.data, backgroundColor:d.cols, hoverOffset:6}]},
+    data:{labels:d.labels, datasets:[{data:d.data, backgroundColor:d.cols, borderWidth:bordes, hoverOffset:6}]},
     options:{responsive:true, maintainAspectRatio:false, cutout:'60%',
       plugins:{
         legend:{display:false},
