@@ -3946,13 +3946,14 @@ var rfrCharts = {};
 var rfrTabActual = 'dia';
 var rfrDataCache = [];
 
-var DEF_COLS_RFR = {sobremadura:'#9B59B6',irregular:'#eda100',desgrane:'#f5964a',deforme:'#2a78d6',hongos:'#888780'};
+var DEF_COLS_RFR = {sobremadura:'#66232e',irregular:'#eda100',desgrane:'#f5964a',deforme:'#2a78d6',hongos:'#888780'};
 var DEF_LBL_RFR  = {sobremadura:'Sobremadura',irregular:'Irregular',desgrane:'Desgrane',deforme:'Deforme',hongos:'Hongos'};
 var SEC_COLS_RFR  = ['#2a78d6','#1baf7a','#eda100','#4a3aa7'];
 
-// Tramo de kg buenos de la dona de calidad: atenuado a propósito (alpha bajo) para
-// que quede como contexto y el ojo se vaya a los defectos, que son lo accionable.
-var RFR_COL_BUENOS = 'rgba(234,49,85,0.35)';
+// Tramo de kg buenos de la dona de calidad. Va separado del resto del anillo
+// (ver RFR_OFFSET_BUENOS) para leerse como un bloque aparte de los defectos.
+var RFR_COL_BUENOS = '#ea3155';
+var RFR_OFFSET_BUENOS = 16;
 var RFR_COL_PROCESO_SD = '#B08968'; // proceso sin defectos capturados
 
 // ── Dona de control de calidad (Por día / Por semana / Por ciclo) ──
@@ -3990,16 +3991,23 @@ function rfrDonaCalidad(kgBuenos, kgProceso, defMap){
       labels.push('Proceso'); data.push(Math.round(kgProceso*100)/100); cols.push(RFR_COL_PROCESO_SD);
     }
   }
+  var idxBuenos=-1;
   if(kgBuenos>0){
+    idxBuenos=labels.length;
     labels.push('Buenos'); data.push(Math.round(kgBuenos*100)/100); cols.push(RFR_COL_BUENOS);
   }
   var total=kgBuenos+kgProceso;
-  return {labels:labels, data:data, cols:cols, total:Math.round(total*100)/100, hay:total>0};
+  return {labels:labels, data:data, cols:cols, idxBuenos:idxBuenos,
+    total:Math.round(total*100)/100, hay:total>0};
 }
 
 function rfrDonaCalidadCfg(d){
+  // El tramo de Buenos se despega del anillo con un offset propio; el padding
+  // compensa ese desplazamiento para que no lo recorte el borde del canvas.
+  var offsets = d.data.map(function(_,i){ return i===d.idxBuenos ? RFR_OFFSET_BUENOS : 0; });
+  var pad = RFR_OFFSET_BUENOS + 4;
   return {type:'doughnut',
-    data:{labels:d.labels, datasets:[{data:d.data, backgroundColor:d.cols, hoverOffset:6}]},
+    data:{labels:d.labels, datasets:[{data:d.data, backgroundColor:d.cols, offset:offsets, hoverOffset:6}]},
     options:{responsive:true, maintainAspectRatio:false, cutout:'60%',
       plugins:{
         legend:{display:true, position:'bottom', labels:{color:'#898781', font:{size:11}, boxWidth:10, padding:8}},
@@ -4008,7 +4016,7 @@ function rfrDonaCalidadCfg(d){
           return ' '+c.label+': '+c.raw+' kg ('+pct+'%)';
         }}}
       },
-      layout:{padding:{top:8}}}};
+      layout:{padding:{top:8, bottom:pad, left:pad, right:pad}}}};
 }
 
 function mkRfrChart(id, cfg){
