@@ -260,6 +260,12 @@ La lista abre con **"kg bueno"** —separado de los defectos por un `margin-bott
 
 Dos sumas cruzadas útiles para detectar regresiones: **el total de las filas debe dar 100%**, y los defectos solos deben sumar el porcentaje de la tarjeta de Merma de esa vista (en el ciclo 2025-2026, 3.9+2.1+1.5+0.9 = 8.4%).
 
+**Insignia de variación en las filas (solo Por día y Por semana).** Cada fila lleva flechas contra el periodo anterior, con el mismo criterio de magnitud que las tarjetas (1 flecha ≤25%, 2 ≤50%, 3 arriba). El sentido se invierte según el concepto: en **"kg bueno" subir es verde** (`altoBueno=true`) y en los **defectos subir es rojo**. Por ciclo no las lleva: no hay "ciclo anterior" en el selector.
+
+La lógica común vive en `rfrWowCalc()`, y hay dos renderizadores: `rfrWowBadge()` para las tarjetas (usa `.kpi-wow`, que es `position:absolute` y solo funciona dentro de una `.kpi-card`) y `rfrWowInline()` para estas filas, en flujo normal. Los porcentajes del periodo anterior salen de `pctCalidad`, que devuelven `rfrComputeDiaMetrics()` y `rfrComputeSemMetrics()` vía `rfrPctCalidad()`.
+
+Ojo al leerlas: comparan **porcentajes, no kilos**. Un defecto que pasa de 1% a 2% marca ▲▲▲100% aunque sean dos puntos porcentuales — es el mismo criterio relativo de las tarjetas.
+
 ### Semáforo de las gráficas de línea en Frambuesa → Cosecha → Por ciclo
 
 Las 7 gráficas de línea de `renderRfrResumen()` usan **línea neutra + punto de color**: la línea va en `RFR_LINEA_NEUTRA` y el color de cada punto lo da `rfrPuntoCols(datos, cortes, altoBueno)` según el estado de esa semana (`RFR_SEM_COLS`: bien / vigilar / preocupa / problema / sin dato).

@@ -4006,11 +4006,12 @@ function rfrDonaCalidad(kgBuenos, kgProceso, defMap){
 // Fila de "Control de calidad": una por concepto, con el % sobre el total y la
 // cifra teñida del color de lo que representa. Misma forma en las tres vistas.
 // `extra` inyecta estilo suelto — se usa para separar "kg bueno" de los defectos.
-function rfrFilaCalidadComp(col, lbl, pct, extra){
+function rfrFilaCalidadComp(col, lbl, pct, extra, wow){
   return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;'+(extra||'')+'">'+
     '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+col+';flex-shrink:0"></span>'+
     '<span style="font-size:12px;color:var(--text2);width:88px;flex-shrink:0">'+lbl+'</span>'+
     '<span style="font-family:var(--mono);font-size:17px;font-weight:700;color:'+col+'">'+pct+'%</span>'+
+    (wow||'')+
   '</div>';
 }
 
@@ -4026,6 +4027,15 @@ function rfrPctPorDefecto(d){
     if(i===d.idxBuenos) return;
     m[l]=Math.round(d.data[i]/d.total*100);
   });
+  return m;
+}
+
+// Mapa {etiqueta: %} de todos los conceptos de calidad —"kg bueno" incluido—, para
+// comparar un periodo contra el anterior en las filas de control de calidad.
+function rfrPctCalidad(kgBuenos, kgProceso, defMap){
+  var d=rfrDonaCalidad(kgBuenos, kgProceso, defMap);
+  var m=rfrPctPorDefecto(d);
+  if(d.idxBuenos>=0) m[RFR_LBL_BUENOS]=d.pctBuenos;
   return m;
 }
 
@@ -4484,7 +4494,8 @@ function rfrComputeDiaMetrics(fecha){
   if(!r) return null;
   var kg=r.totalKg||0, merma=r.merma||0;
   return {cubetas:r.totalCubetas||0, cajas:r.totalCajas||0, kg:kg, merma:merma,
-    pctKgMerma:(kg+merma)>0?(merma/(kg+merma))*100:null};
+    pctKgMerma:(kg+merma)>0?(merma/(kg+merma))*100:null,
+    pctCalidad:rfrPctCalidad(kg, merma, r.defectos)};
 }
 
 function renderRfrDiaDetalle(){
@@ -4512,12 +4523,19 @@ function renderRfrDiaDetalle(){
   var pctDefDia = rfrPctPorDefecto(donaDia);
 
   // El % es sobre el total cosechado (kg bueno + proceso), igual que la dona.
-  // "kg bueno" encabeza la lista y los defectos van debajo.
-  var defRows=(donaDia.idxBuenos>=0 ? rfrFilaCalidadComp(RFR_COL_BUENOS, RFR_LBL_BUENOS, donaDia.pctBuenos, 'margin-bottom:14px') : '')+
+  // "kg bueno" encabeza la lista y los defectos van debajo, cada uno con su
+  // variación contra el registro anterior: en kg bueno subir es bueno (verde) y
+  // en los defectos es al revés.
+  var prevCalDia=(rfrComputeDiaMetrics(rfrDiaAnteriorKey(r.fecha))||{}).pctCalidad||null;
+  var wowCal=function(lbl, pct, altoBueno){
+    return prevCalDia ? rfrWowInline(pct, prevCalDia[lbl], altoBueno) : '';
+  };
+  var defRows=(donaDia.idxBuenos>=0 ? rfrFilaCalidadComp(RFR_COL_BUENOS, RFR_LBL_BUENOS, donaDia.pctBuenos, 'margin-bottom:14px', wowCal(RFR_LBL_BUENOS, donaDia.pctBuenos, true)) : '')+
     defKeys.filter(function(k,i){return defVals[i]>0;})
     .sort(function(a,b){return defVals[defKeys.indexOf(b)]-defVals[defKeys.indexOf(a)];})
     .map(function(k){
-      return rfrFilaCalidadComp(DEF_COLS_RFR[k], DEF_LBL_RFR[k], pctDefDia[DEF_LBL_RFR[k]]||0);
+      var lbl=DEF_LBL_RFR[k], pct=pctDefDia[lbl]||0;
+      return rfrFilaCalidadComp(DEF_COLS_RFR[k], lbl, pct, '', wowCal(lbl, pct, false));
     }).join('');
   var pctKgMerma = (kgCosechados+(r.merma||0))>0 ? Math.round(((r.merma||0)/(kgCosechados+(r.merma||0)))*1000)/10 : null;
   var colMerma = rfrColMerma(pctKgMerma);
@@ -4811,26 +4829,49 @@ function rfrComputeSemMetrics(sk){
   var totalFacturado=facturadoCalc>0?facturadoCalc:null;
   return {cubetas:s.cubetas, cajas:s.cajas, promCajasDia:promCajasDia, pctKgMerma:pctKgMerma,
     costoCubetaGeneral:costoCubetaGeneral, costoCubetaCosechadores:costoCubetaCosechadores,
-    precioCaja:precioCaja, totalFacturado:totalFacturado};
+    precioCaja:precioCaja, totalFacturado:totalFacturado,
+    pctCalidad:rfrPctCalidad(kgCosechados, s.merma, s.defMap)};
 }
 // Insignia estilo "precio de acción": flechas + % de variación contra el periodo
 // anterior (semana anterior en Por semana, registro anterior en Por día).
 // altoBueno=true -> sube=verde/baja=rojo; altoBueno=false (merma, costos) -> al revés.
 // El número de flechas marca la magnitud del cambio: 1 hasta 33%, 2 hasta 66%, 3 arriba.
-function rfrWowBadge(cur, prev, altoBueno){
-  if(cur===null||cur===undefined||prev===null||prev===undefined||!prev) return '';
+// Núcleo de la variación: cuántas flechas, hacia dónde y de qué color. Lo comparten
+// la insignia de las tarjetas (rfrWowBadge, posicionada absoluta en la esquina) y la
+// de las filas de control de calidad (rfrWowInline, en flujo normal).
+function rfrWowCalc(cur, prev, altoBueno){
+  if(cur===null||cur===undefined||prev===null||prev===undefined||!prev) return null;
   var delta=(cur-prev)/Math.abs(prev)*100;
   var redondeado=Math.round(delta);
-  if(redondeado===0) return '<span class="kpi-wow" style="color:var(--text3)">0%</span>';
-  var subio=delta>0;
+  if(redondeado===0) return {cero:true};
   // El conteo va contra el % YA REDONDEADO, el mismo que se imprime: si no, un
   // 25.4% se muestra como "25%" y saldria con dos flechas.
   var mag=Math.abs(redondeado);
-  var n=mag<=25?1:(mag<=50?2:3);
-  var fl=subio?'▲':'▼';
-  var flechas=''; for(var i=0;i<n;i++) flechas+='<i>'+fl+'</i>';
-  var col=altoBueno?(subio?RFR_SEM_COLS.bien:RFR_SEM_COLS.problema):(subio?RFR_SEM_COLS.problema:RFR_SEM_COLS.bien);
-  return '<span class="kpi-wow" style="color:'+col+'"><span class="kpi-wow-fls">'+flechas+'</span>'+Math.abs(redondeado)+'%</span>';
+  var subio=delta>0;
+  return {cero:false, n:(mag<=25?1:(mag<=50?2:3)), subio:subio, pct:mag,
+    col:altoBueno?(subio?RFR_SEM_COLS.bien:RFR_SEM_COLS.problema):(subio?RFR_SEM_COLS.problema:RFR_SEM_COLS.bien)};
+}
+function rfrWowFlechas(w){
+  var fl=w.subio?'▲':'▼', s='';
+  for(var i=0;i<w.n;i++) s+='<i>'+fl+'</i>';
+  return s;
+}
+
+function rfrWowBadge(cur, prev, altoBueno){
+  var w=rfrWowCalc(cur, prev, altoBueno);
+  if(!w) return '';
+  if(w.cero) return '<span class="kpi-wow" style="color:var(--text3)">0%</span>';
+  return '<span class="kpi-wow" style="color:'+w.col+'"><span class="kpi-wow-fls">'+rfrWowFlechas(w)+'</span>'+w.pct+'%</span>';
+}
+
+// Misma insignia, pero en flujo normal — .kpi-wow es absolute y solo sirve dentro
+// de una .kpi-card.
+function rfrWowInline(cur, prev, altoBueno){
+  var w=rfrWowCalc(cur, prev, altoBueno);
+  if(!w) return '';
+  var base='display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;font-family:var(--mono);white-space:nowrap;margin-left:6px';
+  if(w.cero) return '<span style="'+base+';color:var(--text3)">0%</span>';
+  return '<span style="'+base+';color:'+w.col+'"><span class="kpi-wow-fls">'+rfrWowFlechas(w)+'</span>'+w.pct+'%</span>';
 }
 
 function renderRfrSemDetalle(){
@@ -4858,12 +4899,19 @@ function renderRfrSemDetalle(){
   var pctDefSem=rfrPctPorDefecto(donaSem);
 
   // El % es sobre el total cosechado (kg bueno + proceso), igual que la dona.
-  // "kg bueno" encabeza la lista y los defectos van debajo.
-  var defRows=(donaSem.idxBuenos>=0 ? rfrFilaCalidadComp(RFR_COL_BUENOS, RFR_LBL_BUENOS, donaSem.pctBuenos, 'margin-bottom:14px') : '')+
+  // "kg bueno" encabeza la lista y los defectos van debajo, cada uno con su
+  // variación contra la semana anterior: en kg bueno subir es bueno (verde) y
+  // en los defectos es al revés.
+  var prevCalSem=(rfrComputeSemMetrics(rfrSemAnteriorKey(sk))||{}).pctCalidad||null;
+  var wowCalSem=function(lbl, pct, altoBueno){
+    return prevCalSem ? rfrWowInline(pct, prevCalSem[lbl], altoBueno) : '';
+  };
+  var defRows=(donaSem.idxBuenos>=0 ? rfrFilaCalidadComp(RFR_COL_BUENOS, RFR_LBL_BUENOS, donaSem.pctBuenos, 'margin-bottom:14px', wowCalSem(RFR_LBL_BUENOS, donaSem.pctBuenos, true)) : '')+
     defKeys.filter(function(k,i){return defVals[i]>0;})
     .sort(function(a,b){return defVals[defKeys.indexOf(b)]-defVals[defKeys.indexOf(a)];})
     .map(function(k){
-      return rfrFilaCalidadComp(DEF_COLS_RFR[k], DEF_LBL_RFR[k], pctDefSem[DEF_LBL_RFR[k]]||0);
+      var lbl=DEF_LBL_RFR[k], pct=pctDefSem[lbl]||0;
+      return rfrFilaCalidadComp(DEF_COLS_RFR[k], lbl, pct, '', wowCalSem(lbl, pct, false));
     }).join('');
 
   var trabArr=Object.keys(s.trabs).map(function(n){
