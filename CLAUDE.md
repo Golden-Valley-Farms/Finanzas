@@ -232,12 +232,14 @@ Los colores de las gráficas se resuelven por tema en runtime: `isDark()`, `dash
 
 ### Dona de control de calidad (Frambuesa → Cosecha)
 
-Las tres vistas —Por día, Por semana y Por ciclo— comparten `rfrDonaCalidad(kgBuenos, kgProceso, defMap)` y `rfrDonaCalidadCfg(d)`. **Un solo anillo**: el tramo de kg buenos y, ocupando exactamente el tramo del proceso, una rebanada por defecto. El anillo completo suma el total cosechado.
+Las tres vistas —Por día, Por semana y Por ciclo— comparten `rfrDonaCalidad(kgBuenos, kgProceso, defMap)` y `rfrDonaCalidadCfg(d)`. **Un solo anillo**: primero el tramo del proceso desglosado por defecto y al final los kg buenos. El anillo completo suma el total cosechado.
+
+**El proceso va primero a propósito.** Chart.js arranca el primer segmento a las 12 en punto, así que los defectos —lo accionable— quedan arriba y los kg buenos cierran el anillo. Por lo mismo `RFR_COL_BUENOS` es un `rgba(...,0.35)` atenuado: está ahí como contexto, no para competir con los defectos. Si algún día se le quita el alpha, el tramo más grande del anillo se vuelve el más llamativo y la gráfica pierde el punto.
 
 - **kg buenos = `totalKg`** (cajas × `KG_POR_CAJA`, o sea 2.4) · **kg de proceso = `merma`**. Es la misma pareja de campos en los registros importados y en los nuevos, así que no hace falta ramificar por origen: los importados no traen cubetas de proceso pero sí `merma` capturada directo, y los nuevos la autocalculan como `cubetas de proceso × 1.2` en `recalcMermaProceso()`.
 - **Los defectos se escalan.** Se capturan sobre una muestra chica (`r.muestra`, ej. 3.6 kg), no sobre todo el proceso, así que su proporción dentro de la muestra se aplica a los kg de proceso reales. Sin ese escalado el anillo no sumaría el total y los dos tramos no serían comparables.
 - Si hay proceso pero **ningún defecto capturado**, el tramo va entero como "Proceso" en `RFR_COL_PROCESO_SD`. Si no hay merma, solo se pinta "Buenos".
-- `RFR_COL_BUENOS` (`#0f6e56`) es deliberadamente distinto del `#1baf7a` de "Irregular", que convive con él en el mismo anillo.
+- Colores (`DEF_COLS_RFR`, definidos por el usuario): sobremadura morado `#9B59B6`, deforme azul `#2a78d6`, irregular amarillo `#eda100`, desgrane naranja `#f5964a`, hongos gris `#888780`. Esa constante alimenta tanto la dona como los puntitos de las filas de defectos, así que cambiarla actualiza los dos a la vez.
 - El porcentaje de proceso de la dona **coincide por construcción con la tarjeta de Merma** de esa misma vista (ambos son `merma / (totalKg + merma)`). Si algún día dejan de cuadrar, uno de los dos cambió de fórmula.
 
 Las filas de texto al lado (`defRows`) siguen mostrando el peso de cada defecto **dentro de la muestra**, no escalado — son dos lecturas distintas del mismo dato y por eso sus porcentajes no coinciden con los de la dona.

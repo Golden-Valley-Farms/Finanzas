@@ -3946,18 +3946,22 @@ var rfrCharts = {};
 var rfrTabActual = 'dia';
 var rfrDataCache = [];
 
-var DEF_COLS_RFR = {sobremadura:'#eda100',irregular:'#1baf7a',desgrane:'#e34948',deforme:'#4a3aa7',hongos:'#888780'};
+var DEF_COLS_RFR = {sobremadura:'#9B59B6',irregular:'#eda100',desgrane:'#f5964a',deforme:'#2a78d6',hongos:'#888780'};
 var DEF_LBL_RFR  = {sobremadura:'Sobremadura',irregular:'Irregular',desgrane:'Desgrane',deforme:'Deforme',hongos:'Hongos'};
 var SEC_COLS_RFR  = ['#2a78d6','#1baf7a','#eda100','#4a3aa7'];
 
-// Verde oscuro para el tramo de kg buenos de la dona de calidad. Deliberadamente
-// distinto del '#1baf7a' de "Irregular", que convive con él en el mismo anillo.
-var RFR_COL_BUENOS = '#0f6e56';
+// Tramo de kg buenos de la dona de calidad: atenuado a propósito (alpha bajo) para
+// que quede como contexto y el ojo se vaya a los defectos, que son lo accionable.
+var RFR_COL_BUENOS = 'rgba(234,49,85,0.35)';
 var RFR_COL_PROCESO_SD = '#B08968'; // proceso sin defectos capturados
 
 // ── Dona de control de calidad (Por día / Por semana / Por ciclo) ──
-// Un solo anillo: los kg buenos y, ocupando exactamente el tramo del proceso,
-// cada defecto por separado. Así el anillo entero es el total cosechado.
+// Un solo anillo: primero el tramo del proceso desglosado por defecto y al final
+// los kg buenos. Así el anillo entero es el total cosechado.
+//
+// El proceso va PRIMERO a propósito: Chart.js arranca el primer segmento a las 12
+// en punto, así que los defectos —lo accionable— quedan arriba y los kg buenos
+// cierran el anillo como contexto.
 //
 // Los defectos se capturan sobre una MUESTRA chica (ej. 5 kg), no sobre todo el
 // proceso, así que su proporción dentro de la muestra se escala a los kg de
@@ -3971,9 +3975,6 @@ function rfrDonaCalidad(kgBuenos, kgProceso, defMap){
   kgBuenos  = Math.max(0, parseFloat(kgBuenos)||0);
   kgProceso = Math.max(0, parseFloat(kgProceso)||0);
   var labels=[], data=[], cols=[];
-  if(kgBuenos>0){
-    labels.push('Buenos'); data.push(Math.round(kgBuenos*100)/100); cols.push(RFR_COL_BUENOS);
-  }
   var defKeys=Object.keys(DEF_COLS_RFR);
   var defSum=defKeys.reduce(function(a,k){return a+(((defMap&&defMap[k])||0));},0);
   if(kgProceso>0){
@@ -3988,6 +3989,9 @@ function rfrDonaCalidad(kgBuenos, kgProceso, defMap){
     } else {
       labels.push('Proceso'); data.push(Math.round(kgProceso*100)/100); cols.push(RFR_COL_PROCESO_SD);
     }
+  }
+  if(kgBuenos>0){
+    labels.push('Buenos'); data.push(Math.round(kgBuenos*100)/100); cols.push(RFR_COL_BUENOS);
   }
   var total=kgBuenos+kgProceso;
   return {labels:labels, data:data, cols:cols, total:Math.round(total*100)/100, hay:total>0};
