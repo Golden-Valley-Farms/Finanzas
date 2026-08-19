@@ -262,9 +262,11 @@ Dos sumas cruzadas útiles para detectar regresiones: **el total de las filas de
 
 **Insignia de variación en las filas (solo Por día y Por semana).** Cada fila lleva flechas contra el periodo anterior, con el mismo criterio de magnitud que las tarjetas (1 flecha ≤25%, 2 ≤50%, 3 arriba). El sentido se invierte según el concepto: en **"kg bueno" subir es verde** (`altoBueno=true`) y en los **defectos subir es rojo**. Por ciclo no las lleva: no hay "ciclo anterior" en el selector.
 
+**Aquí van solo las flechas, sin el % de variación** —a diferencia de las tarjetas, que sí lo muestran— porque junto al porcentaje de calidad dos cifras seguidas se confunden. Por lo mismo, una variación de 0% no pinta nada en vez de un "0%" gris.
+
 La lógica común vive en `rfrWowCalc()`, y hay dos renderizadores: `rfrWowBadge()` para las tarjetas (usa `.kpi-wow`, que es `position:absolute` y solo funciona dentro de una `.kpi-card`) y `rfrWowInline()` para estas filas, en flujo normal. Los porcentajes del periodo anterior salen de `pctCalidad`, que devuelven `rfrComputeDiaMetrics()` y `rfrComputeSemMetrics()` vía `rfrPctCalidad()`.
 
-Ojo al leerlas: comparan **porcentajes, no kilos**. Un defecto que pasa de 1% a 2% marca ▲▲▲100% aunque sean dos puntos porcentuales — es el mismo criterio relativo de las tarjetas.
+Ojo al leerlas: comparan **porcentajes, no kilos**. Un defecto que pasa de 1% a 2% marca tres flechas aunque sean dos puntos porcentuales — es el mismo criterio relativo de las tarjetas.
 
 ### Semáforo de las gráficas de línea en Frambuesa → Cosecha → Por ciclo
 

@@ -4864,14 +4864,14 @@ function rfrWowBadge(cur, prev, altoBueno){
   return '<span class="kpi-wow" style="color:'+w.col+'"><span class="kpi-wow-fls">'+rfrWowFlechas(w)+'</span>'+w.pct+'%</span>';
 }
 
-// Misma insignia, pero en flujo normal — .kpi-wow es absolute y solo sirve dentro
-// de una .kpi-card.
+// Misma insignia, pero en flujo normal y SOLO las flechas — .kpi-wow es absolute y
+// solo sirve dentro de una .kpi-card. El % de variación se omite a propósito: al
+// lado del porcentaje de calidad, dos cifras juntas se confunden entre sí.
 function rfrWowInline(cur, prev, altoBueno){
   var w=rfrWowCalc(cur, prev, altoBueno);
-  if(!w) return '';
-  var base='display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;font-family:var(--mono);white-space:nowrap;margin-left:6px';
-  if(w.cero) return '<span style="'+base+';color:var(--text3)">0%</span>';
-  return '<span style="'+base+';color:'+w.col+'"><span class="kpi-wow-fls">'+rfrWowFlechas(w)+'</span>'+w.pct+'%</span>';
+  if(!w || w.cero) return '';
+  return '<span style="display:inline-flex;align-items:center;font-size:10px;font-weight:700;white-space:nowrap;margin-left:6px;color:'+w.col+'">'+
+    '<span class="kpi-wow-fls">'+rfrWowFlechas(w)+'</span></span>';
 }
 
 function renderRfrSemDetalle(){
