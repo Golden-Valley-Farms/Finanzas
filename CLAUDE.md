@@ -250,9 +250,11 @@ Desactivar la leyenda nativa además le devolvió espacio a la dona (el radio pa
 - La tarjeta **no lleva subtítulo** bajo "Control de calidad" en ninguna de las tres vistas.
 - El porcentaje de proceso de la dona **coincide por construcción con la tarjeta de Merma** de esa misma vista (ambos son `merma / (totalKg + merma)`). Si algún día dejan de cuadrar, uno de los dos cambió de fórmula.
 
-Las filas de texto al lado (`defRows`) muestran **el mismo porcentaje que la dona**: el de cada defecto sobre el total cosechado, vía `rfrPctPorDefecto(dona)`, que lo saca del arreglo ya escalado. No muestran los kg de la muestra. Por eso en las tres vistas la dona **se calcula antes que `defRows`** — si se mueve después, los porcentajes salen en cero.
+Las filas de texto al lado (`defRows`) muestran **el mismo porcentaje que la dona**: el de cada concepto sobre el total cosechado, vía `rfrPctPorDefecto(dona)` y `dona.pctBuenos`. No muestran los kg de la muestra. Por eso en las tres vistas la dona **se calcula antes que `defRows`** — si se mueve después, los porcentajes salen en cero.
 
-Suma cruzada útil para detectar regresiones: los porcentajes de los defectos deben sumar exactamente el de la tarjeta de Merma de esa vista (en el ciclo 2025-2026, 3.9+2.1+1.5+0.9 = 8.4%).
+La lista abre con **"kg bueno"** y sigue con los defectos. Cada cifra va teñida del color de lo que representa (`RFR_COL_BUENOS` / `DEF_COLS_RFR[k]`), con el mismo color en el `text-shadow`. Las filas se arman con `rfrFilaCalidadDia()` (Por día, con separador) y `rfrFilaCalidadComp()` (Por semana / Por ciclo, compacta).
+
+Dos sumas cruzadas útiles para detectar regresiones: **el total de las filas debe dar 100%**, y los defectos solos deben sumar el porcentaje de la tarjeta de Merma de esa vista (en el ciclo 2025-2026, 3.9+2.1+1.5+0.9 = 8.4%).
 
 ### Semáforo de las gráficas de línea en Frambuesa → Cosecha → Por ciclo
 

@@ -3999,7 +3999,25 @@ function rfrDonaCalidad(kgBuenos, kgProceso, defMap){
   }
   var total=kgBuenos+kgProceso;
   return {labels:labels, data:data, cols:cols, idxBuenos:idxBuenos,
+    pctBuenos: total>0 ? Math.round(kgBuenos/total*1000)/10 : 0,
     total:Math.round(total*100)/100, hay:total>0};
+}
+
+// Filas de "Control de calidad": una por concepto, con el % sobre el total y la
+// cifra teñida del color de lo que representa. Dos formatos porque Por día tiene
+// más espacio (fila con separador) que Por semana / Por ciclo (compacta).
+function rfrFilaCalidadDia(col, lbl, pct){
+  return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid var(--border)">'+
+    '<span style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:7px">'+
+      '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+col+';flex-shrink:0"></span>'+lbl+'</span>'+
+    '<span style="font-family:var(--mono);color:'+col+';font-size:19px;font-weight:700;min-width:36px;display:inline-block;text-align:right;text-shadow:0 0 12px '+col+'">'+pct+'%</span></div>';
+}
+function rfrFilaCalidadComp(col, lbl, pct){
+  return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0">'+
+    '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+col+';flex-shrink:0"></span>'+
+    '<span style="font-size:12px;color:var(--text2);width:88px;flex-shrink:0">'+lbl+'</span>'+
+    '<span style="font-family:var(--mono);font-size:17px;font-weight:700;color:'+col+';text-shadow:0 0 10px '+col+'">'+pct+'%</span>'+
+  '</div>';
 }
 
 // % de cada defecto sobre el TOTAL del anillo (kg bueno + proceso), no sobre la
@@ -4498,15 +4516,13 @@ function renderRfrDiaDetalle(){
   var pctDefDia = rfrPctPorDefecto(donaDia);
 
   // El % es sobre el total cosechado (kg bueno + proceso), igual que la dona.
-  var defRows=defKeys.filter(function(k,i){return defVals[i]>0;})
+  // "kg bueno" encabeza la lista y los defectos van debajo.
+  var defRows=(donaDia.idxBuenos>=0 ? rfrFilaCalidadDia(RFR_COL_BUENOS, RFR_LBL_BUENOS, donaDia.pctBuenos) : '')+
+    defKeys.filter(function(k,i){return defVals[i]>0;})
     .sort(function(a,b){return defVals[defKeys.indexOf(b)]-defVals[defKeys.indexOf(a)];})
     .map(function(k){
-    var pct=pctDefDia[DEF_LBL_RFR[k]]||0;
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid var(--border)">'+
-      '<span style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:7px">'+
-        '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+DEF_COLS_RFR[k]+';flex-shrink:0"></span>'+DEF_LBL_RFR[k]+'</span>'+
-      '<span style="font-family:var(--mono);color:var(--fram);font-size:19px;font-weight:700;min-width:36px;display:inline-block;text-align:right;text-shadow:0 0 12px var(--fram)">'+pct+'%</span></div>';
-  }).join('');
+      return rfrFilaCalidadDia(DEF_COLS_RFR[k], DEF_LBL_RFR[k], pctDefDia[DEF_LBL_RFR[k]]||0);
+    }).join('');
   var pctKgMerma = (kgCosechados+(r.merma||0))>0 ? Math.round(((r.merma||0)/(kgCosechados+(r.merma||0)))*1000)/10 : null;
   var colMerma = rfrColMerma(pctKgMerma);
   // Semáforo contra la mediana histórica del mismo día de cosecha (ver rfrRefsHistoricas).
@@ -4578,7 +4594,7 @@ function renderRfrDiaDetalle(){
       '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
         (donaDia.hay?
           '<div class="dash-card-title">Control de calidad</div>'+
-          (defSum>0?defRows:'')+
+          defRows+
           '<div style="margin-top:16px">'+
             '<div style="position:relative;width:100%;height:220px"><canvas id="rfr-dia-pie" role="img" aria-label="Kg buenos contra kg de proceso desglosado por defecto">Calidad.</canvas></div>'+
             rfrDonaLeyendaHtml(donaDia)+
@@ -4835,16 +4851,13 @@ function renderRfrSemDetalle(){
   var pctDefSem=rfrPctPorDefecto(donaSem);
 
   // El % es sobre el total cosechado (kg bueno + proceso), igual que la dona.
-  var defRows=defKeys.filter(function(k,i){return defVals[i]>0;})
+  // "kg bueno" encabeza la lista y los defectos van debajo.
+  var defRows=(donaSem.idxBuenos>=0 ? rfrFilaCalidadComp(RFR_COL_BUENOS, RFR_LBL_BUENOS, donaSem.pctBuenos) : '')+
+    defKeys.filter(function(k,i){return defVals[i]>0;})
     .sort(function(a,b){return defVals[defKeys.indexOf(b)]-defVals[defKeys.indexOf(a)];})
     .map(function(k){
-    var pct=pctDefSem[DEF_LBL_RFR[k]]||0;
-    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0">'+
-      '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+DEF_COLS_RFR[k]+';flex-shrink:0"></span>'+
-      '<span style="font-size:12px;color:var(--text2);width:88px;flex-shrink:0">'+DEF_LBL_RFR[k]+'</span>'+
-      '<span style="font-family:var(--mono);font-size:17px;font-weight:700;color:var(--fram);text-shadow:0 0 10px var(--fram)">'+pct+'%</span>'+
-    '</div>';
-  }).join('');
+      return rfrFilaCalidadComp(DEF_COLS_RFR[k], DEF_LBL_RFR[k], pctDefSem[DEF_LBL_RFR[k]]||0);
+    }).join('');
 
   var trabArr=Object.keys(s.trabs).map(function(n){
     var prom2=s.trabs[n].dias>0?Math.round(s.trabs[n].cubetas/s.trabs[n].dias*10)/10:0;
@@ -5386,16 +5399,13 @@ function renderRfrResumen(data){
   var donaCiclo=rfrDonaCalidad(totalKgCosechados, totalMerma, defMap);
   var pctDefCiclo=rfrPctPorDefecto(donaCiclo);
   // El % es sobre el total cosechado (kg bueno + proceso), igual que la dona.
-  var defRows=defKeys.filter(function(k,i){return defVals[i]>0;})
+  // "kg bueno" encabeza la lista y los defectos van debajo.
+  var defRows=(donaCiclo.idxBuenos>=0 ? rfrFilaCalidadComp(RFR_COL_BUENOS, RFR_LBL_BUENOS, donaCiclo.pctBuenos) : '')+
+    defKeys.filter(function(k,i){return defVals[i]>0;})
     .sort(function(a,b){return defVals[defKeys.indexOf(b)]-defVals[defKeys.indexOf(a)];})
     .map(function(k){
-    var pct=pctDefCiclo[DEF_LBL_RFR[k]]||0;
-    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0">'+
-      '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+DEF_COLS_RFR[k]+';flex-shrink:0"></span>'+
-      '<span style="font-size:12px;color:var(--text2);width:88px;flex-shrink:0">'+DEF_LBL_RFR[k]+'</span>'+
-      '<span style="font-family:var(--mono);font-size:17px;font-weight:700;color:var(--fram);text-shadow:0 0 10px var(--fram)">'+pct+'%</span>'+
-    '</div>';
-  }).join('');
+      return rfrFilaCalidadComp(DEF_COLS_RFR[k], DEF_LBL_RFR[k], pctDefCiclo[DEF_LBL_RFR[k]]||0);
+    }).join('');
 
   var trabArr=Object.keys(trabs).map(function(n){
     var prom=trabs[n].dias>0?Math.round(trabs[n].cubetas/trabs[n].dias*10)/10:0;
