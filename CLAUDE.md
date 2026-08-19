@@ -256,7 +256,7 @@ La lista abre con **"kg bueno"** —separado de los defectos por un `margin-bott
 
 **Estos porcentajes van sin decimales**, a diferencia de la tarjeta de Merma y del resto de gráficas, que sí llevan uno. Son cinco cifras juntas y los decimales estorban. Al redondear a entero la suma puede quedar en 99% o 101%; es esperado.
 
-**Por día** tiene más alto de tarjeta que contenido. Su fila va en `align-items:stretch` para repartir el sobrante: **las dos columnas llevan `justify-content:center`**, así los porcentajes y el bloque dona+leyenda quedan centrados a lo alto. La dona y su leyenda conservan las medidas de las otras dos vistas — canvas de 240px fijo y la leyenda justo debajo, a 11px del dibujo. Dos cosas que rompen esa igualdad si se reintroducen: `flex:1` en el canvas (la dona crece a radio 145) y `margin-top:auto` en la leyenda (se despega a 47px).
+**Por día** tiene más alto de tarjeta que contenido. Su fila va en `align-items:stretch` para repartir el sobrante: la columna de porcentajes lleva `justify-content:center` y la de la dona un `padding-top` fijo de 28px. Ese padding fijo —en vez de centrar— es lo que permite bajar la leyenda (con su propio `padding-top`) **sin mover el dibujo**: con `justify-content:center` cualquier margen extra en la leyenda empuja la dona hacia arriba. El canvas mantiene los 240px de las otras dos vistas. Dos cosas que rompen esa igualdad si se reintroducen: `flex:1` en el canvas (la dona crece a radio 145) y `margin-top:auto` en la leyenda (se despega a 47px).
 
 Dos sumas cruzadas útiles para detectar regresiones: **el total de las filas debe dar 100%**, y los defectos solos deben sumar el porcentaje de la tarjeta de Merma de esa vista (en el ciclo 2025-2026, 3.9+2.1+1.5+0.9 = 8.4%).
 
@@ -301,6 +301,14 @@ Precio por caja sí pasa por `rfrPuntoCol` con `altoBueno=true`, que corta con `
 La gráfica de Kg conserva el color propio de sus dos líneas (es lo que las distingue en su leyenda del markup) y cada una lleva su propio semáforo. "Por día" y "Por semana" no llevan semáforo: siguen con color sólido por serie.
 
 **Las 7 gráficas de línea pasan por `mkFrozenAxisLineChart()`, que fija `layout.padding.right` en 40px.** Ese margen no es estético: la etiqueta de valor se dibuja centrada sobre su punto, y con el área de trazo pegada al borde derecho la del último punto salía cortada a la mitad. Si algún día se alargan las etiquetas (más decimales, un prefijo), hay que subir ese número.
+
+### Cero significa "sin capturar" en cuatro tarjetas de Por semana
+
+`costoCubetaGeneral`, `costoCubetaCosechadores`, `precioCajaSem` y `totalFacturadoSem` se pasan a **`null` cuando dan 0**, para que la tarjeta pinte `—` en vez de `$0.00`. No existe una semana con cosecha y nómina de $0, ni una caja facturada a $0: un cero ahí siempre es que el dato no se ha capturado todavía.
+
+La causa está en el origen — `nominaFramSemana()` suma gastos y devuelve `0` (no `null`) cuando no hay ninguno, y `framFinanzas` puede tener el registro de la semana creado pero sin facturación. No se cambió esa función porque la usan otros cálculos que sí esperan un número; el `>0` se aplica en el consumidor.
+
+Hay que mantenerlo en **los dos lugares**: `rfrComputeSemMetrics()` (alimenta las insignias de variación) y `renderRfrSemDetalle()` (pinta). Si solo se corrige el segundo, la tarjeta muestra `—` pero la insignia sigue calculando un "▼100%" contra un cero falso.
 
 ### Semáforo de las tarjetas KPI del mismo resumen
 

@@ -4594,9 +4594,11 @@ function renderRfrDiaDetalle(){
           // la tarjeta; la dona y su leyenda quedan idénticas a Por semana / Por ciclo.
           '<div style="display:flex;align-items:stretch;gap:14px;margin-top:6px;flex:1;min-height:0">'+
             '<div style="flex:0 0 auto;display:flex;flex-direction:column;justify-content:center">'+defRows+'</div>'+
-            '<div style="flex:1;min-width:200px;display:flex;flex-direction:column;justify-content:center;min-height:0">'+
+            // padding-top fijo en vez de justify-content:center: deja la dona donde
+            // está y permite bajar solo la leyenda sin mover el dibujo.
+            '<div style="flex:1;min-width:200px;display:flex;flex-direction:column;padding-top:28px;min-height:0">'+
               '<div style="position:relative;height:240px;flex:0 0 auto"><canvas id="rfr-dia-pie" role="img" aria-label="Kg buenos contra kg de proceso desglosado por defecto">Calidad.</canvas></div>'+
-              rfrDonaLeyendaHtml(donaDia)+
+              '<div style="padding-top:14px">'+rfrDonaLeyendaHtml(donaDia)+'</div>'+
             '</div>'+
           '</div>':
           '<div style="text-align:center;padding:24px 0;color:var(--text3);font-size:13px">Sin datos de calidad este d\u00eda</div>')+
@@ -4795,13 +4797,18 @@ function rfrComputeSemMetrics(sk){
     return a+kg;
   },0);
   var pctKgMerma=(kgCosechados+s.merma)>0?(s.merma/(kgCosechados+s.merma))*100:null;
+  // Un 0 en estas cuatro métricas siempre significa "no se ha capturado", no un
+  // valor real: no existe una semana con cosecha y nómina de $0, ni una caja
+  // facturada a $0. Se devuelven como null para que la tarjeta pinte "—" y la
+  // insignia de variación no compare contra un cero falso.
   var nominaSemana=nominaFramSemana(sk);
-  var costoCubetaGeneral=s.cubetas>0?(nominaSemana/s.cubetas):null;
+  var costoCubetaGeneral=(s.cubetas>0 && nominaSemana>0)?(nominaSemana/s.cubetas):null;
   var nominaCosechSemana=nominaCosechadoresFramSemana(sk);
-  var costoCubetaCosechadores=(s.cubetas>0 && nominaCosechSemana!==null)?(nominaCosechSemana/s.cubetas):null;
+  var costoCubetaCosechadores=(s.cubetas>0 && nominaCosechSemana>0)?(nominaCosechSemana/s.cubetas):null;
   var finReg=(framFinanzas||[]).find(function(f){return f.semanaKey===sk;});
-  var precioCaja=finReg?(finReg.precio||null):null;
-  var totalFacturado=finReg?(finReg.cajas||0)*(finReg.precio||0):null;
+  var precioCaja=(finReg && finReg.precio>0)?finReg.precio:null;
+  var facturadoCalc=finReg?(finReg.cajas||0)*(finReg.precio||0):0;
+  var totalFacturado=facturadoCalc>0?facturadoCalc:null;
   return {cubetas:s.cubetas, cajas:s.cajas, promCajasDia:promCajasDia, pctKgMerma:pctKgMerma,
     costoCubetaGeneral:costoCubetaGeneral, costoCubetaCosechadores:costoCubetaCosechadores,
     precioCaja:precioCaja, totalFacturado:totalFacturado};
@@ -4865,11 +4872,12 @@ function renderRfrSemDetalle(){
   }).sort(function(a,b){return b.prom-a.prom;});
   var maxProm=trabArr.length?trabArr[0].prom:1;
 
+  // Ver rfrComputeSemMetrics: un 0 aquí es "sin capturar", no un valor real.
   var nominaSemana = nominaFramSemana(sk);
   var numCosechadores = trabArr.length;
-  var costoCubetaGeneral = s.cubetas>0 ? (nominaSemana/s.cubetas) : null;
+  var costoCubetaGeneral = (s.cubetas>0 && nominaSemana>0) ? (nominaSemana/s.cubetas) : null;
   var nominaCosechSemana = nominaCosechadoresFramSemana(sk);
-  var costoCubetaCosechadores = (s.cubetas>0 && nominaCosechSemana!==null) ? (nominaCosechSemana/s.cubetas) : null;
+  var costoCubetaCosechadores = (s.cubetas>0 && nominaCosechSemana>0) ? (nominaCosechSemana/s.cubetas) : null;
 
   // Cajas por día (domingo a sábado) de la semana seleccionada
   var diaLbls=['Dom','Lun','Mar','Mi\u00e9','Jue','Vie','S\u00e1b'];
@@ -4907,8 +4915,9 @@ function renderRfrSemDetalle(){
   });
 
   var finRegSem = framFinanzas.find(function(f){return f.semanaKey===sk;});
-  var precioCajaSem = finRegSem ? (finRegSem.precio||0) : null;
-  var totalFacturadoSem = finRegSem ? (finRegSem.cajas||0)*(finRegSem.precio||0) : null;
+  var precioCajaSem = (finRegSem && finRegSem.precio>0) ? finRegSem.precio : null;
+  var facturadoSemCalc = finRegSem ? (finRegSem.cajas||0)*(finRegSem.precio||0) : 0;
+  var totalFacturadoSem = facturadoSemCalc>0 ? facturadoSemCalc : null;
 
   // Semáforo contra la mediana histórica / meta real del negocio (ver rfrRefsHistoricas).
   var refsSem=rfrRefsHistoricas();
