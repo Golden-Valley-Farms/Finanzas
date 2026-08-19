@@ -264,6 +264,8 @@ Dos sumas cruzadas útiles para detectar regresiones: **el total de las filas de
 
 **Aquí van solo las flechas, sin el % de variación** —a diferencia de las tarjetas, que sí lo muestran— porque junto al porcentaje de calidad dos cifras seguidas se confunden. Por lo mismo, una variación de 0% no pinta nada en vez de un "0%" gris.
 
+El porcentaje lleva `width:44px;text-align:right`: con la fuente mono eso alinea las unidades entre filas (el 4 de "4%" cae bajo el 2 de "92%") y, de paso, arranca todas las flechas en la misma x. Si se le quita el ancho fijo, las dos alineaciones se pierden juntas.
+
 La lógica común vive en `rfrWowCalc()`, y hay dos renderizadores: `rfrWowBadge()` para las tarjetas (usa `.kpi-wow`, que es `position:absolute` y solo funciona dentro de una `.kpi-card`) y `rfrWowInline()` para estas filas, en flujo normal. Los porcentajes del periodo anterior salen de `pctCalidad`, que devuelven `rfrComputeDiaMetrics()` y `rfrComputeSemMetrics()` vía `rfrPctCalidad()`.
 
 Ojo al leerlas: comparan **porcentajes, no kilos**. Un defecto que pasa de 1% a 2% marca tres flechas aunque sean dos puntos porcentuales — es el mismo criterio relativo de las tarjetas.
