@@ -256,7 +256,7 @@ La lista abre con **"kg bueno"** —separado de los defectos por un `margin-bott
 
 **Estos porcentajes van sin decimales**, a diferencia de la tarjeta de Merma y del resto de gráficas, que sí llevan uno. Son cinco cifras juntas y los decimales estorban. Al redondear a entero la suma puede quedar en 99% o 101%; es esperado.
 
-**Por día** tiene más alto de tarjeta que contenido. Su fila va en `align-items:stretch` **solo** para poder centrar los porcentajes a lo alto (`justify-content:center` en esa columna); la dona y su leyenda quedan idénticas a las otras dos vistas — canvas de 240px fijo y la leyenda justo debajo, a 11px del dibujo. Dos cosas que rompen esa igualdad si se reintroducen: `flex:1` en el canvas (la dona crece a radio 145) y `margin-top:auto` en la leyenda (se despega a 47px).
+**Por día** tiene más alto de tarjeta que contenido. Su fila va en `align-items:stretch` para repartir el sobrante: **las dos columnas llevan `justify-content:center`**, así los porcentajes y el bloque dona+leyenda quedan centrados a lo alto. La dona y su leyenda conservan las medidas de las otras dos vistas — canvas de 240px fijo y la leyenda justo debajo, a 11px del dibujo. Dos cosas que rompen esa igualdad si se reintroducen: `flex:1` en el canvas (la dona crece a radio 145) y `margin-top:auto` en la leyenda (se despega a 47px).
 
 Dos sumas cruzadas útiles para detectar regresiones: **el total de las filas debe dar 100%**, y los defectos solos deben sumar el porcentaje de la tarjeta de Merma de esa vista (en el ciclo 2025-2026, 3.9+2.1+1.5+0.9 = 8.4%).
 
