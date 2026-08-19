@@ -3999,14 +3999,15 @@ function rfrDonaCalidad(kgBuenos, kgProceso, defMap){
   }
   var total=kgBuenos+kgProceso;
   return {labels:labels, data:data, cols:cols, idxBuenos:idxBuenos,
-    pctBuenos: total>0 ? Math.round(kgBuenos/total*1000)/10 : 0,
+    pctBuenos: total>0 ? Math.round(kgBuenos/total*100) : 0,
     total:Math.round(total*100)/100, hay:total>0};
 }
 
 // Fila de "Control de calidad": una por concepto, con el % sobre el total y la
 // cifra teñida del color de lo que representa. Misma forma en las tres vistas.
-function rfrFilaCalidadComp(col, lbl, pct){
-  return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0">'+
+// `extra` inyecta estilo suelto — se usa para separar "kg bueno" de los defectos.
+function rfrFilaCalidadComp(col, lbl, pct, extra){
+  return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;'+(extra||'')+'">'+
     '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+col+';flex-shrink:0"></span>'+
     '<span style="font-size:12px;color:var(--text2);width:88px;flex-shrink:0">'+lbl+'</span>'+
     '<span style="font-family:var(--mono);font-size:17px;font-weight:700;color:'+col+';text-shadow:0 0 10px '+col+'">'+pct+'%</span>'+
@@ -4016,12 +4017,14 @@ function rfrFilaCalidadComp(col, lbl, pct){
 // % de cada defecto sobre el TOTAL del anillo (kg bueno + proceso), no sobre la
 // muestra analizada. Es lo que hace que las filas de defectos y la dona muestren
 // el mismo número. Llaveado por la etiqueta legible del defecto.
+// Va SIN decimales, a diferencia de la tarjeta de Merma y del resto de gráficas,
+// que sí llevan uno: aquí son cinco cifras juntas y los decimales estorban.
 function rfrPctPorDefecto(d){
   var m={};
   if(!d || !d.total) return m;
   d.labels.forEach(function(l,i){
     if(i===d.idxBuenos) return;
-    m[l]=Math.round(d.data[i]/d.total*1000)/10;
+    m[l]=Math.round(d.data[i]/d.total*100);
   });
   return m;
 }
@@ -4061,7 +4064,7 @@ function rfrDonaCalidadCfg(d){
       plugins:{
         legend:{display:false},
         tooltip:{callbacks:{label:function(c){
-          var pct = d.total>0 ? Math.round(c.raw/d.total*1000)/10 : 0;
+          var pct = d.total>0 ? Math.round(c.raw/d.total*100) : 0;
           return ' '+c.label+': '+c.raw+' kg ('+pct+'%)';
         }}}
       },
@@ -4510,7 +4513,7 @@ function renderRfrDiaDetalle(){
 
   // El % es sobre el total cosechado (kg bueno + proceso), igual que la dona.
   // "kg bueno" encabeza la lista y los defectos van debajo.
-  var defRows=(donaDia.idxBuenos>=0 ? rfrFilaCalidadComp(RFR_COL_BUENOS, RFR_LBL_BUENOS, donaDia.pctBuenos) : '')+
+  var defRows=(donaDia.idxBuenos>=0 ? rfrFilaCalidadComp(RFR_COL_BUENOS, RFR_LBL_BUENOS, donaDia.pctBuenos, 'margin-bottom:14px') : '')+
     defKeys.filter(function(k,i){return defVals[i]>0;})
     .sort(function(a,b){return defVals[defKeys.indexOf(b)]-defVals[defKeys.indexOf(a)];})
     .map(function(k){
@@ -4587,11 +4590,13 @@ function renderRfrDiaDetalle(){
       '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
         (donaDia.hay?
           '<div class="dash-card-title">Control de calidad</div>'+
-          '<div style="display:flex;align-items:center;gap:14px;margin-top:6px">'+
+          // align-items:stretch + flex en el canvas: la dona toma el alto sobrante
+          // de la tarjeta y la leyenda se va al fondo, en vez de quedar pegada a ella.
+          '<div style="display:flex;align-items:stretch;gap:14px;margin-top:6px;flex:1;min-height:0">'+
             '<div style="flex:0 0 auto">'+defRows+'</div>'+
-            '<div style="flex:1;min-width:200px;display:flex;flex-direction:column">'+
-              '<div style="position:relative;height:220px"><canvas id="rfr-dia-pie" role="img" aria-label="Kg buenos contra kg de proceso desglosado por defecto">Calidad.</canvas></div>'+
-              rfrDonaLeyendaHtml(donaDia)+
+            '<div style="flex:1;min-width:200px;display:flex;flex-direction:column;min-height:0">'+
+              '<div style="position:relative;flex:1;min-height:200px"><canvas id="rfr-dia-pie" role="img" aria-label="Kg buenos contra kg de proceso desglosado por defecto">Calidad.</canvas></div>'+
+              '<div style="margin-top:auto;padding-top:10px">'+rfrDonaLeyendaHtml(donaDia)+'</div>'+
             '</div>'+
           '</div>':
           '<div style="text-align:center;padding:24px 0;color:var(--text3);font-size:13px">Sin datos de calidad este d\u00eda</div>')+
@@ -4847,7 +4852,7 @@ function renderRfrSemDetalle(){
 
   // El % es sobre el total cosechado (kg bueno + proceso), igual que la dona.
   // "kg bueno" encabeza la lista y los defectos van debajo.
-  var defRows=(donaSem.idxBuenos>=0 ? rfrFilaCalidadComp(RFR_COL_BUENOS, RFR_LBL_BUENOS, donaSem.pctBuenos) : '')+
+  var defRows=(donaSem.idxBuenos>=0 ? rfrFilaCalidadComp(RFR_COL_BUENOS, RFR_LBL_BUENOS, donaSem.pctBuenos, 'margin-bottom:14px') : '')+
     defKeys.filter(function(k,i){return defVals[i]>0;})
     .sort(function(a,b){return defVals[defKeys.indexOf(b)]-defVals[defKeys.indexOf(a)];})
     .map(function(k){
@@ -5395,7 +5400,7 @@ function renderRfrResumen(data){
   var pctDefCiclo=rfrPctPorDefecto(donaCiclo);
   // El % es sobre el total cosechado (kg bueno + proceso), igual que la dona.
   // "kg bueno" encabeza la lista y los defectos van debajo.
-  var defRows=(donaCiclo.idxBuenos>=0 ? rfrFilaCalidadComp(RFR_COL_BUENOS, RFR_LBL_BUENOS, donaCiclo.pctBuenos) : '')+
+  var defRows=(donaCiclo.idxBuenos>=0 ? rfrFilaCalidadComp(RFR_COL_BUENOS, RFR_LBL_BUENOS, donaCiclo.pctBuenos, 'margin-bottom:14px') : '')+
     defKeys.filter(function(k,i){return defVals[i]>0;})
     .sort(function(a,b){return defVals[defKeys.indexOf(b)]-defVals[defKeys.indexOf(a)];})
     .map(function(k){
