@@ -12963,15 +12963,15 @@ function renderMaizHist(){
         '<span style="font-family:var(--mono)">'+(p.pesoNeto||0).toLocaleString('es-MX')+' kg · '+fmtDec(p.precio||0)+'/kg</span>'+
       '</div>';
     });
-    h+='<div class="card" style="margin-bottom:10px">'+
+    h+='<div class="card" style="margin-bottom:10px;cursor:pointer" onclick="verMaizRegistro('+r.id+')">'+
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">'+
         '<div>'+
           '<div style="font-size:14px;font-weight:600;color:var(--text)">'+(r.intermediario||'—')+'</div>'+
           '<div style="font-size:12px;color:var(--text3)">'+mzFechaLbl(r.fechaVal)+' · '+(r.ciclo||'')+(r.boleta?' · Boleta '+r.boleta:'')+'</div>'+
         '</div>'+
         '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">'+
-          '<button onclick="editarMaizReg('+r.id+')" style="padding:6px 12px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Editar</button>'+
-          '<button id="mzdelbtn-'+r.id+'" onclick="confirmDelMaiz('+r.id+')" style="padding:6px 12px;border-radius:var(--radius);border:1px solid var(--green-border);background:transparent;color:var(--green);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Eliminar</button>'+
+          '<button onclick="event.stopPropagation();editarMaizReg('+r.id+')" style="padding:6px 12px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Editar</button>'+
+          '<button id="mzdelbtn-'+r.id+'" onclick="event.stopPropagation();confirmDelMaiz('+r.id+')" style="padding:6px 12px;border-radius:var(--radius);border:1px solid var(--green-border);background:transparent;color:var(--green);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Eliminar</button>'+
         '</div>'+
       '</div>'+
       '<div style="border-top:1px solid var(--border);padding-top:6px;margin-bottom:8px">'+parts+'</div>'+
@@ -13004,6 +13004,53 @@ function confirmDelMaiz(id){
   } else {
     btn.dataset.confirm='1'; btn.textContent='⚠️ Confirmar';
     setTimeout(function(){if(btn){btn.dataset.confirm='';btn.textContent='Eliminar';}},2500);
+  }
+}
+
+// ---- Modal de detalle (clic en una tarjeta del historial) ----
+function verMaizRegistro(id){
+  var r = maizRegistros.find(function(x){return x.id===id;});
+  if(!r) return;
+  var partRows = (r.partidas||[]).map(function(p){
+    return '<div class="modal-row"><span class="modal-key">'+p.variedad+(p.parcela?' · '+p.parcela:'')+
+      (p.hectareas?' · '+p.hectareas+' ha':'')+'</span><span class="modal-val" style="font-family:var(--mono)">'+
+      (p.pesoNeto||0).toLocaleString('es-MX')+' kg · '+fmtDec(p.precio||0)+'/kg</span></div>';
+  }).join('');
+  document.getElementById('mo-title').innerHTML='🌽 '+mzFechaLbl(r.fechaVal)+' &nbsp;<span class="chip maiz">Maíz</span>';
+  document.getElementById('mo-body').innerHTML=
+    '<div class="modal-row"><span class="modal-key">Fecha</span><span class="modal-val">'+mzFechaLbl(r.fechaVal)+'</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Ciclo</span><span class="modal-val">'+(r.ciclo||'—')+'</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Intermediario</span><span class="modal-val">'+(r.intermediario||'—')+'</span></div>'+
+    (r.boleta?'<div class="modal-row"><span class="modal-key">N° de Boleta</span><span class="modal-val">'+r.boleta+'</span></div>':'')+
+    (r.receptorFactura?'<div class="modal-row"><span class="modal-key">Receptor Factura</span><span class="modal-val">'+r.receptorFactura+'</span></div>':'')+
+    (r.chofer?'<div class="modal-row"><span class="modal-key">Chofer</span><span class="modal-val">'+r.chofer+'</span></div>':'')+
+    (r.placa?'<div class="modal-row"><span class="modal-key">N° de Placa</span><span class="modal-val">'+r.placa+'</span></div>':'')+
+    (r.factura?'<div class="modal-row"><span class="modal-key">Factura</span><span class="modal-val">'+r.factura+'</span></div>':'')+
+    '<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin:10px 0 4px">Partidas por variedad</div>'+
+    partRows+
+    '<div class="modal-row"><span class="modal-key">Total kg</span><span class="modal-val" style="font-family:var(--mono);color:var(--maiz);font-size:16px">'+(r.totalKg||0).toLocaleString('es-MX')+' kg</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Total toneladas</span><span class="modal-val" style="font-family:var(--mono);color:var(--maiz);font-size:16px">'+(r.totalTon||0).toFixed(3)+' t</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Total</span><span class="modal-val" style="font-family:var(--mono);color:var(--maiz);font-size:16px">'+fmtDec(r.total||0)+'</span></div>'+
+    '<div style="margin-top:14px;display:flex;gap:8px">'+
+      '<button onclick="closeModal();editarMaizReg('+r.id+')" style="flex:1;padding:10px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">✏️ Editar</button>'+
+      '<button id="mzdelbtn-modal-'+r.id+'" onclick="eliminarMaizDesdeModal('+r.id+')" style="flex:1;padding:10px;border-radius:var(--radius);border:1px solid var(--maiz-border);background:transparent;color:var(--maiz);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">🗑 Eliminar</button>'+
+    '</div>';
+  document.getElementById('overlay').classList.add('open');
+}
+
+function eliminarMaizDesdeModal(id){
+  var btn=document.getElementById('mzdelbtn-modal-'+id);
+  if(!btn) return;
+  if(btn.dataset.confirm==='1'){
+    maizRegistros = maizRegistros.filter(function(r){return r.id!==id;});
+    saveMaiz();
+    sbDeleteMaizReg(id);
+    document.getElementById('overlay').classList.remove('open');
+    renderMaizHist();
+    showToast('Registro eliminado');
+  } else {
+    btn.dataset.confirm='1'; btn.textContent='⚠️ Confirmar eliminación';
+    setTimeout(function(){if(btn){btn.dataset.confirm='';btn.textContent='🗑 Eliminar';}},2500);
   }
 }
 // ============================================================
