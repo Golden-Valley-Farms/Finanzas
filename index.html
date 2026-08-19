@@ -3946,14 +3946,14 @@ var rfrCharts = {};
 var rfrTabActual = 'dia';
 var rfrDataCache = [];
 
-var DEF_COLS_RFR = {sobremadura:'#66232e',irregular:'#eda100',desgrane:'#f5964a',deforme:'#2a78d6',hongos:'#888780'};
+var DEF_COLS_RFR = {sobremadura:'#66232e',irregular:'#C9A227',desgrane:'#E67E22',deforme:'#7E57C2',hongos:'#888780'};
 var DEF_LBL_RFR  = {sobremadura:'Sobremadura',irregular:'Irregular',desgrane:'Desgrane',deforme:'Deforme',hongos:'Hongos'};
 var SEC_COLS_RFR  = ['#2a78d6','#1baf7a','#eda100','#4a3aa7'];
 
-// Tramo de kg buenos de la dona de calidad. Va separado del resto del anillo
-// (ver RFR_OFFSET_BUENOS) para leerse como un bloque aparte de los defectos.
-var RFR_COL_BUENOS = '#ea3155';
-var RFR_OFFSET_BUENOS = 16;
+// Tramo de kg buenos de la dona de calidad. El anillo va parejo (sin offset): la
+// separación entre "kg bueno" y los defectos se hace en la leyenda, no en la dona.
+var RFR_COL_BUENOS = '#1baf7a';
+var RFR_LBL_BUENOS = 'kg bueno';
 var RFR_COL_PROCESO_SD = '#B08968'; // proceso sin defectos capturados
 
 // ── Dona de control de calidad (Por día / Por semana / Por ciclo) ──
@@ -3994,29 +3994,49 @@ function rfrDonaCalidad(kgBuenos, kgProceso, defMap){
   var idxBuenos=-1;
   if(kgBuenos>0){
     idxBuenos=labels.length;
-    labels.push('Buenos'); data.push(Math.round(kgBuenos*100)/100); cols.push(RFR_COL_BUENOS);
+    labels.push(RFR_LBL_BUENOS); data.push(Math.round(kgBuenos*100)/100); cols.push(RFR_COL_BUENOS);
   }
   var total=kgBuenos+kgProceso;
   return {labels:labels, data:data, cols:cols, idxBuenos:idxBuenos,
     total:Math.round(total*100)/100, hay:total>0};
 }
 
+// Leyenda propia de la dona de calidad. La nativa de Chart.js va desactivada porque
+// sigue el orden de los datos (donde el proceso va primero) y no deja separar un
+// item del resto: aquí "kg bueno" abre la fila, pegado a la izquierda y apartado
+// de los defectos por un borde, aunque en el anillo vaya al final.
+function rfrDonaLeyendaHtml(d){
+  if(!d.hay) return '';
+  var chip=function(col,txt){
+    return '<span style="display:flex;align-items:center;gap:5px;white-space:nowrap">'+
+      '<span style="width:10px;height:10px;border-radius:2px;background:'+col+';flex-shrink:0"></span>'+txt+'</span>';
+  };
+  var buenos='', resto=[];
+  d.labels.forEach(function(l,i){
+    if(i===d.idxBuenos) buenos=chip(d.cols[i], l);
+    else resto.push(chip(d.cols[i], l));
+  });
+  if(!buenos) return '<div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;font-size:11px;color:var(--text3)">'+resto.join('')+'</div>';
+  return '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:10px;font-size:11px;color:var(--text3)">'+
+    '<span style="display:flex;align-items:center;margin-right:6px;padding-right:16px;border-right:1px solid var(--border)">'+buenos+'</span>'+
+    resto.join('')+
+  '</div>';
+}
+
 function rfrDonaCalidadCfg(d){
-  // El tramo de Buenos se despega del anillo con un offset propio; el padding
-  // compensa ese desplazamiento para que no lo recorte el borde del canvas.
-  var offsets = d.data.map(function(_,i){ return i===d.idxBuenos ? RFR_OFFSET_BUENOS : 0; });
-  var pad = RFR_OFFSET_BUENOS + 4;
+  // Leyenda nativa desactivada: la pinta rfrDonaLeyendaHtml() para poder poner
+  // "kg bueno" primero y separado, sin alterar el orden del anillo.
   return {type:'doughnut',
-    data:{labels:d.labels, datasets:[{data:d.data, backgroundColor:d.cols, offset:offsets, hoverOffset:6}]},
+    data:{labels:d.labels, datasets:[{data:d.data, backgroundColor:d.cols, hoverOffset:6}]},
     options:{responsive:true, maintainAspectRatio:false, cutout:'60%',
       plugins:{
-        legend:{display:true, position:'bottom', labels:{color:'#898781', font:{size:11}, boxWidth:10, padding:8}},
+        legend:{display:false},
         tooltip:{callbacks:{label:function(c){
           var pct = d.total>0 ? Math.round(c.raw/d.total*1000)/10 : 0;
           return ' '+c.label+': '+c.raw+' kg ('+pct+'%)';
         }}}
       },
-      layout:{padding:{top:8, bottom:pad, left:pad, right:pad}}}};
+      layout:{padding:{top:8}}}};
 }
 
 function mkRfrChart(id, cfg){
@@ -4543,6 +4563,7 @@ function renderRfrDiaDetalle(){
             '<div class="dash-card-title">Buenos vs proceso</div>'+
             '<div class="dash-card-sub">'+donaDia.total.toLocaleString('es-MX')+' kg cosechados</div>'+
             '<div style="position:relative;width:100%;height:220px;margin-top:8px"><canvas id="rfr-dia-pie" role="img" aria-label="Kg buenos contra kg de proceso desglosado por defecto">Calidad.</canvas></div>'+
+            rfrDonaLeyendaHtml(donaDia)+
           '</div>':
           '<div style="text-align:center;padding:24px 0;color:var(--text3);font-size:13px">Sin datos de calidad este d\u00eda</div>')+
       '</div>'+
@@ -4938,7 +4959,10 @@ function renderRfrSemDetalle(){
           '<div class="dash-card-sub">'+donaSem.total.toLocaleString('es-MX')+' kg cosechados en la semana</div>'+
           '<div style="display:flex;align-items:center;gap:14px;margin-top:6px">'+
             '<div style="flex:0 0 auto">'+defRows+'</div>'+
-            '<div style="position:relative;flex:1;min-width:220px;height:240px"><canvas id="rfr-chart-def-sem" role="img" aria-label="Kg buenos contra kg de proceso desglosado por defecto">Calidad.</canvas></div>'+
+            '<div style="flex:1;min-width:220px;display:flex;flex-direction:column">'+
+              '<div style="position:relative;height:240px"><canvas id="rfr-chart-def-sem" role="img" aria-label="Kg buenos contra kg de proceso desglosado por defecto">Calidad.</canvas></div>'+
+              rfrDonaLeyendaHtml(donaSem)+
+            '</div>'+
           '</div>':
           '<div style="text-align:center;padding:16px 0;color:var(--text3);font-size:13px">Sin datos de calidad esta semana</div>')+
       '</div>'+
@@ -5510,7 +5534,10 @@ function renderRfrResumen(data){
           '<div class="dash-card-sub">'+donaCiclo.total.toLocaleString('es-MX')+' kg cosechados en el ciclo</div>'+
           '<div style="display:flex;align-items:center;gap:14px;margin-top:6px">'+
             '<div style="flex:0 0 auto">'+defRows+'</div>'+
-            '<div style="position:relative;flex:1;min-width:220px;height:240px"><canvas id="rfr-res-def-chart" role="img" aria-label="Kg buenos contra kg de proceso desglosado por defecto">Calidad.</canvas></div>'+
+            '<div style="flex:1;min-width:220px;display:flex;flex-direction:column">'+
+              '<div style="position:relative;height:240px"><canvas id="rfr-res-def-chart" role="img" aria-label="Kg buenos contra kg de proceso desglosado por defecto">Calidad.</canvas></div>'+
+              rfrDonaLeyendaHtml(donaCiclo)+
+            '</div>'+
           '</div>':
           '<div style="text-align:center;padding:16px 0;color:var(--text3);font-size:13px">Sin datos de calidad este ciclo</div>')+
       '</div>'+
