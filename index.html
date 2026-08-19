@@ -4590,14 +4590,13 @@ function renderRfrDiaDetalle(){
       '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
         (donaDia.hay?
           '<div class="dash-card-title">Control de calidad</div>'+
-          // align-items:stretch para poder repartir el alto sobrante de la tarjeta:
-          // los porcentajes se centran a lo alto y la leyenda se va al fondo, pero
-          // la dona conserva los 240px que usa en Por semana / Por ciclo.
+          // align-items:stretch solo para poder centrar los porcentajes a lo alto de
+          // la tarjeta; la dona y su leyenda quedan idénticas a Por semana / Por ciclo.
           '<div style="display:flex;align-items:stretch;gap:14px;margin-top:6px;flex:1;min-height:0">'+
             '<div style="flex:0 0 auto;display:flex;flex-direction:column;justify-content:center">'+defRows+'</div>'+
             '<div style="flex:1;min-width:200px;display:flex;flex-direction:column;min-height:0">'+
               '<div style="position:relative;height:240px;flex:0 0 auto"><canvas id="rfr-dia-pie" role="img" aria-label="Kg buenos contra kg de proceso desglosado por defecto">Calidad.</canvas></div>'+
-              '<div style="margin-top:auto;padding-top:10px">'+rfrDonaLeyendaHtml(donaDia)+'</div>'+
+              rfrDonaLeyendaHtml(donaDia)+
             '</div>'+
           '</div>':
           '<div style="text-align:center;padding:24px 0;color:var(--text3);font-size:13px">Sin datos de calidad este d\u00eda</div>')+
