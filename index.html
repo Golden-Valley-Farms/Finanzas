@@ -4010,7 +4010,7 @@ function rfrFilaCalidadComp(col, lbl, pct, extra){
   return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;'+(extra||'')+'">'+
     '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+col+';flex-shrink:0"></span>'+
     '<span style="font-size:12px;color:var(--text2);width:88px;flex-shrink:0">'+lbl+'</span>'+
-    '<span style="font-family:var(--mono);font-size:17px;font-weight:700;color:'+col+';text-shadow:0 0 10px '+col+'">'+pct+'%</span>'+
+    '<span style="font-family:var(--mono);font-size:17px;font-weight:700;color:'+col+'">'+pct+'%</span>'+
   '</div>';
 }
 
@@ -4590,12 +4590,13 @@ function renderRfrDiaDetalle(){
       '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
         (donaDia.hay?
           '<div class="dash-card-title">Control de calidad</div>'+
-          // align-items:stretch + flex en el canvas: la dona toma el alto sobrante
-          // de la tarjeta y la leyenda se va al fondo, en vez de quedar pegada a ella.
+          // align-items:stretch para poder repartir el alto sobrante de la tarjeta:
+          // los porcentajes se centran a lo alto y la leyenda se va al fondo, pero
+          // la dona conserva los 240px que usa en Por semana / Por ciclo.
           '<div style="display:flex;align-items:stretch;gap:14px;margin-top:6px;flex:1;min-height:0">'+
-            '<div style="flex:0 0 auto">'+defRows+'</div>'+
+            '<div style="flex:0 0 auto;display:flex;flex-direction:column;justify-content:center">'+defRows+'</div>'+
             '<div style="flex:1;min-width:200px;display:flex;flex-direction:column;min-height:0">'+
-              '<div style="position:relative;flex:1;min-height:200px"><canvas id="rfr-dia-pie" role="img" aria-label="Kg buenos contra kg de proceso desglosado por defecto">Calidad.</canvas></div>'+
+              '<div style="position:relative;height:240px;flex:0 0 auto"><canvas id="rfr-dia-pie" role="img" aria-label="Kg buenos contra kg de proceso desglosado por defecto">Calidad.</canvas></div>'+
               '<div style="margin-top:auto;padding-top:10px">'+rfrDonaLeyendaHtml(donaDia)+'</div>'+
             '</div>'+
           '</div>':

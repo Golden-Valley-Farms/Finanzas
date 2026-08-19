@@ -252,11 +252,11 @@ Desactivar la leyenda nativa además le devolvió espacio a la dona (el radio pa
 
 Las filas de texto al lado (`defRows`) muestran **el mismo porcentaje que la dona**: el de cada concepto sobre el total cosechado, vía `rfrPctPorDefecto(dona)` y `dona.pctBuenos`. No muestran los kg de la muestra. Por eso en las tres vistas la dona **se calcula antes que `defRows`** — si se mueve después, los porcentajes salen en cero.
 
-La lista abre con **"kg bueno"** —separado de los defectos por un `margin-bottom`— y sigue con los defectos. Cada cifra va teñida del color de lo que representa (`RFR_COL_BUENOS` / `DEF_COLS_RFR[k]`), con el mismo color en el `text-shadow`. Las tres vistas comparten `rfrFilaCalidadComp()` y el mismo layout: un flex row con los porcentajes a la izquierda y la dona + su leyenda a la derecha.
+La lista abre con **"kg bueno"** —separado de los defectos por un `margin-bottom`— y sigue con los defectos. Cada cifra va teñida del color de lo que representa (`RFR_COL_BUENOS` / `DEF_COLS_RFR[k]`), sin `text-shadow`. Las tres vistas comparten `rfrFilaCalidadComp()` y el mismo layout: un flex row con los porcentajes a la izquierda y la dona (canvas de 240px) + su leyenda a la derecha.
 
 **Estos porcentajes van sin decimales**, a diferencia de la tarjeta de Merma y del resto de gráficas, que sí llevan uno. Son cinco cifras juntas y los decimales estorban. Al redondear a entero la suma puede quedar en 99% o 101%; es esperado.
 
-En **Por día** la columna de la dona va en `align-items:stretch` con el canvas en `flex:1` y la leyenda con `margin-top:auto`: así la dona toma el alto sobrante de la tarjeta (radio 145 en vez de 73) y la leyenda baja al fondo en vez de quedar pegada al dibujo.
+**Por día** tiene más alto de tarjeta que contenido, así que su fila va en `align-items:stretch` para repartir el sobrante: los porcentajes se centran a lo alto (`justify-content:center`) y la leyenda baja al fondo (`margin-top:auto`), mientras el canvas conserva los 240px fijos de las otras dos vistas. Si se le pone `flex:1` al canvas, la dona crece a radio 145 y deja de coincidir con Por semana / Por ciclo.
 
 Dos sumas cruzadas útiles para detectar regresiones: **el total de las filas debe dar 100%**, y los defectos solos deben sumar el porcentaje de la tarjeta de Merma de esa vista (en el ciclo 2025-2026, 3.9+2.1+1.5+0.9 = 8.4%).
 
