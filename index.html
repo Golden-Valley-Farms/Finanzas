@@ -4347,14 +4347,20 @@ function framBarraH(id, lbls, vals, cols, colorTxt, xMax, yAncho){
     id:id+'-labels',
     afterDatasetsDraw:function(chart){
       var ctx=chart.ctx, ds=chart.data.datasets[0], meta=chart.getDatasetMeta(0);
+      var ca=chart.chartArea;
       meta.data.forEach(function(bar,i){
         var v=ds.data[i]; if(v==null) return;
         ctx.save();
-        ctx.fillStyle=(typeof colorTxt==='function')?colorTxt(v):colorTxt;
         ctx.font='bold 11px monospace';
-        ctx.textAlign=v<0?'right':'left';
+        var txt=fmt(v), w=ctx.measureText(txt).width;
+        // Una barra negativa larga llega hasta el borde del área de trazo y su etiqueta,
+        // que va por fuera, se empalmaría con las etiquetas del eje Y. En ese caso se
+        // pinta DENTRO de la barra (en blanco, sobre el rojo), siempre que quepa.
+        var dentro = v<0 && (bar.x-8-w < ca.left) && ((bar.base-bar.x) >= w+16);
+        ctx.fillStyle=dentro ? '#fff' : ((typeof colorTxt==='function')?colorTxt(v):colorTxt);
+        ctx.textAlign=(v<0&&!dentro)?'right':'left';
         ctx.textBaseline='middle';
-        ctx.fillText(fmt(v), bar.x+(v<0?-8:8), bar.y);
+        ctx.fillText(txt, bar.x+((v<0&&!dentro)?-8:8), bar.y);
         ctx.restore();
       });
     }
