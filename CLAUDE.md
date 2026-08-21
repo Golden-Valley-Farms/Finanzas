@@ -58,7 +58,7 @@ JS usa camelCase, Supabase usa snake_case: `fechaVal`↔`fecha`, `tipoCamote`↔
 
 ### Claves de localStorage
 
-`cc_gastos3`, `cc_envios`, `cc_alm_lotes`, `cc_fram`, `cc_fram_fin`, `cc_maiz`, `cc_intermediarios`, `cc_receptores_factura`, `cc_choferes`, `cc_deudas`, `cc_pagosdeuda`, `cc_contrapartes`, `cc_clientes`, `cc_proveedores`, `cc_proveedores_comer`, `cc_clientes_comer`, `cc_deudores`, `cc_acreedores`, `cc_bancos`, `cc_trabajadores`, `cc_cats`, `cc_presentaciones`.
+`cc_gastos3`, `cc_ingresos`, `cc_envios`, `cc_alm_lotes`, `cc_fram`, `cc_fram_fin`, `cc_maiz`, `cc_intermediarios`, `cc_receptores_factura`, `cc_choferes`, `cc_deudas`, `cc_pagosdeuda`, `cc_contrapartes`, `cc_clientes`, `cc_proveedores`, `cc_proveedores_comer`, `cc_clientes_comer`, `cc_deudores`, `cc_acreedores`, `cc_bancos`, `cc_trabajadores`, `cc_cats`, `cc_cats_ing`, `cc_presentaciones`.
 
 ## Modelo de negocios (`NEGOCIOS`)
 
@@ -104,6 +104,25 @@ O sea: un registro sin ciclo puede estar invisible en Historial y a la vez suman
 ### `finUsaCiclo()` está desactivado
 
 `finUsaCiclo(neg)` (línea ~6548) es un stub que **siempre devuelve `false`**, así que el dashboard financiero agrupa por año calendario para todos los negocios, nunca por ciclo. Es el interruptor para volver a activar el agrupamiento por ciclo cuando se decida. No es un bug.
+
+## Ingresos manuales
+
+Agregado en ago-2026 (spec en `docs/superpowers/specs/2026-08-21-ingresos-manuales-design.md`). La pantalla Registrar abre con una sección **1. Tipo** (Gasto / Ingreso); el resto del formulario es idéntico para los dos.
+
+**Un ingreso tiene la misma forma que un gasto pero vive en su propio arreglo y su propia tabla** (`ingresos` / `cc_ingresos` / tabla `ingresos`), **no** dentro de `gastos` con una marca de tipo. Es la decisión más importante del módulo y es por riesgo: **47 lugares del código suman el arreglo `gastos`**; meterlos ahí obligaría a filtrar en los 47, y el que se escapara contaría un ingreso como gasto y descuadraría un reporte en silencio. Con arreglo aparte, ninguno de esos 47 se toca.
+
+La tabla `ingresos` espeja a `gastos` salvo `auto_gen` (un ingreso nunca se autogenera). Aplica la regla de los cuatro lugares igual que cualquier entidad.
+
+**Categorías propias.** `CATS_ING` usa **las mismas siete llaves de lista** que `CATS` (`camote_general`, `camote_cosecha`, `fram`, `campo_general`, `ofic`, `com`, `maiz`), para poder reusar `catListaActual()` sin tocarlo; espejo en `cc_cats_ing` y tabla `categorias_ingresos` con llave `(lista, nombre)`. **Arrancan vacías y `cargarDesdeSB()` NO las siembra** si la tabla viene vacía — al revés que las de gasto, que sí se siembran con `CATS_DEFAULT`. Consecuencia buscada: en un negocio sin categorías, el formulario exige crear la primera con "+ Agregar nueva...".
+
+`regTipo` (`'gasto'`|`'ingreso'`) es el estado del formulario y `catsActuales()` resuelve qué lista aplica. `selRegTipo()` cambia lista de categorías, texto del botón y numeración. En camote las categorías de ingreso también quedan partidas en General/Cosecha, porque la sección Actividad sigue apareciendo.
+
+**Dónde suman y dónde no:**
+
+- **Sí:** Resumen (vía `ingManualesNeg(negKey, ciclo)`, que espeja los filtros de `rsmSumaGastos`) y los cinco caminos del EDR. **Oficina estrenó tarjetas de Ingresos y Utilidad**; antes solo tenía Gastos.
+- **No:** la pestaña **Gastos** de Finanzas (es un reporte de gastos y así se queda), el total del encabezado, y `renderRcmComerOps()` — su "ganancia por kg vendido" se distorsionaría con ingresos que no son venta de camote.
+
+**Historial:** `hisTabSel` alterna las pestañas Gastos / Ingresos y `hisFuente()` decide de qué arreglo lee `renderHis()`. Borrar y editar despachan por `hisEsIngreso()`, lo cual es correcto porque el modal siempre se abre desde la pestaña que se está viendo. `editarGasto()` llama `selRegTipo()` **antes** que `selNegocio()`: el tipo define de qué lista salen las categorías.
 
 ## Categorías
 
@@ -461,7 +480,7 @@ Antes de modificar cualquier función, `grep` por `function nombre(` para confir
 
 URL y clave publicable están en duro al inicio del script (líneas ~1911-1912). La clave es *publishable*, no secreta — la seguridad real depende de las políticas RLS del proyecto, no de ocultarla. El repo es público, así que ese archivo es visible para cualquiera: **RLS es la única defensa real de los datos.**
 
-Tablas: `gastos`, `envios`, `alm_lotes`, `fram_registros`, `fram_finanzas`, `maiz_registros`, `intermediarios`, `receptores_factura`, `choferes`, `deudas`, `pagos_deuda`, `contrapartes`, `clientes`, `proveedores`, `proveedores_comer`, `clientes_comer`, `deudores`, `acreedores`, `bancos`, `trabajadores`, `categorias`.
+Tablas: `gastos`, `ingresos`, `categorias_ingresos`, `envios`, `alm_lotes`, `fram_registros`, `fram_finanzas`, `maiz_registros`, `intermediarios`, `receptores_factura`, `choferes`, `deudas`, `pagos_deuda`, `contrapartes`, `clientes`, `proveedores`, `proveedores_comer`, `clientes_comer`, `deudores`, `acreedores`, `bancos`, `trabajadores`, `categorias`.
 
 Si una tabla regresa vacía teniendo datos, casi siempre es RLS — el código ya avisa esto por consola para `fram_registros`.
 

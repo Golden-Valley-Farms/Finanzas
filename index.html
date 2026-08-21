@@ -151,6 +151,12 @@ input,select,textarea,button{font-family:var(--font)}
 .tipo-label{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
 .tipo-btn.cosecha.sel .tipo-label{color:var(--camote)}
 .tipo-btn.general.sel .tipo-label{color:var(--green)}
+/* Tipo de registro (Gasto / Ingreso): mismos colores que usan las tarjetas de los
+   reportes, gasto en naranja e ingreso en verde. */
+.tipo-btn.gasto.sel{background:var(--camote-bg);border-color:var(--camote)}
+.tipo-btn.gasto.sel .tipo-label{color:var(--camote)}
+.tipo-btn.ingreso.sel{background:var(--green-bg);border-color:var(--green)}
+.tipo-btn.ingreso.sel .tipo-label{color:var(--green)}
 .tipo-sub{font-size:10px;color:var(--text3);line-height:1.4}
 
 /* Form */
@@ -784,7 +790,19 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
   <div id="sc-reg" class="screen">
 
-    <div class="step-label" id="step-loc-lbl">1. Negocio</div>
+    <div class="step-label" id="step-regtipo-lbl">1. Tipo</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <button class="tipo-btn gasto sel" id="rt-gasto" onclick="selRegTipo('gasto')">
+        <div style="font-size:20px;margin-bottom:4px">💸</div>
+        <div class="tipo-label">Gasto</div>
+      </button>
+      <button class="tipo-btn ingreso" id="rt-ingreso" onclick="selRegTipo('ingreso')">
+        <div style="font-size:20px;margin-bottom:4px">💵</div>
+        <div class="tipo-label">Ingreso</div>
+      </button>
+    </div>
+
+    <div class="step-label" id="step-loc-lbl">2. Negocio</div>
     <div class="neg-row" id="negocio-row">
       <button class="loc-btn jal sel" data-neg="cam_jal" onclick="selNegocio('cam_jal')">
         <div class="loc-emoji">🍠</div>
@@ -902,6 +920,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <button onclick="importarGastos()" style="padding:6px 14px;border-radius:20px;border:1px solid var(--jal-border);background:var(--jal);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Importar</button>
         <button onclick="document.getElementById('import-banner').style.display='none'" style="padding:4px 8px;border-radius:50%;border:1px solid var(--jal-border);background:transparent;color:var(--jal);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);line-height:1">✕</button>
       </div>
+    </div>
+    <div class="rfr-topbar" id="his-subtabs" style="display:flex;gap:4px;margin-bottom:10px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
+      <button class="ven-tab active" id="his-tab-gastos" onclick="hisTab('gastos')" style="flex:1">💸 Gastos</button>
+      <button class="ven-tab" id="his-tab-ingresos" onclick="hisTab('ingresos')" style="flex:1">💵 Ingresos</button>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
       <div style="grid-column:1 / -1">
@@ -2202,6 +2224,8 @@ async function cargarDesdeSB(){
   var rRec = await sb.from('receptores_factura').select('nombre').order('nombre');
   var rCho = await sb.from('choferes').select('nombre').order('nombre');
   var rCat = await sb.from('categorias').select('lista,nombre').order('nombre');
+  var iData = await fetchAllRows('ingresos', 'created_at', false);
+  var rCatIng = await sb.from('categorias_ingresos').select('lista,nombre').order('nombre');
 
   if(gData && gData.length){
     gastos = gData.map(function(g){
@@ -2229,6 +2253,28 @@ async function cargarDesdeSB(){
         banco:g.banco, proveedor:g.proveedor||'', factura:g.factura||'', autoGen:g.auto_gen};
     });
     localStorage.setItem('cc_gastos3', JSON.stringify(gastos));
+  }
+  // Ingresos manuales. Tabla nueva (ago-2026): no hay esquema viejo del cual caer, así que
+  // el mapeo es directo. Misma forma que un gasto, sin auto_gen.
+  if(iData && iData.length){
+    ingresos = iData.map(function(x){
+      var negKeyI = NEG_FROM_LABEL[x.negocio] || 'cam_jal';
+      var lcI = NEG_LOCCULT[negKeyI] || {loc:'jal', cultivo:'camote'};
+      var fechaVI = x.fecha || '';
+      var tipoCamI = null;
+      if(lcI.cultivo==='camote'){
+        tipoCamI = String(x.actividad||'').toLowerCase().indexOf('cosecha')>=0 ? 'cosecha' : 'general';
+      }
+      var fechaLblI = fechaVI ? new Date(fechaVI+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : '';
+      return {id:x.id, fechaVal:fechaVI, fecha:fechaLblI,
+        semLbl:gastoSemLbl(fechaVI)||x.semana||fechaLblI,
+        loc:lcI.loc, cultivo:lcI.cultivo, cat:x.categoria||'', desc:x.descripcion,
+        monto:parseFloat(x.monto||0), ciclo:x.ciclo,
+        sectores:x.sector ? String(x.sector).split(',').filter(Boolean) : [],
+        tipoCamote:tipoCamI,
+        banco:x.banco, proveedor:x.proveedor||'', factura:x.factura||''};
+    });
+    saveIngresos();
   }
   if(eData && eData.length){
     envios = eData.map(function(e){
@@ -2360,6 +2406,17 @@ async function cargarDesdeSB(){
     }
   }
 
+  // Categorías de ingreso: la tabla manda, igual que las de gasto. Pero aquí NO se siembra
+  // nada si viene vacía: arrancan vacías a propósito y las da de alta el usuario.
+  if(rCatIng && !rCatIng.error && rCatIng.data){
+    var mCatsIng={};
+    CATS_ING_LISTAS.forEach(function(k){ mCatsIng[k]=[]; });
+    rCatIng.data.forEach(function(r){ if(!mCatsIng[r.lista]) mCatsIng[r.lista]=[]; mCatsIng[r.lista].push(r.nombre); });
+    Object.keys(mCatsIng).forEach(function(k){ mCatsIng[k].sort(function(a,b){return a.localeCompare(b,'es');}); });
+    CATS_ING = mCatsIng;
+    saveCatsIng();
+  }
+
   showToast('✅ Datos sincronizados');
   renderEnvios();
   if(typeof renderAlmLotes==='function') renderAlmLotes();
@@ -2390,6 +2447,40 @@ async function sbSaveGasto(g){
 async function sbDeleteGasto(id){
   if(!sbOnline||!sb) return;
   await sb.from('gastos').delete().eq('id', id);
+}
+
+// Ingresos manuales: mismo mapeo que sbSaveGasto sin auto_gen (nunca se autogeneran).
+async function sbSaveIngreso(x){
+  if(!sbOnline||!sb) return;
+  var negKey = negKeyFromGasto(x);
+  var esCamote = (x.cultivo==='camote');
+  await sb.from('ingresos').upsert({
+    id:x.id,
+    negocio: NEG_LABEL[negKey] || 'Camote Jalisco',
+    actividad: esCamote ? (x.tipoCamote==='cosecha' ? 'Cosecha' : 'General') : null,
+    sector:(x.sectores&&x.sectores.length)?x.sectores.join(','):'',
+    fecha:x.fechaVal||'',
+    semana: gastoSemLbl(x.fechaVal||'') || '',
+    categoria:x.cat||'',
+    monto:x.monto||0, ciclo:x.ciclo||'',
+    descripcion:x.desc||'',
+    proveedor:x.proveedor||'', banco:x.banco||'', factura:x.factura||''
+  });
+}
+
+async function sbDeleteIngreso(id){
+  if(!sbOnline||!sb) return;
+  await sb.from('ingresos').delete().eq('id', id);
+}
+
+async function sbSaveCategoriaIng(lista, nombre){
+  if(!sbOnline||!sb) return;
+  await sb.from('categorias_ingresos').upsert({lista:lista, nombre:nombre},{onConflict:'lista,nombre'});
+}
+
+async function sbDeleteCategoriaIng(lista, nombre){
+  if(!sbOnline||!sb) return;
+  await sb.from('categorias_ingresos').delete().eq('lista', lista).eq('nombre', nombre);
 }
 
 async function sbSaveEnvio(e){
@@ -2524,6 +2615,57 @@ try{
   }
 }catch(e){}
 function saveCats(){try{localStorage.setItem('cc_cats',JSON.stringify(CATS));}catch(e){}}
+
+// ══════════ INGRESOS MANUALES ══════════
+// Spec: docs/superpowers/specs/2026-08-21-ingresos-manuales-design.md
+// Un ingreso tiene la MISMA forma que un gasto (mismos campos, misma captura) pero vive en
+// su propio arreglo y su propia tabla, NO dentro de `gastos` con una marca de tipo.
+// El motivo es de riesgo: 47 lugares del código suman el arreglo `gastos`, y meterlos ahí
+// obligaría a filtrar en los 47. El que se escapara contaría un ingreso como gasto y
+// descuadraría un reporte en silencio, sin error en consola.
+var ingresos = [];
+try{ var svIng=localStorage.getItem('cc_ingresos'); if(svIng) ingresos=JSON.parse(svIng); }catch(e){}
+function saveIngresos(){try{localStorage.setItem('cc_ingresos',JSON.stringify(ingresos));}catch(e){}}
+
+// Categorías de ingreso: mismas llaves de lista que las de gasto, para que catListaActual()
+// sirva igual sin tocarlo. Arrancan VACÍAS (decisión del usuario): en un negocio sin
+// categorías, el formulario exige crear la primera con "+ Agregar nueva..." antes de guardar.
+var CATS_ING_LISTAS = ['camote_general','camote_cosecha','fram','campo_general','ofic','com','maiz'];
+var CATS_ING = {};
+CATS_ING_LISTAS.forEach(function(k){ CATS_ING[k]=[]; });
+try{
+  var svCatsIng = localStorage.getItem('cc_cats_ing');
+  if(svCatsIng){
+    var oCatsIng = JSON.parse(svCatsIng);
+    CATS_ING_LISTAS.forEach(function(k){ if(Array.isArray(oCatsIng[k])) CATS_ING[k]=oCatsIng[k]; });
+  }
+}catch(e){}
+function saveCatsIng(){try{localStorage.setItem('cc_cats_ing',JSON.stringify(CATS_ING));}catch(e){}}
+
+// Tipo activo del formulario de Registrar.
+var regTipo='gasto';
+function esRegIngreso(){ return regTipo==='ingreso'; }
+// Lista de categorías que aplica: depende del tipo Y del negocio elegido.
+function catsActuales(){ return (esRegIngreso()?CATS_ING:CATS)[catListaActual()] || []; }
+
+// Ingresos manuales de un negocio y ciclo. Espeja los filtros de rsmSumaGastos(), que es
+// lo que mantiene cuadrado el Resumen con el estado de resultados de cada negocio.
+function ingManualesFiltro(negKey){
+  if(negKey==='camjal') return function(x){return x.loc==='jal'&&x.cultivo==='camote';};
+  if(negKey==='camnay') return function(x){return x.loc==='nay'&&x.cultivo==='camote';};
+  if(negKey==='com')    return function(x){return x.loc==='com';};
+  if(negKey==='fram')   return function(x){return x.cultivo==='fram'&&['jal','nay'].indexOf(x.loc)>=0;};
+  if(negKey==='ofic')   return function(x){return x.loc==='ofic';};
+  if(negKey==='maiz')   return function(x){return x.loc==='maiz';};
+  return function(){ return false; };
+}
+// Filtra CON fallback de fecha, igual que rsmEnCiclo() y el EDR.
+function ingManualesNeg(negKey, ciclo){
+  var f=ingManualesFiltro(negKey);
+  return (ingresos||[]).filter(function(x){
+    return f(x) && (ciclo==='todos' || (x.ciclo||cicloFromFecha(x.fechaVal))===ciclo);
+  }).reduce(function(a,x){ return a+(parseFloat(x.monto)||0); },0);
+}
 
 // Qué lista de categorías toca según el negocio elegido en el formulario
 function catListaActual(){
@@ -2817,9 +2959,28 @@ function saveGastos(){save();}
 // ---- Cat select ----
 // Al cambiar de negocio cambia la lista: si la categoría elegida ya no existe ahí,
 // cae a la primera de la lista nueva.
+// Selector de tipo (paso 1). Cambia la lista de categorías, el texto del botón y la
+// numeración de los pasos; el resto del formulario es idéntico para gasto e ingreso.
+function selRegTipo(t){
+  regTipo = (t==='ingreso') ? 'ingreso' : 'gasto';
+  var bg=document.getElementById('rt-gasto'), bi=document.getElementById('rt-ingreso');
+  if(bg) bg.classList.toggle('sel', regTipo==='gasto');
+  if(bi) bi.classList.toggle('sel', regTipo==='ingreso');
+  updateCatSelect();
+  updateRegBtnLabel();
+  updateStepNumbers();
+}
+
+// No toca el botón mientras se edita: ahí dice "Guardar cambios".
+function updateRegBtnLabel(){
+  if(editandoGastoId || editandoIngresoId) return;
+  var btn=document.getElementById('btn-reg'); if(!btn) return;
+  btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"/></svg> Registrar '+(esRegIngreso()?'ingreso':'gasto');
+}
+
 function updateCatSelect(){
   var inp=document.getElementById('f-cat'); if(!inp) return;
-  var list=CATS[catListaActual()]||[];
+  var list=catsActuales();
   if(list.indexOf(inp.value)<0) inp.value = list[0]||'';
   hideCatDropdown();
 }
@@ -2827,7 +2988,9 @@ function updateCatSelect(){
 function renderCatDropdown(){
   var dd=document.getElementById('f-cat-dropdown'); if(!dd) return;
   var lista=catListaActual();
-  var list=CATS[lista]||[];
+  var esIng=esRegIngreso();
+  var store=esIng?CATS_ING:CATS;
+  var list=store[lista]||[];
   dd.innerHTML='';
   list.forEach(function(c){
     var row=document.createElement('div');
@@ -2841,11 +3004,12 @@ function renderCatDropdown(){
     btn.style.cssText='background:none;border:none;color:var(--text3);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0';
     btn.onmousedown=function(e){
       e.preventDefault(); e.stopPropagation();
-      CATS[lista]=(CATS[lista]||[]).filter(function(x){return x!==c;});
-      saveCats(); sbDeleteCategoria(lista, c);
+      store[lista]=(store[lista]||[]).filter(function(x){return x!==c;});
+      if(esIng){ saveCatsIng(); sbDeleteCategoriaIng(lista, c); }
+      else { saveCats(); sbDeleteCategoria(lista, c); }
       renderCatDropdown();
       var inp=document.getElementById('f-cat');
-      if(inp.value===c) inp.value=(CATS[lista][0]||'');
+      if(inp.value===c) inp.value=(store[lista][0]||'');
       showToast('Categoría eliminada');
     };
     row.appendChild(name); row.appendChild(btn); dd.appendChild(row);
@@ -2864,7 +3028,7 @@ function hideCatDropdown(){var dd=document.getElementById('f-cat-dropdown');if(d
 
 function abrirModalNuevaCategoria(){
   var lista=catListaActual();
-  document.getElementById('mo-title').innerHTML='🏷️ Nueva categoría';
+  document.getElementById('mo-title').innerHTML='🏷️ Nueva categoría de '+(esRegIngreso()?'ingreso':'gasto');
   document.getElementById('mo-body').innerHTML=
     '<div style="font-size:12px;color:var(--text3);margin-bottom:12px">Se agrega a la lista de <b style="color:var(--text2)">'+(CAT_LISTA_LBL[lista]||lista)+'</b></div>'+
     '<div class="field" style="margin-bottom:14px"><label>Nombre de la categoría</label>'+
@@ -2879,11 +3043,14 @@ function confirmarNuevaCategoria(){
   var nom=(inp.value||'').trim();
   if(!nom){ showToast('Escribe un nombre'); return; }
   var lista=catListaActual();
-  if(!CATS[lista]) CATS[lista]=[];
-  if(CATS[lista].indexOf(nom)<0){
-    CATS[lista].push(nom);
-    CATS[lista].sort(function(a,b){return a.localeCompare(b,'es');});
-    saveCats(); sbSaveCategoria(lista, nom);
+  var esIng=esRegIngreso();
+  var store=esIng?CATS_ING:CATS;
+  if(!store[lista]) store[lista]=[];
+  if(store[lista].indexOf(nom)<0){
+    store[lista].push(nom);
+    store[lista].sort(function(a,b){return a.localeCompare(b,'es');});
+    if(esIng){ saveCatsIng(); sbSaveCategoriaIng(lista, nom); }
+    else { saveCats(); sbSaveCategoria(lista, nom); }
   }
   closeModal();
   document.getElementById('f-cat').value=nom;
@@ -2909,6 +3076,7 @@ function selTipo(t){
 function updateStepNumbers(){
   var esCamote = cultivo==='camote';
   var step=1;
+  document.getElementById('step-regtipo-lbl').textContent=step+'. Tipo'; step++;
   document.getElementById('step-loc-lbl').textContent=step+'. Negocio'; step++;
   if(esCamote){ document.getElementById('step-tipo-lbl').textContent=step+'. Actividad'; step++; }
   if(esCamote && tipoCamote==='cosecha'){ document.getElementById('step-sector-lbl').innerHTML=step+'. Sector <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3)">(opcional)</span>'; step++; }
@@ -3070,6 +3238,41 @@ function registrar(){
   var semKey = 's'+Math.floor((hoy-fechaDate)/(7*24*60*60*1000));
   if(semKey.indexOf('-')>=0) semKey='s0';
 
+  // Editar un ingreso: mismo formulario, otro arreglo y otra tabla.
+  if(editandoIngresoId){
+    var idxI=ingresos.findIndex(function(x){return x.id==editandoIngresoId;});
+    if(idxI>=0){
+      var origI=ingresos[idxI];
+      var bancoI=document.getElementById('f-banco').value.trim();
+      var provI=fprovValidar(document.getElementById('f-proveedor').value);
+      if(bancoI) agregarBancoSiNuevo(bancoI);
+      if(provI) agregarProveedorSiNuevo(provI);
+      ingresos[idxI]=Object.assign({},origI,{
+        loc:loc, cultivo:(loc==='ofic'||loc==='com'||loc==='maiz')?null:cultivo,
+        ciclo: (function(){ var v=document.getElementById('f-ciclo').value; return v||null; })(),
+        tipoCamote:cultivo==='camote'?tipoCamote:null,
+        cat:cat,
+        sectores:(cultivo==='camote'&&tipoCamote==='cosecha')?sectoresSel.slice():[],
+        monto:monto,
+        desc:document.getElementById('f-desc').value.trim(),
+        banco:bancoI,
+        proveedor:provI,
+        factura:document.getElementById('f-factura').value.trim(),
+        fechaVal:fechaVal, fecha:fechaLbl, semKey:semKey, semLbl:gastoSemLbl(fechaVal)
+      });
+      saveIngresos(); sbSaveIngreso(ingresos[idxI]);
+    }
+    editandoIngresoId=null;
+    ocultarCancelarEdicion('btn-reg');
+    updateRegBtnLabel();
+    showToast('✅ Ingreso actualizado');
+    ['f-monto','f-desc','f-banco','f-proveedor','f-factura'].forEach(function(id){var el=document.getElementById(id); if(el) el.value='';});
+    sectoresSel=[];
+    hisTabSel='ingresos';
+    goSc('his');
+    return;
+  }
+
   if(editandoGastoId){
     // update existing
     var idx=gastos.findIndex(function(x){return x.id==editandoGastoId;});
@@ -3125,7 +3328,8 @@ function registrar(){
     factura:document.getElementById('f-factura').value.trim(),
     fechaVal:fechaVal, fecha:fechaLbl, semKey:semKey, semLbl:gastoSemLbl(fechaVal)
   };
-  gastos.unshift(g); save(); updateHeader(); sbSaveGasto(g);
+  if(esRegIngreso()){ ingresos.unshift(g); saveIngresos(); sbSaveIngreso(g); }
+  else { gastos.unshift(g); save(); updateHeader(); sbSaveGasto(g); }
   document.getElementById('f-monto').value='';
   document.getElementById('f-desc').value='';
   document.getElementById('f-banco').value='';
@@ -3140,12 +3344,29 @@ function registrar(){
   var btn=document.getElementById('btn-reg');
   btn.textContent='Registrado'; btn.classList.add('success');
   setTimeout(function(){
-    btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"/></svg> Registrar gasto';
+    updateRegBtnLabel();
     btn.classList.remove('success');
   },1600);
 }
 
 // ---- Historial ----
+// Los ingresos tienen la misma forma que los gastos, así que renderHis() sirve para los dos:
+// solo cambia de qué arreglo lee. Borrar y editar despachan por hisTabSel, que es correcto
+// porque el modal siempre se abre desde la pestaña que se está viendo.
+var hisTabSel='gastos';
+function hisEsIngreso(){ return hisTabSel==='ingresos'; }
+function hisFuente(){ return hisEsIngreso() ? ingresos : gastos; }
+function hisTab(t){
+  hisTabSel = (t==='ingresos') ? 'ingresos' : 'gastos';
+  var bg=document.getElementById('his-tab-gastos'), bi=document.getElementById('his-tab-ingresos');
+  if(bg) bg.classList.toggle('active', !hisEsIngreso());
+  if(bi) bi.classList.toggle('active', hisEsIngreso());
+  // Los filtros y la selección múltiple son de la lista que se estaba viendo.
+  if(selMode) toggleSelMode();
+  filtroCat='todas';
+  renderHis();
+}
+
 var filtroNeg = 'todas';
 var filtroCiclo = 'todos';
 var filtroCultivo = 'todas';
@@ -3203,9 +3424,15 @@ function bulkDelete(){
   if(btn.dataset.confirm==='1'){
     // Confirmed - actually delete
     var idsABorrar = Array.from(selIds);
-    gastos=gastos.filter(function(g){return !selIds.has(String(g.id));});
-    save(); updateHeader();
-    idsABorrar.forEach(function(gid){ sbDeleteGasto(gid); });
+    if(hisEsIngreso()){
+      ingresos=ingresos.filter(function(x){return !selIds.has(String(x.id));});
+      saveIngresos();
+      idsABorrar.forEach(function(gid){ sbDeleteIngreso(gid); });
+    } else {
+      gastos=gastos.filter(function(g){return !selIds.has(String(g.id));});
+      save(); updateHeader();
+      idsABorrar.forEach(function(gid){ sbDeleteGasto(gid); });
+    }
     var deleted=n;
     selMode=false; selIds.clear();
     btn.dataset.confirm='';
@@ -3233,10 +3460,12 @@ function bulkDelete(){
 }
 
 function renderHis(){
+  var fuente = hisFuente();
+  var esIngHis = hisEsIngreso();
   // poblar ciclos disponibles dinámicamente
   var selCiclo = document.getElementById('his-fil-ciclo');
   var ciclosEnGastos = [];
-  gastos.forEach(function(g){ if(g.ciclo && ciclosEnGastos.indexOf(g.ciclo)<0) ciclosEnGastos.push(g.ciclo); });
+  fuente.forEach(function(g){ if(g.ciclo && ciclosEnGastos.indexOf(g.ciclo)<0) ciclosEnGastos.push(g.ciclo); });
   ciclosEnGastos.sort();
   // reconstruir opciones
   selCiclo.innerHTML = '<option value="todos">Ciclo: Todos</option>';
@@ -3252,7 +3481,7 @@ function renderHis(){
   // poblar categorías disponibles dinámicamente
   var selCat = document.getElementById('his-fil-cat');
   var catsEnGastos = [];
-  gastos.forEach(function(g){ if(g.cat && catsEnGastos.indexOf(g.cat)<0) catsEnGastos.push(g.cat); });
+  fuente.forEach(function(g){ if(g.cat && catsEnGastos.indexOf(g.cat)<0) catsEnGastos.push(g.cat); });
   catsEnGastos.sort(function(a,b){return a.localeCompare(b,'es');});
   selCat.innerHTML = '<option value="todas">Categoria: Todas</option>';
   catsEnGastos.forEach(function(c){
@@ -3263,7 +3492,7 @@ function renderHis(){
   });
 
   var list=document.getElementById('his-list');
-  var data = gastos.filter(function(g){
+  var data = fuente.filter(function(g){
     var negOk = filtroNeg==='todas' || negKeyFromGasto(g)===filtroNeg;
     var cicloOk = filtroCiclo==='todos' || g.ciclo===filtroCiclo;
     var catOk = filtroCat==='todas' || g.cat===filtroCat;
@@ -3275,7 +3504,8 @@ function renderHis(){
   if(totEl) totEl.textContent = fmt(data.reduce(function(a,g){return a+(parseFloat(g.monto)||0);},0));
 
   if(!data.length){
-    var msg = gastos.length ? 'Sin gastos para este filtro.' : 'Sin gastos registrados aun.';
+    var quePlural = esIngHis ? 'ingresos' : 'gastos';
+    var msg = fuente.length ? ('Sin '+quePlural+' para este filtro.') : ('Sin '+quePlural+' registrados aun.');
     list.innerHTML='<div class="empty"><div class="empty-icon">&#127807;</div><div class="empty-text">'+msg+'</div></div>'; return;
   }
 
@@ -3321,7 +3551,7 @@ function renderHis(){
           '<div class="gasto-tags">'+locTag+cicloTag+cultTag+tipoTag+secTag+'</div>'+
           (g.desc?'<div class="gasto-desc">'+g.desc+'</div>':'')+
         '</div>'+
-        '<div class="gasto-right"><span class="gasto-monto">'+fmtDec(g.monto)+'</span>'+delHtml+'</div>';
+        '<div class="gasto-right"><span class="gasto-monto"'+(esIngHis?' style="color:var(--green)"':'')+'>'+(esIngHis?'+':'')+fmtDec(g.monto)+'</span>'+delHtml+'</div>';
       if(selMode){
         it.addEventListener('click',function(){
           var gid=it.dataset.gid;
@@ -3344,12 +3574,19 @@ function renderHis(){
 }
 
 function delGasto(id){
+  if(hisEsIngreso()){
+    ingresos=ingresos.filter(function(x){return x.id!==id;}); saveIngresos(); renderHis();
+    sbDeleteIngreso(id);
+    showToast('Ingreso eliminado');
+    return;
+  }
   gastos=gastos.filter(function(g){return g.id!==id;}); save(); updateHeader(); renderHis();
   sbDeleteGasto(id);
   showToast('Gasto eliminado');
 }
 
 var editandoGastoId = null;
+var editandoIngresoId = null;
 
 function verDet(g){
   var locNames={jal:'Jalisco',nay:'Nayarit',ofic:'Oficina',com:'Comercializadora',maiz:'Maíz'};
@@ -3394,6 +3631,13 @@ function delGastoModal(id){
   var btn=document.getElementById('del-modal-btn');
   if(!btn) return;
   if(btn.dataset.confirm==='1'){
+    if(hisEsIngreso()){
+      ingresos=ingresos.filter(function(x){return x.id!=id;}); saveIngresos();
+      sbDeleteIngreso(id);
+      document.getElementById('overlay').classList.remove('open');
+      renderHis(); showToast('Ingreso eliminado');
+      return;
+    }
     gastos=gastos.filter(function(g){return g.id!=id;}); save(); updateHeader();
     sbDeleteGasto(id);
     document.getElementById('overlay').classList.remove('open');
@@ -3437,11 +3681,15 @@ function ocultarCancelarEdicion(saveBtnId){
 }
 
 function editarGasto(id){
-  var g=gastos.find(function(x){return x.id==id;});
+  var esIngEd = hisEsIngreso();
+  var g=(esIngEd?ingresos:gastos).find(function(x){return x.id==id;});
   if(!g) return;
-  editandoGastoId = g.id;
+  if(esIngEd){ editandoIngresoId = g.id; editandoGastoId = null; }
+  else { editandoGastoId = g.id; editandoIngresoId = null; }
   document.getElementById('overlay').classList.remove('open');
   goSc('reg');
+  // El tipo va primero: define de qué lista salen las categorías del formulario.
+  selRegTipo(esIngEd?'ingreso':'gasto');
   // Set negocio (fija loc+cultivo por debajo)
   selNegocio(negKeyFromGasto(g));
   // tipo camote
@@ -3474,13 +3722,13 @@ function editarGasto(id){
   btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M5 12l5 5L19 7"/></svg> Guardar cambios';
   mostrarCancelarEdicion('btn-reg', cancelarEdicionGasto);
   window.scrollTo(0,0);
-  showToast('Editando gasto — haz tus cambios y guarda');
+  showToast('Editando '+(esIngEd?'ingreso':'gasto')+' — haz tus cambios y guarda');
 }
 
 function cancelarEdicionGasto(){
   editandoGastoId=null;
-  var btn=document.getElementById('btn-reg');
-  if(btn) btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"/></svg> Registrar gasto';
+  editandoIngresoId=null;
+  updateRegBtnLabel();
   ['f-monto','f-desc','f-banco','f-proveedor','f-factura'].forEach(function(id){var el=document.getElementById(id); if(el) el.value='';});
   sectoresSel=[];
   ocultarCancelarEdicion('btn-reg');
@@ -4456,7 +4704,8 @@ function renderRfrEDR(filtroCiclo, contId){
   // Ingresos: lo facturado en el ciclo
   var ingresos=(framFinanzas||[]).filter(function(f){
     return filtroCiclo==='todos' || f.ciclo===filtroCiclo;
-  }).reduce(function(a,f){ return a+((f.cajas||0)*(f.precio||0)); },0);
+  }).reduce(function(a,f){ return a+((f.cajas||0)*(f.precio||0)); },0)
+    + ingManualesNeg('fram', filtroCiclo);
 
   // Gastos propios de frambuesa (Jalisco y Nayarit)
   var gFram=gastos.filter(function(g){
@@ -6196,29 +6445,31 @@ function rsmFilas(ciclo){
     return ciclo==='todos' || f.ciclo===ciclo;
   }).reduce(function(a,f){ return a+((f.cajas||0)*(f.precio||0)); },0);
 
+  // A cada negocio se le suman sus ingresos manuales (Registrar → Tipo: Ingreso), aparte
+  // de los que ya se derivan de envíos, frambuesa o cosecha de maíz.
   var datos = {
     camjal: {
-      ing: rsmSumaEnvios('jal', ciclo),
+      ing: rsmSumaEnvios('jal', ciclo) + ingManualesNeg('camjal', ciclo),
       gas: rsmSumaGastos(function(g){return g.loc==='jal'&&g.cultivo==='camote';}, ciclo, 1)
     },
     camnay: {
-      ing: rsmSumaEnvios('nay', ciclo),
+      ing: rsmSumaEnvios('nay', ciclo) + ingManualesNeg('camnay', ciclo),
       gas: rsmSumaGastos(function(g){return g.loc==='nay'&&g.cultivo==='camote';}, ciclo, 1)
     },
     com: {
-      ing: rsmSumaEnvios('com', ciclo),
+      ing: rsmSumaEnvios('com', ciclo) + ingManualesNeg('com', ciclo),
       gas: rsmSumaGastos(function(g){return g.loc==='com';}, ciclo, 1)
     },
     fram: {
-      ing: ingFram,
+      ing: ingFram + ingManualesNeg('fram', ciclo),
       gas: rsmSumaGastos(function(g){return g.cultivo==='fram'&&['jal','nay'].indexOf(g.loc)>=0;}, ciclo, 1)
     },
     ofic: {
-      ing: 0,
+      ing: ingManualesNeg('ofic', ciclo),
       gas: rsmSumaGastos(function(g){return g.loc==='ofic';}, ciclo, 1)
     },
     maiz: {
-      ing: maizIngresoCiclo(ciclo),
+      ing: maizIngresoCiclo(ciclo) + ingManualesNeg('maiz', ciclo),
       gas: rsmSumaGastos(function(g){return g.loc==='maiz';}, ciclo, 1)
     }
   };
@@ -6281,6 +6532,7 @@ function rsltCiclo(){
   (envios||[]).forEach(function(e){ if(e.ciclo&&cics.indexOf(e.ciclo)<0) cics.push(e.ciclo); });
   (framFinanzas||[]).forEach(function(f){ if(f.ciclo&&cics.indexOf(f.ciclo)<0) cics.push(f.ciclo); });
   (gastos||[]).forEach(function(g){ if(g.ciclo&&cics.indexOf(g.ciclo)<0) cics.push(g.ciclo); });
+  (ingresos||[]).forEach(function(x){ if(x.ciclo&&cics.indexOf(x.ciclo)<0) cics.push(x.ciclo); });
   // Un ciclo con cosecha de maíz capturada pero sin gastos también tiene que poder verse.
   (typeof maizRegistros!=='undefined' ? maizRegistros : []).forEach(function(r){
     var c=r.ciclo||cicloFromFecha(r.fechaVal);
@@ -6333,7 +6585,7 @@ function renderRsltEDR(ciclo){
       return g.loc==='maiz' && (ciclo==='todos' || (g.ciclo||cicloFromFecha(g.fechaVal))===ciclo);
     });
     var gMaiz = gMaizList.reduce(function(a,g){ return a+(parseFloat(g.monto)||0); },0);
-    var iMaiz = maizIngresoCiclo(ciclo);
+    var iMaiz = maizIngresoCiclo(ciclo) + ingManualesNeg('maiz', ciclo);
     if(!gMaiz && !iMaiz){
       cont.innerHTML='<div style="text-align:center;padding:60px 0;color:var(--text3);font-size:13px">Sin movimientos de Maíz para este ciclo</div>';
       return;
@@ -6377,18 +6629,31 @@ function renderRsltEDR(ciclo){
     return g.loc==='ofic' && (ciclo==='todos' || (g.ciclo||cicloFromFecha(g.fechaVal))===ciclo);
   });
   var gOfic = gOficList.reduce(function(a,g){ return a+(parseFloat(g.monto)||0); },0);
+  var iOfic = ingManualesNeg('ofic', ciclo);
 
-  if(!gOfic){
-    cont.innerHTML='<div style="text-align:center;padding:60px 0;color:var(--text3);font-size:13px">Sin gastos de Oficina para este ciclo</div>';
+  if(!gOfic && !iOfic){
+    cont.innerHTML='<div style="text-align:center;padding:60px 0;color:var(--text3);font-size:13px">Sin movimientos de Oficina para este ciclo</div>';
     return;
   }
+  var uOfic = iOfic-gOfic;
+  var colUtilOfic = uOfic>=0 ? 'var(--green)' : '#D64545';
   var catOfic = framCatBreakdown(gOficList, 1);
   cont.innerHTML =
     '<div class="kpi-grid">'+
       '<div class="kpi-card">'+
+        '<div class="kpi-accent" style="background:var(--green)"></div>'+
+        '<div class="kpi-lbl">Ingresos</div>'+
+        '<div class="kpi-val" style="color:var(--green)">'+fmt(iOfic)+'</div>'+
+      '</div>'+
+      '<div class="kpi-card">'+
         '<div class="kpi-accent" style="background:var(--camote)"></div>'+
         '<div class="kpi-lbl">Gastos</div>'+
         '<div class="kpi-val" style="color:var(--camote)">'+fmt(gOfic)+'</div>'+
+      '</div>'+
+      '<div class="kpi-card">'+
+        '<div class="kpi-accent" style="background:'+colUtilOfic+'"></div>'+
+        '<div class="kpi-lbl">Utilidad</div>'+
+        '<div class="kpi-val" style="color:'+colUtilOfic+'">'+fmt(uOfic)+'</div>'+
       '</div>'+
     '</div>'+
     (catOfic.lbls.length ?
@@ -6562,7 +6827,8 @@ function renderRcmComer(envs, filtroCiclo, contId){
   var cont = document.getElementById(contId||'rcm-content');
   if(!cont) return;
 
-  var ingresos = envs.reduce(function(a,e){ return a+envioTotal(e); },0);
+  var ingresos = envs.reduce(function(a,e){ return a+envioTotal(e); },0)
+                 + ingManualesNeg('com', filtroCiclo);
   var gastosCom = gastos.filter(function(g){
     return g.loc==='com' &&
       (filtroCiclo==='todos' || (g.ciclo||cicloFromFecha(g.fechaVal))===filtroCiclo);
@@ -6819,7 +7085,8 @@ function renderRcmFinanciero(envs, filtroCiclo, negKey, contId){
   if(!cont) return;
   negKey = negKey || rcmNegSel;
 
-  var ingresos = envs.reduce(function(a,e){return a+envioTotal(e);},0);
+  var ingresos = envs.reduce(function(a,e){return a+envioTotal(e);},0)
+                 + ingManualesNeg(negKey==='nay'?'camnay':'camjal', filtroCiclo);
 
   var gastosNeg = gastos.filter(function(g){
     return g.loc===negKey && g.cultivo==='camote' &&
