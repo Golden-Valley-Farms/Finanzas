@@ -6146,7 +6146,7 @@ function rsmFilas(ciclo){
       gas: rsmSumaGastos(function(g){return g.loc==='ofic';}, ciclo, 1)
     },
     maiz: {
-      ing: 0,
+      ing: maizIngresoCiclo(ciclo),
       gas: rsmSumaGastos(function(g){return g.loc==='maiz';}, ciclo, 1)
     }
   };
@@ -6209,6 +6209,11 @@ function rsltCiclo(){
   (envios||[]).forEach(function(e){ if(e.ciclo&&cics.indexOf(e.ciclo)<0) cics.push(e.ciclo); });
   (framFinanzas||[]).forEach(function(f){ if(f.ciclo&&cics.indexOf(f.ciclo)<0) cics.push(f.ciclo); });
   (gastos||[]).forEach(function(g){ if(g.ciclo&&cics.indexOf(g.ciclo)<0) cics.push(g.ciclo); });
+  // Un ciclo con cosecha de maíz capturada pero sin gastos también tiene que poder verse.
+  (typeof maizRegistros!=='undefined' ? maizRegistros : []).forEach(function(r){
+    var c=r.ciclo||cicloFromFecha(r.fechaVal);
+    if(c&&cics.indexOf(c)<0) cics.push(c);
+  });
   cics.sort().reverse();
   var prev=sel.value;
   sel.innerHTML='';
@@ -6250,22 +6255,36 @@ function renderRsltEDR(ciclo){
     return;
   }
   if(rsltNegSel==='maiz'){
-    // Maíz: por ahora solo gastos (los ingresos/cosecha se agregan después).
+    // Los ingresos salen de los registros de cosecha (Σ pesoNeto × precio). El maíz no
+    // genera deudas ni gastos autoGen: el ingreso solo se reporta aquí y en el Resumen.
     var gMaizList = gastos.filter(function(g){
       return g.loc==='maiz' && (ciclo==='todos' || (g.ciclo||cicloFromFecha(g.fechaVal))===ciclo);
     });
     var gMaiz = gMaizList.reduce(function(a,g){ return a+(parseFloat(g.monto)||0); },0);
-    if(!gMaiz){
-      cont.innerHTML='<div style="text-align:center;padding:60px 0;color:var(--text3);font-size:13px">Sin gastos de Maíz para este ciclo</div>';
+    var iMaiz = maizIngresoCiclo(ciclo);
+    if(!gMaiz && !iMaiz){
+      cont.innerHTML='<div style="text-align:center;padding:60px 0;color:var(--text3);font-size:13px">Sin movimientos de Maíz para este ciclo</div>';
       return;
     }
+    var uMaiz = iMaiz-gMaiz;
+    var colUtilMaiz = uMaiz>=0 ? 'var(--green)' : '#D64545';
     var catMaiz = framCatBreakdown(gMaizList, 1);
     cont.innerHTML =
       '<div class="kpi-grid">'+
         '<div class="kpi-card">'+
+          '<div class="kpi-accent" style="background:var(--green)"></div>'+
+          '<div class="kpi-lbl">Ingresos</div>'+
+          '<div class="kpi-val" style="color:var(--green)">'+fmt(iMaiz)+'</div>'+
+        '</div>'+
+        '<div class="kpi-card">'+
           '<div class="kpi-accent" style="background:var(--maiz)"></div>'+
           '<div class="kpi-lbl">Gastos</div>'+
           '<div class="kpi-val" style="color:var(--maiz)">'+fmt(gMaiz)+'</div>'+
+        '</div>'+
+        '<div class="kpi-card">'+
+          '<div class="kpi-accent" style="background:'+colUtilMaiz+'"></div>'+
+          '<div class="kpi-lbl">Utilidad</div>'+
+          '<div class="kpi-val" style="color:'+colUtilMaiz+'">'+fmt(uMaiz)+'</div>'+
         '</div>'+
       '</div>'+
       (catMaiz.lbls.length ?
@@ -12758,6 +12777,24 @@ var MZ_PARCELAS   = ['Cuata Grande','Cuata Chica','Mesita','Camino'];
 var maizRegistros = [];
 try{ var smz=localStorage.getItem('cc_maiz'); if(smz) maizRegistros=JSON.parse(smz); }catch(e){}
 function saveMaiz(){ try{localStorage.setItem('cc_maiz',JSON.stringify(maizRegistros));}catch(e){} }
+
+// Ingreso de un registro: el total bruto que ya guarda guardarMaiz(). Se recalcula desde
+// partidas si falta, igual que renderRepMaiz(), que nunca lee `total`.
+function maizIngresoReg(r){
+  if(!r) return 0;
+  var t=parseFloat(r.total);
+  if(t) return t;
+  return (r.partidas||[]).reduce(function(a,p){
+    return a+((parseFloat(p.pesoNeto)||0)*(parseFloat(p.precio)||0));
+  },0);
+}
+// Ingreso del ciclo. Filtra CON fallback de fecha, como rsmEnCiclo() y el EDR:
+// un registro sin ciclo capturado se clasifica por su fecha en vez de desaparecer.
+function maizIngresoCiclo(ciclo){
+  return (typeof maizRegistros!=='undefined' ? maizRegistros : []).filter(function(r){
+    return ciclo==='todos' || (r.ciclo||cicloFromFecha(r.fechaVal))===ciclo;
+  }).reduce(function(a,r){ return a+maizIngresoReg(r); },0);
+}
 
 var intermediarios = [];
 try{ var smi=localStorage.getItem('cc_intermediarios'); if(smi) intermediarios=JSON.parse(smi); }catch(e){}

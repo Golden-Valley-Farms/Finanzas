@@ -153,7 +153,15 @@ Ojo (ago-2026): hasta este cambio, la rama `com` de `sincronizarDeudasEnvio()` e
 
 Agregado en ago-2026 (spec en `docs/superpowers/specs/2026-08-18-cosecha-maiz-registro-historial-design.md`). Toda su lógica vive junta en el bloque `// ==== MÓDULO MAÍZ ====` al **final del `<script>`**, no repartida por el archivo. Funciona por hoisting y es lo único que lo mantiene legible.
 
-**Captura, consulta y reporte de cosecha.** El módulo **no genera deudas, ni gastos, ni movimientos `autoGen`, ni suma en el EDR o el resumen por negocio.** Eso es deliberado: los ingresos de maíz no entran al financiero, solo se reportan como cosecha. Tampoco hay filtros ni totales en el Historial, ni pestañas de Finanzas o Nómina.
+**Captura, consulta y reporte de cosecha.** El módulo **no genera deudas, ni gastos, ni movimientos `autoGen`.** No hay cuenta por cobrar del intermediario, ni filtros o totales en el Historial, ni pestañas de Finanzas o Nómina.
+
+**Sí suma en el financiero desde ago-2026** (spec en `docs/superpowers/specs/2026-08-21-ingresos-maiz-en-financiero-design.md`), pero solo como cifra derivada: `maizIngresoReg(r)` devuelve el total bruto del registro (`r.total`, o Σ `pesoNeto`×`precio` si falta) y `maizIngresoCiclo(ciclo)` lo agrega filtrando **con fallback de fecha** (`r.ciclo || cicloFromFecha(r.fechaVal)`), el mismo estilo del Resumen y el EDR. Con eso:
+
+- `rsmFilas()` alimenta el renglón de Maíz del **Resumen** — y por lo tanto las tarjetas de Ingresos/Utilidad Total y la gráfica "Utilidad x Negocio", que leen todas de ahí.
+- La rama `maiz` de `renderRsltEDR()` pinta **Ingresos / Gastos / Utilidad** más la gráfica de Gastos x Categoría.
+- `rsltCiclo()` también toma los ciclos de `maizRegistros`, para que un ciclo con cosecha capturada pero sin gastos aparezca en el selector.
+
+No hay columnas ni claves nuevas: todo se deriva de `maiz_registros`. Si algún día se le resta algo al bruto (comisiones, descuentos), el único lugar a tocar es `maizIngresoReg()`.
 
 ### Reporte de cosecha (Reportes → Maíz)
 
