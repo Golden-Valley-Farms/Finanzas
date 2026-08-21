@@ -4348,13 +4348,33 @@ function framCatBreakdown(lista, factor){
 //   queremos (min-nuevoMin)/(max-nuevoMin)*anchoTrazo >= px  →  nuevoMin = (min-f*max)/(1-f)
 // El ancho de trazo se estima del contenedor (Chart.js todavía no lo calcula en este punto);
 // un error de estimación solo mueve el margen de holgura, no rompe nada.
-function framBarraHMin(id, vals, xMax, yAncho, anchoCanvas){
+// Ancho del eje Y y margen derecho reales para un ancho de contenedor dado. En pantalla
+// ancha se quedan tal cual el llamador los pidió (yAnchoBase, 70px de margen); en pantalla
+// angosta (< ~400px de contenedor) se encogen en proporción al ancho disponible, para
+// dejarle más aire al área de trazo. Nunca agranda respecto a lo pedido, solo achica.
+function framBarraHFit(yAnchoBase, containerWidth){
+  var cw=containerWidth||0;
+  return {
+    yAncho: Math.min(yAnchoBase, Math.max(60, Math.round(cw*0.32))),
+    padRight: Math.min(70, Math.max(32, Math.round(cw*0.16)))
+  };
+}
+
+// Devuelve {val, hard}. hard:false -> va como suggestedMin (Chart.js puede redondear a
+// un número "bonito" más allá; hay margen reservado de sobra para que no importe).
+// hard:true -> va como min a secas: cuando no alcanza para reservar el margen de la
+// etiqueta, se necesita que la barra llegue lo más posible al borde del área de trazo
+// (para que el plugin pueda, como último recurso, pintar la etiqueta DENTRO de ella).
+// Con suggestedMin, Chart.js redondea a números "bonitos" bastante más allá del dato
+// real (ej. -1,000,000 en vez de -782,505), y esa holgura extra deja la barra corta:
+// ni la etiqueta de afuera cabe, ni el plugin logra meterla adentro.
+function framBarraHMin(id, vals, xMax, yAncho, anchoCanvas, padRight){
   var minVal=vals.reduce(function(a,v){ return Math.min(a, parseFloat(v)||0); }, 0);
   if(minVal>=0) return undefined;
   var cv=document.getElementById(id);
-  if(!cv||!cv.parentNode) return undefined;
+  if(!cv||!cv.parentNode) return {val:minVal, hard:true};
   var contW=anchoCanvas||cv.parentNode.clientWidth||0;
-  var plotW=Math.max(120, contW-(yAncho||0)-90); // 90 = padding izq 20 + der 70
+  var plotW=Math.max(120, contW-(yAncho||0)-20-(padRight!=null?padRight:70)); // 20 = padding izq
   var wMax=0, mc=cv.getContext('2d');
   if(mc){
     mc.save(); mc.font='bold 11px monospace';
@@ -4363,16 +4383,16 @@ function framBarraHMin(id, vals, xMax, yAncho, anchoCanvas){
   }
   var maxVal=Math.max(0, xMax||0, vals.reduce(function(a,v){ return Math.max(a, parseFloat(v)||0); }, 0));
   var f=(wMax+20)/plotW; // 8px de separación + 12 de holgura
-  // En pantalla angosta el área de trazo se vuelve más chica que la propia etiqueta.
-  // Reservar ahí estiraría el eje hasta aplastar todas las barras, peor que el empalme:
-  // se devuelve undefined y el plugin resuelve pintando la etiqueta dentro de la barra.
-  if(f>0.3) return undefined;
-  return (minVal - f*maxVal)/(1-f);
+  if(f>0.3) return {val:minVal, hard:true};
+  return {val:(minVal - f*maxVal)/(1-f), hard:false};
 }
 
 function framBarraH(id, lbls, vals, cols, colorTxt, xMax, yAncho){
   var gridCol=rfrGridCol(), textMuted='#898781';
-  var xMin=framBarraHMin(id, vals, xMax, yAncho);
+  var cv0=document.getElementById(id);
+  var contW0=cv0&&cv0.parentNode?cv0.parentNode.clientWidth:0;
+  var fit0=framBarraHFit(yAncho, contW0);
+  var xMin=framBarraHMin(id, vals, xMax, fit0.yAncho, contW0, fit0.padRight);
   var labelPlugin={
     id:id+'-labels',
     afterDatasetsDraw:function(chart){
@@ -4386,7 +4406,10 @@ function framBarraH(id, lbls, vals, cols, colorTxt, xMax, yAncho){
         // Normalmente la etiqueta va por fuera del extremo de la barra: framBarraHMin()
         // le abre espacio al eje para que quepa. Solo cuando ni así cabe (pantalla
         // angosta) se pinta dentro de la barra, en blanco, para no montarse en el eje Y.
-        var dentro = v<0 && (bar.x-8-w < ca.left) && ((bar.base-bar.x) >= w+16);
+        // +4 es lo mínimo para no tocar el borde de la barra (el hueco de la izquierda,
+        // bar.x+8, ya está en el punto donde arranca el texto); en el caso límite (eje
+        // forzado justo al dato mínimo) la barra apenas alcanza el ancho de la etiqueta.
+        var dentro = v<0 && (bar.x-8-w < ca.left) && ((bar.base-bar.x) >= w+4);
         ctx.fillStyle=dentro ? '#fff' : ((typeof colorTxt==='function')?colorTxt(v):colorTxt);
         ctx.textAlign=(v<0&&!dentro)?'right':'left';
         ctx.textBaseline='middle';
@@ -4402,17 +4425,25 @@ function framBarraH(id, lbls, vals, cols, colorTxt, xMax, yAncho){
     options:{
       indexAxis:'y',
       responsive:true, maintainAspectRatio:false,
-      // El espacio reservado arriba es proporcional al ancho: al redimensionar hay que
-      // recalcularlo, o al angostarse se encoge en px mientras la etiqueta mide lo mismo.
+      // El eje Y y el margen derecho se encogen en pantalla angosta (framBarraHFit) para
+      // dejarle más aire al área de trazo; hay que recalcularlos en cada resize, o en
+      // pantalla angosta se quedarían con el ancho (grande) que tenían al crear el chart.
       onResize:function(chart, size){
-        chart.options.scales.x.suggestedMin=framBarraHMin(id, vals, xMax, yAncho, size.width);
+        var fit=framBarraHFit(yAncho, size.width);
+        var xm=framBarraHMin(id, vals, xMax, fit.yAncho, size.width, fit.padRight);
+        chart.options.scales.x.min=(xm&&xm.hard)?xm.val:undefined;
+        chart.options.scales.x.suggestedMin=(xm&&!xm.hard)?xm.val:undefined;
+        chart.options.layout.padding.right=fit.padRight;
+        chart.options.scales.y.afterFit=function(sc){ sc.width=fit.yAncho; };
       },
-      layout:{padding:{right:70, left:20}},
+      layout:{padding:{right:fit0.padRight, left:20}},
       plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+fmt(c.raw);}}}},
       scales:{
         x:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:11}, callback:function(v){return fmtCompact(v);}}, beginAtZero:true,
-           suggestedMax:xMax, suggestedMin:xMin},
-        y:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}, afterFit:function(sc){ sc.width=yAncho; }}
+           suggestedMax:xMax,
+           min:(xMin&&xMin.hard)?xMin.val:undefined,
+           suggestedMin:(xMin&&!xMin.hard)?xMin.val:undefined},
+        y:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}, afterFit:function(sc){ sc.width=fit0.yAncho; }}
       }
     }
   });
