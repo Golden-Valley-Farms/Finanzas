@@ -4341,8 +4341,38 @@ function framCatBreakdown(lista, factor){
 }
 
 // Barra horizontal con la etiqueta del monto al final, igual que en Camote Nayarit
+// Espacio que hay que abrirle al eje X por la izquierda cuando hay barras negativas.
+// La etiqueta de valor va POR FUERA del extremo de la barra; si el eje arranca justo en el
+// dato más bajo, la barra toca el borde del área de trazo y su etiqueta se monta sobre las
+// etiquetas del eje Y. Se calcula el mínimo que deja libres los px que mide la etiqueta:
+//   queremos (min-nuevoMin)/(max-nuevoMin)*anchoTrazo >= px  →  nuevoMin = (min-f*max)/(1-f)
+// El ancho de trazo se estima del contenedor (Chart.js todavía no lo calcula en este punto);
+// un error de estimación solo mueve el margen de holgura, no rompe nada.
+function framBarraHMin(id, vals, xMax, yAncho, anchoCanvas){
+  var minVal=vals.reduce(function(a,v){ return Math.min(a, parseFloat(v)||0); }, 0);
+  if(minVal>=0) return undefined;
+  var cv=document.getElementById(id);
+  if(!cv||!cv.parentNode) return undefined;
+  var contW=anchoCanvas||cv.parentNode.clientWidth||0;
+  var plotW=Math.max(120, contW-(yAncho||0)-90); // 90 = padding izq 20 + der 70
+  var wMax=0, mc=cv.getContext('2d');
+  if(mc){
+    mc.save(); mc.font='bold 11px monospace';
+    vals.forEach(function(v){ if((parseFloat(v)||0)<0) wMax=Math.max(wMax, mc.measureText(fmt(v)).width); });
+    mc.restore();
+  }
+  var maxVal=Math.max(0, xMax||0, vals.reduce(function(a,v){ return Math.max(a, parseFloat(v)||0); }, 0));
+  var f=(wMax+20)/plotW; // 8px de separación + 12 de holgura
+  // En pantalla angosta el área de trazo se vuelve más chica que la propia etiqueta.
+  // Reservar ahí estiraría el eje hasta aplastar todas las barras, peor que el empalme:
+  // se devuelve undefined y el plugin resuelve pintando la etiqueta dentro de la barra.
+  if(f>0.3) return undefined;
+  return (minVal - f*maxVal)/(1-f);
+}
+
 function framBarraH(id, lbls, vals, cols, colorTxt, xMax, yAncho){
   var gridCol=rfrGridCol(), textMuted='#898781';
+  var xMin=framBarraHMin(id, vals, xMax, yAncho);
   var labelPlugin={
     id:id+'-labels',
     afterDatasetsDraw:function(chart){
@@ -4353,9 +4383,9 @@ function framBarraH(id, lbls, vals, cols, colorTxt, xMax, yAncho){
         ctx.save();
         ctx.font='bold 11px monospace';
         var txt=fmt(v), w=ctx.measureText(txt).width;
-        // Una barra negativa larga llega hasta el borde del área de trazo y su etiqueta,
-        // que va por fuera, se empalmaría con las etiquetas del eje Y. En ese caso se
-        // pinta DENTRO de la barra (en blanco, sobre el rojo), siempre que quepa.
+        // Normalmente la etiqueta va por fuera del extremo de la barra: framBarraHMin()
+        // le abre espacio al eje para que quepa. Solo cuando ni así cabe (pantalla
+        // angosta) se pinta dentro de la barra, en blanco, para no montarse en el eje Y.
         var dentro = v<0 && (bar.x-8-w < ca.left) && ((bar.base-bar.x) >= w+16);
         ctx.fillStyle=dentro ? '#fff' : ((typeof colorTxt==='function')?colorTxt(v):colorTxt);
         ctx.textAlign=(v<0&&!dentro)?'right':'left';
@@ -4372,11 +4402,16 @@ function framBarraH(id, lbls, vals, cols, colorTxt, xMax, yAncho){
     options:{
       indexAxis:'y',
       responsive:true, maintainAspectRatio:false,
+      // El espacio reservado arriba es proporcional al ancho: al redimensionar hay que
+      // recalcularlo, o al angostarse se encoge en px mientras la etiqueta mide lo mismo.
+      onResize:function(chart, size){
+        chart.options.scales.x.suggestedMin=framBarraHMin(id, vals, xMax, yAncho, size.width);
+      },
       layout:{padding:{right:70, left:20}},
       plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+fmt(c.raw);}}}},
       scales:{
         x:{grid:{color:gridCol}, ticks:{color:textMuted, font:{size:11}, callback:function(v){return fmtCompact(v);}}, beginAtZero:true,
-           suggestedMax:xMax},
+           suggestedMax:xMax, suggestedMin:xMin},
         y:{grid:{display:false}, ticks:{color:textMuted, font:{size:11}}, afterFit:function(sc){ sc.width=yAncho; }}
       }
     }
