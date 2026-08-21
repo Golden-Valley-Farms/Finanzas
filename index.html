@@ -11950,14 +11950,14 @@ function sincronizarCompra(compraId, soloLimpiar, idsHuerfanos){
       var nuevos=[];
       var gastoCompra={id:almNuevoId(ocupados),fechaVal:base.fecha,fechaLbl:base.fechaLbl,
         loc:'com',cultivo:'com',cat:'Compra Mercancia',
-        desc:'Compra mercancia '+variedades+' '+base.fechaLbl,
+        desc:'Compra mercancia '+variedades+' (Almacén)',
         monto:montoMercancia,ciclo:base.ciclo||'',sector:'',autoGen:true,
         proveedor:proveedor};
       gastos.unshift(gastoCompra); sbSaveGasto(gastoCompra); nuevos.push(gastoCompra.id);
       if(fleteTotal>0){
         var gastoFlete={id:almNuevoId(ocupados),fechaVal:base.fecha,fechaLbl:base.fechaLbl,
           loc:'com',cultivo:'com',cat:'Fletes',
-          desc:'Flete compra '+variedades+' '+base.fechaLbl,
+          desc:'Flete compra '+variedades+' (Almacén)',
           monto:fleteTotal,ciclo:base.ciclo||'',sector:'',autoGen:true,
           proveedor:proveedor};
         gastos.unshift(gastoFlete); sbSaveGasto(gastoFlete); nuevos.push(gastoFlete.id);
