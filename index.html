@@ -2245,7 +2245,7 @@ async function cargarDesdeSB(){
                 : ((catV && ['Arado','Cosecha','Desvarada','Flete Cosecha','Plantacion','Plantación'].indexOf(catV)>=0) ? 'cosecha' : 'general');
       }
       var fechaLbl = fechaV ? new Date(fechaV+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : (g.fecha_lbl||'');
-      return {id:g.id, fechaVal:fechaV, fecha:fechaLbl, semLbl:gastoSemLbl(fechaV)||g.semana||fechaLbl,
+      return {id:g.id, tipo:'gasto', fechaVal:fechaV, fecha:fechaLbl, semLbl:gastoSemLbl(fechaV)||g.semana||fechaLbl,
         loc:lc.loc, cultivo:lc.cultivo, cat:catV, desc:g.descripcion,
         monto:parseFloat(g.monto||0), ciclo:g.ciclo,
         sectores:g.sector ? String(g.sector).split(',').filter(Boolean) : [],
@@ -2261,17 +2261,15 @@ async function cargarDesdeSB(){
       var negKeyI = NEG_FROM_LABEL[x.negocio] || 'cam_jal';
       var lcI = NEG_LOCCULT[negKeyI] || {loc:'jal', cultivo:'camote'};
       var fechaVI = x.fecha || '';
-      var tipoCamI = null;
-      if(lcI.cultivo==='camote'){
-        tipoCamI = String(x.actividad||'').toLowerCase().indexOf('cosecha')>=0 ? 'cosecha' : 'general';
-      }
       var fechaLblI = fechaVI ? new Date(fechaVI+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : '';
-      return {id:x.id, fechaVal:fechaVI, fecha:fechaLblI,
+      // Actividad y Sector no aplican a un ingreso: se ignora lo que traiga la columna,
+      // que en registros viejos pudo guardarse como General.
+      return {id:x.id, tipo:'ingreso', fechaVal:fechaVI, fecha:fechaLblI,
         semLbl:gastoSemLbl(fechaVI)||x.semana||fechaLblI,
         loc:lcI.loc, cultivo:lcI.cultivo, cat:x.categoria||'', desc:x.descripcion,
         monto:parseFloat(x.monto||0), ciclo:x.ciclo,
-        sectores:x.sector ? String(x.sector).split(',').filter(Boolean) : [],
-        tipoCamote:tipoCamI,
+        sectores:[],
+        tipoCamote:null,
         banco:x.banco, proveedor:x.proveedor||'', factura:x.factura||''};
     });
     saveIngresos();
@@ -2453,12 +2451,12 @@ async function sbDeleteGasto(id){
 async function sbSaveIngreso(x){
   if(!sbOnline||!sb) return;
   var negKey = negKeyFromGasto(x);
-  var esCamote = (x.cultivo==='camote');
   await sb.from('ingresos').upsert({
     id:x.id,
     negocio: NEG_LABEL[negKey] || 'Camote Jalisco',
-    actividad: esCamote ? (x.tipoCamote==='cosecha' ? 'Cosecha' : 'General') : null,
-    sector:(x.sectores&&x.sectores.length)?x.sectores.join(','):'',
+    // Un ingreso no tiene Actividad ni Sector, ni siquiera en camote: van siempre vacíos.
+    actividad: null,
+    sector:'',
     fecha:x.fechaVal||'',
     semana: gastoSemLbl(x.fechaVal||'') || '',
     categoria:x.cat||'',
@@ -2966,6 +2964,9 @@ function selRegTipo(t){
   var bg=document.getElementById('rt-gasto'), bi=document.getElementById('rt-ingreso');
   if(bg) bg.classList.toggle('sel', regTipo==='gasto');
   if(bi) bi.classList.toggle('sel', regTipo==='ingreso');
+  // Un ingreso no lleva Actividad. Reaplicar el negocio muestra u oculta esa sección
+  // (y de paso la de Sector, que cuelga de Cosecha) sin duplicar aquí esa lógica.
+  selNegocio(negocioSel);
   updateCatSelect();
   updateRegBtnLabel();
   updateStepNumbers();
@@ -3074,7 +3075,8 @@ function selTipo(t){
 }
 
 function updateStepNumbers(){
-  var esCamote = cultivo==='camote';
+  // En ingreso no hay paso de Actividad (ni el de Sector, que cuelga de Cosecha).
+  var esCamote = cultivo==='camote' && !esRegIngreso();
   var step=1;
   document.getElementById('step-regtipo-lbl').textContent=step+'. Tipo'; step++;
   document.getElementById('step-loc-lbl').textContent=step+'. Negocio'; step++;
@@ -3164,14 +3166,16 @@ function selNegocio(k){
   if(row){ row.querySelectorAll('.loc-btn').forEach(function(b){ b.classList.toggle('sel', b.dataset.neg===k); }); }
   var tipoSec=document.getElementById('tipo-sec');
   var secSec=document.getElementById('sector-sec');
-  if(n.esCamote){
+  // La Actividad (General/Cosecha) es solo de gastos de camote: en un ingreso no aplica,
+  // así que ni se pide ni se guarda (queda tipoCamote null y el detalle muestra "-").
+  if(n.esCamote && !esRegIngreso()){
     tipoSec.classList.add('visible');
     tipoCamote='general';
     document.getElementById('tb-general').classList.add('sel');
     document.getElementById('tb-cosecha').classList.remove('sel');
     secSec.classList.remove('visible');
   } else {
-    tipoCamote='general';
+    tipoCamote = esRegIngreso() ? null : 'general';
     tipoSec.classList.remove('visible');
     secSec.classList.remove('visible');
   }
@@ -3248,11 +3252,12 @@ function registrar(){
       if(bancoI) agregarBancoSiNuevo(bancoI);
       if(provI) agregarProveedorSiNuevo(provI);
       ingresos[idxI]=Object.assign({},origI,{
+        tipo:'ingreso',
         loc:loc, cultivo:(loc==='ofic'||loc==='com'||loc==='maiz')?null:cultivo,
         ciclo: (function(){ var v=document.getElementById('f-ciclo').value; return v||null; })(),
-        tipoCamote:cultivo==='camote'?tipoCamote:null,
+        tipoCamote:null,
         cat:cat,
-        sectores:(cultivo==='camote'&&tipoCamote==='cosecha')?sectoresSel.slice():[],
+        sectores:[],
         monto:monto,
         desc:document.getElementById('f-desc').value.trim(),
         banco:bancoI,
@@ -3283,6 +3288,7 @@ function registrar(){
       if(bancoVal) agregarBancoSiNuevo(bancoVal);
       if(provVal) agregarProveedorSiNuevo(provVal);
       gastos[idx]=Object.assign({},orig,{
+        tipo:'gasto',
         loc:loc, cultivo:(loc==='ofic'||loc==='com'||loc==='maiz')?null:cultivo,
         ciclo: (function(){ var v=document.getElementById('f-ciclo').value; return v||null; })(),
         tipoCamote:cultivo==='camote'?tipoCamote:null,
@@ -3317,11 +3323,14 @@ function registrar(){
   if(bancoNuevoVal) agregarBancoSiNuevo(bancoNuevoVal);
   if(provNuevoVal) agregarProveedorSiNuevo(provNuevoVal);
 
+  // El ingreso no lleva Actividad ni Sector: los dos se guardan vacíos siempre.
+  var esIngNuevo = esRegIngreso();
   var g={
-    id:Date.now(), loc:loc, cultivo:(loc==='ofic'||loc==='com'||loc==='maiz')?null:cultivo,
+    id:Date.now(), tipo: esIngNuevo?'ingreso':'gasto',
+    loc:loc, cultivo:(loc==='ofic'||loc==='com'||loc==='maiz')?null:cultivo,
     ciclo: (function(){ var v=document.getElementById('f-ciclo').value; return v||null; })(),
-    tipoCamote: cultivo==='camote' ? tipoCamote : null,
-    cat:cat, sectores: (cultivo==='camote' && tipoCamote==='cosecha') ? sectoresSel.slice() : [],
+    tipoCamote: (!esIngNuevo && cultivo==='camote') ? tipoCamote : null,
+    cat:cat, sectores: (!esIngNuevo && cultivo==='camote' && tipoCamote==='cosecha') ? sectoresSel.slice() : [],
     monto:monto, desc:document.getElementById('f-desc').value.trim(),
     banco:bancoNuevoVal,
     proveedor:provNuevoVal,
@@ -3593,11 +3602,16 @@ function verDet(g){
   var cultNames={camote:'Camote',fram:'Frambuesa',general:'General',ofic:'Oficina',com:'Comercializadora',maiz:'Maíz'};
   document.getElementById('mo-title').innerHTML=g.cat+'&nbsp;<span class="chip '+negColorCls(g)+'">'+negNombre(g)+'</span>';
 
+  // El tipo viaja en el registro; el fallback cubre los guardados antes de que existiera
+  // el campo, donde la pestaña abierta del Historial dice de qué arreglo salió.
+  var esIngDet = (g.tipo==='ingreso') || (!g.tipo && hisEsIngreso());
   var esCamote = g.cultivo==='camote';
-  var esCosecha = esCamote && g.tipoCamote==='cosecha';
+  var esCosecha = esCamote && !esIngDet && g.tipoCamote==='cosecha';
 
+  var tipoRegVal = esIngDet ? 'Ingreso' : 'Gasto';
   var negocioVal = negNombre(g);
-  var tipoVal = esCamote ? (g.tipoCamote==='cosecha'?'Cosecha':'General') : '-';
+  // Un ingreso no tiene Actividad: siempre "-".
+  var tipoVal = (esCamote && !esIngDet) ? (g.tipoCamote==='cosecha'?'Cosecha':'General') : '-';
   var sectorVal = (esCosecha && g.sectores && g.sectores.length) ? g.sectores.join(', ') : '-';
   var fechaVal = g.fecha || (g.fechaVal ? new Date(g.fechaVal+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : '-');
   var semanaVal = g.semLbl || (g.fechaVal ? gastoSemLbl(g.fechaVal) : '') || '-';
@@ -3608,6 +3622,7 @@ function verDet(g){
   var facturaVal = g.factura || '';
 
   document.getElementById('mo-body').innerHTML=
+    '<div class="modal-row"><span class="modal-key">Tipo</span><span class="modal-val"'+(esIngDet?' style="color:var(--green)"':'')+'>'+tipoRegVal+'</span></div>'+
     '<div class="modal-row"><span class="modal-key">Negocio</span><span class="modal-val">'+negocioVal+'</span></div>'+
     '<div class="modal-row"><span class="modal-key">Actividad</span><span class="modal-val">'+tipoVal+'</span></div>'+
     '<div class="modal-row"><span class="modal-key">Sector</span><span class="modal-val">'+sectorVal+'</span></div>'+
@@ -3692,8 +3707,8 @@ function editarGasto(id){
   selRegTipo(esIngEd?'ingreso':'gasto');
   // Set negocio (fija loc+cultivo por debajo)
   selNegocio(negKeyFromGasto(g));
-  // tipo camote
-  if(g.cultivo==='camote'){
+  // tipo camote (solo gastos: el ingreso no tiene Actividad ni Sector)
+  if(g.cultivo==='camote' && !esIngEd){
     var tipo=g.tipoCamote||'general';
     selTipo(tipo);
     if(tipo==='cosecha'){
