@@ -2429,6 +2429,8 @@ async function sbSaveGasto(g){
   var esCamote = (g.cultivo==='camote');
   await sb.from('gastos').upsert({
     id:g.id,
+    // Constante, nunca g.tipo: esta tabla es de gastos y punto.
+    tipo:'Gasto',
     negocio: NEG_LABEL[negKey] || 'Camote Jalisco',
     actividad: esCamote ? (g.tipoCamote==='cosecha' ? 'Cosecha' : 'General') : null,
     sector:(g.sectores&&g.sectores.length)?g.sectores.join(','):'',
@@ -2453,6 +2455,8 @@ async function sbSaveIngreso(x){
   var negKey = negKeyFromGasto(x);
   await sb.from('ingresos').upsert({
     id:x.id,
+    // Constante, nunca x.tipo: esta tabla es de ingresos y punto.
+    tipo:'Ingreso',
     negocio: NEG_LABEL[negKey] || 'Camote Jalisco',
     // Un ingreso no tiene Actividad ni Sector, ni siquiera en camote: van siempre vacíos.
     actividad: null,

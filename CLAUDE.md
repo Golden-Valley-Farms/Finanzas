@@ -115,7 +115,13 @@ La tabla `ingresos` espeja a `gastos` salvo `auto_gen` (un ingreso nunca se auto
 
 **Categorías propias.** `CATS_ING` usa **las mismas siete llaves de lista** que `CATS` (`camote_general`, `camote_cosecha`, `fram`, `campo_general`, `ofic`, `com`, `maiz`), para poder reusar `catListaActual()` sin tocarlo; espejo en `cc_cats_ing` y tabla `categorias_ingresos` con llave `(lista, nombre)`. **Arrancan vacías y `cargarDesdeSB()` NO las siembra** si la tabla viene vacía — al revés que las de gasto, que sí se siembran con `CATS_DEFAULT`. Consecuencia buscada: en un negocio sin categorías, el formulario exige crear la primera con "+ Agregar nueva...".
 
-`regTipo` (`'gasto'`|`'ingreso'`) es el estado del formulario y `catsActuales()` resuelve qué lista aplica. `selRegTipo()` cambia lista de categorías, texto del botón y numeración. En camote las categorías de ingreso también quedan partidas en General/Cosecha, porque la sección Actividad sigue apareciendo.
+`regTipo` (`'gasto'`|`'ingreso'`) es el estado del formulario y `catsActuales()` resuelve qué lista aplica. `selRegTipo()` cambia lista de categorías, texto del botón y numeración, y **reaplica `selNegocio(negocioSel)`** para mostrar u ocultar la sección Actividad sin duplicar esa lógica.
+
+**Un ingreso no tiene Actividad ni Sector** (ago-2026). Aunque el negocio sea camote, el paso "Actividad" no aparece (y con él se va Sector, que cuelga de Cosecha): `selNegocio()` solo muestra `#tipo-sec` si `n.esCamote && !esRegIngreso()`, y `updateStepNumbers()` usa el mismo `&&` para recorrer la numeración. El registro guarda **siempre** `tipoCamote:null` y `sectores:[]` — al crear, al editar, en `sbSaveIngreso()` (manda `actividad:null` y `sector:''`) y al leer en `cargarDesdeSB()`, que **ignora** lo que traiga la columna por si algún registro viejo alcanzó a guardarse con "General". En el detalle del historial las dos filas se pintan con guión. `editarGasto()` no llama `selTipo()` cuando edita un ingreso.
+
+Consecuencia: en camote los ingresos usan siempre la lista `camote_general`; la lista `camote_cosecha` de `CATS_ING` queda inalcanzable (se dejó por simetría con `CATS`, y estaba vacía cuando se hizo el cambio).
+
+**El registro lleva `tipo`** (`'gasto'`|`'ingreso'`) en memoria, en localStorage y en Supabase (columna `tipo` en `gastos` e `ingresos`, con las etiquetas legibles `Gasto`/`Ingreso`). Es **redundante a propósito** — la tabla y el arreglo ya dicen cuál es — y por eso `sbSaveGasto()`/`sbSaveIngreso()` lo escriben **constante**, nunca desde el objeto: así ningún gasto puede acabar marcado como ingreso. El detalle del historial abre con la fila **Tipo** antes de Negocio, con fallback a `hisEsIngreso()` para los registros guardados antes de que el campo existiera.
 
 **Dónde suman y dónde no:**
 
