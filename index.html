@@ -1235,8 +1235,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="card" style="margin-bottom:12px">
         <div class="field-row">
           <div class="field">
-            <label>Folio Negocio</label>
-            <input type="text" id="vf-num" placeholder="—" readonly="" style="background:var(--surface2);color:var(--text2);font-family:var(--mono);font-size:13px">
+            <label>Ciclo</label>
+            <select id="vf-ciclo"></select>
           </div>
           <div class="field">
             <label>Fecha</label>
@@ -1246,15 +1246,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             </div>
           </div>
         </div>
-        <div class="field-row">
-          <div class="field">
-            <label>Folio Cliente</label>
-            <input type="text" id="vf-folio" placeholder="B&amp;M/2026/017">
-          </div>
-          <div class="field">
-            <label>Factura</label>
-            <input type="text" id="vf-factura" placeholder="Numero de factura">
-          </div>
+        <div class="field">
+          <label>Folio Negocio</label>
+          <input type="text" id="vf-num" placeholder="—" readonly="" style="background:var(--surface2);color:var(--text2);font-family:var(--mono);font-size:13px">
         </div>
         <div class="field-row">
           <div class="field" style="display:none">
@@ -1279,8 +1273,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             </div>
           </div>
           <div class="field">
-            <label>Ciclo</label>
-            <select id="vf-ciclo"></select>
+            <label>Folio Cliente</label>
+            <input type="text" id="vf-folio" placeholder="B&amp;M/2026/017">
           </div>
         </div>
         <div class="field-row">
@@ -1298,6 +1292,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
               <input type="number" id="vf-flete" placeholder="0" min="0" step="0.01" oninput="recalcEnvioResumen()">
             </div>
           </div>
+        </div>
+        <div class="field">
+          <label>Factura</label>
+          <input type="text" id="vf-factura" placeholder="Numero de factura">
         </div>
       </div>
 
@@ -1357,8 +1355,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="card" style="margin-bottom:12px">
         <div class="field-row">
           <div class="field">
-            <label>N° de envío</label>
-            <input type="text" id="cf-num" readonly="" style="background:var(--surface2);color:var(--text2);font-family:var(--mono);font-size:13px">
+            <label>Ciclo</label>
+            <select id="cf-ciclo"></select>
           </div>
           <div class="field">
             <label>Fecha</label>
@@ -1370,8 +1368,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </div>
         <div class="field-row">
           <div class="field">
-            <label>Ciclo</label>
-            <select id="cf-ciclo"></select>
+            <label>Folio Negocio</label>
+            <input type="text" id="cf-num" readonly="" style="background:var(--surface2);color:var(--text2);font-family:var(--mono);font-size:13px">
           </div>
           <div class="field">
             <label>Folio Cliente</label>
@@ -1393,6 +1391,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
               <div id="comer-cliente-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:200px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
             </div>
           </div>
+        </div>
+        <div class="field">
+          <label>Factura</label>
+          <input type="text" id="cf-factura" placeholder="Numero de factura">
         </div>
       </div>
       <div class="step-label">Compra — por variedad</div>
@@ -10362,6 +10364,7 @@ function initComerForm(){
   if(cfCiclo){ cfCiclo.innerHTML=''; CICLOS.forEach(function(c){var o=document.createElement('option');o.value=c;o.textContent=c;cfCiclo.appendChild(o);}); cfCiclo.value=cicloFromFecha(isoStr); }
   if(document.getElementById('cf-flete-venta')) document.getElementById('cf-flete-venta').value='';
   if(document.getElementById('cf-folio')) document.getElementById('cf-folio').value='';
+  if(document.getElementById('cf-factura')) document.getElementById('cf-factura').value='';
   renderComerPartidas();
   updateComerVarSelect();
   recalcComer();
@@ -10382,6 +10385,7 @@ function editarOperacionComer(e){
   var setV=function(id,val){var el=document.getElementById(id); if(el) el.value=(val==null?'':val);};
   setV('cf-num', e.num||'');
   setV('cf-folio', e.folio||'');
+  setV('cf-factura', e.factura||'');
   var iso=e.fecha||'';
   setV('cf-fecha-picker', iso);
   if(iso){ var pp=iso.split('-'); setV('cf-fecha', pp[2]+'/'+pp[1]+'/'+pp[0]); }
@@ -10709,7 +10713,7 @@ function guardarOperacionComer(){
   var envioObj={
     id: esEdicion?editandoComerId:Date.now(), num:num, folio:(document.getElementById('cf-folio').value||'').trim(), fecha:fecha, fechaLbl:fechaDisplay,
     loc:'com', ciclo:cicloV, cliente:cliente, proveedor:proveedor,
-    flete:fleteVenta, fleteCompra:fleteCompra, esComer:true, total:totalVenta,
+    flete:fleteVenta, fleteCompra:fleteCompra, factura:(document.getElementById('cf-factura').value||'').trim(), esComer:true, total:totalVenta,
     partidas:comerPartidasTemp.map(function(p){
       var kgPagar=p.kgRecibidos&&p.descPct!==''?p.kgRecibidos*(1-parseFloat(p.descPct)/100):parseFloat(p.kgRecibidos||0);
       var totalPartida=(parseFloat(p.kgRecibidos)||0)*(parseFloat(p.precioVenta)||0);

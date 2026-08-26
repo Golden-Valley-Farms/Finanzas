@@ -257,7 +257,14 @@ Ese selector (`#vf-tipo-envio`, etiqueta "Negocio") vive en su **propia tarjeta 
 - `editarOperacionComer()` pone el selector en `com` **antes** de `venTab('nuevo')`, y `editarEnvio()` ya ponía `#vf-tipo-envio` desde antes. Sin ese paso previo el formulario correcto no se muestra.
 - `#comer-form-sec` perdió su `padding:0 16px` propio (quedó `0 0 100px`): `.app` ya pone ese margen, y con el suyo encima quedaba 16px más adentro que la tarjeta del selector, ahora que se ven juntos.
 
-El encabezado del envío se reacomodó al quedar libre el hueco del selector: Folio Negocio + Fecha, luego Folio Cliente + Factura, luego Cliente + Ciclo. **Factura subió al encabezado**, ya no está suelta al final de la tarjeta.
+**Orden del encabezado, pedido a mano (ago-2026):**
+
+- Jalisco/Nayarit (`#ven-form-sec`): Ciclo + Fecha · Folio Negocio (sola, ancho completo) · Cliente + Folio Cliente · Flete de compra + Flete de venta · Factura (sola).
+- Comercializadora (`#comer-form-sec`): Ciclo + Fecha · Folio Negocio + Folio Cliente · Proveedor + Cliente · Factura (sola).
+
+`#cf-num` (el viejo "N° de envío" de comercializadora) lleva ahora la misma etiqueta **"Folio Negocio"** que `#vf-num`, para que los dos formularios usen el mismo nombre para el mismo concepto — el id no cambió, solo el texto visible.
+
+**Comercializadora ganó su propio campo Factura** (`#cf-factura`), que no existía antes de la fusión. No hizo falta tocar el esquema: `factura` ya era columna de `envios` y ya viajaba en `sbSaveEnvio()`/`cargarDesdeSB()` porque la usa el formulario de envío normal — solo hubo que sumar el input y cablearlo en `initComerForm()` (limpia), `editarOperacionComer()` (puebla desde `e.factura`) y `guardarOperacionComer()` (lo mete en `envioObj.factura`).
 
 ## Convenciones del código
 
