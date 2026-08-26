@@ -5835,13 +5835,14 @@ function renderRfrResumen(data){
   var costoGeneralPorSemana=semKeys.map(function(sk){
     var nomina=nominaFramSemana(sk);
     var cub=semCubetas[sk]||0;
+    if(cub<=0 || nomina<=0) return null;
     sumNomina+=nomina; sumCubetasPonderado+=cub;
-    return cub>0?Math.round((nomina/cub)*100)/100:null;
+    return Math.round((nomina/cub)*100)/100;
   });
   var costoCosechadoresPorSemana=semKeys.map(function(sk){
     var cub=semCubetas[sk]||0;
     var nominaCosech=nominaCosechadoresFramSemana(sk);
-    if(nominaCosech===null || cub<=0) return null;
+    if(!nominaCosech || cub<=0) return null;
     sumNominaCosech+=nominaCosech; sumCubetasConNominaCosech+=cub;
     return Math.round((nominaCosech/cub)*100)/100;
   });
@@ -5977,12 +5978,12 @@ function renderRfrResumen(data){
           '</div>':
           '<div style="text-align:center;padding:16px 0;color:var(--text3);font-size:13px">Sin datos de calidad este ciclo</div>')+
       '</div>'+
-      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column;min-height:320px">'+
+      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column;min-height:355px">'+
         '<div class="dash-card-title">Cajas por sector</div>'+
         '<div style="position:relative;width:100%;flex:1;min-height:230px;margin-top:8px"><canvas id="rfr-res-sec-chart" role="img" aria-label="Cajas por sector">Sectores.</canvas></div>'+
         '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Sectores</div>'+
       '</div>'+
-      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column;min-height:320px">'+
+      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column;min-height:355px">'+
         '<div class="dash-card-title">% de merma por semana</div>'+
         '<div style="display:flex;width:100%;flex:1;min-height:230px;margin-top:8px">'+
           '<div style="width:70px;flex-shrink:0;display:flex;align-items:stretch;gap:4px">'+
@@ -6034,7 +6035,7 @@ function renderRfrResumen(data){
         '</div>'+
         '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
       '</div>'+
-      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
+      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column;min-height:355px">'+
         '<div class="dash-card-title">Costo por cubeta \u2014 general</div>'+
         '<div style="display:flex;width:100%;flex:1;min-height:220px;margin-top:8px">'+
           '<div style="width:78px;flex-shrink:0;display:flex;align-items:stretch;gap:4px">'+
@@ -6049,7 +6050,7 @@ function renderRfrResumen(data){
         '</div>'+
         '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
       '</div>'+
-      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
+      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column;min-height:355px">'+
         '<div class="dash-card-title">Costo por cubeta \u2014 cosechadores</div>'+
         '<div style="display:flex;width:100%;flex:1;min-height:220px;margin-top:8px">'+
           '<div style="width:78px;flex-shrink:0;display:flex;align-items:stretch;gap:4px">'+
@@ -6064,7 +6065,7 @@ function renderRfrResumen(data){
         '</div>'+
         '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
       '</div>'+
-      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
+      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column;min-height:355px">'+
         '<div class="dash-card-title">Precio por caja</div>'+
         '<div style="display:flex;width:100%;flex:1;min-height:220px;margin-top:8px">'+
           '<div style="width:78px;flex-shrink:0;display:flex;align-items:stretch;gap:4px">'+
@@ -6079,7 +6080,7 @@ function renderRfrResumen(data){
         '</div>'+
         '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
       '</div>'+
-      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
+      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column;min-height:355px">'+
         '<div class="dash-card-title">Total facturado</div>'+
         '<div style="display:flex;width:100%;flex:1;min-height:220px;margin-top:8px">'+
           '<div style="width:96px;flex-shrink:0;display:flex;align-items:stretch;gap:4px">'+
