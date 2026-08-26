@@ -5177,10 +5177,10 @@ function rfrComputeSemMetrics(sk){
 // Insignia estilo "precio de acción": flechas + % de variación contra el periodo
 // anterior (semana anterior en Por semana, registro anterior en Por día).
 // altoBueno=true -> sube=verde/baja=rojo; altoBueno=false (merma, costos) -> al revés.
-// El número de flechas marca la magnitud del cambio: 1 hasta 33%, 2 hasta 66%, 3 arriba.
-// Núcleo de la variación: cuántas flechas, hacia dónde y de qué color. Lo comparten
-// la insignia de las tarjetas (rfrWowBadge, posicionada absoluta en la esquina) y la
-// de las filas de control de calidad (rfrWowInline, en flujo normal).
+// El número de flechas marca la magnitud del cambio: 1 hasta 25%, 2 hasta 50%, 3 arriba.
+// Variación RELATIVA (porcentaje de cambio contra el periodo anterior). La usan las
+// tarjetas KPI vía rfrWowBadge; las filas de control de calidad usan rfrWowCalcDif,
+// que compara por diferencia de puntos.
 function rfrWowCalc(cur, prev, altoBueno){
   if(cur===null||cur===undefined||prev===null||prev===undefined||!prev) return null;
   var delta=(cur-prev)/Math.abs(prev)*100;
@@ -5206,11 +5206,29 @@ function rfrWowBadge(cur, prev, altoBueno){
   return '<span class="kpi-wow" style="color:'+w.col+'"><span class="kpi-wow-fls">'+rfrWowFlechas(w)+'</span>'+w.pct+'%</span>';
 }
 
+// Variación por DIFERENCIA de puntos, no relativa: de 50% a 30% son 20 puntos, no
+// un 40% de caída. La piden así porque en calidad se lee mejor "bajó 20 puntos" que
+// un cambio proporcional. Cortes: <=5 una flecha, >5 y <20 dos, >=20 tres.
+// SOLO la usan las filas de control de calidad de Por día y Por semana (vía
+// rfrWowInline); las tarjetas KPI siguen con rfrWowCalc, que es relativo.
+// Los porcentajes que entran ya vienen redondeados a entero (rfrPctCalidad), así que
+// la diferencia es exactamente la que se puede restar a ojo en pantalla.
+// A diferencia de rfrWowCalc, aquí prev===0 SÍ es comparable: un defecto que aparece
+// de cero es un cambio real de tantos puntos.
+function rfrWowCalcDif(cur, prev, altoBueno){
+  if(cur===null||cur===undefined||prev===null||prev===undefined) return null;
+  var dif=cur-prev, mag=Math.abs(dif);
+  if(mag===0) return {cero:true};
+  var subio=dif>0;
+  return {cero:false, n:(mag<=5?1:(mag<20?2:3)), subio:subio, pct:mag,
+    col:altoBueno?(subio?RFR_SEM_COLS.bien:RFR_SEM_COLS.problema):(subio?RFR_SEM_COLS.problema:RFR_SEM_COLS.bien)};
+}
+
 // Misma insignia, pero en flujo normal y SOLO las flechas — .kpi-wow es absolute y
 // solo sirve dentro de una .kpi-card. El % de variación se omite a propósito: al
 // lado del porcentaje de calidad, dos cifras juntas se confunden entre sí.
 function rfrWowInline(cur, prev, altoBueno){
-  var w=rfrWowCalc(cur, prev, altoBueno);
+  var w=rfrWowCalcDif(cur, prev, altoBueno);
   if(!w || w.cero) return '';
   return '<span style="display:inline-flex;align-items:center;font-size:10px;font-weight:700;white-space:nowrap;margin-left:6px;color:'+w.col+'">'+
     '<span class="kpi-wow-fls">'+rfrWowFlechas(w)+'</span></span>';

@@ -293,15 +293,21 @@ La lista abre con **"kg bueno"** —separado de los defectos por un `margin-bott
 
 Dos sumas cruzadas útiles para detectar regresiones: **el total de las filas debe dar 100%**, y los defectos solos deben sumar el porcentaje de la tarjeta de Merma de esa vista (en el ciclo 2025-2026, 3.9+2.1+1.5+0.9 = 8.4%).
 
-**Insignia de variación en las filas (solo Por día y Por semana).** Cada fila lleva flechas contra el periodo anterior, con el mismo criterio de magnitud que las tarjetas (1 flecha ≤25%, 2 ≤50%, 3 arriba). El sentido se invierte según el concepto: en **"kg bueno" subir es verde** (`altoBueno=true`) y en los **defectos subir es rojo**. Por ciclo no las lleva: no hay "ciclo anterior" en el selector.
+**Insignia de variación en las filas (solo Por día y Por semana).** Cada fila lleva flechas contra el periodo anterior. El sentido se invierte según el concepto: en **"kg bueno" subir es verde** (`altoBueno=true`) y en los **defectos subir es rojo**. Por ciclo no las lleva: no hay "ciclo anterior" en el selector.
+
+**Aquí la magnitud se mide por DIFERENCIA de puntos, no relativa** (ago-2026) — al revés que las tarjetas. De 50% a 30% son **20 puntos**, no un 40% de caída. Cortes: **≤5 una flecha, >5 y <20 dos, ≥20 tres**. Se pidió así porque en calidad se lee mejor "bajó 20 puntos" que un cambio proporcional: con el criterio relativo, un defecto que pasaba de 1% a 3% marcaba tres flechas por ser un triple, cuando son dos puntos.
+
+Esa es la única diferencia de criterio entre las dos insignias, y vive en funciones separadas: `rfrWowCalcDif()` para estas filas y `rfrWowCalc()` (relativo, 1 flecha ≤25%, 2 ≤50%, 3 arriba) para las tarjetas KPI. **No unificarlas** — cada vista pidió su criterio. `rfrWowCalcDif()` además acepta `prev===0`, que `rfrWowCalc()` descarta: un defecto que aparece de cero es un cambio real de tantos puntos, mientras que como divisor el cero no sirve.
+
+Los porcentajes que entran ya vienen **redondeados a entero** desde `rfrPctCalidad()`, así que la diferencia es exactamente la que se puede restar a ojo en pantalla.
 
 **Aquí van solo las flechas, sin el % de variación** —a diferencia de las tarjetas, que sí lo muestran— porque junto al porcentaje de calidad dos cifras seguidas se confunden. Por lo mismo, una variación de 0% no pinta nada en vez de un "0%" gris.
 
 El porcentaje lleva `width:44px;text-align:right`: con la fuente mono eso alinea las unidades entre filas (el 4 de "4%" cae bajo el 2 de "92%") y, de paso, arranca todas las flechas en la misma x. Si se le quita el ancho fijo, las dos alineaciones se pierden juntas.
 
-La lógica común vive en `rfrWowCalc()`, y hay dos renderizadores: `rfrWowBadge()` para las tarjetas (usa `.kpi-wow`, que es `position:absolute` y solo funciona dentro de una `.kpi-card`) y `rfrWowInline()` para estas filas, en flujo normal. Los porcentajes del periodo anterior salen de `pctCalidad`, que devuelven `rfrComputeDiaMetrics()` y `rfrComputeSemMetrics()` vía `rfrPctCalidad()`.
+Hay dos renderizadores, cada uno con su función de cálculo: `rfrWowBadge()` + `rfrWowCalc()` para las tarjetas (usa `.kpi-wow`, que es `position:absolute` y solo funciona dentro de una `.kpi-card`) y `rfrWowInline()` + `rfrWowCalcDif()` para estas filas, en flujo normal. `rfrWowFlechas()` sí lo comparten. Los porcentajes del periodo anterior salen de `pctCalidad`, que devuelven `rfrComputeDiaMetrics()` y `rfrComputeSemMetrics()` vía `rfrPctCalidad()`.
 
-Ojo al leerlas: comparan **porcentajes, no kilos**. Un defecto que pasa de 1% a 2% marca tres flechas aunque sean dos puntos porcentuales — es el mismo criterio relativo de las tarjetas.
+Ojo al leerlas: comparan **porcentajes, no kilos** — puntos de participación sobre el total cosechado, no cantidad de fruta. Un defecto puede subir de 5 a 25 puntos con menos kilos que la semana pasada si el volumen total cayó más.
 
 ### Semáforo de las gráficas de línea en Frambuesa → Cosecha → Por ciclo
 
