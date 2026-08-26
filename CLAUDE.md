@@ -245,6 +245,20 @@ El precio por kg se pinta con `fmtDec()` (2 decimales solo si hay centavos), no 
 
 `goSc(nombre)` es el router: alterna la clase `.active` entre los divs `sc-resultados`, `sc-reg`, `sc-his`, `sc-rep`, `sc-ven`, `sc-fram`, `sc-maiz`, `sc-deudas`, ajusta la barra inferior y dispara el render de esa pantalla. Las variables `lastFinSc` y `lastCosSc` recuerdan en qué sub-pestaña se quedó cada grupo.
 
+### Ventas: una sola pestaña "Registro"
+
+`venTab(t)` maneja **tres** pestañas — `nuevo` ("Registro", primera), `lista` ("Envios", la que abre por defecto) y `alm` ("🧊 Almacén"). La pestaña `comer` **ya no existe** (ago-2026): captura de envío y de operación de comercializadora se fusionaron en "Registro", y ahí las decide el selector de negocio.
+
+Ese selector (`#vf-tipo-envio`, etiqueta "Negocio") vive en su **propia tarjeta `#ven-tipo-card`, fuera de los dos formularios** — antes estaba dentro del encabezado del envío. Tenía que salir: al elegir Comercializadora se oculta `#ven-form-sec` completo y, si el selector siguiera adentro, no habría cómo regresar a Jalisco/Nayarit.
+
+- `aplicarTipoRegistro(init)` alterna `#ven-form-sec` (jal/nay) contra `#comer-form-sec` (com). El `init` distingue **entrar a la pestaña** de **solo mover el selector**: `initNuevoEnvioForm()` resetea fecha y folio, así que llamarlo al pasar de jal a nay borraría lo ya capturado. Con `init=false` solo corre `onTipoEnvioChange()`, que recalcula el folio y respeta el resto.
+- `onCambioTipoRegistro()` es el `onchange` del selector. Cruzar entre envío y operación comer **suelta la edición en curso** (son formularios distintos sobre entidades distintas); alternar jal↔nay la conserva.
+- `venTab` suelta **las dos** ediciones con la misma condición (`t!=='nuevo'`), porque ambas viven en esa pestaña.
+- `editarOperacionComer()` pone el selector en `com` **antes** de `venTab('nuevo')`, y `editarEnvio()` ya ponía `#vf-tipo-envio` desde antes. Sin ese paso previo el formulario correcto no se muestra.
+- `#comer-form-sec` perdió su `padding:0 16px` propio (quedó `0 0 100px`): `.app` ya pone ese margen, y con el suyo encima quedaba 16px más adentro que la tarjeta del selector, ahora que se ven juntos.
+
+El encabezado del envío se reacomodó al quedar libre el hueco del selector: Folio Negocio + Fecha, luego Folio Cliente + Factura, luego Cliente + Ciclo. **Factura subió al encabezado**, ya no está suelta al final de la tarjeta.
+
 ## Convenciones del código
 
 - **ES5 puro**: `var`, `function`, callbacks. Nada de `let`/`const`/arrow/clases/módulos. Mantener el estilo.
@@ -461,6 +475,10 @@ Ojo con el orden en el markup: la insignia tiene que ir **antes** del `.kpi-lbl`
 
   **La venta por almacén queda idéntica a una operación comer directa.** Verificado con 1,000 kg a $80 de compra y $110 de venta: mismos gastos (Compra Mercancía $80,000 + Fletes $5,000), misma por pagar ($80,000 sin flete de compra), misma por cobrar ($122,000 con flete de venta), mismo folio `Comer/…` y mismo margen. La única diferencia es que el gasto y la por pagar llevan la **fecha de entrada al almacén**, no la de la venta — es lo correcto (se debe desde que se recibió), pero si la entrada y la venta caen en ciclos distintos, gasto e ingreso se reportan en periodos distintos.
 - **Frambuesa: registros → nómina → finanzas.** `framFinanzas` guarda en `gastoIds` las referencias a los gastos que generó, para el mismo ciclo de vida que arriba.
+
+  **Prestamo ya no genera gasto** (ago-2026, decisión del usuario). De los cinco descuentos del Registro de Finanzas, cuatro siguen creando su gasto `autoGen` —Intereses, Planta, Inocuidad, Material— y **Prestamo no**. El campo se sigue capturando, se sigue guardando en `descPrestamo` y se sigue restando del pagado; lo único que se quitó es la generación del gasto. Por eso salió del arreglo `descuentos` de `guardarRegistroFinanzasFram()` y no de ningún otro lado.
+
+  Los gastos históricos ya se borraron a mano, así que no hubo migración; aun así, al reguardar un registro viejo se suelta su `gastoIds.prestamo` (y se borra el gasto si todavía existiera), para no dejar un `autoGen` que ya nadie regenera ni limpia. La categoría `Pago Prestamo` sigue en `CATS.fram` para capturarlo a mano cuando toque.
 
 - **Frambuesa: facturación con varios precios por caja** (ago-2026, spec en `docs/superpowers/specs/2026-08-17-facturacion-multiples-precios-frambuesa-design.md`). El paso "2. Facturación" del Registro de Finanzas captura N renglones en vez de un solo par de campos. El registro guarda `facturacion:[{cajas,precio}]` (columna `facturacion` jsonb en `fram_finanzas`) y **`cajas`/`precio` pasaron a ser derivados**: `cajas` = Σ cajas y `precio` = **promedio ponderado, guardado sin redondear**.
 

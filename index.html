@@ -1198,12 +1198,28 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
   <!-- VENTAS -->
   <div id="sc-ven" class="screen">
-    <!-- Sub-nav: lista / nuevo -->
+    <!-- Sub-nav: registro / lista / almacén.
+         "Registro" cubre los tres negocios: el selector de abajo decide si se captura
+         un envío (jal/nay) o una operación de comercializadora. -->
     <div class="ven-subnav" id="ven-subnav">
+      <button class="ven-tab" id="vt-nuevo" onclick="venTab('nuevo')">Registro</button>
       <button class="ven-tab active" id="vt-lista" onclick="venTab('lista')">Envios</button>
-      <button class="ven-tab" id="vt-nuevo" onclick="venTab('nuevo')">+ Nuevo envio</button>
-      <button class="ven-tab" id="vt-comer" onclick="venTab('comer')">Comercializadora</button>
       <button class="ven-tab" id="vt-alm" onclick="venTab('alm')">🧊 Almacén</button>
+    </div>
+
+    <!-- Selector de negocio de la pestaña Registro: vive fuera de los dos formularios
+         para seguir visible cuando se muestra el de comercializadora. -->
+    <div id="ven-tipo-card" style="display:none">
+      <div class="card" style="margin-bottom:12px">
+        <div class="field">
+          <label>Negocio</label>
+          <select id="vf-tipo-envio" onchange="onCambioTipoRegistro()" style="font-weight:600">
+            <option value="jal">🌾 Jalisco</option>
+            <option value="nay">🌿 Nayarit</option>
+            <option value="com">🛒 Comercializadora</option>
+          </select>
+        </div>
+      </div>
     </div>
 
     <!-- Lista de envios -->
@@ -1219,12 +1235,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="card" style="margin-bottom:12px">
         <div class="field-row">
           <div class="field">
-            <label>Tipo de envío</label>
-            <select id="vf-tipo-envio" onchange="onTipoEnvioChange()" style="font-weight:600">
-              <option value="jal">🌾 Jalisco</option>
-              <option value="nay">🌿 Nayarit</option>
-              <option value="com">🛒 Comercializadora</option>
-            </select>
+            <label>Folio Negocio</label>
+            <input type="text" id="vf-num" placeholder="—" readonly="" style="background:var(--surface2);color:var(--text2);font-family:var(--mono);font-size:13px">
           </div>
           <div class="field">
             <label>Fecha</label>
@@ -1236,12 +1248,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </div>
         <div class="field-row">
           <div class="field">
-            <label>Folio Negocio</label>
-            <input type="text" id="vf-num" placeholder="—" readonly="" style="background:var(--surface2);color:var(--text2);font-family:var(--mono);font-size:13px">
-          </div>
-          <div class="field">
             <label>Folio Cliente</label>
             <input type="text" id="vf-folio" placeholder="B&amp;M/2026/017">
+          </div>
+          <div class="field">
+            <label>Factura</label>
+            <input type="text" id="vf-factura" placeholder="Numero de factura">
           </div>
         </div>
         <div class="field-row">
@@ -1286,10 +1298,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
               <input type="number" id="vf-flete" placeholder="0" min="0" step="0.01" oninput="recalcEnvioResumen()">
             </div>
           </div>
-        </div>
-        <div class="field">
-          <label>Factura</label>
-          <input type="text" id="vf-factura" placeholder="Numero de factura">
         </div>
       </div>
 
@@ -1342,7 +1350,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
 
     <!-- OPERACION COMERCIALIZADORA -->
-    <div id="comer-form-sec" style="display:none;padding:0 16px 100px">
+    <!-- Sin padding horizontal propio: .app ya lo pone, y así alinea con la tarjeta
+         del selector y con el formulario de envío, ahora que comparten pestaña. -->
+    <div id="comer-form-sec" style="display:none;padding:0 0 100px">
       <div class="step-label">Encabezado</div>
       <div class="card" style="margin-bottom:12px">
         <div class="field-row">
@@ -8387,25 +8397,30 @@ function editarEnvio(e){
 }
 
 function venTab(t){
-  // Si estaba editando un envío y cambia a otra pestaña (que no sea "nuevo"), cancelar la edición
+  // La pestaña "Registro" ('nuevo') cubre envíos y operaciones de comercializadora:
+  // el selector de negocio decide cuál de los dos formularios se muestra. Por eso
+  // ambas ediciones se sueltan con la misma condición.
   if(editandoEnvioId && t!=='nuevo'){
     cancelarEdicionEnvio();
   }
-  // Si estaba editando una operación de comercializadora y sale de esa pestaña, cancelar.
-  if(editandoComerId && t!=='comer'){
+  if(editandoComerId && t!=='nuevo'){
     editandoComerId=null;
     resetComerFormLabels();
   }
-  ['lista','nuevo','comer','alm'].forEach(function(tab){
+  ['lista','nuevo','alm'].forEach(function(tab){
     var btn=document.getElementById('vt-'+tab);
     if(btn) btn.classList.toggle('active',tab===t);
   });
   document.getElementById('ven-lista-sec').style.display = t==='lista'?'block':'none';
-  document.getElementById('ven-form-sec').style.display = t==='nuevo'?'block':'none';
-  var co=document.getElementById('comer-form-sec');
-  if(co) co.style.display = t==='comer'?'block':'none';
+  var tipoCard=document.getElementById('ven-tipo-card');
+  if(tipoCard) tipoCard.style.display = t==='nuevo'?'block':'none';
   var al=document.getElementById('alm-sec');
   if(al) al.style.display = t==='alm'?'block':'none';
+  if(t!=='nuevo'){
+    document.getElementById('ven-form-sec').style.display='none';
+    var coOff=document.getElementById('comer-form-sec');
+    if(coOff) coOff.style.display='none';
+  }
   if(t==='lista'){
     editandoEnvioId=null;
     document.getElementById('btn-ven-guardar').innerHTML=
@@ -8413,9 +8428,39 @@ function venTab(t){
     document.getElementById('ven-form-sec').querySelector('.step-label').textContent='Encabezado del envio';
     renderEnvios();
   }
-  if(t==='nuevo'){ renderPartidas(); updateVarSelect(); if(!editandoEnvioId) initNuevoEnvioForm(); else onTipoEnvioChange(); }
-  if(t==='comer') initComerForm();
+  if(t==='nuevo') aplicarTipoRegistro(true);
   if(t==='alm'){ almTab('lista'); }
+}
+
+// Dentro de "Registro", muestra el formulario que le toca al negocio elegido: el de
+// envío en jal/nay, el de operación de comercializadora en com.
+// `init` distingue entrar a la pestaña (hay que armar el formulario desde cero) de
+// solo alternar el selector: initNuevoEnvioForm() resetea fecha y folio, así que
+// llamarlo al pasar de jal a nay borraría lo que ya se había capturado.
+function aplicarTipoRegistro(init){
+  var sel=document.getElementById('vf-tipo-envio'); if(!sel) return;
+  var esComer = sel.value==='com';
+  document.getElementById('ven-form-sec').style.display = esComer?'none':'block';
+  var co=document.getElementById('comer-form-sec');
+  if(co) co.style.display = esComer?'block':'none';
+  if(esComer){
+    if(!editandoComerId) initComerForm();
+  } else {
+    renderPartidas(); updateVarSelect();
+    if(!editandoEnvioId && init) initNuevoEnvioForm();
+    else onTipoEnvioChange();
+  }
+}
+
+// Cambio manual del selector de negocio. Cruzar entre envío y operación comer a media
+// edición no tiene sentido —son formularios distintos sobre entidades distintas—, así
+// que se suelta la edición en curso. Alternar jal<->nay sí la conserva.
+function onCambioTipoRegistro(){
+  var sel=document.getElementById('vf-tipo-envio'); if(!sel) return;
+  var esComer = sel.value==='com';
+  if(esComer && editandoEnvioId) cancelarEdicionEnvio();
+  if(!esComer && editandoComerId){ editandoComerId=null; resetComerFormLabels(); }
+  aplicarTipoRegistro(false);
 }
 
 // Cancela una edición de envío en curso y deja el formulario listo para un envío nuevo
@@ -10329,7 +10374,10 @@ function initComerForm(){
 // proveedor, precios de compra/venta, descuentos y fletes (que el form normal no maneja).
 function editarOperacionComer(e){
   closeModal();
-  venTab('comer');              // muestra el form y corre initComerForm() (deja todo en "nuevo")
+  // El formulario comer vive en la pestaña Registro, detrás del selector de negocio.
+  var selTipo=document.getElementById('vf-tipo-envio');
+  if(selTipo) selTipo.value='com';
+  venTab('nuevo');              // muestra el form y corre initComerForm() (deja todo en "nuevo")
   editandoComerId = e.id;
   var setV=function(id,val){var el=document.getElementById(id); if(el) el.value=(val==null?'':val);};
   setV('cf-num', e.num||'');
@@ -11038,13 +11086,25 @@ function guardarRegistroFinanzasFram(){
   var fechaVal = satDate.toISOString().slice(0,10);
   var fechaLbl = satDate.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
 
+  // Prestamo NO va aquí: se sigue capturando y restando del pagado, pero por decisión
+  // del usuario (ago-2026) ya no genera gasto automatico. Los demas descuentos sí.
   var descuentos = [
-    {key:'prestamo', cat:'Pago Prestamo', label:'Prestamo', monto:descPrestamo},
     {key:'intereses', cat:'Intereses Operativos', label:'Intereses', monto:descIntereses},
     {key:'planta', cat:'Planta', label:'Planta', monto:descPlanta},
     {key:'inocuidad', cat:'Inocuidad', label:'Inocuidad', monto:descInocuidad},
     {key:'material', cat:'Compra Mercancia', label:'Material', monto:descMaterial}
   ];
+  // Registros guardados antes de ese cambio traen el vínculo al gasto de prestamo.
+  // Al reguardarlos se suelta (y se borra el gasto si todavia existe), para que no
+  // quede un autoGen que ya nadie regenera ni limpia.
+  if(reg.gastoIds.prestamo){
+    var idPrestamoViejo = reg.gastoIds.prestamo;
+    if(gastos.some(function(g){return g.id===idPrestamoViejo;})){
+      gastos = gastos.filter(function(g){return g.id!==idPrestamoViejo;});
+      sbDeleteGasto(idPrestamoViejo);
+    }
+    delete reg.gastoIds.prestamo;
+  }
   descuentos.forEach(function(d){
     var existingId = reg.gastoIds[d.key];
     if(d.monto>0){
