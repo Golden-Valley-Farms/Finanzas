@@ -160,6 +160,14 @@ Dos candados que **no hay que quitar**, porque un caché viejo de `localStorage`
 **Dos modos por cuenta**, guardados en `contraparte.modo`:
 
 - `fifo` (facturas con abonos): cada cargo es una factura; `calcContraparte()` aplica los abonos de la más antigua a la más reciente. En estas cuentas `monto` ya es el neto (cargo + interés − nota de crédito); `interes`/`nc` quedan informativos y desglosados en `items`.
+
+  **Un abono puede dirigirse a un cargo concreto** (ago-2026). El pago guarda en `dirigidoA` el **id de la deuda** destino; vacío = FIFO de siempre, que sigue siendo el default. El campo ya existía en el modelo y ya persistía (columna `dirigido_a` de `pagos_deuda`, mapeada en los dos sentidos) pero nunca se llenaba ni se leía — este cambio solo lo conectó, sin tocar el esquema.
+
+  Hacía falta porque los proveedores de comercializadora (Pollo, Agroproductos los Blancas) acumulan **una deuda por envío**, y sin esto todo abono caía forzosamente en la compra más vieja.
+
+  `calcContraparte()` aplica primero el monto dirigido a su cargo y **lo que sobre sigue por FIFO** — no se queda como saldo a favor. Es deliberado: un abono mayor al saldo de ese envío debe seguir sirviendo para pagar, no desaparecer del saldo. Si la deuda destino ya no existe (se borró), el pago entero cae a FIFO por la misma razón.
+
+  El selector `#dp-dirigido` lo pinta `dpAplicarASelect()`, y **solo aparece en cuentas `fifo` con dos o más cargos pendientes**: en `corriente` el saldo es corrido y no hay a qué dirigirlo, y con un solo pendiente el destino es obvio. Cada opción lleva `folioExterno · folio de negocio`, porque un despacho que cruza negocios crea dos cargos con el **mismo** Folio Cliente y sin el folio de negocio serían indistinguibles en la lista (ver "Folio Negocio junto al Folio Cliente"). En el detalle de la cuenta, un abono dirigido se marca con la etiqueta `dirigido`.
 - `corriente` (cargos y abonos): `calcCorriente()` lleva saldo corrido = Σ(monto + interes − nc) − Σ(abonos). Puede ser negativo (a favor de la contraparte, ej. Clemente Duarte). El detalle se pinta como estado de cuenta en `renderModalCorriente()`.
 
 `calcSaldoCuenta()` despacha por modo y es lo que usan las tarjetas (`renderDeudas`), que muestran clave, insignia USD y una sección "Historial (saldadas)" al fondo. `abrirDeudaContraparte()` es el dispatcher del modal; `abrirEditarContraparte()` (⚙️ en el título) edita clave/modo/moneda/tipo de cambio.

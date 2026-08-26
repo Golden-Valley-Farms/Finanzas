@@ -9188,6 +9188,24 @@ function calcContraparte(tipo, nombre){
   var saldoAFavor=0, di=0;
   ps.forEach(function(p){
     var restante=parseFloat(p.monto)||0;
+    // Pago dirigido a una deuda concreta (p.dirigidoA): se aplica primero ahí, sin
+    // importar que haya deudas más antiguas. Es lo que permite abonar a un envío
+    // específico en vez de dejar que el FIFO lo mande a la compra más vieja.
+    if(p.dirigidoA){
+      var destino=null;
+      for(var k=0;k<res.length;k++){ if(String(res[k].deuda.id)===String(p.dirigidoA)){ destino=res[k]; break; } }
+      if(destino){
+        var faltaD=(parseFloat(destino.deuda.monto)||0)-destino.aplicado;
+        var aplicaD=Math.min(restante, Math.max(0,faltaD));
+        if(aplicaD>0.005){
+          destino.aplicado+=aplicaD;
+          destino.pagos.push({pago:p, monto:aplicaD, saldoDespues:(parseFloat(destino.deuda.monto)||0)-destino.aplicado, dirigido:true});
+          restante-=aplicaD;
+        }
+      }
+      // Lo que sobre (o el pago entero si la deuda destino ya no existe) sigue por
+      // FIFO: mejor que se aplique a otra cuenta a que se pierda como saldo a favor.
+    }
     while(restante>0.005 && di<res.length){
       var slot=res[di];
       var falta=(parseFloat(slot.deuda.monto)||0)-slot.aplicado;
@@ -9243,11 +9261,12 @@ function generarFolioPago(tipo, contraparte, fecha){
   return prefijo+'/'+contraparte+'/'+anio+'/'+('000'+n).slice(-3);
 }
 
-function registrarPagoDeuda(tipo, contraparte, monto, fecha, desc){
+// `dirigidoA` es el id de la deuda a la que se manda el pago; vacío = FIFO de siempre.
+function registrarPagoDeuda(tipo, contraparte, monto, fecha, desc, dirigidoA){
   monto=parseFloat(monto)||0;
   if(monto<=0){ showToast('Ingresa un monto válido'); return null; }
   if(!fecha){ showToast('Selecciona una fecha'); return null; }
-  var p={id:Date.now(), tipo:tipo, contraparte:contraparte, monto:monto, fecha:fecha, folio:generarFolioPago(tipo,contraparte,fecha), desc:desc||'', moneda:cpMoneda(contraparte), tipoCambio:0, dirigidoA:''};
+  var p={id:Date.now(), tipo:tipo, contraparte:contraparte, monto:monto, fecha:fecha, folio:generarFolioPago(tipo,contraparte,fecha), desc:desc||'', moneda:cpMoneda(contraparte), tipoCambio:0, dirigidoA:dirigidoA||''};
   pagosDeuda.push(p); savePagosDeuda(); sbSavePagoDeuda(p); registrarContraparte(contraparte);
   return p;
 }
@@ -9582,7 +9601,9 @@ function renderModalFifo(tipo, nombre){
       html+='<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">'+palabraPago+'</div>';
       s.pagos.forEach(function(pp){
         html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:11px">'+
-          '<div style="min-width:0"><div style="font-family:var(--mono);color:var(--text)">'+pp.pago.folio+'</div><div style="color:var(--text3)">'+fmtFechaCorta(pp.pago.fecha)+'</div></div>'+
+          '<div style="min-width:0"><div style="font-family:var(--mono);color:var(--text)">'+pp.pago.folio+
+          (pp.dirigido?' <span title="Abono aplicado a esta cuenta a proposito, no por antiguedad" style="font-size:9px;color:var(--green)">dirigido</span>':'')+
+          '</div><div style="color:var(--text3)">'+fmtFechaCorta(pp.pago.fecha)+'</div></div>'+
           '<div style="text-align:right"><div style="font-family:var(--mono);color:var(--green)">\u2212'+fmt(pp.monto)+'</div><div style="color:var(--text3);font-family:var(--mono)">saldo '+fmt(pp.saldoDespues)+'</div></div>'+
           '</div>';
       });
@@ -9655,6 +9676,7 @@ function abrirRegistrarPago(){
   document.getElementById('mo-title').innerHTML=((tipo==='cobrar')?'Registrar pago':'Registrar abono')+' \u2014 '+nombre;
   document.getElementById('mo-body').innerHTML=
     '<div class="field" style="margin-bottom:10px"><label>Monto</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="dp-monto" placeholder="0.00" min="0" step="0.01"></div></div>'+
+    dpAplicarASelect(tipo, nombre)+
     '<div class="field" style="margin-bottom:10px"><label>Fecha</label><input type="date" id="dp-fecha" value="'+hoy+'" style="'+_dsInput+'"></div>'+
     '<div class="field" style="margin-bottom:14px"><label>Nota <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(opcional)</span></label><input type="text" id="dp-desc" placeholder="Referencia, banco..." style="width:100%"></div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
@@ -9663,8 +9685,31 @@ function abrirRegistrarPago(){
     '</div>';
   setTimeout(function(){var i=document.getElementById('dp-monto'); if(i) i.focus();},100);
 }
+
+// Selector "Aplicar a" del formulario de pago. Solo en cuentas modo fifo con más de
+// una deuda pendiente: en modo corriente el saldo es corrido y no hay a qué dirigirlo,
+// y con una sola pendiente el destino es obvio.
+function dpAplicarASelect(tipo, nombre){
+  if(cpModo(nombre)==='corriente') return '';
+  var r=calcContraparte(tipo, nombre);
+  var pend=r.items.filter(function(s){ return !s.liquidada; });
+  if(pend.length<2) return '';
+  var opts='<option value="">Automático — la más antigua primero</option>';
+  pend.forEach(function(s){
+    var d=s.deuda;
+    var etq=d.folioExterno||deudaFolioNegocio(d)||(d.origen==='manual'?'Manual':d.origen)||'Cargo';
+    var fn=deudaFolioNegocio(d);
+    if(fn && fn!==etq) etq+=' · '+fn;
+    opts+='<option value="'+d.id+'">'+etq+' — '+fmtFechaCorta(d.fecha)+' — resta '+fmt(s.saldo)+'</option>';
+  });
+  return '<div class="field" style="margin-bottom:10px"><label>Aplicar a</label>'+
+    '<select id="dp-dirigido" style="width:100%">'+opts+'</select>'+
+    '<div style="font-size:10px;color:var(--text3);margin-top:3px;line-height:1.4">Si el monto excede lo que resta de esa cuenta, el sobrante se aplica a las demás de la más antigua a la más reciente.</div></div>';
+}
+
 function confirmarPagoDeuda(){
-  var p=registrarPagoDeuda(deudaModalTipo, deudaModalNombre, document.getElementById('dp-monto').value, document.getElementById('dp-fecha').value, document.getElementById('dp-desc').value);
+  var selDir=document.getElementById('dp-dirigido');
+  var p=registrarPagoDeuda(deudaModalTipo, deudaModalNombre, document.getElementById('dp-monto').value, document.getElementById('dp-fecha').value, document.getElementById('dp-desc').value, selDir?selDir.value:'');
   if(!p) return;
   showToast((deudaModalTipo==='cobrar'?'Pago':'Abono')+' registrado: '+p.folio);
   abrirDeudaContraparte(deudaModalTipo, deudaModalNombre);
