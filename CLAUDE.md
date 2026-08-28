@@ -200,6 +200,20 @@ Se edita en dos lados: el del cliente en `abrirEditarContraparte()` (⚙️ de l
 
 Colores: `--rojo` / `--rojo-bg` / `--rojo2` en los dos temas, para que la escala de antigüedad no dependa de hex crudos. `AGING_TRAMOS[].col` es la fuente única de esos colores — la barra de la cartera, la mini-barra de cada tarjeta y la insignia leen de ahí.
 
+### Cartera: tabla en escritorio, buscador, orden y filtro
+
+Fase 2 del rediseño de cobranza (ago-2026, mismo spec que la fase anterior).
+
+**Misma data, dos vistas.** `renderDeudas()` sigue armando `lista` (todas las cuentas de esa dirección) y ahora también `vista` (la filtrada/ordenada por lo que haya en `#deuda-search` / `#deuda-orden` / `#deuda-filtro`). `pintaCard()` y `pintaFila()` reciben el mismo objeto `x` y pintan tarjeta y renglón de tabla respectivamente — **hay que tocar las dos** si cambia un dato que se muestra. El toggle entre una y otra es puro CSS (`#deuda-list` / `#deuda-table-wrap`, `@media (min-width:700px)`), no JS: las dos siempre están pobladas, solo una es visible según el ancho.
+
+**El filtro por default es "con saldo"** (oculta lo saldado) — cambio de comportamiento a propósito respecto de antes, donde el historial saldado siempre se pintaba debajo. Con "todas" se recupera ese comportamiento viejo completo, header incluido. "Solo con vencido" es el tercer filtro, para la sesión de cobranza del día.
+
+**El buscador filtra por nombre, ID o folio** (`x.folios`, precomputado por cuenta uniendo `folioExterno`+`factura` de todos sus cargos de esa dirección) — se aplica **después** del filtro de saldo, así que buscar un cliente saldado con el filtro en "con saldo" da "sin resultados": es intencional, no un bug.
+
+**`eqSaldo()`/`eqVencido()`** convierten USD a MXN con el tipo de cambio de la ficha antes de ordenar o sumar — sin esto, ordenar "por saldo" mezclaría escalas de las dos monedas.
+
+La tabla reusa la clase `.fintab` / `.fintab-wrap.auto` que ya usa Finanzas (Reportes → Frambuesa), no un componente nuevo. La columna "Cargo más viejo" llama a `diasDeudaBadge(ag.masViejoDeuda)` — la misma insignia que ya se pinta en el modal de cuenta, no una copia.
+
 ## Módulo de maíz
 
 Agregado en ago-2026 (spec en `docs/superpowers/specs/2026-08-18-cosecha-maiz-registro-historial-design.md`). Toda su lógica vive junta en el bloque `// ==== MÓDULO MAÍZ ====` al **final del `<script>`**, no repartida por el archivo. Funciona por hoisting y es lo único que lo mantiene legible.

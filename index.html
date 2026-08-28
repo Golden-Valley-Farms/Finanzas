@@ -462,6 +462,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .aging-key b{font-weight:600;font-family:var(--mono);color:var(--text)}
 .aging-dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px}
 .aging-mini{display:flex;gap:1.5px;height:6px;border-radius:3px;overflow:hidden;margin-top:5px}
+.deuda-ctrls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.deuda-ctrls input[type=text]{flex:2;min-width:180px}
+.deuda-ctrls select{flex:1;min-width:150px}
+/* Tabla de cartera: solo escritorio (ver @media min-width:700px). En movil
+   siguen las tarjetas de #deuda-list, que ya existian. */
+#deuda-table-wrap{display:none}
 .deuda-saldo{font-size:16px;font-weight:700;font-family:var(--mono)}
 .deuda-estatus{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;white-space:nowrap}
 .kpi-sub{font-size:11px;color:var(--text3);margin-top:3px}
@@ -506,13 +512,14 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   #sc-deudas > .rfr-topbar,
   #sc-deudas > #deuda-kpi-row,
   #sc-deudas > #deuda-aging,
+  #sc-deudas > #deuda-ctrls,
+  #sc-deudas > #deuda-table-wrap,
   #sc-deudas > #deuda-registrar-sec{max-width:1400px;margin-left:auto;margin-right:auto}
   #sc-deudas > #deuda-kpi-row{grid-template-columns:repeat(4,1fr)}
   #sc-deudas > #deuda-registrar-sec{max-width:520px}
-  #sc-deudas #deuda-list{
-    max-width:1400px;margin:0 auto;
-    display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px;
-  }
+  /* Escritorio: tabla en vez de tarjetas. */
+  #sc-deudas #deuda-list{display:none}
+  #sc-deudas #deuda-table-wrap{display:block}
   #sc-deudas #deuda-list .deuda-card{margin-bottom:0}
   #sc-deudas #deuda-list .empty{grid-column:1/-1}
 
@@ -2135,6 +2142,28 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
     </div>
     <div id="deuda-aging"></div>
+    <div id="deuda-ctrls" class="deuda-ctrls">
+      <input type="text" id="deuda-search" placeholder="Buscar cliente, ID o folio…" oninput="renderDeudas()">
+      <select id="deuda-orden" onchange="renderDeudas()">
+        <option value="vencido">Ordenar: más vencido</option>
+        <option value="saldo">Ordenar: saldo</option>
+        <option value="antiguedad">Ordenar: antigüedad</option>
+      </select>
+      <select id="deuda-filtro" onchange="renderDeudas()">
+        <option value="saldo">Ver: con saldo</option>
+        <option value="todas">Ver: todas</option>
+        <option value="vencido">Ver: solo con vencido</option>
+      </select>
+    </div>
+    <div id="deuda-table-wrap" class="fintab-wrap auto">
+      <table class="fintab">
+        <thead><tr>
+          <th class="txt">ID</th><th class="txt">Cliente</th><th>Saldo</th><th>Vencido</th>
+          <th class="txt">Antigüedad</th><th>Cargo más viejo</th><th>Plazo</th><th>Últ. abono</th>
+        </tr></thead>
+        <tbody id="deuda-table-body"></tbody>
+      </table>
+    </div>
     <div id="deuda-list"></div>
     <div id="deuda-registrar-sec" style="display:none;max-width:520px;margin:0 auto">
       <div class="rfr-topbar" style="display:flex;gap:4px;margin-bottom:14px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
@@ -9767,12 +9796,20 @@ function renderDeudas(){
   // aparece cuando tiene su primer movimiento de esa direccion.
   var lista=Object.keys(nombres).map(function(nom){
     var r=calcSaldoCuenta(tipo,nom);
+    var pagosNom=_ordenar(pagosDeuda.filter(function(p){return p.tipo===tipo && p.contraparte===nom;}));
+    var folios=deudas.filter(function(d){return d.tipo===tipo && d.contraparte===nom;})
+      .map(function(d){return (d.folioExterno||'')+' '+(d.factura||'');}).join(' ').toLowerCase();
     return {nombre:nom, saldo:r.saldo, aFavor:r.aFavor, n:r.n, moneda:r.moneda, clave:r.clave,
-      tc:(getContraparte(nom)||{}).tipoCambio||0, aging:agingCuenta(tipo,nom)};
-  }).sort(function(a,b){ return b.saldo-a.saldo; });
-  var totalSaldo=lista.reduce(function(a,x){
-    return a+(x.moneda==='USD'?x.saldo*(x.tc||0):x.saldo);
-  },0);
+      tc:(getContraparte(nom)||{}).tipoCambio||0, aging:agingCuenta(tipo,nom),
+      ultimoAbono:pagosNom.length?pagosNom[pagosNom.length-1].fecha:'', folios:folios};
+  });
+  // Equivalente en MXN: USD se convierte con el tipo de cambio de su ficha, igual
+  // que el total que ya mostraba la pantalla. Se usa para ordenar y sumar sin
+  // mezclar escalas de las dos monedas.
+  function eqSaldo(x){ return x.moneda==='USD'?x.saldo*(x.tc||0):x.saldo; }
+  function eqVencido(x){ return x.moneda==='USD'?x.aging.vencido*(x.tc||0):x.aging.vencido; }
+  lista.sort(function(a,b){ return eqSaldo(b)-eqSaldo(a); });
+  var totalSaldo=lista.reduce(function(a,x){ return a+eqSaldo(x); },0);
   var cartera=agingCartera(tipo);
   var esCobrar=(tipo==='cobrar');
   document.getElementById('deuda-total-lbl').textContent=esCobrar?'Total por cobrar':'Total por pagar';
@@ -9814,11 +9851,41 @@ function renderDeudas(){
     } else agc.innerHTML='';
   }
   var cont=document.getElementById('deuda-list');
+  var tbody=document.getElementById('deuda-table-body');
   if(!lista.length){
-    cont.innerHTML='<div class="empty" style="padding:44px 20px;text-align:center"><div class="empty-icon" style="font-size:40px">📒</div><div class="empty-text" style="margin-top:10px">Sin cuentas '+(tipo==='cobrar'?'por cobrar':'por pagar')+' aún.</div></div>';
+    var msgVacio='Sin cuentas '+(tipo==='cobrar'?'por cobrar':'por pagar')+' aún.';
+    cont.innerHTML='<div class="empty" style="padding:44px 20px;text-align:center"><div class="empty-icon" style="font-size:40px">📒</div><div class="empty-text" style="margin-top:10px">'+msgVacio+'</div></div>';
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text3)">'+msgVacio+'</td></tr>';
     return;
   }
-  cont.innerHTML='';
+
+  // ── Buscar, ordenar y filtrar la cartera ──
+  var q=(document.getElementById('deuda-search').value||'').trim().toLowerCase();
+  var orden=(document.getElementById('deuda-orden')||{}).value||'vencido';
+  var filtro=(document.getElementById('deuda-filtro')||{}).value||'saldo';
+  var vista=lista.filter(function(x){
+    if(q && x.nombre.toLowerCase().indexOf(q)<0 && (x.clave||'').toLowerCase().indexOf(q)<0 && x.folios.indexOf(q)<0) return false;
+    if(filtro==='saldo') return x.saldo>0.5 || x.aFavor>0.5;
+    if(filtro==='vencido') return x.aging.vencido>0.5;
+    return true; // 'todas'
+  });
+  vista.sort(function(a,b){
+    if(orden==='vencido') return (eqVencido(b)-eqVencido(a)) || (eqSaldo(b)-eqSaldo(a));
+    if(orden==='antiguedad') return (b.aging.masViejo===null?-1:b.aging.masViejo)-(a.aging.masViejo===null?-1:a.aging.masViejo);
+    return eqSaldo(b)-eqSaldo(a);
+  });
+  if(!vista.length){
+    var msgFiltro='Ninguna cuenta coincide con la búsqueda o el filtro.';
+    cont.innerHTML='<div class="empty" style="padding:44px 20px;text-align:center"><div class="empty-icon" style="font-size:40px">🔍</div><div class="empty-text" style="margin-top:10px">'+msgFiltro+'</div></div>';
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text3)">'+msgFiltro+'</td></tr>';
+    return;
+  }
+  // Con "con saldo" o "solo vencido" las saldadas ya quedaron fuera de `vista`,
+  // así que el encabezado de historial solo aplica al ver "todas".
+  var abiertasV=(filtro==='todas')?vista.filter(function(x){return x.saldo>0.5||x.aFavor>0.5;}):vista;
+  var saldadasV=(filtro==='todas')?vista.filter(function(x){return x.saldo<=0.5&&x.aFavor<=0.5;}):[];
+
+  cont.innerHTML=''; tbody.innerHTML='';
   function pintaCard(x, esHist){
     var card=document.createElement('div');
     card.className='deuda-card';
@@ -9847,13 +9914,42 @@ function renderDeudas(){
       '<svg viewBox="0 0 24 24" fill="none" stroke="var(--text3)" style="width:18px;height:18px;stroke-width:2;flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>';
     cont.appendChild(card);
   }
-  abiertas.forEach(function(x){ pintaCard(x,false); });
-  if(saldadas.length){
+  // Fila de la tabla de escritorio, misma data que la tarjeta, ordenada como una
+  // hoja de cálculo: ID, cliente, saldo, vencido, antigüedad, cargo más viejo,
+  // plazo, último abono.
+  function pintaFila(x, esHist){
+    var tr=document.createElement('tr');
+    if(esHist) tr.style.opacity='0.55';
+    tr.style.cursor='pointer';
+    tr.onclick=function(){ abrirDeudaContraparte(tipo, x.nombre); };
+    var ag=x.aging||agingVacio();
+    var saldoTxt=fmtMon(x.saldo,x.moneda);
+    var vencidoHay=(!esHist&&ag.vencido>0.5);
+    var vencTxt=vencidoHay?fmtMon(ag.vencido,x.moneda):'—';
+    var viejoBadge=(!esHist&&ag.masViejoDeuda)?diasDeudaBadge(ag.masViejoDeuda):'<span style="color:var(--text3)">—</span>';
+    tr.innerHTML=
+      '<td class="txt mono" style="color:var(--text3)">'+(x.clave||'—')+'</td>'+
+      '<td class="txt">'+x.nombre+
+        (x.moneda==='USD'?' <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:var(--green-bg);color:var(--green)">USD</span>':'')+
+        (x.aFavor>0.5?'<div style="font-size:11px;color:var(--jal)">a su favor '+fmtMon(x.aFavor,x.moneda)+'</div>':'')+'</td>'+
+      '<td class="num" style="font-size:14px;font-weight:700;color:'+(esHist?'var(--text3)':accent)+'">'+saldoTxt+'</td>'+
+      '<td class="num" style="font-weight:'+(vencidoHay?'700':'400')+';color:'+(vencidoHay?'var(--rojo)':'var(--text3)')+'">'+vencTxt+'</td>'+
+      '<td class="txt">'+(esHist?'':(agingMiniHtml(ag)||'<span style="color:var(--text3)">—</span>'))+'</td>'+
+      '<td class="num">'+viejoBadge+'</td>'+
+      '<td class="num" style="color:var(--text3)">'+cpDiasCredito(x.nombre)+' d</td>'+
+      '<td class="num" style="color:var(--text3)">'+(x.ultimoAbono?fmtFechaCorta(x.ultimoAbono):'—')+'</td>';
+    tbody.appendChild(tr);
+  }
+  abiertasV.forEach(function(x){ pintaCard(x,false); pintaFila(x,false); });
+  if(saldadasV.length){
     var hdr=document.createElement('div');
     hdr.style.cssText='font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin:18px 0 8px';
     hdr.textContent='Historial (saldadas)';
     cont.appendChild(hdr);
-    saldadas.forEach(function(x){ pintaCard(x,true); });
+    var trh=document.createElement('tr');
+    trh.innerHTML='<td colspan="8" style="background:var(--surface2);font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;padding:8px 10px">Historial (saldadas)</td>';
+    tbody.appendChild(trh);
+    saldadasV.forEach(function(x){ pintaCard(x,true); pintaFila(x,true); });
   }
 }
 
