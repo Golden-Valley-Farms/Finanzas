@@ -1149,11 +1149,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <!-- Mismo contenido que Por ciclo, partido en dos por la fecha de corte del ciclo.
            La fecha vive arriba de las sub-pestañas porque es UNA sola para las dos. -->
       <div id="rfr-sec-coh" style="display:none">
-        <div class="rfr-topbar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px">
-          <span style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Cosecha 2 inicia el</span>
-          <input type="date" id="rfr-coh-corte" style="flex:1;min-width:140px;padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);font-size:15px;color:var(--text);outline:none">
-          <button type="button" onclick="guardarCorteCosecha()" style="padding:9px 18px;background:var(--fram);color:#fff;border:none;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer">Guardar</button>
-          <div id="rfr-coh-rangos" style="flex:1 0 100%;font-size:11.5px;color:var(--text3);line-height:1.5"></div>
+        <div class="rfr-topbar" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px">
+          <span style="font-size:14px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Cosecha 2 inicia el</span>
+          <input type="date" id="rfr-coh-corte" style="flex:0 0 auto;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:15px;color:var(--text);outline:none">
+          <button type="button" onclick="guardarCorteCosecha()" style="flex:0 0 auto;padding:10px 18px;background:var(--fram);color:#fff;border:none;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer">Guardar</button>
         </div>
         <div class="rfr-topbar" id="rfr-coh-subtabs" style="display:flex;gap:4px;margin-bottom:14px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
           <button class="ven-tab active" id="rfr-coh-tab-c1" onclick="rfrCohTab('c1')" style="flex:1;font-size:12px">Cosecha 1</button>
@@ -5800,22 +5799,14 @@ function rfrColCostoGen(costoGen, refs){
 // Reusa integro el render de Por ciclo, con los registros recortados por la fecha
 // de corte del ciclo: Cosecha 1 = fecha < corte, Cosecha 2 = fecha >= corte.
 // La fecha se captura a mano y se guarda por ciclo (framCosechas / fram_cosechas).
-function rfrCohRangoLbl(lbl, arr){
-  if(!arr.length) return '<b>'+lbl+':</b> sin registros';
-  var f=function(s){ return new Date(s+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}); };
-  return '<b>'+lbl+':</b> '+f(arr[0].fecha)+' → '+f(arr[arr.length-1].fecha);
-}
-
 function renderRfrCosecha(data, ciclo){
   var cont=document.getElementById('rfr-coh-detalle'); if(!cont) return;
   var corte=framCorteDe(ciclo);
   var inp=document.getElementById('rfr-coh-corte');
   if(inp && document.activeElement!==inp) inp.value=corte||'';
   var subs=document.getElementById('rfr-coh-subtabs');
-  var rangos=document.getElementById('rfr-coh-rangos');
   if(!corte){
     if(subs) subs.style.display='none';
-    if(rangos) rangos.innerHTML='';
     cont.innerHTML='<div style="text-align:center;padding:40px 0;color:var(--text3);font-size:13px">Captura la fecha de corte de este ciclo para dividir las cosechas.</div>';
     return;
   }
@@ -5823,7 +5814,6 @@ function renderRfrCosecha(data, ciclo){
   // data ya viene ordenada por fecha ascendente desde renderRepFram
   var c1=data.filter(function(r){ return r.fecha<corte; });
   var c2=data.filter(function(r){ return r.fecha>=corte; });
-  if(rangos) rangos.innerHTML=rfrCohRangoLbl('Cosecha 1',c1)+' · '+rfrCohRangoLbl('Cosecha 2',c2);
   var esC2=(rfrCohSel==='c2');
   renderRfrResumen(esC2?c2:c1, {contId:'rfr-coh-detalle', sinMetaCajas:true,
     vacioMsg:'Sin registros en '+(esC2?'Cosecha 2':'Cosecha 1')+' con este corte'});

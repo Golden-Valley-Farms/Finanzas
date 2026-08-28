@@ -37,11 +37,11 @@ El corte se define con **una sola fecha por ciclo**, capturada por el usuario:
 
 Sección `#rfr-sec-coh`, dentro de la pestaña, en este orden:
 
-1. **Barra de corte** — `Cosecha 2 inicia el [fecha] [Guardar]`, más una línea derivada
-   con los rangos reales de cada lado:
-   `Cosecha 1: 01-jul-2025 → 18-feb-2026 · Cosecha 2: 08-jun-2026 → 24-jun-2026`.
-   Esos extremos salen del primer y último día **con registro** de cada lado, así se
-   confirma de un vistazo que el corte cayó dentro de la pausa.
+1. **Barra de corte** — `Cosecha 2 inicia el [fecha] [Guardar]`, centrada y compacta,
+   con el mismo patrón visual que el selector de Ciclo de la pantalla. Sin leyendas ni
+   texto derivado adicional (ago-2026: se agregó una línea con los rangos reales de cada
+   lado y se quitó por pedido explícito del usuario — la app no agrega texto explicativo
+   por iniciativa propia, ver `CLAUDE.md`).
 2. **Sub-pestañas** Cosecha 1 / Cosecha 2 (estado en `rfrCohSel`, default `'c1'`).
 3. **Contenedor** `#rfr-coh-detalle` con el render completo.
 

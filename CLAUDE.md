@@ -281,6 +281,7 @@ Ese selector (`#vf-tipo-envio`, etiqueta "Negocio") vive en su **propia tarjeta 
 - **Estilos inline** por todos lados, apoyados en variables CSS (`var(--green)`, `var(--fram)`, `var(--surface2)`, `var(--mono)`, `var(--radius)`). Usar las variables, no hex crudo.
 - **Confirmación de borrado en dos toques**: el botón se marca `dataset.confirm='1'`, cambia de texto, y se revierte solo a los ~2.5 s. Ver `confirmDelLote()` como modelo.
 - **Modal único**: un solo `#overlay` + `#mo-title` + `#mo-body` reutilizado por toda la app; se llena con `innerHTML` y se abre con `.classList.add('open')`.
+- **Sin leyendas ni textos explicativos por iniciativa propia.** No agregar notas, subtítulos o etiquetas aclaratorias a la UI a menos que el usuario las pida explícitamente. Pasó en ago-2026: una leyenda con los rangos de fecha derivados en "Por cosecha" (Frambuesa) se agregó sin que se pidiera y hubo que quitarla.
 
 ## Chart.js
 
@@ -448,7 +449,7 @@ Agregada en ago-2026 (spec en `docs/superpowers/specs/2026-08-28-reportes-frambu
 
 **Trampa: las dos vistas generan los mismos ids de canvas.** Si Por ciclo y Por cosecha quedan pintadas a la vez, `getElementById` devuelve la primera y las gráficas se dibujan en la pestaña equivocada. Por eso `rfrTab()` **vacía el contenedor de la pestaña que se abandona**. No quitar esas dos líneas. Por lo mismo, la regla CSS de centrado (`#rfr-res-detalle .kpi-lbl,…`) lleva ahora también los selectores de `#rfr-coh-detalle`: al tocarla hay que respetar los dos contenedores.
 
-**La fecha de corte se captura a mano, una por ciclo**, en la barra que va **arriba** de las sub-pestañas (es un solo dato para las dos; duplicarlo adentro de cada una lo desincronizaría). Debajo se pintan los rangos reales derivados —primer y último día con registro de cada lado— para confirmar de un vistazo que el corte cayó dentro de la pausa. **No hay auto-detección** de la pausa: sin fecha capturada, las sub-pestañas se ocultan y solo se ve el aviso.
+**La fecha de corte se captura a mano, una por ciclo**, en la barra que va **arriba** de las sub-pestañas (es un solo dato para las dos; duplicarlo adentro de cada una lo desincronizaría), con el mismo patrón visual centrado y compacto del selector de Ciclo. **No hay auto-detección** de la pausa: sin fecha capturada, las sub-pestañas se ocultan y solo se ve el aviso.
 
 Persistencia completa (los cuatro lugares): `framCosechas` `[{ciclo, corte}]` · `cc_fram_cosechas` · tabla `fram_cosechas` (`ciclo` text PK, `corte` date) · `sbSaveFramCosecha()` y el bloque `fcData` de `cargarDesdeSB()`. Lectura por `framCorteDe(ciclo)`, escritura por `guardarCorteCosecha()`. Los nombres son iguales en las dos capas, así que no hay mapeo camelCase↔snake_case.
 
