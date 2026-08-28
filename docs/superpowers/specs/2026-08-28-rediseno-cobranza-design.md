@@ -85,12 +85,19 @@ El motor. Sin esto ninguna pantalla puede pintar "vencido".
 - Detalle (partidas y abonos aplicados) **bajo demanda**, no todo desplegado.
 - Registrar pago con **vista previa de aplicación**: a qué cargos cae y cuánto sobra, antes de guardar.
 
-### Fase 4 — Compartir y catálogo
+### Fase 4 — Compartir y catálogo ✅ implementada
 
-- Estado de cuenta como imagen (`html-to-image`) con encabezado, pendientes, total y antigüedad.
-  Sin costos ni márgenes: solo lo que el cliente necesita para pagar.
+- Estado de cuenta como imagen con encabezado, pendientes, total y antigüedad. Sin costos ni
+  márgenes: solo lo que el cliente necesita para pagar.
+  **Cambio de plan sobre la marcha:** el diseño original proponía `html-to-image` (ya cargada en
+  la app), pero al implementarla se descubrió que **se cuelga** con el `<link>` de Google Fonts
+  del `<head>` — la librería necesita leer `.cssRules` de todas las hojas de la página y
+  `fonts.googleapis.com` no manda CORS, así que el navegador bloquea la lectura y la promesa
+  nunca resuelve ni rechaza. Probado también con `crossorigin="anonymous"`, mismo resultado. Se
+  resolvió dibujando en `<canvas>` (`dctaShareCanvas()`) en su lugar — ver la nota completa en
+  `CLAUDE.md` → Supabase/CDN.
 - Clientes sube a primer nivel, junto a Por cobrar / Por pagar / Registrar.
-- Ficha de cliente con **las dos direcciones** a la vez (te debe / le debes), que hoy obliga a
+- Ficha de cliente con **las dos direcciones** a la vez (te debe / le debes), que antes obligaba a
   cambiar de pestaña.
 
 ## Invariantes que no se tocan

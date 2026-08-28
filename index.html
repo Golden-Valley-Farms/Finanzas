@@ -2142,6 +2142,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <button class="ven-tab" id="deuda-tab-registrar" onclick="setDeudaTab('registrar')" style="flex:1">Registrar</button>
       <button class="ven-tab active" id="deuda-tab-cobrar" onclick="setDeudaTab('cobrar')" style="flex:1">Por cobrar</button>
       <button class="ven-tab" id="deuda-tab-pagar" onclick="setDeudaTab('pagar')" style="flex:1">Por pagar</button>
+      <button class="ven-tab" id="deuda-tab-clientes" onclick="setDeudaTab('clientes')" style="flex:1">Clientes</button>
     </div>
     <div id="deuda-kpi-row" class="deuda-kpis">
       <div class="kpi-card">
@@ -2194,11 +2195,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
     <div id="deuda-list"></div>
     <div id="deuda-registrar-sec" style="display:none;max-width:520px;margin:0 auto">
-      <div class="rfr-topbar" style="display:flex;gap:4px;margin-bottom:14px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
-        <button class="ven-tab active" id="drsub-tab-deuda" onclick="setDrSubTab('deuda')" style="flex:1">Deuda</button>
-        <button class="ven-tab" id="drsub-tab-clientes" onclick="setDrSubTab('clientes')" style="flex:1">Clientes</button>
-      </div>
-
       <div id="drsub-deuda">
         <div class="field" style="margin-bottom:12px"><label>Fecha</label>
           <input type="date" id="dr-fecha" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none"></div>
@@ -2225,22 +2221,16 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <input type="text" id="dr-factura" placeholder="Folio de factura" style="width:100%"></div>
         <button class="btn-main" onclick="registrarDeudaManualForm()">Registrar movimiento</button>
       </div>
+    </div>
 
-      <div id="drsub-clientes" style="display:none">
-        <div class="rfr-topbar" style="display:flex;gap:4px;margin-bottom:14px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
-          <button class="ven-tab active" id="drc-tab-registro" onclick="setDrClientesTab('registro')" style="flex:1">Registro</button>
-          <button class="ven-tab" id="drc-tab-historial" onclick="setDrClientesTab('historial')" style="flex:1">Historial</button>
-        </div>
-        <div id="drc-registro">
-          <div class="field" style="margin-bottom:12px"><label>Nombre</label>
-            <input type="text" id="drc-nombre" placeholder="Nombre completo" style="width:100%"></div>
-          <div class="field" style="margin-bottom:12px"><label>ID</label>
-            <input type="text" id="drc-clave" placeholder="ID corto, ej. Clem" style="width:100%;font-family:var(--mono)"></div>
-          <div style="font-size:11px;color:var(--text3);margin-bottom:16px">El mismo cliente sirve para cuentas por cobrar y por pagar.</div>
-          <button class="btn-main" onclick="registrarClienteForm()">Agregar cliente</button>
-        </div>
-        <div id="drc-historial" style="display:none"></div>
+    <!-- Clientes: catalogo unico, con las dos direcciones a la vista sin cambiar
+         de pestaña. Antes vivia anidado dentro de Registrar. -->
+    <div id="deuda-clientes-sec" style="display:none;max-width:640px;margin:0 auto">
+      <div class="deuda-ctrls">
+        <input type="text" id="dcli-search" placeholder="Buscar cliente o ID…" oninput="renderClientesCatalogo()">
       </div>
+      <button class="btn-main" style="margin-bottom:14px" onclick="abrirNuevoClienteCatalogo()">+ Nuevo cliente</button>
+      <div id="deuda-clientes-list"></div>
     </div>
   </div>
 
@@ -9631,16 +9621,25 @@ function diasDeudaBadge(d){
 
 function setDeudaTab(t){
   deudaTabSel=t;
-  var tc=document.getElementById('deuda-tab-cobrar'), tp=document.getElementById('deuda-tab-pagar'), tr=document.getElementById('deuda-tab-registrar');
+  var tc=document.getElementById('deuda-tab-cobrar'), tp=document.getElementById('deuda-tab-pagar'),
+      tr=document.getElementById('deuda-tab-registrar'), tcli=document.getElementById('deuda-tab-clientes');
   if(tc) tc.classList.toggle('active', t==='cobrar');
   if(tp) tp.classList.toggle('active', t==='pagar');
   if(tr) tr.classList.toggle('active', t==='registrar');
-  var esReg=(t==='registrar');
-  var kpi=document.getElementById('deuda-kpi-row'), lst=document.getElementById('deuda-list'), reg=document.getElementById('deuda-registrar-sec');
-  if(kpi) kpi.style.display=esReg?'none':'flex';
-  if(lst) lst.style.display=esReg?'none':'';
+  if(tcli) tcli.classList.toggle('active', t==='clientes');
+  var esCartera=(t==='cobrar'||t==='pagar');
+  var esReg=(t==='registrar'), esCli=(t==='clientes');
+  // Las cuatro secciones de abajo (cartera con su cabecera, Registrar y Clientes)
+  // son mutuamente excluyentes: solo una se pinta a la vez.
+  ['deuda-kpi-row','deuda-aging','deuda-ctrls','deuda-table-wrap','deuda-list'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.style.display=esCartera?'':'none';
+  });
+  var reg=document.getElementById('deuda-registrar-sec'), cli=document.getElementById('deuda-clientes-sec');
   if(reg) reg.style.display=esReg?'block':'none';
-  if(esReg) initDeudaRegistrarForm(); else renderDeudas();
+  if(cli) cli.style.display=esCli?'block':'none';
+  if(esReg) initDeudaRegistrarForm();
+  else if(esCli) renderClientesCatalogo();
+  else renderDeudas();
 }
 // El tipo solo decide la direccion del cargo; la lista de clientes ya no depende
 // de el, asi que no hay que repoblar el select al cambiarlo.
@@ -9658,7 +9657,7 @@ function onDrContraparteElegida(){
 function initDeudaRegistrarForm(){
   var f=document.getElementById('dr-fecha');
   if(f && !f.value) f.value=new Date().toISOString().substring(0,10);
-  setDrSubTab(drSubTabSel);
+  renderDrContraparteSelect();
 }
 // Catalogo completo: el mismo cliente sirve para cobrar y para pagar.
 function drContraparteLista(){
@@ -9680,67 +9679,81 @@ function claveDuplicada(clave, exceptoNombre){
     return c.clave===clave && c.nombre!==exceptoNombre;
   });
 }
-var drSubTabSel='deuda';
-function setDrSubTab(t){
-  drSubTabSel=t;
-  var td=document.getElementById('drsub-tab-deuda'), tc=document.getElementById('drsub-tab-clientes');
-  if(td) td.classList.toggle('active', t==='deuda');
-  if(tc) tc.classList.toggle('active', t==='clientes');
-  var pd=document.getElementById('drsub-deuda'), pc=document.getElementById('drsub-clientes');
-  if(pd) pd.style.display=(t==='deuda')?'':'none';
-  if(pc) pc.style.display=(t==='clientes')?'':'none';
-  if(t==='deuda') renderDrContraparteSelect();
-  else setDrClientesTab(drClientesTabSel);
+// ── Clientes: catálogo de primer nivel ─────────────────────────
+// Antes vivía anidado dentro de Registrar (ago-2026: subió a su propia
+// pestaña). Cada fila muestra las DOS direcciones a la vez, para no obligar a
+// cambiar de pestaña para ver "me debe" y "le debo" del mismo cliente.
+// Nombres con sufijo "Catalogo" a propósito: ya existe un `confirmarNuevoCliente`
+// (línea ~10988, para el alta rápida de cliente/comercializadora en Ventas) y por
+// hoisting ese ganaría si se llamaran igual. Ver "Trampas conocidas" en CLAUDE.md.
+function abrirNuevoClienteCatalogo(){
+  document.getElementById('mo-title').innerHTML='Nuevo cliente';
+  document.getElementById('mo-body').innerHTML=
+    '<div class="field" style="margin-bottom:10px"><label>Nombre</label><input type="text" id="dcli-nombre" placeholder="Nombre completo" style="width:100%"></div>'+
+    '<div class="field" style="margin-bottom:14px"><label>ID</label><input type="text" id="dcli-clave" placeholder="ID corto, ej. Clem" style="width:100%;font-family:var(--mono)"></div>'+
+    '<div style="font-size:11px;color:var(--text3);margin-bottom:14px">El mismo cliente sirve para cuentas por cobrar y por pagar.</div>'+
+    '<button class="btn-main" onclick="confirmarNuevoClienteCatalogo()">Agregar cliente</button>';
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(function(){var i=document.getElementById('dcli-nombre'); if(i) i.focus();},100);
 }
-var drClientesTabSel='registro';
-function setDrClientesTab(t){
-  drClientesTabSel=t;
-  var tr=document.getElementById('drc-tab-registro'), th=document.getElementById('drc-tab-historial');
-  if(tr) tr.classList.toggle('active', t==='registro');
-  if(th) th.classList.toggle('active', t==='historial');
-  var pr=document.getElementById('drc-registro'), ph=document.getElementById('drc-historial');
-  if(pr) pr.style.display=(t==='registro')?'':'none';
-  if(ph) ph.style.display=(t==='historial')?'':'none';
-  if(t==='historial') renderClientesHistorial();
-}
-function registrarClienteForm(){
-  var nombre=(document.getElementById('drc-nombre').value||'').trim();
-  var clave=(document.getElementById('drc-clave').value||'').trim();
+function confirmarNuevoClienteCatalogo(){
+  var nombre=(document.getElementById('dcli-nombre').value||'').trim();
+  var clave=(document.getElementById('dcli-clave').value||'').trim();
   if(!nombre){ showToast('Escribe un nombre'); return; }
   if(!clave){ showToast('Asigna un ID'); return; }
   if(claveDuplicada(clave)){ showToast('El ID '+clave+' ya está usado'); return; }
   if(getContraparte(nombre)){ showToast('Ese cliente ya existe'); return; }
   var c={nombre:nombre, tipo:CP_TIPO, clave:clave, modo:'fifo', moneda:'MXN', tipoCambio:0};
   contrapartes.push(c); saveContrapartes(); sbSaveContraparte(c);
-  document.getElementById('drc-nombre').value='';
-  document.getElementById('drc-clave').value='';
+  closeModal();
   showToast('Cliente '+clave+' agregado');
+  renderClientesCatalogo();
 }
-function renderClientesHistorial(){
-  var cont=document.getElementById('drc-historial'); if(!cont) return;
+function renderClientesCatalogo(){
+  var cont=document.getElementById('deuda-clientes-list'); if(!cont) return;
+  var q=(document.getElementById('dcli-search')||{}).value||'';
+  q=q.trim().toLowerCase();
   var lista=contrapartes.slice().sort(function(a,b){ return a.nombre.localeCompare(b.nombre); });
+  if(q) lista=lista.filter(function(c){
+    return c.nombre.toLowerCase().indexOf(q)>=0 || (c.clave||'').toLowerCase().indexOf(q)>=0;
+  });
   if(!lista.length){
-    cont.innerHTML='<div class="empty" style="padding:30px 20px;text-align:center"><div class="empty-icon" style="font-size:36px">👤</div><div class="empty-text" style="margin-top:8px">Aún no hay clientes registrados.</div></div>';
+    cont.innerHTML='<div class="empty" style="padding:30px 20px;text-align:center"><div class="empty-icon" style="font-size:36px">👤</div><div class="empty-text" style="margin-top:8px">'+
+      (contrapartes.length?'Ningún cliente coincide con la búsqueda.':'Aún no hay clientes registrados.')+'</div></div>';
     return;
   }
   cont.innerHTML='';
   lista.forEach(function(c){
+    var rCobrar=calcSaldoCuenta('cobrar', c.nombre), rPagar=calcSaldoCuenta('pagar', c.nombre);
     var card=document.createElement('div');
-    card.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:11px 12px;border:0.5px solid var(--border);border-radius:var(--radius);margin-bottom:8px';
-    card.innerHTML=
-      '<div style="min-width:0">'+
-        '<div style="font-size:14px;font-weight:600;color:var(--text)">'+
-          '<span style="font-family:var(--mono);font-size:11px;color:var(--text3)">'+(c.clave||'—')+'</span> · '+c.nombre+
-        '</div>'+
-        '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+
-          (c.modo==='corriente'?'Cargos y abonos':'Facturas')+(c.moneda==='USD'?' · USD':'')+
-        '</div>'+
-      '</div>';
-    var btn=document.createElement('button');
-    btn.innerHTML='✏️'; btn.title='Editar';
-    btn.style.cssText='background:none;border:none;cursor:pointer;font-size:16px;padding:4px 6px;flex-shrink:0';
-    btn.onclick=function(){ abrirEditarContraparte(c.nombre, 'clientes'); };
-    card.appendChild(btn);
+    card.style.cssText='display:flex;align-items:center;gap:10px;padding:12px 14px;border:0.5px solid var(--border);border-radius:var(--radius);margin-bottom:8px;flex-wrap:wrap';
+    function saldoBtn(tipo, r){
+      var hay=r.saldo>0.5;
+      var col=hay?(tipo==='cobrar'?'var(--green)':'var(--fram)'):'var(--text3)';
+      var lbl=tipo==='cobrar'?'Nos debe':'Le debemos';
+      var b=document.createElement('button');
+      b.style.cssText='background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 12px;cursor:pointer;text-align:left;font-family:var(--font);min-width:110px';
+      b.innerHTML='<div style="font-size:9.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.03em">'+lbl+'</div>'+
+        '<div style="font-family:var(--mono);font-weight:700;color:'+col+'">'+(hay?fmtMon(r.saldo,r.moneda):'—')+'</div>';
+      if(hay) b.onclick=function(){ abrirDeudaContraparte(tipo, c.nombre); };
+      else b.disabled=true, b.style.cursor='default', b.style.opacity='.6';
+      return b;
+    }
+    var info=document.createElement('div');
+    info.style.cssText='flex:1;min-width:160px';
+    info.innerHTML='<div style="font-size:14px;font-weight:600;color:var(--text)">'+
+        '<span style="font-family:var(--mono);font-size:11px;color:var(--text3)">'+(c.clave||'—')+'</span> · '+c.nombre+
+        (c.moneda==='USD'?' <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:var(--green-bg);color:var(--green)">USD</span>':'')+
+      '</div>'+
+      '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+(c.modo==='corriente'?'Cargos y abonos':'Facturas con abonos')+' · plazo '+cpDiasCredito(c.nombre)+' días</div>';
+    card.appendChild(info);
+    card.appendChild(saldoBtn('cobrar', rCobrar));
+    card.appendChild(saldoBtn('pagar', rPagar));
+    var btnEd=document.createElement('button');
+    btnEd.innerHTML='✏️'; btnEd.title='Editar cliente';
+    btnEd.style.cssText='background:none;border:none;cursor:pointer;font-size:16px;padding:4px 6px;flex-shrink:0';
+    btnEd.onclick=function(){ abrirEditarContraparte(c.nombre, 'clientes'); };
+    card.appendChild(btnEd);
     cont.appendChild(card);
   });
 }
@@ -9793,7 +9806,7 @@ function guardarEdicionContraparte(){
   c.diasCredito=pz===''?'':(parseInt(pz,10)||'');
   saveContrapartes(); sbSaveContraparte(c);
   showToast('Guardado');
-  if(_ecContexto==='clientes'){ closeModal(); renderClientesHistorial(); }
+  if(_ecContexto==='clientes'){ closeModal(); renderClientesCatalogo(); }
   else { deudaModalTipo=_ecTipo; deudaModalNombre=_ecNombre; refrescarCuentaDeuda(); renderDeudas(); }
 }
 function registrarDeudaManualForm(){
@@ -10066,6 +10079,176 @@ function renderCuentaDeuda(){
     (esCorriente?dctaBodyCorriente(tipo,nombre):dctaBodyFifo(tipo,nombre));
 }
 
+// ── Compartir estado de cuenta como imagen (WhatsApp) ───────────
+// Dibujado en <canvas>, NO con html-to-image (que ya carga la app). Se probó
+// primero con html-to-image y SE CUELGA (promesa que nunca resuelve, sin
+// lanzar error) por el Google Fonts <link> del <head>: html-to-image necesita
+// leer .cssRules de TODAS las hojas de la página para clonar estilos al SVG
+// intermedio, y la hoja de fonts.googleapis.com no manda cabecera CORS, así
+// que el navegador bloquea esa lectura — probado también con
+// crossorigin="anonymous" en el link, mismo resultado. Es un bug conocido de
+// la librería con hojas de estilo cross-origin sin CORS, no arreglable desde
+// acá sin auto-hospedar la fuente. canvas.toBlob() no tiene ese problema:
+// nunca lee CSSOM de otra hoja, solo pinta con el font ya cargado por el navegador.
+// Si el día de mañana hace falta exportar OTRA pantalla como imagen, replicar
+// este patrón de canvas, no reintentar html-to-image mientras la fuente siga
+// viniendo de Google Fonts sin CORS.
+//
+// Colores fijos en hex, no var(--...): la imagen la recibe alguien sin el
+// tema de la app — tiene que verse igual sin importar si quien la genera
+// está en modo oscuro. Son los mismos hex del :root claro de arriba.
+var DCTA_SHARE_ACCENT={cobrar:'#1A7A57', pagar:'#B03A6A'};
+var DCTA_SHARE_AGING={corriente:'#1A7A57', b1:'#B8860B', b2:'#C45B0A', b3:'#D64545', b4:'#8F2222'};
+
+// Alturas fijas de cada bloque, en el mismo orden en que se dibujan. Un solo
+// arreglo de constantes gobierna el alto total del canvas Y las coordenadas Y
+// de cada bloque — evita que el cálculo de altura y el dibujado se
+// desincronicen (ese fue justo el primer bug de esta función).
+var DCTA_SHARE_W=480, DCTA_SHARE_PAD=24;
+var DCTA_SHARE_ROW_H=26, DCTA_SHARE_HEAD_H=62, DCTA_SHARE_TABLE_HEAD_H=20,
+    DCTA_SHARE_TOTAL_ROW_H=30, DCTA_SHARE_SALDO_H=68, DCTA_SHARE_VACIO_H=40,
+    DCTA_SHARE_AGING_H=18, DCTA_SHARE_VENCIDO_H=18, DCTA_SHARE_FOOTER_H=26;
+
+function dctaShareCanvas(tipo, nombre){
+  var c=getContraparte(nombre)||{};
+  var mon=(c.moneda==='USD')?'USD':'MXN';
+  var esCorriente=(cpModo(nombre)==='corriente');
+  var ag=agingCuenta(tipo,nombre);
+  var accent=DCTA_SHARE_ACCENT[tipo]||'#1A7A57';
+  var hoy=new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+  var W=DCTA_SHARE_W, PAD=DCTA_SHARE_PAD, CW=W-PAD*2;
+
+  var pend=[], r=null, rc=null;
+  if(esCorriente){ rc=calcCorriente(tipo,nombre); }
+  else {
+    r=calcContraparte(tipo,nombre);
+    pend=r.items.filter(function(s){return !s.liquidada;}).sort(function(a,b){return a.deuda.fecha<b.deuda.fecha?-1:1;});
+  }
+  var showAging=ag.total>0.5, showVencido=ag.vencido>0.5;
+
+  var H=PAD+DCTA_SHARE_HEAD_H;
+  if(esCorriente) H+=DCTA_SHARE_SALDO_H;
+  else if(pend.length) H+=DCTA_SHARE_TABLE_HEAD_H+pend.length*DCTA_SHARE_ROW_H+DCTA_SHARE_TOTAL_ROW_H;
+  else H+=DCTA_SHARE_VACIO_H;
+  if(showAging) H+=DCTA_SHARE_AGING_H;
+  if(showVencido) H+=DCTA_SHARE_VENCIDO_H;
+  H+=DCTA_SHARE_FOOTER_H+PAD;
+
+  var ratio=2;
+  var canvas=document.createElement('canvas');
+  canvas.width=Math.round(W*ratio); canvas.height=Math.round(H*ratio);
+  var ctx=canvas.getContext('2d');
+  ctx.scale(ratio,ratio);
+  ctx.fillStyle='#FFFFFF'; ctx.fillRect(0,0,W,H);
+
+  var y=PAD;
+  ctx.textAlign='left'; ctx.fillStyle='#1A1714';
+  ctx.font='700 16px "DM Sans",sans-serif';
+  ctx.fillText('Golden Valley Farms', PAD, y+14);
+  ctx.font='400 11px "DM Sans",sans-serif'; ctx.fillStyle='#9E9890';
+  ctx.fillText('Estado de cuenta', PAD, y+30);
+  ctx.textAlign='right'; ctx.fillStyle='#1A1714';
+  ctx.font='700 15px "DM Sans",sans-serif';
+  ctx.fillText(nombre, W-PAD, y+14);
+  ctx.font='400 11px "DM Mono",monospace'; ctx.fillStyle='#9E9890';
+  ctx.fillText(hoy, W-PAD, y+30);
+  y+=44;
+  ctx.strokeStyle=accent; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(PAD,y); ctx.lineTo(W-PAD,y); ctx.stroke();
+  y+=DCTA_SHARE_HEAD_H-44;
+
+  ctx.textAlign='left';
+  if(esCorriente){
+    var lblSaldo=(rc.saldoTotal>=0)?((tipo==='cobrar')?'Nos debe':'Le debemos'):'A su favor';
+    ctx.textAlign='center';
+    ctx.font='600 11px "DM Sans",sans-serif'; ctx.fillStyle='#9E9890';
+    ctx.fillText(lblSaldo.toUpperCase(), W/2, y+11);
+    ctx.font='700 30px "DM Mono",monospace'; ctx.fillStyle=accent;
+    ctx.fillText(fmtMon(Math.abs(rc.saldoTotal),mon), W/2, y+49);
+    ctx.textAlign='left';
+    y+=DCTA_SHARE_SALDO_H;
+  } else if(pend.length){
+    ctx.font='600 10px "DM Sans",sans-serif'; ctx.fillStyle='#9E9890';
+    ctx.fillText('FOLIO', PAD, y+9);
+    ctx.fillText('VENCE', PAD+150, y+9);
+    ctx.textAlign='right'; ctx.fillText('SALDO', W-PAD, y+9); ctx.textAlign='left';
+    y+=DCTA_SHARE_TABLE_HEAD_H;
+    pend.forEach(function(s){
+      var d=s.deuda, dv=deudaDiasVencido(d);
+      var etq=d.folioExterno||(d.origen==='manual'?'Manual':(d.origen||'Cargo'));
+      ctx.strokeStyle='#E2DDD6'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(PAD,y); ctx.lineTo(W-PAD,y); ctx.stroke();
+      ctx.font='500 12.5px "DM Mono",monospace'; ctx.fillStyle='#1A1714';
+      ctx.fillText(etq, PAD, y+17);
+      ctx.fillStyle=(dv!==null&&dv>0)?'#D64545':'#6B6560';
+      ctx.fillText(fmtFechaCorta(deudaVence(d)), PAD+150, y+17);
+      ctx.font='700 12.5px "DM Mono",monospace'; ctx.fillStyle='#1A1714';
+      ctx.textAlign='right'; ctx.fillText(fmtMon(Math.max(0,s.saldo),mon), W-PAD, y+17); ctx.textAlign='left';
+      y+=DCTA_SHARE_ROW_H;
+    });
+    ctx.strokeStyle='#1A1714'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(PAD,y); ctx.lineTo(W-PAD,y); ctx.stroke();
+    ctx.font='700 13px "DM Sans",sans-serif'; ctx.fillStyle='#1A1714';
+    ctx.fillText('Total', PAD, y+22);
+    ctx.font='700 15px "DM Mono",monospace'; ctx.fillStyle=accent;
+    ctx.textAlign='right'; ctx.fillText(fmtMon(r.saldoTotal,mon), W-PAD, y+22); ctx.textAlign='left';
+    y+=DCTA_SHARE_TOTAL_ROW_H;
+  } else {
+    ctx.font='400 13px "DM Sans",sans-serif'; ctx.fillStyle='#6B6560'; ctx.textAlign='center';
+    ctx.fillText('Sin cargos pendientes — cuenta al corriente.', W/2, y+22);
+    ctx.textAlign='left';
+    y+=DCTA_SHARE_VACIO_H;
+  }
+
+  if(showAging){
+    var x=PAD;
+    ['corriente','b1','b2','b3','b4'].forEach(function(k){
+      var v=ag[k]; if(v<=0.5) return;
+      var w=v/ag.total*CW;
+      ctx.fillStyle=DCTA_SHARE_AGING[k];
+      ctx.fillRect(x,y,w,10);
+      x+=w;
+    });
+    y+=DCTA_SHARE_AGING_H;
+  }
+  if(showVencido){
+    ctx.font='700 12px "DM Sans",sans-serif'; ctx.fillStyle='#D64545';
+    ctx.textAlign=esCorriente?'center':'left';
+    ctx.fillText('Vencido '+fmtMon(ag.vencido,mon)+' de '+fmtMon(ag.total,mon), esCorriente?W/2:PAD, y+11);
+    ctx.textAlign='left';
+    y+=DCTA_SHARE_VENCIDO_H;
+  }
+
+  y+=DCTA_SHARE_FOOTER_H-14;
+  ctx.font='400 10px "DM Sans",sans-serif'; ctx.fillStyle='#9E9890'; ctx.textAlign='center';
+  ctx.fillText('Generado el '+hoy, W/2, y+10);
+  return canvas;
+}
+
+function compartirEstadoCuenta(){
+  var tipo=deudaModalTipo, nombre=deudaModalNombre;
+  if(!nombre){ showToast('Abre una cuenta primero'); return; }
+  // Espera a que la fuente termine de cargar: si se dibuja antes, el canvas
+  // sale con el fallback sans-serif del sistema (sin error, solo se ve distinto).
+  var listo=(document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+  listo.then(function(){
+    var canvas;
+    try{ canvas=dctaShareCanvas(tipo,nombre); }
+    catch(e){ console.error('Error armando el estado de cuenta:', e); showToast('No se pudo generar la imagen'); return; }
+    canvas.toBlob(function(blob){
+      if(!blob){ showToast('No se pudo generar la imagen'); return; }
+      var archivo;
+      try{ archivo=new File([blob],'Estado de cuenta - '+nombre+'.png',{type:'image/png'}); }catch(e){}
+      if(archivo && navigator.canShare && navigator.canShare({files:[archivo]})){
+        navigator.share({files:[archivo], title:'Estado de cuenta', text:'Estado de cuenta — '+nombre}).catch(function(){});
+      } else {
+        window.open(URL.createObjectURL(blob),'_blank');
+        showToast('Imagen lista — guárdala o compártela desde ahí');
+      }
+    }, 'image/png');
+  });
+}
+
 // Encabezado: quién, cuánto, cuánto vencido y la barra de antigüedad. Igual para
 // los dos modos de cuenta — lo que cambia es la tabla de abajo.
 function dctaHeadHtml(tipo, nombre, esCorriente){
@@ -10107,6 +10290,7 @@ function dctaHeadHtml(tipo, nombre, esCorriente){
   h+='<div style="display:flex;gap:8px;flex-wrap:wrap">'+
       '<button class="btn-main" style="width:auto;padding:10px 16px;font-size:13px" onclick="abrirRegistrarPago()">'+
         ((tipo==='cobrar')?'Registrar pago':'Registrar abono')+'</button>'+
+      '<button style="padding:10px 16px;font-size:13px;font-weight:600;font-family:var(--font);border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer" onclick="compartirEstadoCuenta()">Compartir estado</button>'+
     '</div>';
   h+='</div></div>';
   return h;

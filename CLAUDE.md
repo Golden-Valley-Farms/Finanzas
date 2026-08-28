@@ -20,6 +20,8 @@ Hay un `.claude/launch.json` con la configuración `gvf-local`, que sirve `index
 
 Las tres dependencias llegan por CDN: `@supabase/supabase-js@2`, `Chart.js@4.4.1`, `html-to-image@1.11.13`.
 
+**`html-to-image` está rota en este proyecto — no usarla sin resolver esto primero.** Se probó en ago-2026 para exportar el estado de cuenta de Deudas como imagen y **se cuelga**: la promesa de `toPng()`/`toSvg()` nunca resuelve ni rechaza, sin lanzar error. La causa es el `<link>` de Google Fonts en el `<head>` (línea ~13): la librería necesita leer `.cssRules` de **todas** las hojas de estilo de la página para clonarlas al SVG intermedio, y `fonts.googleapis.com` no manda cabecera CORS, así que el navegador bloquea esa lectura con `SecurityError`. Probado también agregando `crossorigin="anonymous"` al link — mismo resultado, porque el servidor de Google nunca manda `Access-Control-Allow-Origin` para ese endpoint. Es un bug conocido de la librería con hojas de estilo cross-origin sin CORS. El estado de cuenta se resolvió dibujando en `<canvas>` en su lugar (ver `dctaShareCanvas()` en el módulo de Deudas) — **usar ese patrón para cualquier exportación futura a imagen**, no reintentar `html-to-image` mientras la fuente siga viniendo de Google Fonts sin CORS.
+
 ## Supabase es la fuente de verdad — localStorage no es respaldo
 
 **Regla dura: nada puede vivir solo en `localStorage`.** Todo campo de toda entidad tiene que estar respaldado en Supabase. Si el usuario después borra o edita registros en Supabase, es su decisión — lo que no se vale es que un dato quede flotando donde nadie lo respalda.
@@ -240,6 +242,26 @@ Los dos hacen `closeModal()` al entrar: los sub-modales siguen viviendo en el `#
 **Duplica a propósito el orden de `calcContraparte()`** —primero lo dirigido, el sobrante por antigüedad— sobre los pendientes actuales. Es la única copia de esa regla en el código: **si cambia el orden de aplicación hay que cambiarlo en los dos lados**, o la vista previa mentirá sin fallar. No se pudo reusar `calcContraparte()` directamente porque lee `pagosDeuda` global y el pago todavía no existe.
 
 Verificado contra B&M: $150,000 liquida los cuatro cargos más viejos y deja $5,150 parcial en el quinto (suma exacta); dirigido a `B&M/2026/022` lo aplica primero y el resto sigue por antigüedad; $1,000,000 deja $232,200 a favor.
+
+### Clientes: catálogo de primer nivel, con las dos direcciones a la vista
+
+Fase 4 del rediseño de cobranza (ago-2026, mismo spec). "Clientes" pasó de ser una sub-pestaña anidada dentro de Registrar a su propia pestaña de `#sc-deudas`, junto a Registrar / Por cobrar / Por pagar. `setDeudaTab()` ahora despacha las **cuatro**, y con eso también se corrigió un bug que ya traía: al entrar a Registrar, `#deuda-aging` y `#deuda-ctrls` (de las Fases 1-2) se quedaban visibles encima del formulario porque `setDeudaTab()` nunca las ocultaba. Ahora las cinco secciones de la pantalla (`deuda-kpi-row`, `deuda-aging`, `deuda-ctrls`, `deuda-table-wrap`, `deuda-list`, `deuda-registrar-sec`, `deuda-clientes-sec`) son mutuamente excluyentes y se ocultan/muestran juntas por un solo `forEach`.
+
+`renderClientesCatalogo()` reemplaza a `renderClientesHistorial()` (borrada). Cada fila pinta **las dos direcciones a la vez** —"Nos debe" / "Le debemos", vía `calcSaldoCuenta('cobrar',…)` y `calcSaldoCuenta('pagar',…)`— con botones que, si hay saldo, llevan directo a `abrirDeudaContraparte()` de esa dirección; sin saldo el botón queda deshabilitado. Es lo que evita el "cambiar de pestaña para ver los dos lados" que tenía el diseño viejo.
+
+Alta de cliente: `abrirNuevoClienteCatalogo()` / `confirmarNuevoClienteCatalogo()`, en modal sobre la pantalla (ya no en un formulario fijo dentro de la pestaña). Nombrados así **a propósito** para no chocar con el `confirmarNuevoCliente()` preexistente de Ventas — ver "Trampas conocidas".
+
+`initDeudaRegistrarForm()` se simplificó: como Clientes ya no vive dentro de Registrar, ya no hay sub-pestañas ahí (`setDrSubTab`/`setDrClientesTab`/`drSubTabSel`/`drClientesTabSel` **se borraron**) — el formulario de Deuda se muestra directo.
+
+### Compartir estado de cuenta como imagen
+
+También Fase 4. Botón "Compartir estado" en `dctaHeadHtml()`, junto a "Registrar pago". Genera un PNG con `dctaShareCanvas()` (dibujado en `<canvas>`, no con `html-to-image` — ver la nota de esa librería más abajo en "Supabase/CDN") y lo entrega con `canvas.toBlob()`: si el navegador soporta `navigator.share` con archivos (típico en celular) abre el share sheet nativo directo a WhatsApp/lo que sea; si no, abre la imagen en una pestaña nueva para guardarla o compartirla a mano.
+
+**Colores en hex fijo, no `var(--...)`.** La imagen la recibe alguien sin el tema de la app — tiene que verse igual sin importar si quien la genera está en modo oscuro. Son los mismos hex del `:root` claro.
+
+**Un solo arreglo de constantes de altura gobierna el alto total del canvas Y las coordenadas Y de cada bloque** (`DCTA_SHARE_HEAD_H`, `DCTA_SHARE_ROW_H`, etc.) — evita que el cálculo de altura y el dibujado se desincronicen, que fue el primer bug al escribirla. Si se agrega o quita un bloque, hay que sumarlo/restarlo en el cálculo de `H` **y** en el avance de `y` del dibujado.
+
+Funciona para los dos modos de cuenta: fifo pinta la tabla de cargos pendientes (folio/vence/saldo) + total; corriente pinta el saldo grande centrado. Las dos comparten la barra de antigüedad y la línea de vencido si aplica.
 
 ## Módulo de maíz
 
@@ -594,6 +616,7 @@ Hay **definiciones duplicadas**; por hoisting gana siempre la última:
 - `fmt()` en 2369 y **8465** — gana la de 8465 (`parseFloat(n)||0`, tolera basura; la primera hace `Number(n)` y da `$NaN`).
 - `updateClientesDatalist()` en 8014 y **8294** — gana la de 8294, que **está vacía**. Las llamadas a esa función no hacen nada. Si necesitas ese comportamiento, el código real está en 8014.
 - `VARIEDADES` en 6809 y 8073 — mismo contenido, inofensivo por ahora, pero editar solo uno no surte efecto.
+- `confirmarNuevoCliente()` — ya existía uno (línea ~10988, alta rápida de cliente/comercializadora en Ventas). Al agregar el catálogo de Clientes de Deudas (ago-2026) se necesitaba una función con el mismo propósito, y **se nombró distinto a propósito** (`confirmarNuevoClienteCatalogo()` / `abrirNuevoClienteCatalogo()`) para no chocar. Si algún día se renombra cualquiera de las dos, verificar que no vuelvan a coincidir.
 
 Antes de modificar cualquier función, `grep` por `function nombre(` para confirmar que no exista otra definición más abajo.
 
