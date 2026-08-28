@@ -170,7 +170,7 @@ Dos candados que **no hay que quitar**, porque un caché viejo de `localStorage`
   El selector `#dp-dirigido` lo pinta `dpAplicarASelect()`, y **solo aparece en cuentas `fifo` con dos o más cargos pendientes**: en `corriente` el saldo es corrido y no hay a qué dirigirlo, y con un solo pendiente el destino es obvio. Cada opción lleva `folioExterno · folio de negocio`, porque un despacho que cruza negocios crea dos cargos con el **mismo** Folio Cliente y sin el folio de negocio serían indistinguibles en la lista (ver "Folio Negocio junto al Folio Cliente"). En el detalle de la cuenta, un abono dirigido se marca con la etiqueta `dirigido`.
 - `corriente` (cargos y abonos): `calcCorriente()` lleva saldo corrido = Σ(monto + interes − nc) − Σ(abonos). Puede ser negativo (a favor de la contraparte, ej. Clemente Duarte). El detalle se pinta como estado de cuenta en `renderModalCorriente()`.
 
-`calcSaldoCuenta()` despacha por modo y es lo que usan las tarjetas (`renderDeudas`), que muestran clave, insignia USD y una sección "Historial (saldadas)" al fondo. `abrirDeudaContraparte()` es el dispatcher del modal; `abrirEditarContraparte()` (⚙️ en el título) edita clave/modo/moneda/tipo de cambio.
+`calcSaldoCuenta()` despacha por modo y es lo que usan las tarjetas (`renderDeudas`), que muestran clave, insignia USD, mini-barra de antigüedad, el vencido bajo el saldo y una sección "Historial (saldadas)" al fondo. `abrirDeudaContraparte()` es el dispatcher del modal; `abrirEditarContraparte()` (⚙️ en el título) edita clave/modo/moneda/tipo de cambio.
 
 **Moneda.** Cuentas USD (Bioterra): movimientos y saldo en dólares (`fmtMon`/`fmtUSD`); el equivalente MXN es informativo con `contraparte.tipoCambio` editable. Los KPIs convierten USD→MXN con ese tipo de cambio.
 
@@ -181,6 +181,24 @@ Ojo (ago-2026): hasta este cambio, la rama `com` de `sincronizarDeudasEnvio()` e
 **Folio Negocio junto al Folio Cliente en la cuenta.** `deudaFolioNegocio(d)` busca el envío por `d.refId` y devuelve su `e.num` (vacío si no hay envío, o si ya es igual al `folioExterno`). Se pinta en las dos vistas de cuenta — `abrirDeudaContraparte()` (fifo) y `renderModalCorriente()` (corriente) — porque el modo depende de la contraparte, no del origen del movimiento. Hace falta porque un despacho que cruza negocios crea **dos** cargos con el **mismo** Folio Cliente, y sin distinguirlos se leen como una captura duplicada. Es derivado: sin campos ni columnas nuevas.
 
 **Histórico importado.** Los movimientos migrados del Excel original tienen `ref_kind:'importado'` e ids `9000000000000xx`. La migración fue única (ago-2026); no hay código de importación de Excel en la app.
+
+### Plazo de crédito y antigüedad de saldos
+
+Fase 1 del rediseño de cobranza (ago-2026, spec en `docs/superpowers/specs/2026-08-28-rediseno-cobranza-design.md`).
+
+**El plazo va en cascada**, resuelto por `deudaPlazo(d)`: manda `d.plazoDias` (columna `deudas.plazo_dias`), si no `cpDiasCredito(d.contraparte)` (columna `contrapartes.dias_credito`), si no `PLAZO_DEFAULT` = 30. Con nada capturado todo se comporta como antes, así que **no hubo migración**. Los dos campos guardan **vacío como vacío, nunca 30**: el default vive en un solo lugar y cambiarlo mañana no obliga a tocar ficha por ficha.
+
+Se edita en dos lados: el del cliente en `abrirEditarContraparte()` (⚙️ de la cuenta o ✏️ del Historial de Clientes), y el de un cargo suelto en `abrirEditarPlazoDeuda(id)`, que se abre desde el "editar" de ese cargo en el modal de la cuenta y regresa a ella al cerrar.
+
+**Todo lo demás es derivado, sin columnas nuevas:** `deudaVence(d)` (fecha + plazo), `deudaDiasVencido(d)` (**positivo = días vencido, negativo = días que faltan** — es fácil equivocarse de signo), `agingBucket(dias)` con los cinco tramos de `AGING_TRAMOS` (corriente · 1-30 · 31-60 · 61-90 · +90), `agingCuenta(tipo,nombre)` y `agingCartera(tipo)`.
+
+**Las cuentas `corriente` también entran a la antigüedad**, y ahí está la sutileza: `agingCuenta()` no puede apoyarse en `calcContraparte()` porque esas cuentas no llevan saldo por cargo. Deriva el pendiente aplicando los abonos del cargo más viejo al más nuevo, que es lo mismo que hace el saldo corrido, así que **Σ(pendiente por cargo) = `max(0, saldoTotal)`** por construcción — la antigüedad nunca puede contradecir el saldo que muestra la tarjeta. Verificado con Nacho: $123,769 por los dos caminos. Un cargo con neto negativo (nota de crédito mayor que el cargo) se trata como abono, no como cargo.
+
+`agingCartera()` convierte USD a MXN con el tipo de cambio de la ficha, igual que el total que ya mostraba la pantalla; una cuenta USD sin tipo de cambio capturado aporta cero, que es el comportamiento que ya existía.
+
+**`diasDeudaBadge(d)` ahora recibe la deuda, no la fecha**, usa la cascada y **se muestra en las dos direcciones y en todos los orígenes**. Antes traía el 30 en duro y solo salía en cargos `cobrar` de camote/comercializadora: un pagaré vencido a proveedor importa igual que uno por cobrar.
+
+Colores: `--rojo` / `--rojo-bg` / `--rojo2` en los dos temas, para que la escala de antigüedad no dependa de hex crudos. `AGING_TRAMOS[].col` es la fuente única de esos colores — la barra de la cartera, la mini-barra de cada tarjeta y la insignia leen de ahí.
 
 ## Módulo de maíz
 
