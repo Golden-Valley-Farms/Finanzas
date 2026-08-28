@@ -58,7 +58,7 @@ JS usa camelCase, Supabase usa snake_case: `fechaVal`↔`fecha`, `tipoCamote`↔
 
 ### Claves de localStorage
 
-`cc_gastos3`, `cc_ingresos`, `cc_envios`, `cc_alm_lotes`, `cc_fram`, `cc_fram_fin`, `cc_maiz`, `cc_intermediarios`, `cc_receptores_factura`, `cc_choferes`, `cc_deudas`, `cc_pagosdeuda`, `cc_contrapartes`, `cc_clientes`, `cc_proveedores`, `cc_proveedores_comer`, `cc_clientes_comer`, `cc_deudores`, `cc_acreedores`, `cc_bancos`, `cc_trabajadores`, `cc_cats`, `cc_cats_ing`, `cc_presentaciones`.
+`cc_gastos3`, `cc_ingresos`, `cc_envios`, `cc_alm_lotes`, `cc_fram`, `cc_fram_fin`, `cc_fram_cosechas`, `cc_maiz`, `cc_intermediarios`, `cc_receptores_factura`, `cc_choferes`, `cc_deudas`, `cc_pagosdeuda`, `cc_contrapartes`, `cc_clientes`, `cc_proveedores`, `cc_proveedores_comer`, `cc_clientes_comer`, `cc_deudores`, `cc_acreedores`, `cc_bancos`, `cc_trabajadores`, `cc_cats`, `cc_cats_ing`, `cc_presentaciones`.
 
 ## Modelo de negocios (`NEGOCIOS`)
 
@@ -436,6 +436,22 @@ Ojo con el orden en el markup: la insignia tiene que ir **antes** del `.kpi-lbl`
 
 **Trampa en la que ya se cayó una vez:** los colores/insignias de Por semana se calculan usando `precioCajaSem`/`totalFacturadoSem`/`costoCubetaGeneral`/etc., variables `var` que la función declara **más abajo**, junto al `finRegSem`. Por hoisting no truena, pero si el bloque de colores se pone *antes* de esa declaración quedan todas `undefined` y el semáforo sale "sin dato" aunque sí haya cifra en pantalla (pasó con "Precio por caja": mostraba $77.16 pero en gris). El bloque de colores/insignias de Por semana tiene que ir **después** de que `finRegSem`/`precioCajaSem`/`totalFacturadoSem` ya estén asignados.
 
+### Pestaña "Por cosecha" (cuarta pestaña de Frambuesa → Cosecha)
+
+Agregada en ago-2026 (spec en `docs/superpowers/specs/2026-08-28-reportes-frambuesa-por-cosecha-design.md`). Un ciclo puede traer **dos cosechas separadas por una pausa** (en 2025-2026: del 18-feb al 8-jun no hubo corte), y verlas juntas en Por ciclo contamina promedios y medianas.
+
+`renderRfrCosecha(data, ciclo)` parte los registros del ciclo por una **sola fecha de corte**: Cosecha 1 = `fecha < corte`, Cosecha 2 = `fecha >= corte`. Las sub-pestañas (`rfrCohSel`, `rfrCohTab()`) solo cambian cuál de los dos subconjuntos se pinta.
+
+**No hay render propio: reusa `renderRfrResumen()`.** La función pasó de `(data)` a `(data, opts)` y **sin `opts` se comporta exactamente igual que antes**, así que Por ciclo no cambió. Las opciones son `contId` (default `'rfr-res-detalle'`), `sinMetaCajas` y `vacioMsg`. Consecuencia buscada: cualquier arreglo o tarjeta nueva en Por ciclo aparece sola en Por cosecha.
+
+**`sinMetaCajas` quita las barras de meta de Total cajas**, porque las metas (16,000 el ciclo, 8,000 por conjunto de sectores) son acumulados del ciclo completo y no significan nada contra media cosecha. Quedan las tres cifras en `var(--text)` y el acento en `var(--fram)`. Las demás tarjetas **sí** conservan su semáforo: merma, costo/cubeta y precio/caja son metas por unidad, válidas en cualquier rango. Las medianas de `rfrRefsHistoricas()` tampoco se recortan — son la referencia histórica completa.
+
+**Trampa: las dos vistas generan los mismos ids de canvas.** Si Por ciclo y Por cosecha quedan pintadas a la vez, `getElementById` devuelve la primera y las gráficas se dibujan en la pestaña equivocada. Por eso `rfrTab()` **vacía el contenedor de la pestaña que se abandona**. No quitar esas dos líneas. Por lo mismo, la regla CSS de centrado (`#rfr-res-detalle .kpi-lbl,…`) lleva ahora también los selectores de `#rfr-coh-detalle`: al tocarla hay que respetar los dos contenedores.
+
+**La fecha de corte se captura a mano, una por ciclo**, en la barra que va **arriba** de las sub-pestañas (es un solo dato para las dos; duplicarlo adentro de cada una lo desincronizaría). Debajo se pintan los rangos reales derivados —primer y último día con registro de cada lado— para confirmar de un vistazo que el corte cayó dentro de la pausa. **No hay auto-detección** de la pausa: sin fecha capturada, las sub-pestañas se ocultan y solo se ve el aviso.
+
+Persistencia completa (los cuatro lugares): `framCosechas` `[{ciclo, corte}]` · `cc_fram_cosechas` · tabla `fram_cosechas` (`ciclo` text PK, `corte` date) · `sbSaveFramCosecha()` y el bloque `fcData` de `cargarDesdeSB()`. Lectura por `framCorteDe(ciclo)`, escritura por `guardarCorteCosecha()`. Los nombres son iguales en las dos capas, así que no hay mapeo camelCase↔snake_case.
+
 ## Acoplamientos entre módulos
 
 - **Envío → gastos.** `generarGastosCosechaDesdeEnvio()` crea gastos con `autoGen:true` a partir de un envío de camote, prorrateando flete/cosecha/arado/desvarada por hectáreas de cada sector. Los ids resultantes se guardan en el envío para poder actualizarlos o borrarlos al reeditar. **No editar a mano un gasto con `autoGen:true`**: se sobreescribe al guardar el envío de origen.
@@ -525,7 +541,7 @@ Antes de modificar cualquier función, `grep` por `function nombre(` para confir
 
 URL y clave publicable están en duro al inicio del script (líneas ~1911-1912). La clave es *publishable*, no secreta — la seguridad real depende de las políticas RLS del proyecto, no de ocultarla. El repo es público, así que ese archivo es visible para cualquiera: **RLS es la única defensa real de los datos.**
 
-Tablas: `gastos`, `ingresos`, `categorias_ingresos`, `envios`, `alm_lotes`, `fram_registros`, `fram_finanzas`, `maiz_registros`, `intermediarios`, `receptores_factura`, `choferes`, `deudas`, `pagos_deuda`, `contrapartes`, `clientes`, `proveedores`, `proveedores_comer`, `clientes_comer`, `deudores`, `acreedores`, `bancos`, `trabajadores`, `categorias`.
+Tablas: `gastos`, `ingresos`, `categorias_ingresos`, `envios`, `alm_lotes`, `fram_registros`, `fram_finanzas`, `fram_cosechas`, `maiz_registros`, `intermediarios`, `receptores_factura`, `choferes`, `deudas`, `pagos_deuda`, `contrapartes`, `clientes`, `proveedores`, `proveedores_comer`, `clientes_comer`, `deudores`, `acreedores`, `bancos`, `trabajadores`, `categorias`.
 
 Si una tabla regresa vacía teniendo datos, casi siempre es RLS — el código ya avisa esto por consola para `fram_registros`.
 

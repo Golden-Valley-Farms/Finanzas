@@ -436,9 +436,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 /* Reserva espacio para que un título largo (ej. "Cubetas cosechadas") no
    quede debajo de la insignia en tarjetas angostas. */
 .kpi-wow~.kpi-lbl{padding-right:36px}
-/* Resumen por ciclo: titulos y cifras centrados */
+/* Resumen por ciclo (y por cosecha, que reusa el mismo render): titulos y cifras centrados */
 #rfr-res-detalle .kpi-lbl,#rfr-res-detalle .kpi-val,
-#rfr-res-detalle .kpi-split-lbl{text-align:center}
+#rfr-res-detalle .kpi-split-lbl,
+#rfr-coh-detalle .kpi-lbl,#rfr-coh-detalle .kpi-val,
+#rfr-coh-detalle .kpi-split-lbl{text-align:center}
 /* Tarjeta de Total cajas del resumen por ciclo. En movil se apila (el total arriba,
    los dos conjuntos de sectores abajo); el reparto en dos columnas es solo de
    escritorio — ver la regla de min-width:700px. */
@@ -1101,6 +1103,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <button class="ven-tab active" id="rfr-tab-dia" onclick="rfrTab('dia')" style="flex:1;font-size:12px">Por día</button>
         <button class="ven-tab" id="rfr-tab-sem" onclick="rfrTab('sem')" style="flex:1;font-size:12px">Por semana</button>
         <button class="ven-tab" id="rfr-tab-res" onclick="rfrTab('res')" style="flex:1;font-size:12px">Por ciclo</button>
+        <button class="ven-tab" id="rfr-tab-coh" onclick="rfrTab('coh')" style="flex:1;font-size:12px">Por cosecha</button>
       </div>
 
       <!-- ── POR DÍA ── -->
@@ -1140,6 +1143,23 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <!-- ── POR CICLO ── -->
       <div id="rfr-sec-res" style="display:none">
         <div id="rfr-res-detalle"></div>
+      </div>
+
+      <!-- ── POR COSECHA ── -->
+      <!-- Mismo contenido que Por ciclo, partido en dos por la fecha de corte del ciclo.
+           La fecha vive arriba de las sub-pestañas porque es UNA sola para las dos. -->
+      <div id="rfr-sec-coh" style="display:none">
+        <div class="rfr-topbar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px">
+          <span style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Cosecha 2 inicia el</span>
+          <input type="date" id="rfr-coh-corte" style="flex:1;min-width:140px;padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);font-size:15px;color:var(--text);outline:none">
+          <button type="button" onclick="guardarCorteCosecha()" style="padding:9px 18px;background:var(--fram);color:#fff;border:none;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer">Guardar</button>
+          <div id="rfr-coh-rangos" style="flex:1 0 100%;font-size:11.5px;color:var(--text3);line-height:1.5"></div>
+        </div>
+        <div class="rfr-topbar" id="rfr-coh-subtabs" style="display:flex;gap:4px;margin-bottom:14px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
+          <button class="ven-tab active" id="rfr-coh-tab-c1" onclick="rfrCohTab('c1')" style="flex:1;font-size:12px">Cosecha 1</button>
+          <button class="ven-tab" id="rfr-coh-tab-c2" onclick="rfrCohTab('c2')" style="flex:1;font-size:12px">Cosecha 2</button>
+        </div>
+        <div id="rfr-coh-detalle"></div>
       </div>
 
       <!-- ── FINANZAS · FACTURACIÓN ── -->
@@ -2220,6 +2240,7 @@ async function cargarDesdeSB(){
   var aData = await fetchAllRows('alm_lotes', 'created_at', false);
   var frData = await fetchAllRows('fram_registros', 'fecha', false);
   var ffData = await fetchAllRows('fram_finanzas', 'created_at', false);
+  var fcData = await fetchAllRows('fram_cosechas', 'ciclo', true);
   var dData = await fetchAllRows('deudas', 'created_at', false);
   var pData = await fetchAllRows('pagos_deuda', 'created_at', false);
   var cpData = await fetchAllRows('contrapartes', 'created_at', false);
@@ -2349,6 +2370,12 @@ async function cargarDesdeSB(){
     });
     saveFramFinanzas();
     if(typeof renderFramFinHist==='function') renderFramFinHist();
+  }
+  if(fcData && fcData.length){
+    framCosechas = fcData.map(function(c){
+      return {ciclo:c.ciclo||'', corte:c.corte||''};
+    });
+    saveFramCosechas();
   }
   if(dData && dData.length){
     deudas = dData.map(function(d){
@@ -4405,10 +4432,25 @@ function rfrMainTab(m){
 
 function rfrTab(t){
   rfrTabActual=t;
-  if(t==='dia'||t==='sem'||t==='res') rfrCosSel=t;
-  ['dia','sem','res','fac'].forEach(function(x){
+  if(t==='dia'||t==='sem'||t==='res'||t==='coh') rfrCosSel=t;
+  ['dia','sem','res','coh','fac'].forEach(function(x){
     var b=document.getElementById('rfr-tab-'+x); if(b) b.classList.toggle('active',x===t);
     var sec=document.getElementById('rfr-sec-'+x); if(sec) sec.style.display=x===t?'block':'none';
+  });
+  // Por ciclo y Por cosecha pintan el MISMO markup, o sea los mismos ids de canvas.
+  // Si las dos secciones quedan llenas a la vez, getElementById devuelve la de arriba
+  // y las graficas se dibujan en la pestaña equivocada. Se vacia la que no esta activa.
+  if(t!=='res'){ var cr=document.getElementById('rfr-res-detalle'); if(cr) cr.innerHTML=''; }
+  if(t!=='coh'){ var cc=document.getElementById('rfr-coh-detalle'); if(cc) cc.innerHTML=''; }
+  renderRepFram();
+}
+
+// Sub-pestañas de "Por cosecha"
+var rfrCohSel='c1';
+function rfrCohTab(c){
+  rfrCohSel=c;
+  ['c1','c2'].forEach(function(x){
+    var b=document.getElementById('rfr-coh-tab-'+x); if(b) b.classList.toggle('active',x===c);
   });
   renderRepFram();
 }
@@ -4461,6 +4503,7 @@ function renderRepFram(){
   if(rfrTabActual==='dia') rfrPoblarSelectDia();
   if(rfrTabActual==='sem') rfrPoblarSelectSem();
   if(rfrTabActual==='res') renderRfrResumen(rfrDataCache);
+  if(rfrTabActual==='coh') renderRfrCosecha(rfrDataCache, filtroCiclo);
 }
 
 // ─── FINANZAS (tabla estilo hoja "Finanzas" del control) ──────
@@ -5753,9 +5796,65 @@ function rfrColCostoGen(costoGen, refs){
   return rfrPuntoCol(costoGen,[meta,meta*(20/15),meta*2],false);
 }
 
-function renderRfrResumen(data){
-  var cont=document.getElementById('rfr-res-detalle'); if(!cont) return;
-  if(!data.length){ cont.innerHTML='<div style="text-align:center;padding:40px 0;color:var(--text3);font-size:13px">Sin registros para este ciclo</div>'; return; }
+// ── POR COSECHA ──────────────────────────────────────────────
+// Reusa integro el render de Por ciclo, con los registros recortados por la fecha
+// de corte del ciclo: Cosecha 1 = fecha < corte, Cosecha 2 = fecha >= corte.
+// La fecha se captura a mano y se guarda por ciclo (framCosechas / fram_cosechas).
+function rfrCohRangoLbl(lbl, arr){
+  if(!arr.length) return '<b>'+lbl+':</b> sin registros';
+  var f=function(s){ return new Date(s+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}); };
+  return '<b>'+lbl+':</b> '+f(arr[0].fecha)+' → '+f(arr[arr.length-1].fecha);
+}
+
+function renderRfrCosecha(data, ciclo){
+  var cont=document.getElementById('rfr-coh-detalle'); if(!cont) return;
+  var corte=framCorteDe(ciclo);
+  var inp=document.getElementById('rfr-coh-corte');
+  if(inp && document.activeElement!==inp) inp.value=corte||'';
+  var subs=document.getElementById('rfr-coh-subtabs');
+  var rangos=document.getElementById('rfr-coh-rangos');
+  if(!corte){
+    if(subs) subs.style.display='none';
+    if(rangos) rangos.innerHTML='';
+    cont.innerHTML='<div style="text-align:center;padding:40px 0;color:var(--text3);font-size:13px">Captura la fecha de corte de este ciclo para dividir las cosechas.</div>';
+    return;
+  }
+  if(subs) subs.style.display='flex';
+  // data ya viene ordenada por fecha ascendente desde renderRepFram
+  var c1=data.filter(function(r){ return r.fecha<corte; });
+  var c2=data.filter(function(r){ return r.fecha>=corte; });
+  if(rangos) rangos.innerHTML=rfrCohRangoLbl('Cosecha 1',c1)+' · '+rfrCohRangoLbl('Cosecha 2',c2);
+  var esC2=(rfrCohSel==='c2');
+  renderRfrResumen(esC2?c2:c1, {contId:'rfr-coh-detalle', sinMetaCajas:true,
+    vacioMsg:'Sin registros en '+(esC2?'Cosecha 2':'Cosecha 1')+' con este corte'});
+}
+
+function guardarCorteCosecha(){
+  var cicloSel=document.getElementById('rfr-ciclo');
+  var ciclo=cicloSel?cicloSel.value:'';
+  if(!ciclo){ showToast('Selecciona un ciclo'); return; }
+  var inp=document.getElementById('rfr-coh-corte');
+  var v=inp?inp.value:'';
+  if(!v){ showToast('Captura la fecha de corte'); return; }
+  var reg=null;
+  for(var i=0;i<framCosechas.length;i++){ if(framCosechas[i].ciclo===ciclo){ reg=framCosechas[i]; break; } }
+  if(reg) reg.corte=v; else { reg={ciclo:ciclo, corte:v}; framCosechas.push(reg); }
+  saveFramCosechas();
+  sbSaveFramCosecha(reg);
+  showToast('✅ Corte guardado');
+  renderRepFram();
+}
+
+// opts (todo opcional; sin opts se comporta igual que siempre):
+//   contId       contenedor destino (default 'rfr-res-detalle')
+//   sinMetaCajas quita las barras de meta de la tarjeta Total cajas — las metas
+//                (16,000 / 8,000) son del ciclo completo y no aplican a media cosecha
+//   vacioMsg     texto del estado vacio
+function renderRfrResumen(data, opts){
+  opts=opts||{};
+  var sinMeta=!!opts.sinMetaCajas;
+  var cont=document.getElementById(opts.contId||'rfr-res-detalle'); if(!cont) return;
+  if(!data.length){ cont.innerHTML='<div style="text-align:center;padding:40px 0;color:var(--text3);font-size:13px">'+(opts.vacioMsg||'Sin registros para este ciclo')+'</div>'; return; }
 
   var totalCajas=0,totalCubetas=0,totalMerma=0,totalKgCosechados=0;
   var diasSet={};
@@ -5816,6 +5915,10 @@ function renderRfrResumen(data){
   var colMeta=rfrPuntoCol(totalCajas,cortesMeta(META_CAJAS_TOTAL),true);
   var colMeta12=rfrPuntoCol(cajasSec12,cortesMeta(META_CAJAS_GRUPO),true);
   var colMeta34=rfrPuntoCol(cajasSec34,cortesMeta(META_CAJAS_GRUPO),true);
+  // Sin meta (vista Por cosecha): las cifras van en tinta neutra y el acento en el
+  // color del negocio, porque el semaforo de esta tarjeta solo mide avance contra la meta.
+  if(sinMeta){ colMeta='var(--text)'; colMeta12='var(--text)'; colMeta34='var(--text)'; }
+  var colAccCajas=sinMeta?'var(--fram)':colMeta;
 
   totalKgCosechados=Math.round(totalKgCosechados*10)/10;
   // A un decimal: con entero, un 6.6% se veia como 7% y el semaforo lo pintaba rojo.
@@ -5917,22 +6020,22 @@ function renderRfrResumen(data){
     // ── Fila 1: Total cajas en fila completa, con avance contra la meta del ciclo ──
     '<div class="kpi-grid rfr-dia-kpis" style="grid-template-columns:1fr">'+
       '<div class="kpi-card" style="padding:12px 14px 10px">'+
-        '<div class="kpi-accent" style="background:'+colMeta+'"></div>'+
+        '<div class="kpi-accent" style="background:'+colAccCajas+'"></div>'+
         '<div class="rfr-cajas-row">'+
         '<div class="rfr-cajas-total">'+
         '<div class="kpi-lbl">Total cajas</div>'+
         '<div class="kpi-val" style="color:'+colMeta+'">'+totalCajas.toLocaleString('es-MX')+'</div>'+
-        '<div class="rfr-meta-row"><div class="rfr-meta-bar"><div class="rfr-meta-fill" style="width:'+Math.min(100,Math.max(0,pctMeta))+'%;background:'+colMeta+'"></div></div><span class="rfr-meta-pct" style="color:'+colMeta+'">'+Math.round(pctMeta)+'%</span></div>'+
+        (sinMeta?'':'<div class="rfr-meta-row"><div class="rfr-meta-bar"><div class="rfr-meta-fill" style="width:'+Math.min(100,Math.max(0,pctMeta))+'%;background:'+colMeta+'"></div></div><span class="rfr-meta-pct" style="color:'+colMeta+'">'+Math.round(pctMeta)+'%</span></div>')+
         '</div>'+
         '<div class="kpi-split">'+
           '<div>'+
             '<div class="kpi-val" style="color:'+colMeta12+'">'+cajasSec12.toLocaleString('es-MX')+'</div>'+
-            '<div class="rfr-meta-row"><div class="rfr-meta-bar"><div class="rfr-meta-fill" style="width:'+Math.min(100,Math.max(0,pctMeta12))+'%;background:'+colMeta12+'"></div></div><span class="rfr-meta-pct" style="color:'+colMeta12+'">'+Math.round(pctMeta12)+'%</span></div>'+
+            (sinMeta?'':'<div class="rfr-meta-row"><div class="rfr-meta-bar"><div class="rfr-meta-fill" style="width:'+Math.min(100,Math.max(0,pctMeta12))+'%;background:'+colMeta12+'"></div></div><span class="rfr-meta-pct" style="color:'+colMeta12+'">'+Math.round(pctMeta12)+'%</span></div>')+
             '<div class="kpi-split-lbl">Sectores 1 y 2</div>'+
           '</div>'+
           '<div>'+
             '<div class="kpi-val" style="color:'+colMeta34+'">'+cajasSec34.toLocaleString('es-MX')+'</div>'+
-            '<div class="rfr-meta-row"><div class="rfr-meta-bar"><div class="rfr-meta-fill" style="width:'+Math.min(100,Math.max(0,pctMeta34))+'%;background:'+colMeta34+'"></div></div><span class="rfr-meta-pct" style="color:'+colMeta34+'">'+Math.round(pctMeta34)+'%</span></div>'+
+            (sinMeta?'':'<div class="rfr-meta-row"><div class="rfr-meta-bar"><div class="rfr-meta-fill" style="width:'+Math.min(100,Math.max(0,pctMeta34))+'%;background:'+colMeta34+'"></div></div><span class="rfr-meta-pct" style="color:'+colMeta34+'">'+Math.round(pctMeta34)+'%</span></div>')+
             '<div class="kpi-split-lbl">Sectores 3 y 4</div>'+
           '</div>'+
         '</div>'+
@@ -10884,6 +10987,16 @@ function saveFramRegistros(){ try{localStorage.setItem('cc_fram',JSON.stringify(
 var framFinanzas = [];
 try{ var sff=localStorage.getItem('cc_fram_fin'); if(sff) framFinanzas=JSON.parse(sff); }catch(e){}
 function saveFramFinanzas(){ try{localStorage.setItem('cc_fram_fin',JSON.stringify(framFinanzas));}catch(e){} }
+
+// Fecha de corte entre Cosecha 1 y Cosecha 2, una por ciclo. La captura el usuario en
+// Reportes → Frambuesa → Por cosecha. Cosecha 1 = fecha < corte; Cosecha 2 = fecha >= corte.
+var framCosechas = [];
+try{ var sfc=localStorage.getItem('cc_fram_cosechas'); if(sfc) framCosechas=JSON.parse(sfc); }catch(e){}
+function saveFramCosechas(){ try{localStorage.setItem('cc_fram_cosechas',JSON.stringify(framCosechas));}catch(e){} }
+function framCorteDe(ciclo){
+  for(var i=0;i<framCosechas.length;i++){ if(framCosechas[i].ciclo===ciclo) return framCosechas[i].corte||''; }
+  return '';
+}
 var framFinEditId = null;
 
 var ffFactTemp = [];
@@ -11010,6 +11123,12 @@ async function sbSaveFramFinanza(f){
     gasto_ids:f.gastoIds||{}
   });
 }
+async function sbSaveFramCosecha(c){
+  if(!sbOnline||!sb) return;
+  var res = await sb.from('fram_cosechas').upsert({ ciclo:c.ciclo, corte:c.corte||null });
+  if(res.error) showToast('Error al guardar el corte en Supabase: '+res.error.message);
+}
+
 async function sbDeleteFramFinanza(id){
   if(!sbOnline||!sb){ showToast('Sin conexión a Supabase'); return; }
   var res = await sb.from('fram_finanzas').delete().eq('id', id);
