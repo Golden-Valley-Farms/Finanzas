@@ -462,6 +462,23 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .aging-key b{font-weight:600;font-family:var(--mono);color:var(--text)}
 .aging-dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px}
 .aging-mini{display:flex;gap:1.5px;height:6px;border-radius:3px;overflow:hidden;margin-top:5px}
+/* Estado de cuenta (pantalla #sc-deudacta) */
+.dcta-back{background:none;border:none;color:var(--text2);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;padding:6px 0;display:flex;align-items:center;gap:6px}
+.dcta-back:hover{color:var(--text)}
+.dcta-head{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow)}
+.dcta-stats{display:flex;gap:26px;flex-wrap:wrap;margin-top:12px}
+.dcta-stat-val{font-size:24px;font-weight:700;font-family:var(--mono);letter-spacing:-.02em}
+.dcta-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.dcta-chip{border:1px solid var(--border);background:var(--surface);border-radius:20px;padding:7px 15px;font-family:var(--font);font-size:12.5px;font-weight:500;color:var(--text2);cursor:pointer}
+.dcta-chip.on{background:var(--green-bg);border-color:var(--green);color:var(--green);font-weight:700}
+.dcta-chip.pagar.on{background:var(--fram-bg);border-color:var(--fram);color:var(--fram)}
+.dcta-row{cursor:pointer}
+.dcta-row:hover{background:var(--surface2)}
+.dcta-det td{background:var(--surface2);padding:0}
+.dcta-det-in{padding:10px 14px;font-size:12px}
+.dp-prev{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:12px;font-size:12px}
+.dp-prev-row{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:0.5px solid var(--border)}
+.dp-prev-row:last-child{border-bottom:none}
 .deuda-ctrls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .deuda-ctrls input[type=text]{flex:2;min-width:180px}
 .deuda-ctrls select{flex:1;min-width:150px}
@@ -520,6 +537,17 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   /* Escritorio: tabla en vez de tarjetas. */
   #sc-deudas #deuda-list{display:none}
   #sc-deudas #deuda-table-wrap{display:block}
+
+  /* El estado de cuenta rompe al mismo ancho que la cartera. */
+  #sc-deudacta{
+    width:100vw;
+    position:relative;
+    left:50%;
+    margin-left:-50vw;
+    padding:16px 24px 0;
+    box-sizing:border-box;
+  }
+  #sc-deudacta > #dcta-cont{max-width:1400px;margin:0 auto}
   #sc-deudas #deuda-list .deuda-card{margin-bottom:0}
   #sc-deudas #deuda-list .empty{grid-column:1/-1}
 
@@ -2216,6 +2244,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
   </div>
 
+  <!-- Estado de cuenta: pantalla propia, no modal. Con 40 cargos el modal de
+       480px era inmanejable, y la pantalla de atras ya usaba todo el ancho. -->
+  <div id="sc-deudacta" class="screen">
+    <div id="dcta-cont"></div>
+  </div>
+
 <div class="bottom-nav">
   <button class="nav-item active" id="nav-resultados" onclick="goSc('resultados')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
@@ -3288,14 +3322,17 @@ function selNegocio(k){
 
 // ---- Nav ----
 function goSc(s){
-  ['resultados','reg','his','rep','ven','fram','maiz','deudas'].forEach(function(x){
+  // 'deudacta' (estado de cuenta) es hija de Deudas: no tiene boton propio en la
+  // barra inferior y deja 'Deudas' marcado.
+  if(s==='deudacta' && !deudaModalNombre) s='deudas';
+  ['resultados','reg','his','rep','ven','fram','maiz','deudas','deudacta'].forEach(function(x){
     document.getElementById('sc-'+x).classList.toggle('active',x===s);
   });
   var esCosecha = (s==='ven'||s==='fram'||s==='maiz');
   document.getElementById('nav-resultados').classList.toggle('active', s==='resultados');
   document.getElementById('nav-fin').classList.toggle('active', s==='reg'||s==='his');
   document.getElementById('nav-cosechas').classList.toggle('active', esCosecha);
-  document.getElementById('nav-deudas').classList.toggle('active', s==='deudas');
+  document.getElementById('nav-deudas').classList.toggle('active', s==='deudas'||s==='deudacta');
   document.getElementById('nav-rep').classList.toggle('active', s==='rep');
   document.getElementById('fin-maintabs-wrap').style.display = (s==='reg'||s==='his') ? 'flex' : 'none';
   document.getElementById('cosechas-tabs-wrap').style.display = esCosecha ? 'flex' : 'none';
@@ -3317,6 +3354,7 @@ function goSc(s){
   if(s==='fram'){ framTab('nuevo'); }
   if(s==='maiz'){ maizTab(maizTabSel); }
   if(s==='deudas'){ renderDeudas(); }
+  if(s==='deudacta'){ renderCuentaDeuda(); }
   window.scrollTo(0,0);
 }
 var lastFinSc = 'reg';
@@ -9738,7 +9776,7 @@ function abrirEditarContraparte(nombre, contexto, tipoRetorno){
 }
 function cancelarEdicionContraparte(){
   if(_ecContexto==='clientes') closeModal();
-  else abrirDeudaContraparte(_ecTipo, _ecNombre);
+  else { deudaModalTipo=_ecTipo; deudaModalNombre=_ecNombre; refrescarCuentaDeuda(); }
 }
 function guardarEdicionContraparte(){
   var c=getContraparte(_ecNombre); if(!c) return;
@@ -9756,7 +9794,7 @@ function guardarEdicionContraparte(){
   saveContrapartes(); sbSaveContraparte(c);
   showToast('Guardado');
   if(_ecContexto==='clientes'){ closeModal(); renderClientesHistorial(); }
-  else { abrirDeudaContraparte(_ecTipo, _ecNombre); renderDeudas(); }
+  else { deudaModalTipo=_ecTipo; deudaModalNombre=_ecNombre; refrescarCuentaDeuda(); renderDeudas(); }
 }
 function registrarDeudaManualForm(){
   var tipo=(document.getElementById('dr-tipo')||{}).value||'cobrar';
@@ -9963,16 +10001,21 @@ function deudaFolioNegocio(d){
   return (e.num===d.folioExterno)?'':e.num;
 }
 
+// Punto de entrada único de la cuenta. Desde ago-2026 abre la PANTALLA
+// #sc-deudacta, no el modal: todos los retornos (⚙️, editar plazo, registrar
+// pago, deshacer) siguen llamando aquí, así que cierra el overlay al entrar.
 function abrirDeudaContraparte(tipo, nombre){
   deudaModalTipo=tipo; deudaModalNombre=nombre;
-  if(cpModo(nombre)==='corriente') renderModalCorriente(tipo,nombre);
-  else renderModalFifo(tipo,nombre);
+  dctaFiltro='pend'; dctaAbierto={};
+  closeModal();
+  goSc('deudacta');
 }
-function tituloModalCuenta(tipo, nombre){
-  var cpc=getContraparte(nombre)||{};
-  return (cpc.clave?'<span style="font-family:var(--mono);font-size:13px;color:var(--text3)">'+cpc.clave+'</span> ':'')+nombre+
-    '&nbsp;<span class="chip '+(tipo==='cobrar'?'jal':'com')+'">'+(tipo==='cobrar'?'Por cobrar':'Por pagar')+'</span>'+
-    '&nbsp;<button onclick="abrirEditarContraparte(deudaModalNombre,\'cuenta\',\''+tipo+'\')" style="background:none;border:none;cursor:pointer;font-size:14px">⚙️</button>';
+// Vuelve a pintar la cuenta sin resetear el filtro ni lo que esté desplegado
+// (lo usan los retornos de los sub-modales, que sí conservan el contexto).
+function refrescarCuentaDeuda(){
+  closeModal();
+  if(document.getElementById('sc-deudacta').classList.contains('active')) renderCuentaDeuda();
+  else goSc('deudacta');
 }
 // Plazo de UN cargo, como excepción al del cliente. Vacío = vuelve a heredarlo.
 // Se abre sobre el modal de la cuenta y regresa a ella al cerrar, igual que ⚙️.
@@ -9994,7 +10037,7 @@ function abrirEditarPlazoDeuda(id){
     '</div>';
   document.getElementById('overlay').classList.add('open');
 }
-function cerrarEditarPlazoDeuda(){ abrirDeudaContraparte(deudaModalTipo, deudaModalNombre); }
+function cerrarEditarPlazoDeuda(){ refrescarCuentaDeuda(); }
 function guardarEditarPlazoDeuda(){
   var d=null;
   for(var i=0;i<deudas.length;i++){ if(String(deudas[i].id)===String(_epDeudaId)){ d=deudas[i]; break; } }
@@ -10006,116 +10049,218 @@ function guardarEditarPlazoDeuda(){
   cerrarEditarPlazoDeuda(); renderDeudas();
 }
 
-function renderModalFifo(tipo, nombre){
+// ══ ESTADO DE CUENTA (pantalla #sc-deudacta) ═════════════════
+// Filtro activo de la lista de cargos y qué filas están desplegadas. Se reinician
+// al entrar a una cuenta (abrirDeudaContraparte) pero NO al refrescarla.
+var dctaFiltro='pend';
+var dctaAbierto={};
+function dctaSetFiltro(f){ dctaFiltro=f; renderCuentaDeuda(); }
+function dctaToggle(id){ dctaAbierto[id]=!dctaAbierto[id]; renderCuentaDeuda(); }
+
+function renderCuentaDeuda(){
+  var cont=document.getElementById('dcta-cont'); if(!cont) return;
+  var tipo=deudaModalTipo, nombre=deudaModalNombre;
+  if(!nombre){ goSc('deudas'); return; }
+  var esCorriente=(cpModo(nombre)==='corriente');
+  cont.innerHTML=dctaHeadHtml(tipo,nombre,esCorriente)+
+    (esCorriente?dctaBodyCorriente(tipo,nombre):dctaBodyFifo(tipo,nombre));
+}
+
+// Encabezado: quién, cuánto, cuánto vencido y la barra de antigüedad. Igual para
+// los dos modos de cuenta — lo que cambia es la tabla de abajo.
+function dctaHeadHtml(tipo, nombre, esCorriente){
+  var c=getContraparte(nombre)||{};
+  var mon=(c.moneda==='USD')?'USD':'MXN';
+  var accent=(tipo==='cobrar')?'var(--green)':'var(--fram)';
+  var ag=agingCuenta(tipo,nombre);
+  var saldo, lblSaldo;
+  if(esCorriente){
+    var rc=calcCorriente(tipo,nombre);
+    saldo=rc.saldoTotal;
+    lblSaldo=(saldo>=0)?((tipo==='cobrar')?'Nos debe':'Le debemos'):'A su favor';
+  } else {
+    saldo=calcContraparte(tipo,nombre).saldoTotal;
+    lblSaldo='Saldo pendiente';
+  }
+  var colSaldo=(saldo>=0)?accent:'var(--jal)';
+  var h='<button class="dcta-back" onclick="goSc(\'deudas\')">&lsaquo; Cartera</button>';
+  h+='<div class="dcta-head">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">';
+  h+='<div style="min-width:0">';
+  h+='<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">'+
+      (c.clave?'<span style="font-family:var(--mono);font-size:12px;color:var(--text3)">'+c.clave+'</span>':'')+
+      '<span style="font-size:19px;font-weight:700">'+nombre+'</span>'+
+      '<span class="chip '+(tipo==='cobrar'?'jal':'com')+'">'+(tipo==='cobrar'?'Por cobrar':'Por pagar')+'</span>'+
+      (mon==='USD'?'<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:var(--green-bg);color:var(--green)">USD</span>':'')+
+      '<button onclick="abrirEditarContraparte(deudaModalNombre,\'cuenta\',\''+tipo+'\')" title="Editar cliente" style="background:none;border:none;cursor:pointer;font-size:14px">⚙️</button>'+
+    '</div>';
+  h+='<div style="font-size:11px;color:var(--text3);margin-top:2px">'+
+      (esCorriente?'Cargos y abonos (cuenta corriente)':'Facturas con abonos')+' · plazo '+cpDiasCredito(nombre)+' días</div>';
+  h+='<div class="dcta-stats">'+
+      '<div><div class="kpi-lbl">'+lblSaldo+'</div><div class="dcta-stat-val" style="color:'+colSaldo+'">'+fmtMon(Math.abs(saldo),mon)+'</div>'+
+        ((mon==='USD'&&c.tipoCambio)?'<div style="font-size:11px;color:var(--text3)">≈ '+fmt(Math.abs(saldo)*c.tipoCambio)+' MXN</div>':'')+'</div>'+
+      (ag.vencido>0.5?'<div><div class="kpi-lbl">Vencido</div><div class="dcta-stat-val" style="color:var(--rojo)">'+fmtMon(ag.vencido,mon)+'</div></div>':'')+
+      '<div><div class="kpi-lbl">Pendientes</div><div class="dcta-stat-val">'+ag.nPend+'</div></div>'+
+    '</div>';
+  h+=agingBarHtml(ag,10);
+  h+='</div>';
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+      '<button class="btn-main" style="width:auto;padding:10px 16px;font-size:13px" onclick="abrirRegistrarPago()">'+
+        ((tipo==='cobrar')?'Registrar pago':'Registrar abono')+'</button>'+
+    '</div>';
+  h+='</div></div>';
+  return h;
+}
+
+// Cuentas fifo: una fila por cargo, con su vencimiento. El detalle (partidas y
+// abonos aplicados) se abre al hacer clic — antes se pintaban los 40 desplegados.
+function dctaBodyFifo(tipo, nombre){
   var r=calcContraparte(tipo,nombre);
   var accent=(tipo==='cobrar')?'var(--green)':'var(--fram)';
   var palabraPago=(tipo==='cobrar')?'Pagos':'Abonos';
-  var html='';
-  var agCta=agingCuenta(tipo,nombre);
-  html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:12px">'+
-    '<div><div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Saldo pendiente</div>'+
-    '<div style="font-size:24px;font-weight:700;font-family:var(--mono);color:'+accent+'">'+fmt(r.saldoTotal)+'</div>'+
-    (r.saldoAFavor>0.5?'<div style="font-size:12px;color:var(--jal)">Saldo a favor: '+fmt(r.saldoAFavor)+'</div>':'')+'</div>'+
-    (agCta.vencido>0.5?'<div style="text-align:right"><div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Vencido</div>'+
-      '<div style="font-size:24px;font-weight:700;font-family:var(--mono);color:var(--rojo)">'+fmt(agCta.vencido)+'</div></div>':'')+
-    '<button class="btn-main" style="width:auto;padding:9px 14px;font-size:13px;flex:0 0 auto" onclick="abrirRegistrarPago()">'+((tipo==='cobrar')?'Registrar pago':'Registrar abono')+'</button>'+
-    '</div>';
-  html+=agingBarHtml(agCta,10);
-  html+='<div style="font-size:11px;color:var(--text3);margin-bottom:14px">'+agCta.nPend+' pendiente'+(agCta.nPend===1?'':'s')+
-    ' de '+r.items.length+' cargo'+(r.items.length===1?'':'s')+' · plazo '+cpDiasCredito(nombre)+' días</div>';
-  r.items.forEach(function(s){
-    var d=s.deuda;
-    html+='<div style="border:0.5px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden">';
-    html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px">'+
-      '<div style="min-width:0"><div style="font-size:13px;font-weight:600;font-family:var(--mono);color:var(--text)">'+(d.folioExterno||(d.origen==='manual'?'Manual':d.origen))+'</div>'+
-      '<div style="font-size:11px;color:var(--text3)">'+fmtFechaCorta(d.fecha)+(deudaFolioNegocio(d)?' · '+deudaFolioNegocio(d):'')+'</div>'+
-      (s.liquidada?'':'<div style="font-size:11px;color:var(--text3)">vence '+fmtFechaCorta(deudaVence(d))+
-        ' · plazo '+deudaPlazo(d)+' d'+(d.plazoDias?'':' <span style="font-size:9px">(del cliente)</span>')+
-        ' <button onclick="abrirEditarPlazoDeuda('+d.id+')" title="Cambiar el plazo de este cargo" style="background:none;border:none;color:var(--jal);font-size:11px;cursor:pointer;padding:0;font-family:var(--font)">editar</button></div>')+
-      '</div>'+
-      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">'+
-      (!s.liquidada ? diasDeudaBadge(d) : '')+
-      '<span class="deuda-estatus" style="background:'+(s.liquidada?'var(--green-bg)':'var(--fram-bg)')+';color:'+(s.liquidada?'var(--green)':'var(--fram)')+'">'+(s.liquidada?'Liquidado':'Pendiente')+'</span>'+
-      '</div>'+
-      '</div>';
-    html+='<div style="border-top:0.5px solid var(--border);padding:8px 12px">';
-    (d.items||[]).forEach(function(it){
-      html+='<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px"><span style="color:var(--text2)">'+it.concepto+'</span><span style="font-family:var(--mono);color:var(--text)">'+fmt(it.monto)+'</span></div>';
-    });
-    html+='<div style="display:flex;justify-content:space-between;padding:7px 0 2px;margin-top:4px;border-top:0.5px solid var(--border);font-size:12px;font-weight:700"><span style="color:var(--text3)">Total deuda</span><span style="font-family:var(--mono);color:var(--text)">'+fmt(d.monto)+'</span></div>';
-    html+='</div>';
-    if(s.pagos.length){
-      html+='<div style="border-top:0.5px solid var(--border);padding:8px 12px">';
-      html+='<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">'+palabraPago+'</div>';
-      s.pagos.forEach(function(pp){
-        html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:11px">'+
-          '<div style="min-width:0"><div style="font-family:var(--mono);color:var(--text)">'+pp.pago.folio+
-          (pp.dirigido?' <span title="Abono aplicado a esta cuenta a proposito, no por antiguedad" style="font-size:9px;color:var(--green)">dirigido</span>':'')+
-          '</div><div style="color:var(--text3)">'+fmtFechaCorta(pp.pago.fecha)+'</div></div>'+
-          '<div style="text-align:right"><div style="font-family:var(--mono);color:var(--green)">\u2212'+fmt(pp.monto)+'</div><div style="color:var(--text3);font-family:var(--mono)">saldo '+fmt(pp.saldoDespues)+'</div></div>'+
-          '</div>';
-      });
-      html+='</div>';
-    }
-    if(d.origen==='manual'){
-      html+='<div style="border-top:0.5px solid var(--border);padding:6px 12px;text-align:right"><button onclick="borrarDeudaDesdeModal('+d.id+')" style="background:none;border:none;color:var(--fram);font-size:11px;cursor:pointer;font-family:var(--font)">Eliminar deuda</button></div>';
-    }
-    html+='</div>';
-  });
-  var ps=_ordenar(pagosDeuda.filter(function(p){return p.tipo===tipo && p.contraparte===nombre;}));
-  if(ps.length){
-    html+='<div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin:14px 0 6px">Historial de '+palabraPago.toLowerCase()+'</div>';
-    ps.slice().reverse().forEach(function(p){
-      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:0.5px solid var(--border);font-size:12px">'+
-        '<div style="min-width:0"><div style="font-family:var(--mono);color:var(--text)">'+p.folio+'</div><div style="color:var(--text3);font-size:11px">'+fmtFechaCorta(p.fecha)+'</div></div>'+
-        '<div style="display:flex;align-items:center;gap:10px"><span style="font-family:var(--mono);color:var(--text)">'+fmt(p.monto)+'</span>'+
-        '<button onclick="borrarPagoDesdeModal('+p.id+')" title="Deshacer" style="background:none;border:none;color:var(--text3);font-size:15px;cursor:pointer;line-height:1">\u00d7</button></div>'+
-        '</div>';
-    });
-  }
-  document.getElementById('mo-title').innerHTML=tituloModalCuenta(tipo, nombre);
-  document.getElementById('mo-body').innerHTML=html;
-  document.getElementById('overlay').classList.add('open');
-}
+  var pend=r.items.filter(function(s){ return !s.liquidada; });
+  var venc=pend.filter(function(s){ var dv=deudaDiasVencido(s.deuda); return dv!==null&&dv>0; });
+  var pagos=_ordenar(pagosDeuda.filter(function(p){return p.tipo===tipo && p.contraparte===nombre;}));
 
-function renderModalCorriente(tipo, nombre){
-  var r=calcCorriente(tipo, nombre);
-  var c=getContraparte(nombre)||{};
-  var mon=c.moneda==='USD'?'USD':'MXN';
-  var accent=(tipo==='cobrar')?'var(--green)':'var(--fram)';
-  var st=r.saldoTotal;
-  var lblSaldo=st>=0?((tipo==='cobrar')?'Nos debe':'Le debemos'):'A su favor';
-  var html='';
-  html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
-    '<div><div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">'+lblSaldo+'</div>'+
-    '<div style="font-size:24px;font-weight:700;font-family:var(--mono);color:'+(st>=0?accent:'var(--jal)')+'">'+fmtMon(Math.abs(st),mon)+'</div>'+
-    (mon==='USD'&&c.tipoCambio?'<div style="font-size:12px;color:var(--text3)">≈ '+fmt(Math.abs(st)*c.tipoCambio)+' MXN (TC '+c.tipoCambio+')</div>':'')+
-    '</div>'+
-    '<button class="btn-main" style="width:auto;padding:9px 14px;font-size:13px" onclick="abrirRegistrarPago()">'+((tipo==='cobrar')?'Registrar pago':'Registrar abono')+'</button>'+
+  var h='<div class="dcta-chips">'+
+    dctaChipHtml('pend','Pendientes',pend.length,tipo)+
+    dctaChipHtml('todos','Todos los cargos',r.items.length,tipo)+
+    dctaChipHtml('venc','Solo vencidos',venc.length,tipo)+
+    dctaChipHtml('movs',palabraPago,pagos.length,tipo)+
     '</div>';
-  var tieneInteres=r.movs.some(function(m){return m.interes>0;});
-  html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
-  html+='<tr style="color:var(--text3);text-transform:uppercase;font-size:10px;letter-spacing:.04em"><th style="text-align:left;padding:6px 4px">Fecha</th><th style="text-align:left;padding:6px 4px">Concepto</th><th style="text-align:right;padding:6px 4px">Cargo</th>'+(tieneInteres?'<th style="text-align:right;padding:6px 4px">Interés</th>':'')+'<th style="text-align:right;padding:6px 4px">Abono</th><th style="text-align:right;padding:6px 4px">Saldo</th></tr>';
-  r.movs.forEach(function(m){
-    var esAuto=m.esCargo && m.obj.origen && m.obj.origen!=='manual' && m.obj.origen!=='importado';
-    html+='<tr style="border-top:0.5px solid var(--border)">'+
-      '<td style="padding:6px 4px;white-space:nowrap;color:var(--text3)">'+fmtFechaCorta(m.fecha)+'</td>'+
-      '<td style="padding:6px 4px;color:var(--text2)">'+m.concepto+(m.ref?' <span style="color:var(--text3);font-family:var(--mono);font-size:10px">'+m.ref+'</span>':'')+((m.esCargo&&deudaFolioNegocio(m.obj))?' <span style="color:var(--text3);font-family:var(--mono);font-size:10px">'+deudaFolioNegocio(m.obj)+'</span>':'')+(esAuto?' <span style="font-size:9px;color:var(--text3)">auto · envío</span>':'')+'</td>'+
-      '<td style="padding:6px 4px;text-align:right;font-family:var(--mono);color:'+(m.esCargo?'var(--fram)':'var(--text3)')+'">'+(m.esCargo?fmtMon(m.cargo,mon):'')+'</td>'+
-      (tieneInteres?'<td style="padding:6px 4px;text-align:right;font-family:var(--mono);color:var(--text3)">'+(m.interes>0?fmtMon(m.interes,mon):'')+'</td>':'')+
-      '<td style="padding:6px 4px;text-align:right;font-family:var(--mono);color:'+(!m.esCargo?'var(--green)':'var(--text3)')+'">'+(!m.esCargo?fmtMon(m.abono,mon):'')+'</td>'+
-      '<td style="padding:6px 4px;text-align:right;font-family:var(--mono);font-weight:600;color:var(--text)">'+fmtMon(m.saldoDespues,mon)+'</td>'+
+
+  if(dctaFiltro==='movs') return h+dctaMovsHtml(pagos, palabraPago);
+
+  var filas=(dctaFiltro==='pend')?pend:(dctaFiltro==='venc'?venc:r.items);
+  if(!filas.length){
+    return h+'<div class="empty" style="padding:40px 20px;text-align:center"><div class="empty-text">Nada que mostrar con este filtro.</div></div>';
+  }
+  var sumSaldo=0, sumVenc=0;
+  filas.forEach(function(s){
+    sumSaldo+=Math.max(0,s.saldo);
+    var dv=deudaDiasVencido(s.deuda);
+    if(!s.liquidada && dv!==null && dv>0) sumVenc+=s.saldo;
+  });
+
+  h+='<div class="fintab-wrap auto"><table class="fintab"><thead><tr>'+
+    '<th class="txt">Folio cliente</th><th class="txt">Folio negocio</th><th class="txt">Fecha</th><th class="txt">Vence</th>'+
+    '<th>Cargo</th><th>Abonado</th><th>Saldo</th><th>Estado</th></tr></thead><tbody>';
+  filas.forEach(function(s){
+    var d=s.deuda, abierto=!!dctaAbierto[d.id];
+    var etq=d.folioExterno||(d.origen==='manual'?'Manual':(d.origen||'Cargo'));
+    h+='<tr class="dcta-row" onclick="dctaToggle('+d.id+')">'+
+      '<td class="txt num" style="font-weight:600">'+(abierto?'▾ ':'▸ ')+etq+'</td>'+
+      '<td class="txt num" style="color:var(--text3)">'+(deudaFolioNegocio(d)||'—')+'</td>'+
+      '<td class="txt" style="color:var(--text3)">'+fmtFechaCorta(d.fecha)+'</td>'+
+      '<td class="txt">'+(s.liquidada?'<span style="color:var(--text3)">—</span>':fmtFechaCorta(deudaVence(d)))+'</td>'+
+      '<td class="num">'+fmt(d.monto)+'</td>'+
+      '<td class="num" style="color:'+(s.aplicado>0.005?'var(--green)':'var(--text3)')+'">'+(s.aplicado>0.005?fmt(s.aplicado):'—')+'</td>'+
+      '<td class="num" style="font-weight:700;color:'+(s.liquidada?'var(--text3)':accent)+'">'+fmt(Math.max(0,s.saldo))+'</td>'+
+      '<td class="num">'+(s.liquidada
+        ? '<span class="deuda-estatus" style="background:var(--green-bg);color:var(--green)">Liquidado</span>'
+        : (diasDeudaBadge(d)||'<span class="deuda-estatus" style="background:var(--fram-bg);color:var(--fram)">Pendiente</span>'))+'</td>'+
+      '</tr>';
+    if(abierto) h+=dctaDetalleHtml(s, palabraPago);
+  });
+  h+='</tbody><tfoot><tr>'+
+    '<td class="txt" colspan="6" style="font-weight:700">'+filas.length+' cargo'+(filas.length===1?'':'s')+'</td>'+
+    '<td class="num" style="font-weight:700;font-size:15px;color:'+accent+'">'+fmt(sumSaldo)+'</td>'+
+    '<td class="num">'+(sumVenc>0.5?'<span class="deuda-estatus" style="background:var(--rojo-bg);color:var(--rojo)">'+fmt(sumVenc)+' vencido</span>':'')+'</td>'+
+    '</tr></tfoot></table></div>';
+  if(r.saldoAFavor>0.5) h+='<div style="font-size:12px;color:var(--jal);margin-top:10px">Saldo a favor: '+fmt(r.saldoAFavor)+'</div>';
+  return h;
+}
+function dctaChipHtml(k, lbl, n, tipo){
+  return '<button class="dcta-chip'+(dctaFiltro===k?' on':'')+(tipo==='pagar'?' pagar':'')+'" onclick="dctaSetFiltro(\''+k+'\')">'+lbl+' ('+n+')</button>';
+}
+// Fila desplegable: partidas del cargo y abonos que se le aplicaron.
+function dctaDetalleHtml(s, palabraPago){
+  var d=s.deuda;
+  var h='<tr class="dcta-det"><td colspan="8"><div class="dcta-det-in">';
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px">';
+  h+='<div><div class="kpi-lbl">Partidas</div>';
+  (d.items||[]).forEach(function(it){
+    h+='<div style="display:flex;justify-content:space-between;gap:12px;padding:3px 0"><span style="color:var(--text2)">'+it.concepto+'</span><span style="font-family:var(--mono)">'+fmt(it.monto)+'</span></div>';
+  });
+  if(d.interes>0) h+='<div style="display:flex;justify-content:space-between;gap:12px;padding:3px 0"><span style="color:var(--text2)">Interés</span><span style="font-family:var(--mono)">'+fmt(d.interes)+'</span></div>';
+  if(d.nc>0) h+='<div style="display:flex;justify-content:space-between;gap:12px;padding:3px 0"><span style="color:var(--text2)">Nota de crédito</span><span style="font-family:var(--mono)">−'+fmt(d.nc)+'</span></div>';
+  h+='<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0 0;margin-top:4px;border-top:0.5px solid var(--border);font-weight:700"><span style="color:var(--text3)">Total</span><span style="font-family:var(--mono)">'+fmt(d.monto)+'</span></div>';
+  if(d.factura) h+='<div style="color:var(--text3);margin-top:6px">Factura '+d.factura+'</div>';
+  h+='</div>';
+  h+='<div><div class="kpi-lbl">'+palabraPago+' aplicados</div>';
+  if(s.pagos.length){
+    s.pagos.forEach(function(pp){
+      h+='<div style="display:flex;justify-content:space-between;gap:12px;padding:3px 0">'+
+        '<span><span style="font-family:var(--mono)">'+pp.pago.folio+'</span>'+
+        (pp.dirigido?' <span title="Aplicado a este cargo a propósito, no por antigüedad" style="font-size:9px;color:var(--green)">dirigido</span>':'')+
+        ' <span style="color:var(--text3)">'+fmtFechaCorta(pp.pago.fecha)+'</span></span>'+
+        '<span style="font-family:var(--mono);color:var(--green)">−'+fmt(pp.monto)+'</span></div>';
+    });
+  } else h+='<div style="color:var(--text3);padding:3px 0">Sin abonos todavía</div>';
+  h+='</div></div>';
+  h+='<div style="display:flex;gap:14px;margin-top:10px;flex-wrap:wrap">'+
+    '<button onclick="event.stopPropagation();abrirEditarPlazoDeuda('+d.id+')" style="background:none;border:none;color:var(--jal);font-size:12px;cursor:pointer;font-family:var(--font);padding:0">Cambiar plazo (hoy '+deudaPlazo(d)+' d'+(d.plazoDias?'':', del cliente')+')</button>'+
+    (d.origen==='manual'?'<button onclick="event.stopPropagation();borrarDeudaDesdeModal('+d.id+')" style="background:none;border:none;color:var(--fram);font-size:12px;cursor:pointer;font-family:var(--font);padding:0">Eliminar cargo</button>':'')+
+    '</div>';
+  h+='</div></td></tr>';
+  return h;
+}
+function dctaMovsHtml(pagos, palabraPago){
+  if(!pagos.length) return '<div class="empty" style="padding:40px 20px;text-align:center"><div class="empty-text">Sin '+palabraPago.toLowerCase()+' registrados.</div></div>';
+  var h='<div class="fintab-wrap auto"><table class="fintab"><thead><tr>'+
+    '<th class="txt">Folio</th><th class="txt">Fecha</th><th class="txt">Nota</th><th class="txt">Aplicado a</th><th>Monto</th><th></th></tr></thead><tbody>';
+  pagos.slice().reverse().forEach(function(p){
+    var dir='';
+    if(p.dirigidoA){
+      for(var i=0;i<deudas.length;i++){ if(String(deudas[i].id)===String(p.dirigidoA)){ dir=deudas[i].folioExterno||'un cargo'; break; } }
+      dir=dir?(dir+' (dirigido)'):'cargo borrado — fue por antigüedad';
+    } else dir='Automático (más antiguo primero)';
+    h+='<tr>'+
+      '<td class="txt num">'+p.folio+'</td>'+
+      '<td class="txt" style="color:var(--text3)">'+fmtFechaCorta(p.fecha)+'</td>'+
+      '<td class="txt" style="color:var(--text2)">'+(p.desc||'—')+'</td>'+
+      '<td class="txt" style="color:var(--text3)">'+dir+'</td>'+
+      '<td class="num" style="font-weight:700;color:var(--green)">'+fmt(p.monto)+'</td>'+
+      '<td class="num"><button onclick="borrarPagoDesdeModal('+p.id+')" title="Deshacer" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;line-height:1">×</button></td>'+
       '</tr>';
   });
-  html+='</table></div>';
-  html+='<div style="font-size:11px;color:var(--text3);margin-top:10px">'+r.nMovs+' movimientos · toca ⚙️ para editar la cuenta</div>';
-  document.getElementById('mo-title').innerHTML=tituloModalCuenta(tipo, nombre);
-  document.getElementById('mo-body').innerHTML=html;
-  document.getElementById('overlay').classList.add('open');
+  h+='</tbody></table></div>';
+  return h;
 }
 
-function borrarDeudaDesdeModal(id){ borrarDeudaManual(id); abrirDeudaContraparte(deudaModalTipo, deudaModalNombre); renderDeudas(); }
-function borrarPagoDesdeModal(id){ borrarPagoDeuda(id); abrirDeudaContraparte(deudaModalTipo, deudaModalNombre); renderDeudas(); showToast('Pago deshecho'); }
+// Cuentas corriente: estado de cuenta corrido, con saldo acumulado renglón a renglón.
+function dctaBodyCorriente(tipo, nombre){
+  var r=calcCorriente(tipo, nombre);
+  var c=getContraparte(nombre)||{};
+  var mon=(c.moneda==='USD')?'USD':'MXN';
+  var tieneInteres=r.movs.some(function(m){return m.interes>0;});
+  if(!r.movs.length) return '<div class="empty" style="padding:40px 20px;text-align:center"><div class="empty-text">Sin movimientos.</div></div>';
+  var h='<div class="fintab-wrap auto"><table class="fintab"><thead><tr>'+
+    '<th class="txt">Fecha</th><th class="txt">Concepto</th><th>Cargo</th>'+
+    (tieneInteres?'<th>Interés</th>':'')+'<th>Abono</th><th>Saldo</th></tr></thead><tbody>';
+  r.movs.forEach(function(m){
+    var esAuto=m.esCargo && m.obj.origen && m.obj.origen!=='manual' && m.obj.origen!=='importado';
+    var fn=(m.esCargo&&deudaFolioNegocio(m.obj))?deudaFolioNegocio(m.obj):'';
+    h+='<tr>'+
+      '<td class="txt" style="color:var(--text3)">'+fmtFechaCorta(m.fecha)+'</td>'+
+      '<td class="txt" style="color:var(--text2)">'+m.concepto+
+        (m.ref?' <span style="color:var(--text3);font-family:var(--mono);font-size:11px">'+m.ref+'</span>':'')+
+        (fn?' <span style="color:var(--text3);font-family:var(--mono);font-size:11px">'+fn+'</span>':'')+
+        (esAuto?' <span style="font-size:10px;color:var(--text3)">auto · envío</span>':'')+
+        (m.esCargo?'':'<button onclick="borrarPagoDesdeModal('+m.obj.id+')" title="Deshacer" style="background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;line-height:1;margin-left:6px">×</button>')+'</td>'+
+      '<td class="num" style="color:'+(m.esCargo?'var(--fram)':'var(--text3)')+'">'+(m.esCargo?fmtMon(m.cargo,mon):'')+'</td>'+
+      (tieneInteres?'<td class="num" style="color:var(--text3)">'+(m.interes>0?fmtMon(m.interes,mon):'')+'</td>':'')+
+      '<td class="num" style="color:'+(!m.esCargo?'var(--green)':'var(--text3)')+'">'+(!m.esCargo?fmtMon(m.abono,mon):'')+'</td>'+
+      '<td class="num" style="font-weight:700">'+fmtMon(m.saldoDespues,mon)+'</td>'+
+      '</tr>';
+  });
+  h+='</tbody></table></div>';
+  h+='<div style="font-size:11px;color:var(--text3);margin-top:10px">'+r.nMovs+' movimientos</div>';
+  return h;
+}
+
+function borrarDeudaDesdeModal(id){ borrarDeudaManual(id); refrescarCuentaDeuda(); renderDeudas(); }
+function borrarPagoDesdeModal(id){ borrarPagoDeuda(id); refrescarCuentaDeuda(); renderDeudas(); showToast('Pago deshecho'); }
 
 var _dsInput="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none";
 function abrirRegistrarPago(){
@@ -10123,12 +10268,13 @@ function abrirRegistrarPago(){
   var hoy=new Date().toISOString().substring(0,10);
   document.getElementById('mo-title').innerHTML=((tipo==='cobrar')?'Registrar pago':'Registrar abono')+' \u2014 '+nombre;
   document.getElementById('mo-body').innerHTML=
-    '<div class="field" style="margin-bottom:10px"><label>Monto</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="dp-monto" placeholder="0.00" min="0" step="0.01"></div></div>'+
+    '<div class="field" style="margin-bottom:10px"><label>Monto</label><div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="dp-monto" placeholder="0.00" min="0" step="0.01" oninput="dpPreview()"></div></div>'+
     dpAplicarASelect(tipo, nombre)+
+    '<div id="dp-preview"></div>'+
     '<div class="field" style="margin-bottom:10px"><label>Fecha</label><input type="date" id="dp-fecha" value="'+hoy+'" style="'+_dsInput+'"></div>'+
     '<div class="field" style="margin-bottom:14px"><label>Nota <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(opcional)</span></label><input type="text" id="dp-desc" placeholder="Referencia, banco..." style="width:100%"></div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-      '<button onclick="abrirDeudaContraparte(deudaModalTipo,deudaModalNombre)" style="padding:11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Cancelar</button>'+
+      '<button onclick="refrescarCuentaDeuda()" style="padding:11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Cancelar</button>'+
       '<button class="btn-main" style="margin:0" onclick="confirmarPagoDeuda()">Guardar</button>'+
     '</div>';
   setTimeout(function(){var i=document.getElementById('dp-monto'); if(i) i.focus();},100);
@@ -10151,8 +10297,66 @@ function dpAplicarASelect(tipo, nombre){
     opts+='<option value="'+d.id+'">'+etq+' — '+fmtFechaCorta(d.fecha)+' — resta '+fmt(s.saldo)+'</option>';
   });
   return '<div class="field" style="margin-bottom:10px"><label>Aplicar a</label>'+
-    '<select id="dp-dirigido" style="width:100%">'+opts+'</select>'+
+    '<select id="dp-dirigido" style="width:100%" onchange="dpPreview()">'+opts+'</select>'+
     '<div style="font-size:10px;color:var(--text3);margin-top:3px;line-height:1.4">Si el monto excede lo que resta de esa cuenta, el sobrante se aplica a las demás de la más antigua a la más reciente.</div></div>';
+}
+
+// Simula a qué cargos caería un pago ANTES de guardarlo. Repite el orden de
+// calcContraparte() —primero lo dirigido, el sobrante por antigüedad— sobre los
+// pendientes actuales. Si algún día cambia esa regla, hay que cambiarla en los
+// DOS lados o la vista previa mentiría.
+function simularAplicacionPago(tipo, nombre, monto, dirigidoA){
+  monto=parseFloat(monto)||0;
+  var res={cubre:[], sobrante:0, monto:monto, corriente:false};
+  if(monto<=0) return res;
+  if(cpModo(nombre)==='corriente'){ res.corriente=true; return res; }
+  var pend=calcContraparte(tipo,nombre).items.filter(function(s){ return !s.liquidada && s.saldo>0.005; });
+  var restante=monto;
+  if(dirigidoA){
+    for(var i=0;i<pend.length;i++){
+      if(String(pend[i].deuda.id)===String(dirigidoA)){
+        var ap=Math.min(restante,pend[i].saldo);
+        if(ap>0.005){
+          res.cubre.push({deuda:pend[i].deuda, aplica:ap, saldoAntes:pend[i].saldo, liquida:ap>=pend[i].saldo-0.005, dirigido:true});
+          restante-=ap; pend[i]._usado=ap;
+        }
+        break;
+      }
+    }
+  }
+  for(var j=0;j<pend.length && restante>0.005;j++){
+    var s=pend[j], disp=s.saldo-(s._usado||0);
+    if(disp<=0.005) continue;
+    var a=Math.min(restante,disp);
+    res.cubre.push({deuda:s.deuda, aplica:a, saldoAntes:disp, liquida:a>=disp-0.005});
+    restante-=a;
+  }
+  res.sobrante=restante;
+  return res;
+}
+
+function dpPreview(){
+  var cont=document.getElementById('dp-preview'); if(!cont) return;
+  var sel=document.getElementById('dp-dirigido');
+  var monto=(document.getElementById('dp-monto')||{}).value;
+  var sim=simularAplicacionPago(deudaModalTipo, deudaModalNombre, monto, sel?sel.value:'');
+  if(sim.corriente || sim.monto<=0 || !sim.cubre.length){ cont.innerHTML=''; return; }
+  var nLiq=sim.cubre.filter(function(x){return x.liquida;}).length;
+  var h='<div class="dp-prev"><div class="kpi-lbl" style="margin-bottom:4px">Este '+(deudaModalTipo==='cobrar'?'pago':'abono')+' cubre</div>';
+  sim.cubre.forEach(function(x){
+    var etq=x.deuda.folioExterno||(x.deuda.origen==='manual'?'Manual':x.deuda.origen)||'Cargo';
+    h+='<div class="dp-prev-row"><span style="min-width:0">'+
+      '<span style="font-family:var(--mono)">'+etq+'</span>'+
+      (x.dirigido?' <span style="font-size:9px;color:var(--green)">dirigido</span>':'')+
+      ' <span style="color:var(--text3)">'+(x.liquida?'liquida':'parcial')+'</span></span>'+
+      '<span style="font-family:var(--mono);color:var(--green)">'+fmt(x.aplica)+'</span></div>';
+  });
+  h+='<div class="dp-prev-row" style="font-weight:700;padding-top:7px">'+
+    '<span>'+(sim.sobrante>0.005?'Queda a favor':'Liquida '+nLiq+' cargo'+(nLiq===1?'':'s'))+'</span>'+
+    '<span style="font-family:var(--mono);color:'+(sim.sobrante>0.005?'var(--jal)':'var(--text3)')+'">'+
+      (sim.sobrante>0.005?fmt(sim.sobrante):'')+'</span></div>';
+  h+='</div>';
+  cont.innerHTML=h;
 }
 
 function confirmarPagoDeuda(){
@@ -10160,7 +10364,7 @@ function confirmarPagoDeuda(){
   var p=registrarPagoDeuda(deudaModalTipo, deudaModalNombre, document.getElementById('dp-monto').value, document.getElementById('dp-fecha').value, document.getElementById('dp-desc').value, selDir?selDir.value:'');
   if(!p) return;
   showToast((deudaModalTipo==='cobrar'?'Pago':'Abono')+' registrado: '+p.folio);
-  abrirDeudaContraparte(deudaModalTipo, deudaModalNombre);
+  refrescarCuentaDeuda();
   renderDeudas();
 }
 

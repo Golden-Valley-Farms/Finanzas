@@ -212,7 +212,34 @@ Fase 2 del rediseño de cobranza (ago-2026, mismo spec que la fase anterior).
 
 **`eqSaldo()`/`eqVencido()`** convierten USD a MXN con el tipo de cambio de la ficha antes de ordenar o sumar — sin esto, ordenar "por saldo" mezclaría escalas de las dos monedas.
 
-La tabla reusa la clase `.fintab` / `.fintab-wrap.auto` que ya usa Finanzas (Reportes → Frambuesa), no un componente nuevo. La columna "Cargo más viejo" llama a `diasDeudaBadge(ag.masViejoDeuda)` — la misma insignia que ya se pinta en el modal de cuenta, no una copia.
+La tabla reusa la clase `.fintab` / `.fintab-wrap.auto` que ya usa Finanzas (Reportes → Frambuesa), no un componente nuevo. La columna "Cargo más viejo" llama a `diasDeudaBadge(ag.masViejoDeuda)` — la misma insignia que ya se pinta en la cuenta, no una copia.
+
+### Estado de cuenta: pantalla propia, no modal
+
+Fase 3 del rediseño de cobranza (ago-2026, mismo spec).
+
+**La cuenta dejó de ser un modal y es la pantalla `#sc-deudacta`.** `renderModalFifo()` y `renderModalCorriente()` **ya no existen**; los reemplazan `renderCuentaDeuda()` (dispatcher), `dctaHeadHtml()` (encabezado común a los dos modos) y `dctaBodyFifo()` / `dctaBodyCorriente()`. `tituloModalCuenta()` también se borró. El motivo es tamaño: con 40 cargos el modal de 480px era inmanejable, mientras la pantalla de atrás ya usaba 1400px.
+
+`goSc()` conoce `'deudacta'`, pero es **hija de Deudas**: no tiene botón en la barra inferior, deja `nav-deudas` marcado y, si se entra sin `deudaModalNombre` puesto, cae de vuelta a `'deudas'` — sin ese guard, un `goSc('deudacta')` suelto pintaría una pantalla vacía.
+
+**Dos puntos de entrada, y la diferencia importa:**
+
+- `abrirDeudaContraparte(tipo,nombre)` — sigue siendo el único punto de entrada desde fuera. **Resetea** `dctaFiltro='pend'` y `dctaAbierto={}`.
+- `refrescarCuentaDeuda()` — repinta **conservando** filtro y filas desplegadas. Es lo que llaman los retornos de los sub-modales (⚙️ contraparte, editar plazo, registrar pago, deshacer pago, borrar cargo). Si esos usaran `abrirDeudaContraparte`, cada acción te regresaría a "Pendientes" con todo colapsado.
+
+Los dos hacen `closeModal()` al entrar: los sub-modales siguen viviendo en el `#overlay` de siempre, ahora **encima** de la pantalla.
+
+**La lista abre filtrada en `pend`** (9 de 40 en B&M). Los chips son `Pendientes` / `Todos los cargos` / `Solo vencidos` / `Pagos`(o `Abonos`), estado en `dctaFiltro`. **Solo se pintan en cuentas fifo**: en corriente el saldo es corrido y no hay cargos que filtrar, así que ahí va directo el estado de cuenta renglón a renglón.
+
+**El detalle va bajo demanda.** Antes se pintaban las 40 tarjetas con partidas y pagos desplegados; ahora cada cargo es una fila y el clic abre `dctaDetalleHtml()` (partidas, abonos aplicados, cambiar plazo, eliminar si es manual). El estado vive en `dctaAbierto[id]`. Los botones dentro del detalle llevan `event.stopPropagation()` — sin eso, el clic burbujea a la fila y la vuelve a colapsar.
+
+### Vista previa al registrar un pago
+
+`simularAplicacionPago(tipo,nombre,monto,dirigidoA)` calcula a qué cargos caería el pago **antes** de guardarlo, y `dpPreview()` lo pinta en vivo mientras se escribe el monto o se cambia el "Aplicar a".
+
+**Duplica a propósito el orden de `calcContraparte()`** —primero lo dirigido, el sobrante por antigüedad— sobre los pendientes actuales. Es la única copia de esa regla en el código: **si cambia el orden de aplicación hay que cambiarlo en los dos lados**, o la vista previa mentirá sin fallar. No se pudo reusar `calcContraparte()` directamente porque lee `pagosDeuda` global y el pago todavía no existe.
+
+Verificado contra B&M: $150,000 liquida los cuatro cargos más viejos y deja $5,150 parcial en el quinto (suma exacta); dirigido a `B&M/2026/022` lo aplica primero y el resto sigue por antigüedad; $1,000,000 deja $232,200 a favor.
 
 ## Módulo de maíz
 
@@ -283,7 +310,7 @@ El precio por kg se pinta con `fmtDec()` (2 decimales solo si hay centavos), no 
 
 ## Navegación
 
-`goSc(nombre)` es el router: alterna la clase `.active` entre los divs `sc-resultados`, `sc-reg`, `sc-his`, `sc-rep`, `sc-ven`, `sc-fram`, `sc-maiz`, `sc-deudas`, ajusta la barra inferior y dispara el render de esa pantalla. Las variables `lastFinSc` y `lastCosSc` recuerdan en qué sub-pestaña se quedó cada grupo.
+`goSc(nombre)` es el router: alterna la clase `.active` entre los divs `sc-resultados`, `sc-reg`, `sc-his`, `sc-rep`, `sc-ven`, `sc-fram`, `sc-maiz`, `sc-deudas`, `sc-deudacta`, ajusta la barra inferior y dispara el render de esa pantalla. `sc-deudacta` (el estado de cuenta) es la única sin botón propio en la barra: es hija de Deudas. Las variables `lastFinSc` y `lastCosSc` recuerdan en qué sub-pestaña se quedó cada grupo.
 
 ### Ventas: una sola pestaña "Registro"
 
