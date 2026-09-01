@@ -110,6 +110,37 @@ confirmar el patrón de punta a punta, y luego el resto. **Reversión inmediata*
 4. Con sesión → todas las pantallas pintan igual que antes (Resumen, EDR, Deudas, Frambuesa, Maíz).
 5. Confirmar que un guardado real sigue funcionando desde el sitio en vivo.
 
+## Resultado (1-sep-2026) — implementado y verificado
+
+Las cuatro fases quedaron completas el mismo día.
+
+**Antes → después**, midiendo con la clave publishable y sin sesión (o sea, como cualquier
+visitante de la página):
+
+| | Antes | Después |
+|---|---|---|
+| `gastos` legibles | 1,369 | **0** |
+| `deudas` legibles | 162 | **0** |
+| `choferes` / `intermediarios` | 7 / 3 | **0 / 0** |
+| Tablas con datos visibles sin sesión | 24 de 24 | **0 de 24** |
+| Escritura anónima (`INSERT`) | permitida | **HTTP 401** |
+| Hallazgos `rls_disabled_in_public` del advisor | 19 (ERROR) | **0** |
+
+Detalle a no malinterpretar en futuras auditorías: un `DELETE` o `UPDATE` anónimo responde
+**204, no 401**. No es un hueco — RLS hace las filas invisibles, así que la sentencia afecta
+**cero filas**. Comprobado contando después: `gastos` siguió en 1,369, `deudas` en 162 y
+ninguna `contraparte` alterada.
+
+Se aplicó en dos tandas: primero un piloto de dos tablas (`choferes`, `intermediarios`),
+confirmando los dos lados —anónimo bloqueado y app con sesión leyendo bien— antes de tocar
+las 22 restantes.
+
+Verificado por el usuario en el sitio en vivo: todas las pantallas pintan con sus datos, y un
+guardado real (editar las cajas de un registro de frambuesa y revertirlo) funcionó.
+
+El único hallazgo que queda en el advisor es `auth_leaked_password_protection` (nivel WARN):
+requiere plan Pro y se descartó a propósito.
+
 ## Fuera de alcance
 
 - Roles diferenciados (solo lectura para el jefe). Se puede agregar después sin rehacer esto.

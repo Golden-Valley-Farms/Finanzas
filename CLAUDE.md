@@ -642,7 +642,26 @@ Tablas: `gastos`, `ingresos`, `categorias_ingresos`, `envios`, `alm_lotes`, `fra
 
 Si una tabla regresa vacía teniendo datos, casi siempre es RLS — el código ya avisa esto por consola para `fram_registros`.
 
-**Ojo (ago-2026): el advisor de Supabase reporta RLS DESACTIVADO en 12 tablas** (gastos, envios, deudas, pagos_deuda, contrapartes, etc.). Mientras no se active RLS con autenticación, cualquiera con la clave publishable puede leer y escribir esos datos. Hay una tarea pendiente para agregar login + políticas RLS.
+### Login y RLS (sep-2026)
+
+Spec en `docs/superpowers/specs/2026-09-01-login-y-rls-design.md`. Hasta el 1-sep-2026 las **24** tablas estaban abiertas a cualquiera con la clave publishable — 19 sin RLS y 5 con RLS activo pero una política `FOR ALL TO public USING (true)`, que el advisor no marcaba porque técnicamente "tienen RLS". Ya no.
+
+**Una cuenta compartida, correo + contraseña**, dada de alta a mano en el panel; el registro público está **cerrado** (sin eso, cualquiera se registraría y quedaría `authenticated`). No hay roles: la regla es la misma en las 24 tablas —
+
+```sql
+create policy "sesion_total_<tabla>" on public.<tabla>
+  for all to authenticated using (true) with check (true);
+```
+
+**La compuerta de sesión en el arranque no es opcional.** Cuando RLS niega un `SELECT`, PostgREST responde **200 con arreglo vacío, no un error**. Sin sesión, `sb.from('gastos').select(...)` pasaría el chequeo de conexión (`sbOnline=true`), dispararía `cargarDesdeSB()`, y ésta **pisaría las claves `cc_*` de localStorage con vacío**: la app se vería sin datos y encima borraría su caché, sin un solo mensaje de error. Por eso `initSupabase()` consulta `sb.auth.getSession()` y solo llama `conectarYCargar()` si hay sesión. **No quitar ese candado.**
+
+Funciones nuevas, todas globales: `iniciarSesion()`, `cerrarSesion()`, `entrarALaApp()`, `conectarYCargar()`, `mostrarLogin()`, `ocultarLogin()`, `loginError()`, `pintaBotonSalir()`. `#login-screen` arranca **visible** en el markup y se esconde al confirmar sesión, para que no se alcance a ver la app antes de validar.
+
+Un `alter table ... disable row level security` revierte una tabla al instante si algo se rompe.
+
+**Consecuencia para el candado de previsualización:** solo envuelve `sb.from`, no `sb.auth`, así que el login funciona normal en el preview local.
+
+Verificado el 1-sep-2026: lectura anónima con la clave publishable devuelve **0 filas en las 24 tablas** (antes: 1,369 gastos y 162 deudas); escrituras anónimas responden 401, o 204 con **cero filas afectadas** (un `DELETE` no encuentra nada que borrar porque las filas le son invisibles — no es un hueco). Advisor de seguridad sin hallazgos de RLS.
 
 ## Flujo de trabajo
 
