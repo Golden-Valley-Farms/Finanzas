@@ -490,6 +490,14 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .kpi-sub{font-size:11px;color:var(--text3);margin-top:3px}
 #rep-fin-sec .kpi-sub{font-size:12px}
 #rep-fin-sec .kpi-card{padding:14px}
+/* Tarjeta "Total cajas" de Por dia / Por semana: el numero grande a la izquierda y
+   la leyenda de presentacion (6 oz / 12 oz) a su derecha, en dos renglones. Grid de
+   4 columnas (etiqueta · guion · numero · "cajas") con la etiqueta y el numero
+   alineados a la derecha, para que guiones y "cajas" queden en columna. */
+.rfr-cajas-val-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.rfr-cajas-leg{display:inline-grid;grid-template-columns:max-content max-content max-content max-content;
+  column-gap:5px;row-gap:2px;font-size:11px;color:var(--text3);line-height:1.4;font-family:var(--mono)}
+.rfr-cajas-leg .rfr-cajas-oz,.rfr-cajas-leg .rfr-cajas-num{text-align:right}
 /* ---- Financiero: full-width breakout en pantallas grandes ---- */
 @media (min-width: 700px){
   /* Resumen: mismo breakout de ancho que las secciones de Reportes.
@@ -5209,6 +5217,19 @@ function rfrDiaAnteriorKey(fechaActual){
   if(i<0 || i+1>=opts.length) return null;
   return opts[i+1].value;
 }
+// Leyenda de presentación para la tarjeta "Total cajas" (Por día y Por semana):
+// "6 oz - N cajas" / "12 oz - N cajas", con "otras" solo si hay cajas con otra etiqueta.
+function rfrCajasLegHtml(c6, c12, cOtras){
+  var f=function(n){ return (n||0).toLocaleString('es-MX'); };
+  var row=function(lbl,n){
+    return '<span class="rfr-cajas-oz">'+lbl+'</span>'+
+           '<span>-</span>'+
+           '<span class="rfr-cajas-num">'+f(n)+'</span>'+
+           '<span>cajas</span>';
+  };
+  return '<div class="rfr-cajas-leg">'+row('6 oz',c6)+row('12 oz',c12)+(cOtras>0?row('otras',cOtras):'')+'</div>';
+}
+
 // Métricas de un día, para comparar el registro actual contra el anterior en las
 // tarjetas de "Por día" (ver rfrWowBadge).
 function rfrComputeDiaMetrics(fecha){
@@ -5283,7 +5304,6 @@ function renderRfrDiaDetalle(){
     else if(c.presentacion==='12 oz') c12ozDia+=c.cantidad||0;
     else cOtrasDia+=c.cantidad||0;
   });
-  var cajasPresLegDia='6 oz · '+c6ozDia.toLocaleString('es-MX')+'  ·  12 oz · '+c12ozDia.toLocaleString('es-MX')+(cOtrasDia>0?'  ·  otras · '+cOtrasDia.toLocaleString('es-MX'):'');
   var secIdsDia=['S1','S2','S3','S4']; var secValsDia=secIdsDia.map(function(sl){return secMapDia[sl]||0;});
   var secSumDia=secValsDia.reduce(function(a,v){return a+v;},0);
 
@@ -5298,8 +5318,10 @@ function renderRfrDiaDetalle(){
       '<div class="kpi-card">'+wowCajasDia+
         '<div class="kpi-accent" style="background:'+colCajasDia+'"></div>'+
         '<div class="kpi-lbl">Total cajas</div>'+
-        '<div class="kpi-val" style="color:'+colCajasDia+'">'+r.totalCajas+'</div>'+
-        '<div class="kpi-sub">'+cajasPresLegDia+'</div>'+
+        '<div class="rfr-cajas-val-row">'+
+          '<div class="kpi-val" style="color:'+colCajasDia+'">'+r.totalCajas+'</div>'+
+          rfrCajasLegHtml(c6ozDia,c12ozDia,cOtrasDia)+
+        '</div>'+
       '</div>'+
       '<div class="kpi-card">'+wowKgDia+
         '<div class="kpi-accent" style="background:'+colKgDia+'"></div>'+
@@ -5687,7 +5709,6 @@ function renderRfrSemDetalle(){
   var secIds=['S1','S2','S3','S4']; var secVals=secIds.map(function(sl){return s.secMap[sl]||0;});
   var secSum=secVals.reduce(function(a,v){return a+v;},0);
   var cOtrasSem=Math.max(0,(s.cajas||0)-(s.c6oz||0)-(s.c12oz||0));
-  var cajasPresLegSem='6 oz · '+(s.c6oz||0).toLocaleString('es-MX')+'  ·  12 oz · '+(s.c12oz||0).toLocaleString('es-MX')+(cOtrasSem>0?'  ·  otras · '+cOtrasSem.toLocaleString('es-MX'):'');
 
   var kgCosechados=Math.round(s.registros.reduce(function(a,r){
     var kg=(r.totalKg!==undefined&&r.totalKg!==null)?r.totalKg:Math.round((r.totalCajas||0)*(typeof KG_POR_CAJA!=='undefined'?KG_POR_CAJA:2.4)*100)/100;
@@ -5748,8 +5769,10 @@ function renderRfrSemDetalle(){
       '<div class="kpi-card">'+wowCajas+
         '<div class="kpi-accent" style="background:'+colCajasSem+'"></div>'+
         '<div class="kpi-lbl">Total cajas</div>'+
-        '<div class="kpi-val" style="color:'+colCajasSem+'">'+s.cajas.toLocaleString('es-MX')+'</div>'+
-        '<div class="kpi-sub">'+cajasPresLegSem+'</div>'+
+        '<div class="rfr-cajas-val-row">'+
+          '<div class="kpi-val" style="color:'+colCajasSem+'">'+s.cajas.toLocaleString('es-MX')+'</div>'+
+          rfrCajasLegHtml(s.c6oz,s.c12oz,cOtrasSem)+
+        '</div>'+
       '</div>'+
       '<div class="kpi-card">'+wowPromCajas+
         '<div class="kpi-accent" style="background:'+colPromCajasSem+'"></div>'+
