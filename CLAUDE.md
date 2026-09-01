@@ -478,14 +478,14 @@ Por eso `var refs=rfrRefsHistoricas()` se calcula **antes** de armar `cont.inner
 
 `rfrRefsHistoricas()` devuelve además `cajasDia` (mediana de cajas por día, agregando por `fecha`) y `costoCosech` (mediana semanal de nómina de cosechadores / cubetas), que no existían cuando solo la usaban las gráficas.
 
-**Meta de cajas: 8,000 por conjunto de sectores**, o sea 16,000 el total del ciclo. La tarjeta de Total cajas lleva tres barras de avance — total contra 16,000, y una por cada conjunto (sectores 1-2 y 3-4) contra 8,000 — cada una con su propio color. Los cortes de meta van al 100/75/50% (`cortesMeta()`), no por `rfrCortesDesde`.
+**Meta de cajas: 9,000 por conjunto de sectores**, o sea 18,000 el total del ciclo. La tarjeta de Total cajas lleva tres barras de avance — total contra 18,000, y una por cada conjunto (sectores 1-2 y 3-4) contra 9,000 — cada una con su propio color. Los cortes de meta van al 100/75/50% (`cortesMeta()`), no por `rfrCortesDesde`. La meta por conjunto es `META_CAJAS_GRUPO` = `opts.metaCajasGrupo||9000`, y el total se deriva como el doble; Por cosecha pasa `metaCajasGrupo:4500` (ver "Pestaña «Por cosecha»").
 
 Esa tarjeta se **reparte en dos columnas solo en escritorio**: `.rfr-cajas-row` es `display:block` por defecto (móvil apila total arriba y sectores abajo, que es como se quiere ver ahí) y pasa a `flex` dentro del `@media (min-width:700px)`, con el total a la izquierda (`.rfr-cajas-total`, 34%) y el `.kpi-split` de los dos conjuntos a la derecha separado por un borde. Al tocar el markup hay que respetar que `.rfr-cajas-total` y `.kpi-split` sean **hermanos directos** de `.rfr-cajas-row`.
 
 | Tarjeta | cortes | sentido |
 |---|---|---|
-| Total cajas | meta **16,000** al 100/75/50% | más alto es mejor |
-| Sectores 1 y 2 / 3 y 4 | meta **8,000** cada uno | más alto es mejor |
+| Total cajas | meta **18,000** al 100/75/50% (Por cosecha: 9,000) | más alto es mejor |
+| Sectores 1 y 2 / 3 y 4 | meta **9,000** cada uno (Por cosecha: 4,500) | más alto es mejor |
 | Prom. cajas/día | mediana `refs.cajasDia` | más alto es mejor |
 | Prom. cajas/semana | mediana `refs.cajas` | más alto es mejor |
 | Merma | **meta `RFR_CORTES_MERMA` vía `rfrColMerma()`** | más alto es peor |
@@ -524,9 +524,9 @@ Agregada en ago-2026 (spec en `docs/superpowers/specs/2026-08-28-reportes-frambu
 
 `renderRfrCosecha(data, ciclo)` parte los registros del ciclo por una **sola fecha de corte**: Cosecha 1 = `fecha < corte`, Cosecha 2 = `fecha >= corte`. Las sub-pestañas (`rfrCohSel`, `rfrCohTab()`) solo cambian cuál de los dos subconjuntos se pinta.
 
-**No hay render propio: reusa `renderRfrResumen()`.** La función pasó de `(data)` a `(data, opts)` y **sin `opts` se comporta exactamente igual que antes**, así que Por ciclo no cambió. Las opciones son `contId` (default `'rfr-res-detalle'`), `sinMetaCajas` y `vacioMsg`. Consecuencia buscada: cualquier arreglo o tarjeta nueva en Por ciclo aparece sola en Por cosecha.
+**No hay render propio: reusa `renderRfrResumen()`.** La función pasó de `(data)` a `(data, opts)` y **sin `opts` se comporta exactamente igual que antes**, así que Por ciclo no cambió. Las opciones son `contId` (default `'rfr-res-detalle'`), `metaCajasGrupo` y `vacioMsg`. Consecuencia buscada: cualquier arreglo o tarjeta nueva en Por ciclo aparece sola en Por cosecha.
 
-**`sinMetaCajas` quita las barras de meta de Total cajas**, porque las metas (16,000 el ciclo, 8,000 por conjunto de sectores) son acumulados del ciclo completo y no significan nada contra media cosecha. Quedan las tres cifras en `var(--text)` y el acento en `var(--fram)`. Las demás tarjetas **sí** conservan su semáforo: merma, costo/cubeta y precio/caja son metas por unidad, válidas en cualquier rango. Las medianas de `rfrRefsHistoricas()` tampoco se recortan — son la referencia histórica completa.
+**`metaCajasGrupo` fija la meta de cajas por par de sectores** — default 9,000 (Por ciclo), y Por cosecha pasa **4,500** (total por cosecha 9,000). La tarjeta de Total cajas se pinta igual que en Por ciclo: barras de avance y semáforo al 100/75/50%. Las demás tarjetas ya llevaban su semáforo por meta por unidad (merma, costo/cubeta, precio/caja) y no cambian. Las medianas de `rfrRefsHistoricas()` no se recortan — son la referencia histórica completa. (Ago-2026 hubo una fase previa con `sinMetaCajas` que ocultaba las barras en Por cosecha; se reemplazó por las metas de media cosecha en sep-2026.)
 
 **Trampa: las dos vistas generan los mismos ids de canvas.** Si Por ciclo y Por cosecha quedan pintadas a la vez, `getElementById` devuelve la primera y las gráficas se dibujan en la pestaña equivocada. Por eso `rfrTab()` **vacía el contenedor de la pestaña que se abandona**. No quitar esas dos líneas. Por lo mismo, la regla CSS de centrado (`#rfr-res-detalle .kpi-lbl,…`) lleva ahora también los selectores de `#rfr-coh-detalle`: al tocarla hay que respetar los dos contenedores.
 

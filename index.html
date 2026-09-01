@@ -5904,7 +5904,7 @@ function renderRfrCosecha(data, ciclo){
   var c1=data.filter(function(r){ return r.fecha<corte; });
   var c2=data.filter(function(r){ return r.fecha>=corte; });
   var esC2=(rfrCohSel==='c2');
-  renderRfrResumen(esC2?c2:c1, {contId:'rfr-coh-detalle', sinMetaCajas:true,
+  renderRfrResumen(esC2?c2:c1, {contId:'rfr-coh-detalle', metaCajasGrupo:4500,
     vacioMsg:'Sin registros en '+(esC2?'Cosecha 2':'Cosecha 1')+' con este corte'});
 }
 
@@ -5925,13 +5925,12 @@ function guardarCorteCosecha(){
 }
 
 // opts (todo opcional; sin opts se comporta igual que siempre):
-//   contId       contenedor destino (default 'rfr-res-detalle')
-//   sinMetaCajas quita las barras de meta de la tarjeta Total cajas — las metas
-//                (16,000 / 8,000) son del ciclo completo y no aplican a media cosecha
-//   vacioMsg     texto del estado vacio
+//   contId         contenedor destino (default 'rfr-res-detalle')
+//   metaCajasGrupo meta de cajas por par de sectores (default 9,000; el total va
+//                  contra el doble). Por cosecha pasa 4,500.
+//   vacioMsg       texto del estado vacio
 function renderRfrResumen(data, opts){
   opts=opts||{};
-  var sinMeta=!!opts.sinMetaCajas;
   var cont=document.getElementById(opts.contId||'rfr-res-detalle'); if(!cont) return;
   if(!data.length){ cont.innerHTML='<div style="text-align:center;padding:40px 0;color:var(--text3);font-size:13px">'+(opts.vacioMsg||'Sin registros para este ciclo')+'</div>'; return; }
 
@@ -5982,10 +5981,10 @@ function renderRfrResumen(data, opts){
   // Cajas agrupadas por par de sectores para la tarjeta de Total cajas
   var cajasSec12=(secMap['S1']||0)+(secMap['S2']||0);
   var cajasSec34=(secMap['S3']||0)+(secMap['S4']||0);
-  // La meta de 8,000 cajas es POR CONJUNTO de sectores, así que el total va contra 16,000.
-  // El semáforo abre al 100/75/50% de la meta: verde al llegar, amarillo desde 3/4,
-  // naranja desde la mitad, rojo abajo.
-  var META_CAJAS_GRUPO=8000;
+  // La meta por par de sectores (9,000 en Por ciclo, 4,500 en Por cosecha) va POR
+  // CONJUNTO, así que el total va contra el doble. El semáforo abre al 100/75/50%
+  // de la meta: verde al llegar, amarillo desde 3/4, naranja desde la mitad, rojo abajo.
+  var META_CAJAS_GRUPO=opts.metaCajasGrupo||9000;
   var META_CAJAS_TOTAL=META_CAJAS_GRUPO*2;
   function cortesMeta(m){ return [m, m*0.75, m*0.5]; }
   var pctMeta=totalCajas/META_CAJAS_TOTAL*100;
@@ -5994,10 +5993,7 @@ function renderRfrResumen(data, opts){
   var colMeta=rfrPuntoCol(totalCajas,cortesMeta(META_CAJAS_TOTAL),true);
   var colMeta12=rfrPuntoCol(cajasSec12,cortesMeta(META_CAJAS_GRUPO),true);
   var colMeta34=rfrPuntoCol(cajasSec34,cortesMeta(META_CAJAS_GRUPO),true);
-  // Sin meta (vista Por cosecha): las cifras van en tinta neutra y el acento en el
-  // color del negocio, porque el semaforo de esta tarjeta solo mide avance contra la meta.
-  if(sinMeta){ colMeta='var(--text)'; colMeta12='var(--text)'; colMeta34='var(--text)'; }
-  var colAccCajas=sinMeta?'var(--fram)':colMeta;
+  var colAccCajas=colMeta;
 
   totalKgCosechados=Math.round(totalKgCosechados*10)/10;
   // A un decimal: con entero, un 6.6% se veia como 7% y el semaforo lo pintaba rojo.
@@ -6104,17 +6100,17 @@ function renderRfrResumen(data, opts){
         '<div class="rfr-cajas-total">'+
         '<div class="kpi-lbl">Total cajas</div>'+
         '<div class="kpi-val" style="color:'+colMeta+'">'+totalCajas.toLocaleString('es-MX')+'</div>'+
-        (sinMeta?'':'<div class="rfr-meta-row"><div class="rfr-meta-bar"><div class="rfr-meta-fill" style="width:'+Math.min(100,Math.max(0,pctMeta))+'%;background:'+colMeta+'"></div></div><span class="rfr-meta-pct" style="color:'+colMeta+'">'+Math.round(pctMeta)+'%</span></div>')+
+        '<div class="rfr-meta-row"><div class="rfr-meta-bar"><div class="rfr-meta-fill" style="width:'+Math.min(100,Math.max(0,pctMeta))+'%;background:'+colMeta+'"></div></div><span class="rfr-meta-pct" style="color:'+colMeta+'">'+Math.round(pctMeta)+'%</span></div>'+
         '</div>'+
         '<div class="kpi-split">'+
           '<div>'+
             '<div class="kpi-val" style="color:'+colMeta12+'">'+cajasSec12.toLocaleString('es-MX')+'</div>'+
-            (sinMeta?'':'<div class="rfr-meta-row"><div class="rfr-meta-bar"><div class="rfr-meta-fill" style="width:'+Math.min(100,Math.max(0,pctMeta12))+'%;background:'+colMeta12+'"></div></div><span class="rfr-meta-pct" style="color:'+colMeta12+'">'+Math.round(pctMeta12)+'%</span></div>')+
+            '<div class="rfr-meta-row"><div class="rfr-meta-bar"><div class="rfr-meta-fill" style="width:'+Math.min(100,Math.max(0,pctMeta12))+'%;background:'+colMeta12+'"></div></div><span class="rfr-meta-pct" style="color:'+colMeta12+'">'+Math.round(pctMeta12)+'%</span></div>'+
             '<div class="kpi-split-lbl">Sectores 1 y 2</div>'+
           '</div>'+
           '<div>'+
             '<div class="kpi-val" style="color:'+colMeta34+'">'+cajasSec34.toLocaleString('es-MX')+'</div>'+
-            (sinMeta?'':'<div class="rfr-meta-row"><div class="rfr-meta-bar"><div class="rfr-meta-fill" style="width:'+Math.min(100,Math.max(0,pctMeta34))+'%;background:'+colMeta34+'"></div></div><span class="rfr-meta-pct" style="color:'+colMeta34+'">'+Math.round(pctMeta34)+'%</span></div>')+
+            '<div class="rfr-meta-row"><div class="rfr-meta-bar"><div class="rfr-meta-fill" style="width:'+Math.min(100,Math.max(0,pctMeta34))+'%;background:'+colMeta34+'"></div></div><span class="rfr-meta-pct" style="color:'+colMeta34+'">'+Math.round(pctMeta34)+'%</span></div>'+
             '<div class="kpi-split-lbl">Sectores 3 y 4</div>'+
           '</div>'+
         '</div>'+
