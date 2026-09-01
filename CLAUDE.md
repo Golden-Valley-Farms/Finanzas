@@ -634,14 +634,16 @@ Si una tabla regresa vacía teniendo datos, casi siempre es RLS — el código y
 
 ## Flujo de trabajo
 
-**Claude publica los cambios; el usuario no sube archivos a mano.** El ciclo completo de cada cambio es:
+**Claude publica los cambios; el usuario no sube archivos a mano.** Pero **primero los ve corriendo, y solo entonces se suben** (regla del 1-sep-2026, reemplaza el push automático que había antes). El ciclo completo de cada cambio es:
 
-1. Editar `index.html` en este clon local.
-2. Verificar el cambio (ver "Desplegar y probar").
-3. `git add` + commit descriptivo.
-4. **`git push origin main` automáticamente** — GitHub Pages despliega solo.
+1. Editar `index.html` en este clon local. **Sin commitear.**
+2. Levantar el preview local (`preview_start` con `gvf-local`) y dejarlo abierto en la pantalla donde se ve el cambio. Decirle en una o dos líneas dónde mirar — el usuario prefiere ver el resultado a que se lo expliquen.
+3. Iterar sobre el mismo archivo según lo que pida, siempre sin commitear.
+4. **Solo cuando el usuario apruebe** ("súbelo" o equivalente): `git add` + commit descriptivo + `git push origin main` — GitHub Pages despliega solo.
 
-No dejar cambios sin commitear, y **siempre hacer push a GitHub al finalizar** (no dejar commits en local). Cada tarea termina cuando está en `main` remoto y desplegado en vivo.
+Si el usuario rechaza la propuesta, revertir con `git checkout -- index.html`.
+
+Una vez aprobado, la tarea no termina hasta que está en `main` remoto: no dejar commits locales sin pushear.
 
 ### Recomendar el modelo antes de empezar
 
