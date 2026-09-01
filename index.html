@@ -5039,9 +5039,13 @@ function renderRfrDiaDetalle(){
   var wowProcesoDia=prevDiaMetrics?rfrWowBadge(r.merma||0,prevDiaMetrics.merma,false):'';
   var wowMermaDia=prevDiaMetrics?rfrWowBadge(pctKgMerma,prevDiaMetrics.pctKgMerma,false):'';
 
-  var secMapDia={}; (r.cajas||[]).forEach(function(c){
+  var secMapDia={}; var c6ozDia=0,c12ozDia=0,cOtrasDia=0; (r.cajas||[]).forEach(function(c){
     var sec='S'+(c.sector||1); secMapDia[sec]=(secMapDia[sec]||0)+(c.cantidad||0);
+    if(c.presentacion==='6 oz') c6ozDia+=c.cantidad||0;
+    else if(c.presentacion==='12 oz') c12ozDia+=c.cantidad||0;
+    else cOtrasDia+=c.cantidad||0;
   });
+  var cajasPresLegDia='6 oz · '+c6ozDia.toLocaleString('es-MX')+'  ·  12 oz · '+c12ozDia.toLocaleString('es-MX')+(cOtrasDia>0?'  ·  otras · '+cOtrasDia.toLocaleString('es-MX'):'');
   var secIdsDia=['S1','S2','S3','S4']; var secValsDia=secIdsDia.map(function(sl){return secMapDia[sl]||0;});
   var secSumDia=secValsDia.reduce(function(a,v){return a+v;},0);
 
@@ -5057,6 +5061,7 @@ function renderRfrDiaDetalle(){
         '<div class="kpi-accent" style="background:'+colCajasDia+'"></div>'+
         '<div class="kpi-lbl">Total cajas</div>'+
         '<div class="kpi-val" style="color:'+colCajasDia+'">'+r.totalCajas+'</div>'+
+        '<div class="kpi-sub">'+cajasPresLegDia+'</div>'+
       '</div>'+
       '<div class="kpi-card">'+wowKgDia+
         '<div class="kpi-accent" style="background:'+colKgDia+'"></div>'+
@@ -5443,6 +5448,8 @@ function renderRfrSemDetalle(){
 
   var secIds=['S1','S2','S3','S4']; var secVals=secIds.map(function(sl){return s.secMap[sl]||0;});
   var secSum=secVals.reduce(function(a,v){return a+v;},0);
+  var cOtrasSem=Math.max(0,(s.cajas||0)-(s.c6oz||0)-(s.c12oz||0));
+  var cajasPresLegSem='6 oz · '+(s.c6oz||0).toLocaleString('es-MX')+'  ·  12 oz · '+(s.c12oz||0).toLocaleString('es-MX')+(cOtrasSem>0?'  ·  otras · '+cOtrasSem.toLocaleString('es-MX'):'');
 
   var kgCosechados=Math.round(s.registros.reduce(function(a,r){
     var kg=(r.totalKg!==undefined&&r.totalKg!==null)?r.totalKg:Math.round((r.totalCajas||0)*(typeof KG_POR_CAJA!=='undefined'?KG_POR_CAJA:2.4)*100)/100;
@@ -5504,6 +5511,7 @@ function renderRfrSemDetalle(){
         '<div class="kpi-accent" style="background:'+colCajasSem+'"></div>'+
         '<div class="kpi-lbl">Total cajas</div>'+
         '<div class="kpi-val" style="color:'+colCajasSem+'">'+s.cajas.toLocaleString('es-MX')+'</div>'+
+        '<div class="kpi-sub">'+cajasPresLegSem+'</div>'+
       '</div>'+
       '<div class="kpi-card">'+wowPromCajas+
         '<div class="kpi-accent" style="background:'+colPromCajasSem+'"></div>'+
