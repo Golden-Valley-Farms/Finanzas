@@ -2280,11 +2280,99 @@ var SUPABASE_KEY = 'sb_publishable_RNnR7jV42dGEGLFWdRVfvQ_cP1xSwuO';
 var sb = null;
 var sbOnline = false;
 
+// ---- CANDADO DE PREVISUALIZACIÓN ----
+// El preview local pega a la MISMA base de Supabase que producción, así que un
+// guardado de prueba crea registros reales — y con ellos las deudas y los gastos
+// autoGen que cuelgan de ellos. Cuando la app corre desde localhost se bloquean
+// TODAS las escrituras en un solo punto (el wrapper de sb.from), para que ningún
+// sbSaveX/sbDeleteX pueda escribir, incluidos los que se agreguen después de esto.
+// Las lecturas pasan intactas, así que la previsualización se ve con datos reales.
+var SB_PREVIEW = (function(){
+  var h = location.hostname;
+  return h==='localhost' || h==='127.0.0.1' || h==='::1' || h==='';
+})();
+var sbEscrituraBloqueada = SB_PREVIEW;
+
+// Sustituto de una consulta de escritura: encadenable como la real (.eq, .in, …)
+// y "await-eable", resolviendo como un guardado exitoso pero sin tocar la red.
+// Devuelve {error:null} a propósito: quien lo llame no debe creer que falló.
+function sbNoopQuery(){
+  var q = {};
+  var chain = ['eq','neq','gt','gte','lt','lte','like','ilike','is','in','not','or',
+               'filter','match','select','order','limit','range','single','maybeSingle'];
+  chain.forEach(function(m){ q[m] = function(){ return q; }; });
+  q.then = function(onOk,onErr){ return Promise.resolve({data:null,error:null,count:0}).then(onOk,onErr); };
+  q['catch'] = function(){ return q; };
+  return q;
+}
+
+function sbInstalarCandado(){
+  // En producción ni se instala: la ruta de guardado en vivo queda intacta,
+  // sin un envoltorio de por medio que pudiera fallar.
+  if(!SB_PREVIEW) return;
+  if(!sb || sb.__candado) return;
+  sb.__candado = true;
+  var fromReal = sb.from.bind(sb);
+  sb.from = function(tabla){
+    var q = fromReal(tabla);
+    ['insert','upsert','update','delete'].forEach(function(m){
+      var real = q[m].bind(q);
+      q[m] = function(){
+        if(!sbEscrituraBloqueada) return real.apply(null, arguments);
+        console.warn('🔒 Escritura bloqueada (previsualización): '+m+' en "'+tabla+'"');
+        try{ showToast('🔒 Guardado bloqueado — previsualización'); }catch(e){}
+        return sbNoopQuery();
+      };
+    });
+    return q;
+  };
+}
+
+// Escotilla deliberada: para probar de verdad el viaje redondo de un campo nuevo
+// hay que llamarla a mano desde la consola. Nunca automático.
+function sbPermitirGuardados(){
+  sbEscrituraBloqueada = false;
+  pintaBannerPreview();
+  console.warn('⚠️ Guardados HABILITADOS: lo que guardes se escribe en la base real.');
+  try{ showToast('⚠️ Guardados habilitados — base real'); }catch(e){}
+}
+function sbBloquearGuardados(){
+  sbEscrituraBloqueada = true;
+  pintaBannerPreview();
+  console.log('🔒 Guardados bloqueados de nuevo.');
+  try{ showToast('🔒 Guardados bloqueados'); }catch(e){}
+}
+
+// Distintivo fijo y chico, sin afectar el layout (position:fixed + pointer-events:none),
+// para que la previsualización se siga viendo igual que producción.
+function pintaBannerPreview(){
+  if(!SB_PREVIEW) return;
+  var el = document.getElementById('sb-preview-badge');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'sb-preview-badge';
+    el.style.cssText = 'position:fixed;top:8px;left:8px;z-index:9999;pointer-events:none;'+
+      'font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;'+
+      'padding:4px 8px;border-radius:999px;font-family:var(--mono);opacity:.9';
+    document.body.appendChild(el);
+  }
+  if(sbEscrituraBloqueada){
+    el.textContent = '🔒 Preview · sin guardar';
+    el.style.background = 'var(--green-bg)'; el.style.color = 'var(--green)';
+  } else {
+    el.textContent = '⚠️ Preview · guardados activos';
+    el.style.background = 'var(--rojo-bg)'; el.style.color = 'var(--rojo)';
+  }
+}
+
 function initSupabase(){
   try {
     var client = window.supabase;
     if(!client){ console.warn('Supabase CDN no cargó'); return; }
     sb = client.createClient(SUPABASE_URL, SUPABASE_KEY);
+    sbInstalarCandado();
+    pintaBannerPreview();
+    if(SB_PREVIEW) console.log('🔒 Previsualización local: guardados a Supabase bloqueados.');
     (async function(){
       try {
         var res = await sb.from('gastos').select('id').limit(1);

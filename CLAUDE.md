@@ -14,7 +14,19 @@ No hay build, ni npm, ni tests. El repo se publica por **GitHub Pages** en <http
 
 **Cada push a `main` sale en vivo.** No hay staging ni preview. Antes de pushear, abrir `index.html` local en el navegador y revisar la consola: debe aparecer `Supabase conectado ✅`. Los errores de la app se reportan por `console.error` y por `showToast()`.
 
-Ojo: local y producción **comparten la misma base de Supabase**. Probar local no aísla los datos — cualquier cosa que guardes en la prueba se escribe en la base real. Por eso, al verificar desde el navegador, mirar y calcular está bien, pero **no completar guardados de prueba**: si hace falta probar un flujo de alta o edición, armar el objeto en memoria y quitarlo al terminar, sin llamar a `save*()` ni a `sbSave*()`.
+Ojo: local y producción **comparten la misma base de Supabase**. Probar local no aísla los datos — cualquier cosa que se guarde en la prueba se escribiría en la base real, y con ella las deudas y los gastos `autoGen` que cuelgan de ese registro.
+
+### Candado de previsualización
+
+Por eso, desde sep-2026 la app **se bloquea a sí misma cuando corre en `localhost`**: `SB_PREVIEW` detecta el hostname y `sbInstalarCandado()` envuelve `sb.from()` para que `insert`/`upsert`/`update`/`delete` no salgan a la red. Las lecturas pasan intactas, así que el preview se ve con datos reales.
+
+- **Es un solo punto de intercepción**, no un candado por función: las ~50 escrituras de la app pasan todas por `sb.from(tabla).upsert(...)` o `.delete()`, así que cualquier `sbSaveX` nuevo queda cubierto sin tocarlo.
+- `sbNoopQuery()` sustituye la consulta bloqueada: es encadenable (`.eq`, `.in`, …) y `await`-eable, y resuelve `{data:null,error:null}` **a propósito** — quien la llame no debe creer que el guardado falló.
+- **En producción el envoltorio ni se instala** (`if(!SB_PREVIEW) return;`), para que la ruta de guardado en vivo quede idéntica a como estaba.
+- Distintivo fijo arriba a la izquierda (`#sb-preview-badge`), con `position:fixed` y `pointer-events:none` para no mover el layout ni tapar clics. Verde = bloqueado, rojo = guardados activos.
+- **Escotilla deliberada:** `sbPermitirGuardados()` / `sbBloquearGuardados()` desde la consola, para los casos en que sí haga falta probar el viaje redondo de un campo nuevo. Nunca se desbloquea solo.
+
+`localStorage` **sí** sigue guardando en el preview: es local y se pisa en la siguiente recarga con lo que venga de Supabase (ver `cargarDesdeSB()`), así que un registro de prueba no sobrevive al refresh.
 
 Hay un `.claude/launch.json` con la configuración `gvf-local`, que sirve `index.html` por `python -m http.server 8777`. Es solo andamio de pruebas — no forma parte de la app y GitHub Pages lo ignora. Existe porque el navegador integrado no abre rutas `file://`, así que sin servidor no hay forma de revisar la consola ni el render.
 
@@ -637,7 +649,7 @@ Si una tabla regresa vacía teniendo datos, casi siempre es RLS — el código y
 **Claude publica los cambios; el usuario no sube archivos a mano.** Pero **primero los ve corriendo, y solo entonces se suben** (regla del 1-sep-2026, reemplaza el push automático que había antes). El ciclo completo de cada cambio es:
 
 1. Editar `index.html` en este clon local. **Sin commitear.**
-2. Levantar el preview local (`preview_start` con `gvf-local`) y dejarlo abierto en la pantalla donde se ve el cambio. Decirle en una o dos líneas dónde mirar — el usuario prefiere ver el resultado a que se lo expliquen.
+2. Levantar el preview local (`preview_start` con `gvf-local`) y dejarlo abierto en la pantalla donde se ve el cambio. Decirle en una o dos líneas dónde mirar — el usuario prefiere ver el resultado a que se lo expliquen. El candado de previsualización impide que el preview escriba en Supabase (ver "Desplegar y probar").
 3. Iterar sobre el mismo archivo según lo que pida, siempre sin commitear.
 4. **Solo cuando el usuario apruebe** ("súbelo" o equivalente): `git add` + commit descriptivo + `git push origin main` — GitHub Pages despliega solo.
 
