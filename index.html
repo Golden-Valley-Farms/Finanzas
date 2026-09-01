@@ -653,9 +653,62 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .rcm-neg-card.active .rcm-neg-card-title{color:var(--camote)}
 .rfr-chart-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-top:14px;box-shadow:0 1px 3px rgba(0,0,0,0.15)}
 .rfr-chart-box:first-child{margin-top:0}
+
+/* ---- PANTALLA DE INICIO DE SESIÓN ----
+   Arranca VISIBLE en el markup y se esconde cuando hay sesión confirmada, para que
+   nunca se alcance a ver el contenido de la app antes de validar. */
+#login-screen{position:fixed;inset:0;z-index:10000;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;padding:20px}
+#login-screen.oculto{display:none}
+.login-card{width:100%;max-width:360px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:28px 24px 24px;text-align:center}
+.login-logo img{width:64px;height:64px;object-fit:contain}
+.login-titulo{font-size:17px;font-weight:700;color:var(--text);margin-top:10px}
+.login-sub{font-size:12px;color:var(--text3);margin-top:2px;margin-bottom:20px}
+.login-campo{text-align:left;margin-bottom:12px}
+.login-lbl{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;
+  letter-spacing:.03em;margin-bottom:4px;display:block}
+.login-campo input{width:100%;padding:11px 12px;background:var(--surface2);
+  border:1px solid var(--border);border-radius:var(--radius);font-size:14px;
+  color:var(--text);outline:none;font-family:var(--font)}
+.login-campo input:focus{border-color:var(--green)}
+#login-btn{width:100%;padding:12px;margin-top:6px;background:var(--green);color:#fff;
+  border:none;border-radius:var(--radius);font-size:14px;font-weight:600;
+  cursor:pointer;font-family:var(--font)}
+#login-btn:disabled{opacity:.6;cursor:default}
+#login-error{margin-top:12px;font-size:12.5px;color:var(--rojo);
+  background:var(--rojo-bg);border-radius:var(--radius);padding:9px 11px;display:none}
+#login-error.ver{display:block}
+/* Botón de salir, dentro del encabezado de la app */
+.header{position:relative}
+#btn-salir{position:absolute;top:18px;right:0;z-index:50;background:transparent;
+  border:1px solid var(--border);color:var(--text3);border-radius:999px;
+  padding:5px 11px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font)}
+#btn-salir:hover{color:var(--text);border-color:var(--text3)}
 </style>
 </head>
 <body id="artifacts-component-root-html">
+
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo" id="login-logo"></div>
+    <div class="login-titulo">Golden Valley Farms</div>
+    <div class="login-sub">Inicia sesi&oacute;n para continuar</div>
+    <div class="login-campo">
+      <label class="login-lbl" for="login-email">Correo</label>
+      <input type="email" id="login-email" autocomplete="username" autocapitalize="off" spellcheck="false"
+             onkeydown="if(event.key==='Enter')iniciarSesion()">
+    </div>
+    <div class="login-campo">
+      <label class="login-lbl" for="login-pass">Contrase&ntilde;a</label>
+      <input type="password" id="login-pass" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')iniciarSesion()">
+    </div>
+    <button id="login-btn" onclick="iniciarSesion()">Entrar</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
 <div class="app">
   <div class="header">
     <div class="header-brand">
@@ -2365,21 +2418,118 @@ function pintaBannerPreview(){
   }
 }
 
+// ---- SESIÓN ----
+// La app no lee nada de Supabase hasta que haya sesión confirmada. No es solo por
+// privacidad: cuando RLS niega un SELECT, PostgREST responde 200 con arreglo VACÍO,
+// no un error. Sin esta compuerta, un visitante sin sesión pasaría el chequeo de
+// conexión (sbOnline=true), dispararía cargarDesdeSB() y ésta pisaría las claves
+// cc_* de localStorage con vacío — la app se vería sin datos y encima borraría su
+// caché, sin un solo mensaje de error.
+function loginError(msg){
+  var e = document.getElementById('login-error');
+  if(!e) return;
+  if(!msg){ e.className=''; e.textContent=''; return; }
+  e.textContent = msg; e.className = 'ver';
+}
+
+function mostrarLogin(){
+  var ls = document.getElementById('login-screen');
+  if(ls) ls.className = '';
+  // El logo se clona del encabezado en vez de duplicar el base64 en el markup.
+  var cont = document.getElementById('login-logo');
+  var img = document.querySelector('.header-logo img');
+  if(cont && img && !cont.firstChild) cont.appendChild(img.cloneNode(true));
+  var em = document.getElementById('login-email');
+  if(em) em.focus();
+}
+
+function ocultarLogin(){
+  var ls = document.getElementById('login-screen');
+  if(ls) ls.className = 'oculto';
+  var p = document.getElementById('login-pass');
+  if(p) p.value = '';
+  loginError('');
+}
+
+function pintaBotonSalir(){
+  if(document.getElementById('btn-salir')) return;
+  var h = document.querySelector('.header');
+  if(!h) return;
+  var b = document.createElement('button');
+  b.id = 'btn-salir'; b.type = 'button'; b.textContent = 'Salir';
+  b.onclick = cerrarSesion;
+  h.appendChild(b);
+}
+
+async function iniciarSesion(){
+  var em = document.getElementById('login-email');
+  var pw = document.getElementById('login-pass');
+  var bt = document.getElementById('login-btn');
+  var correo = (em ? em.value : '').trim();
+  var clave  = pw ? pw.value : '';
+  if(!correo || !clave){ loginError('Escribe tu correo y tu contraseña.'); return; }
+  if(!sb){ loginError('Sin conexión con el servidor. Recarga la página.'); return; }
+  loginError('');
+  if(bt){ bt.disabled = true; bt.textContent = 'Entrando…'; }
+  try {
+    var res = await sb.auth.signInWithPassword({ email: correo, password: clave });
+    if(res.error){
+      var m = (res.error.message||'').toLowerCase();
+      if(m.indexOf('invalid') >= 0) loginError('Correo o contraseña incorrectos.');
+      else if(m.indexOf('network') >= 0 || m.indexOf('fetch') >= 0) loginError('Sin conexión a internet. Revisa tu red.');
+      else loginError('No se pudo entrar: ' + res.error.message);
+    } else {
+      entrarALaApp();
+    }
+  } catch(e){
+    loginError('No se pudo entrar: ' + e.message);
+  }
+  if(bt){ bt.disabled = false; bt.textContent = 'Entrar'; }
+}
+
+async function cerrarSesion(){
+  try { if(sb) await sb.auth.signOut(); } catch(e){ console.error('signOut:', e.message); }
+  // Recargar es la forma limpia de vaciar los arreglos en memoria: sin esto, la app
+  // seguiría mostrando en pantalla lo que ya había cargado el usuario anterior.
+  location.reload();
+}
+
+function entrarALaApp(){
+  ocultarLogin();
+  pintaBotonSalir();
+  conectarYCargar();
+}
+
+function conectarYCargar(){
+  (async function(){
+    try {
+      var res = await sb.from('gastos').select('id').limit(1);
+      sbOnline = !res.error;
+      if(sbOnline){ console.log('Supabase conectado ✅'); cargarDesdeSB(); }
+      else console.error('Supabase error:', res.error.message);
+    } catch(e){ console.error('Supabase excepcion:', e.message); }
+  })();
+}
+
 function initSupabase(){
   try {
     var client = window.supabase;
-    if(!client){ console.warn('Supabase CDN no cargó'); return; }
+    if(!client){
+      console.warn('Supabase CDN no cargó');
+      mostrarLogin();
+      loginError('No se pudo cargar el servidor. Revisa tu conexión y recarga la página.');
+      return;
+    }
     sb = client.createClient(SUPABASE_URL, SUPABASE_KEY);
     sbInstalarCandado();
     pintaBannerPreview();
     if(SB_PREVIEW) console.log('🔒 Previsualización local: guardados a Supabase bloqueados.');
     (async function(){
       try {
-        var res = await sb.from('gastos').select('id').limit(1);
-        sbOnline = !res.error;
-        if(sbOnline){ console.log('Supabase conectado ✅'); cargarDesdeSB(); }
-        else console.error('Supabase error:', res.error.message);
-      } catch(e){ console.error('Supabase excepcion:', e.message); }
+        var s = await sb.auth.getSession();
+        if(s && s.data && s.data.session) entrarALaApp();
+        else mostrarLogin();
+      } catch(e){ console.error('getSession error:', e.message); mostrarLogin(); }
     })();
   } catch(e){ console.error('initSupabase error:', e.message); }
 }
