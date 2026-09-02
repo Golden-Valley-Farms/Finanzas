@@ -10726,6 +10726,7 @@ function abrirRegistrarPago(){
       '<button onclick="refrescarCuentaDeuda()" style="padding:11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Cancelar</button>'+
       '<button class="btn-main" style="margin:0" onclick="confirmarPagoDeuda()">Guardar</button>'+
     '</div>';
+  document.getElementById('overlay').classList.add('open');
   setTimeout(function(){var i=document.getElementById('dp-monto'); if(i) i.focus();},100);
 }
 
