@@ -536,11 +536,13 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   }
   #sc-deudas > .rfr-topbar,
   #sc-deudas > #deuda-kpi-row,
-  #sc-deudas > #deuda-aging,
+  #sc-deudas > #deuda-resumen-sec,
+  #sc-deudas > #deuda-flujo-sec,
+  #sc-deudas > #deuda-clientes-sec,
   #sc-deudas > #deuda-ctrls,
   #sc-deudas > #deuda-table-wrap,
   #sc-deudas > #deuda-registrar-sec{max-width:1400px;margin-left:auto;margin-right:auto}
-  #sc-deudas > #deuda-kpi-row{grid-template-columns:repeat(4,1fr)}
+  #sc-deudas > #deuda-kpi-row{grid-template-columns:repeat(3,1fr)}
   #sc-deudas > #deuda-registrar-sec{max-width:520px}
   /* Escritorio: tabla en vez de tarjetas. */
   #sc-deudas #deuda-list{display:none}
@@ -2200,11 +2202,13 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
   <div id="sc-deudas" class="screen">
     <div class="rfr-topbar" style="display:flex;gap:4px;margin-bottom:12px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
-      <button class="ven-tab" id="deuda-tab-registrar" onclick="setDeudaTab('registrar')" style="flex:1">Registrar</button>
-      <button class="ven-tab active" id="deuda-tab-cobrar" onclick="setDeudaTab('cobrar')" style="flex:1">Por cobrar</button>
-      <button class="ven-tab" id="deuda-tab-pagar" onclick="setDeudaTab('pagar')" style="flex:1">Por pagar</button>
-      <button class="ven-tab" id="deuda-tab-clientes" onclick="setDeudaTab('clientes')" style="flex:1">Clientes</button>
+      <button class="ven-tab active" id="deuda-tab-resumen" onclick="setDeudaTab('resumen')" style="flex:1">Resumen</button>
+      <button class="ven-tab" id="deuda-tab-cobrar" onclick="setDeudaTab('cobrar')" style="flex:1">Cobrar</button>
+      <button class="ven-tab" id="deuda-tab-pagar" onclick="setDeudaTab('pagar')" style="flex:1">Pagar</button>
+      <button class="ven-tab" id="deuda-tab-flujo" onclick="setDeudaTab('flujo')" style="flex:1">Flujo</button>
     </div>
+    <div id="deuda-resumen-sec" style="display:none"></div>
+    <div id="deuda-flujo-sec" style="display:none"></div>
     <div id="deuda-kpi-row" class="deuda-kpis">
       <div class="kpi-card">
         <div class="kpi-accent" id="deuda-total-ac" style="background:var(--green)"></div>
@@ -2224,14 +2228,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="kpi-val" id="deuda-sem-val" style="color:var(--maiz)">$0</div>
         <div class="deuda-kpi-sub" id="deuda-sem-sub">&nbsp;</div>
       </div>
-      <div class="kpi-card">
-        <div class="kpi-accent" style="background:var(--jal)"></div>
-        <div class="kpi-lbl">Cargo más viejo</div>
-        <div class="kpi-val" id="deuda-viejo-val" style="color:var(--jal)">—</div>
-        <div class="deuda-kpi-sub" id="deuda-viejo-sub">&nbsp;</div>
-      </div>
     </div>
-    <div id="deuda-aging"></div>
     <div id="deuda-ctrls" class="deuda-ctrls">
       <input type="text" id="deuda-search" placeholder="Buscar cliente, ID o folio…" oninput="renderDeudas()">
       <select id="deuda-orden" onchange="renderDeudas()">
@@ -2244,12 +2241,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <option value="todas">Ver: todas</option>
         <option value="vencido">Ver: solo con vencido</option>
       </select>
+      <button onclick="nuevoCargoManual()" style="padding:9px 14px;font-size:13px;font-weight:600;font-family:var(--font);border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer;white-space:nowrap">+ Cargo</button>
     </div>
     <div id="deuda-table-wrap" class="fintab-wrap auto">
       <table class="fintab">
         <thead><tr>
           <th class="txt">ID</th><th class="txt">Cliente</th><th>Saldo</th><th>Vencido</th>
-          <th class="txt">Antigüedad</th><th>Cargo más viejo</th><th>Plazo</th><th>Últ. abono</th>
         </tr></thead>
         <tbody id="deuda-table-body"></tbody>
       </table>
@@ -2257,6 +2254,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div id="deuda-list"></div>
     <div id="deuda-registrar-sec" style="display:none;max-width:520px;margin:0 auto">
       <div id="drsub-deuda">
+        <button class="dcta-back" onclick="setDeudaTab('resumen')">&lsaquo; Resumen</button>
         <div class="field" style="margin-bottom:12px"><label>Fecha</label>
           <input type="date" id="dr-fecha" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none"></div>
         <div class="field" style="margin-bottom:12px"><label>Tipo de deuda</label>
@@ -2287,6 +2285,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <!-- Clientes: catalogo unico, con las dos direcciones a la vista sin cambiar
          de pestaña. Antes vivia anidado dentro de Registrar. -->
     <div id="deuda-clientes-sec" style="display:none;max-width:640px;margin:0 auto">
+      <button class="dcta-back" onclick="setDeudaTab('resumen')">&lsaquo; Resumen</button>
       <div class="deuda-ctrls">
         <input type="text" id="dcli-search" placeholder="Buscar cliente o ID…" oninput="renderClientesCatalogo()">
       </div>
@@ -2572,6 +2571,8 @@ async function cargarDesdeSB(){
   var dData = await fetchAllRows('deudas', 'created_at', false);
   var pData = await fetchAllRows('pagos_deuda', 'created_at', false);
   var cpData = await fetchAllRows('contrapartes', 'created_at', false);
+  var bsData = await fetchAllRows('bancos_saldos', 'nombre', true);
+  var prData = await fetchAllRows('programados', 'fecha', true);
   var mzData = await fetchAllRows('maiz_registros', 'created_at', false);
   var rC = await sb.from('clientes').select('nombre').order('nombre');
   var rP = await sb.from('proveedores').select('nombre').order('nombre');
@@ -2739,9 +2740,13 @@ async function cargarDesdeSB(){
   if(cpData && cpData.length){
     contrapartes = dedupContrapartes(cpData.map(function(c){ return {nombre:c.nombre, tipo:c.tipo,
       clave:c.clave||'', modo:c.modo||'fifo', moneda:c.moneda||'MXN', tipoCambio:parseFloat(c.tipo_cambio||0),
-      diasCredito:(c.dias_credito===null||c.dias_credito===undefined)?'':c.dias_credito}; }));
+      diasCredito:(c.dias_credito===null||c.dias_credito===undefined)?'':c.dias_credito,
+      categoria:c.categoria||''}; }));
     saveContrapartes();
   }
+  if(bsData){ bancosSaldos = bsData.map(function(b){ return {nombre:b.nombre, saldo:parseFloat(b.saldo||0), fechaCorte:b.fecha_corte||''}; }); saveBancosSaldos(); }
+  if(prData){ programados = prData.map(function(p){ return {id:p.id, direccion:p.direccion||'pago', fecha:p.fecha||'',
+    concepto:p.concepto||'', monto:parseFloat(p.monto||0), contraparte:p.contraparte||'', cumplido:!!p.cumplido}; }); saveProgramados(); }
   if(typeof renderDeudas==='function' && document.getElementById('sc-deudas') && document.getElementById('sc-deudas').classList.contains('active')) renderDeudas();
   if(rC.data) clientes = rC.data.map(function(c){return c.nombre;});
   if(rP.data) proveedores = rP.data.map(function(p){return p.nombre;});
@@ -3589,7 +3594,7 @@ function goSc(s){
   if(s==='ven'){ venTab('lista'); }
   if(s==='fram'){ framTab('nuevo'); }
   if(s==='maiz'){ maizTab(maizTabSel); }
-  if(s==='deudas'){ renderDeudas(); }
+  if(s==='deudas'){ setDeudaTab(deudaTabSel); }
   if(s==='deudacta'){ renderCuentaDeuda(); }
   window.scrollTo(0,0);
 }
@@ -9482,7 +9487,50 @@ function saveDeudas(){try{localStorage.setItem('cc_deudas',JSON.stringify(deudas
 function savePagosDeuda(){try{localStorage.setItem('cc_pagosdeuda',JSON.stringify(pagosDeuda));}catch(e){}}
 function saveContrapartes(){try{localStorage.setItem('cc_contrapartes',JSON.stringify(contrapartes));}catch(e){}}
 
-var deudaTabSel='cobrar';
+// ── Saldo en bancos y agenda de programados ─────────────────────
+// Dos entidades nuevas del rediseño de sep-2026. Alimentan el Resumen y el
+// Flujo de efectivo; no tocan cuentas, cargos ni pagos.
+var bancosSaldos=[], programados=[];
+try{var _bs=localStorage.getItem('cc_bancos_saldos'); if(_bs) bancosSaldos=JSON.parse(_bs);}catch(e){}
+try{var _pg=localStorage.getItem('cc_programados'); if(_pg) programados=JSON.parse(_pg);}catch(e){}
+function saveBancosSaldos(){try{localStorage.setItem('cc_bancos_saldos',JSON.stringify(bancosSaldos));}catch(e){}}
+function saveProgramados(){try{localStorage.setItem('cc_programados',JSON.stringify(programados));}catch(e){}}
+async function sbSaveBancoSaldo(b){
+  if(!sbOnline||!sb) return;
+  await sb.from('bancos_saldos').upsert({nombre:b.nombre, saldo:parseFloat(b.saldo)||0,
+    fecha_corte:b.fechaCorte||null},{onConflict:'nombre'});
+}
+async function sbDeleteBancoSaldo(nombre){ if(!sbOnline||!sb) return; await sb.from('bancos_saldos').delete().eq('nombre',nombre); }
+async function sbSaveProgramado(p){
+  if(!sbOnline||!sb) return;
+  await sb.from('programados').upsert({id:p.id, direccion:p.direccion||'pago', fecha:p.fecha||null,
+    concepto:p.concepto||'', monto:parseFloat(p.monto)||0, contraparte:p.contraparte||'', cumplido:!!p.cumplido});
+}
+async function sbDeleteProgramado(id){ if(!sbOnline||!sb) return; await sb.from('programados').delete().eq('id',id); }
+
+// Clasificación de la cuenta: comercial (le debemos por mercancía que a su vez
+// vendimos) o financiera (préstamos y gastos). Lo que el usuario marque en la
+// ficha manda siempre.
+//
+// Sin marcar NO se asume comercial: se DERIVA del origen de sus cargos. Un cargo
+// que nació de un envío o de una compra de almacén es mercancía; uno capturado a
+// mano o importado es un préstamo o un gasto. Así el balance sale bien desde el
+// primer día —sin migrar las 11 fichas existentes— y el usuario solo corrige las
+// excepciones. Si se asumiera comercial, Asciende, Arca y Nacho se restarían de
+// la cobranza y el resultado sería falso.
+function cpCategoria(nombre){
+  var c=getContraparte(nombre)||{};
+  if(c.categoria==='financiera'||c.categoria==='comercial') return c.categoria;
+  for(var i=0;i<deudas.length;i++){
+    var d=deudas[i];
+    if(d.contraparte!==nombre) continue;
+    if(d.refKind==='com_pagar'||d.refKind==='alm_compra_pagar'||
+       d.refKind==='com_cobrar'||d.refKind==='camote_cobrar') return 'comercial';
+  }
+  return 'financiera';
+}
+
+var deudaTabSel='resumen';
 var deudaModalTipo='', deudaModalNombre='';
 
 async function sbSaveDeuda(d){
@@ -9521,7 +9569,8 @@ async function sbSaveContraparte(c){
   // en Supabase junto a la unificada, porque la llave es (nombre,tipo).
   var full={nombre:c.nombre, tipo:CP_TIPO, clave:c.clave||'', modo:c.modo||'fifo',
     moneda:c.moneda||'MXN', tipo_cambio:parseFloat(c.tipoCambio)||0,
-    dias_credito:(c.diasCredito===''||c.diasCredito===null||c.diasCredito===undefined)?null:(parseInt(c.diasCredito,10)||null)};
+    dias_credito:(c.diasCredito===''||c.diasCredito===null||c.diasCredito===undefined)?null:(parseInt(c.diasCredito,10)||null),
+    categoria:c.categoria||''};
   var r=await sb.from('contrapartes').upsert(full, {onConflict:'nombre,tipo'});
   if(r && r.error){ await sb.from('contrapartes').upsert({nombre:c.nombre, tipo:CP_TIPO}, {onConflict:'nombre,tipo'}); }
 }
@@ -9791,8 +9840,11 @@ function agingVacio(){
 // En cuentas corriente lo deriva aplicando los abonos del cargo más viejo al más
 // nuevo: da lo mismo que el saldo corrido —Σ(pendiente) = max(0, saldoTotal)— así
 // que la antigüedad nunca puede contradecir el saldo que muestra la tarjeta.
-function agingCuenta(tipo, nombre){
-  var ag=agingVacio(), pend=[];
+// Cargos con saldo vivo de una cuenta, en orden de antigüedad. Es la fuente
+// única: la antigüedad y el flujo de efectivo leen de aquí, así que no pueden
+// contradecirse entre sí ni contra el saldo de la tarjeta.
+function cuentaPendientes(tipo, nombre){
+  var pend=[];
   if(cpModo(nombre)==='corriente'){
     var cargos=_ordenar(deudas.filter(function(d){return d.tipo===tipo && d.contraparte===nombre;}));
     var bolsa=pagosDeuda.reduce(function(a,p){
@@ -9809,6 +9861,10 @@ function agingCuenta(tipo, nombre){
       if(!s.liquidada && s.saldo>0.005) pend.push({deuda:s.deuda, saldo:s.saldo});
     });
   }
+  return pend;
+}
+function agingCuenta(tipo, nombre){
+  var ag=agingVacio(), pend=cuentaPendientes(tipo,nombre);
   pend.forEach(function(x){
     var dias=deudaDiasVencido(x.deuda);
     ag[agingBucket(dias)]+=x.saldo;
@@ -9884,27 +9940,40 @@ function diasDeudaBadge(d){
     'white-space:nowrap;background:'+bg+';color:'+col+'">'+txt+'</span>';
 }
 
+// Cuatro pestañas: Resumen, Cobrar, Pagar y Flujo. "Registrar" y "Clientes"
+// siguen existiendo como vistas —se llega a ellas por el botón + de la cartera y
+// por el de Resumen— pero ya no ocupan una pestaña: el módulo abre mostrando
+// información, no un formulario.
 function setDeudaTab(t){
   deudaTabSel=t;
-  var tc=document.getElementById('deuda-tab-cobrar'), tp=document.getElementById('deuda-tab-pagar'),
-      tr=document.getElementById('deuda-tab-registrar'), tcli=document.getElementById('deuda-tab-clientes');
-  if(tc) tc.classList.toggle('active', t==='cobrar');
-  if(tp) tp.classList.toggle('active', t==='pagar');
-  if(tr) tr.classList.toggle('active', t==='registrar');
-  if(tcli) tcli.classList.toggle('active', t==='clientes');
   var esCartera=(t==='cobrar'||t==='pagar');
-  var esReg=(t==='registrar'), esCli=(t==='clientes');
-  // Las cuatro secciones de abajo (cartera con su cabecera, Registrar y Clientes)
-  // son mutuamente excluyentes: solo una se pinta a la vez.
-  ['deuda-kpi-row','deuda-aging','deuda-ctrls','deuda-table-wrap','deuda-list'].forEach(function(id){
-    var el=document.getElementById(id); if(el) el.style.display=esCartera?'':'none';
+  [['deuda-tab-resumen','resumen'],['deuda-tab-cobrar','cobrar'],
+   ['deuda-tab-pagar','pagar'],['deuda-tab-flujo','flujo']].forEach(function(p){
+    var el=document.getElementById(p[0]); if(el) el.classList.toggle('active', t===p[1]);
   });
-  var reg=document.getElementById('deuda-registrar-sec'), cli=document.getElementById('deuda-clientes-sec');
-  if(reg) reg.style.display=esReg?'block':'none';
-  if(cli) cli.style.display=esCli?'block':'none';
-  if(esReg) initDeudaRegistrarForm();
-  else if(esCli) renderClientesCatalogo();
+  // Todas las secciones son mutuamente excluyentes: solo una se pinta a la vez.
+  var visibles={
+    'deuda-kpi-row':esCartera, 'deuda-ctrls':esCartera,
+    'deuda-table-wrap':esCartera, 'deuda-list':esCartera,
+    'deuda-resumen-sec':(t==='resumen'), 'deuda-flujo-sec':(t==='flujo'),
+    'deuda-registrar-sec':(t==='registrar'), 'deuda-clientes-sec':(t==='clientes')
+  };
+  for(var id in visibles){
+    var el=document.getElementById(id); if(el) el.style.display=visibles[id]?'':'none';
+  }
+  if(t==='registrar') initDeudaRegistrarForm();
+  else if(t==='clientes') renderClientesCatalogo();
+  else if(t==='resumen') renderResumenDeudas();
+  else if(t==='flujo') renderFlujoEfectivo();
   else renderDeudas();
+}
+// Alta de un cargo manual desde la cartera: recuerda la dirección en la que
+// estabas para que el formulario abra ya con ella puesta.
+function nuevoCargoManual(){
+  var dir=(deudaTabSel==='pagar')?'pagar':'cobrar';
+  setDeudaTab('registrar');
+  var s=document.getElementById('dr-tipo');
+  if(s){ s.value=dir; onDrTipoChange(); }
 }
 // El tipo solo decide la direccion del cargo; la lista de clientes ya no depende
 // de el, asi que no hay que repoblar el select al cambiarlo.
@@ -10044,8 +10113,11 @@ function abrirEditarContraparte(nombre, contexto, tipoRetorno){
       '<option value="USD"'+(c.moneda==='USD'?' selected':'')+'>Dólares (USD)</option></select></div>'+
     '<div class="field" style="margin-bottom:10px"><label>Tipo de cambio <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(solo cuentas USD, para el equivalente en pesos)</span></label>'+
     '<input type="number" id="ec-tc" value="'+(c.tipoCambio||'')+'" placeholder="17.00" min="0" step="0.01" style="'+_dsInput+'"></div>'+
-    '<div class="field" style="margin-bottom:14px"><label>Plazo de crédito <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(días; vacío = '+PLAZO_DEFAULT+')</span></label>'+
+    '<div class="field" style="margin-bottom:10px"><label>Plazo de crédito <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(días; vacío = '+PLAZO_DEFAULT+')</span></label>'+
     '<input type="number" id="ec-plazo" value="'+(c.diasCredito||'')+'" placeholder="'+PLAZO_DEFAULT+'" min="0" step="1" style="'+_dsInput+'"></div>'+
+    '<div class="field" style="margin-bottom:14px"><label>Tipo de cuenta</label><select id="ec-categoria" style="'+_dsInput+'">'+
+      '<option value="comercial"'+(cpCategoria(nombre)!=='financiera'?' selected':'')+'>Comercial — compra-venta de mercancía</option>'+
+      '<option value="financiera"'+(cpCategoria(nombre)==='financiera'?' selected':'')+'>Financiera — préstamos y gastos</option></select></div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
       '<button onclick="cancelarEdicionContraparte()" style="padding:11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Cancelar</button>'+
       '<button class="btn-main" style="margin:0" onclick="guardarEdicionContraparte()">Guardar</button>'+
@@ -10069,6 +10141,7 @@ function guardarEdicionContraparte(){
   // (PLAZO_DEFAULT) y cambiarlo mañana no obliga a tocar ficha por ficha.
   var pz=(document.getElementById('ec-plazo').value||'').trim();
   c.diasCredito=pz===''?'':(parseInt(pz,10)||'');
+  c.categoria=document.getElementById('ec-categoria').value;
   saveContrapartes(); sbSaveContraparte(c);
   showToast('Guardado');
   if(_ecContexto==='clientes'){ closeModal(); renderClientesCatalogo(); }
@@ -10097,6 +10170,334 @@ function registrarDeudaManualForm(){
   showToast('Cargo registrado');
   setDeudaTab(tipo);
 }
+// ══ RESUMEN — posición del negocio ═══════════════════════════
+// Fusiona las dos hojas de control interno que el usuario llevaba a mano: el
+// balance de compra-venta de camote y el de deudas. Todo es derivado; lo único
+// que se captura son los saldos de bancos y la agenda de programados.
+
+// Saldo y vencido de una dirección, opcionalmente filtrando por categoría de
+// cuenta. USD se convierte con el tipo de cambio de la ficha, igual que el resto
+// de la pantalla; una cuenta USD sin tipo de cambio capturado aporta cero.
+function rdTotales(tipo, categoria){
+  var tot=0, venc=0, n=0, nombres={};
+  deudas.forEach(function(d){ if(d.tipo===tipo) nombres[d.contraparte]=true; });
+  pagosDeuda.forEach(function(p){ if(p.tipo===tipo) nombres[p.contraparte]=true; });
+  Object.keys(nombres).forEach(function(nom){
+    if(categoria && cpCategoria(nom)!==categoria) return;
+    var c=getContraparte(nom)||{};
+    var f=(c.moneda==='USD')?(parseFloat(c.tipoCambio)||0):1;
+    var saldo=calcSaldoCuenta(tipo,nom).saldo*f;
+    var ag=agingCuenta(tipo,nom);
+    tot+=saldo; venc+=ag.vencido*f;
+    if(saldo>0.5) n++;
+  });
+  return {total:tot, vencido:venc, cuentas:n};
+}
+function rdBancosTotal(){
+  return bancosSaldos.reduce(function(a,b){ return a+(parseFloat(b.saldo)||0); },0);
+}
+function rdCuentasDe(tipo, categoria){
+  var nombres={}, out=[];
+  deudas.forEach(function(d){ if(d.tipo===tipo) nombres[d.contraparte]=true; });
+  pagosDeuda.forEach(function(p){ if(p.tipo===tipo) nombres[p.contraparte]=true; });
+  Object.keys(nombres).forEach(function(nom){
+    if(categoria && cpCategoria(nom)!==categoria) return;
+    var c=getContraparte(nom)||{};
+    var f=(c.moneda==='USD')?(parseFloat(c.tipoCambio)||0):1;
+    var saldo=calcSaldoCuenta(tipo,nom).saldo*f;
+    if(saldo>0.5) out.push({nombre:nom, saldo:saldo, vencido:agingCuenta(tipo,nom).vencido*f});
+  });
+  return out.sort(function(a,b){ return b.saldo-a.saldo; });
+}
+function rdCard(lbl, val, col, sub){
+  return '<div class="kpi-card"><div class="kpi-accent" style="background:'+col+'"></div>'+
+    '<div class="kpi-lbl">'+lbl+'</div>'+
+    '<div class="kpi-val" style="color:'+col+'">'+fmt(val)+'</div>'+
+    '<div class="deuda-kpi-sub">'+(sub||'&nbsp;')+'</div></div>';
+}
+function rdLista(titulo, filas, col, tipo){
+  if(!filas.length) return '';
+  var h='<div style="margin-top:14px"><div class="kpi-lbl" style="margin-bottom:6px">'+titulo+'</div>';
+  filas.forEach(function(x){
+    h+='<div onclick="abrirDeudaContraparte(\''+tipo+'\',\''+x.nombre.replace(/'/g,"\\'")+'\')" '+
+      'style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:7px 0;border-bottom:0.5px solid var(--border);cursor:pointer">'+
+      '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+x.nombre+
+        (x.vencido>0.5?' <span style="font-size:10px;font-weight:700;color:var(--rojo)">'+fmt(x.vencido)+' vencido</span>':'')+'</span>'+
+      '<span style="font-family:var(--mono);font-weight:700;color:'+col+';white-space:nowrap">'+fmt(x.saldo)+'</span></div>';
+  });
+  return h+'</div>';
+}
+function renderResumenDeudas(){
+  var cont=document.getElementById('deuda-resumen-sec'); if(!cont) return;
+  var cobrar=rdTotales('cobrar');
+  var pagarCom=rdTotales('pagar','comercial');
+  var pagarFin=rdTotales('pagar','financiera');
+  var debemos=pagarCom.total+pagarFin.total;
+  // De lo que nos deben, la parte comprometida con proveedores no es nuestra:
+  // es el dinero con el que hay que pagarles la mercancía que ya revendimos.
+  var nuestro=cobrar.total-pagarCom.total;
+  var bancos=rdBancosTotal();
+  var fl=flujoCalc();
+  // Al cierre de este mes entra y sale también lo ya vencido: sigue pendiente de
+  // moverse, no desaparece por haber pasado su fecha.
+  var proyectado=bancos+(fl.per[0].ent-fl.per[0].sal)+(fl.per[1].ent-fl.per[1].sal);
+
+  var h='<div class="deuda-kpis" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">'+
+    rdCard('Nos deben', cobrar.total, 'var(--green)', cobrar.cuentas+' cuenta'+(cobrar.cuentas===1?'':'s'))+
+    rdCard('Debemos', debemos, 'var(--fram)', fmt(pagarCom.total)+' por mercancía')+
+    rdCard('Balance', cobrar.total-debemos, (cobrar.total-debemos)>=0?'var(--green)':'var(--rojo)', 'nos deben menos lo que debemos')+
+    '</div>';
+
+  h+='<div class="aging-card" style="margin-top:12px">'+
+    '<div class="kpi-lbl" style="margin-bottom:8px">Cuánto del cobro es realmente nuestro</div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:18px;align-items:baseline">'+
+      '<div><div style="font-size:11px;color:var(--text3)">Nos deben</div>'+
+        '<div style="font-family:var(--mono);font-weight:700;font-size:17px;color:var(--green)">'+fmt(cobrar.total)+'</div></div>'+
+      '<div style="font-size:17px;color:var(--text3)">−</div>'+
+      '<div><div style="font-size:11px;color:var(--text3)">Comprometido con proveedores</div>'+
+        '<div style="font-family:var(--mono);font-weight:700;font-size:17px;color:var(--fram)">'+fmt(pagarCom.total)+'</div></div>'+
+      '<div style="font-size:17px;color:var(--text3)">=</div>'+
+      '<div><div style="font-size:11px;color:var(--text3)">Nuestro</div>'+
+        '<div style="font-family:var(--mono);font-weight:700;font-size:21px;color:'+(nuestro>=0?'var(--green)':'var(--rojo)')+'">'+fmt(nuestro)+'</div></div>'+
+    '</div></div>';
+
+  h+='<div class="deuda-kpis" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-top:12px">'+
+    rdCard('Vencido a favor', cobrar.vencido, 'var(--rojo)', 'nos deben y ya venció')+
+    rdCard('Vencido en contra', pagarCom.vencido+pagarFin.vencido, 'var(--rojo)', 'debemos y ya venció')+
+    rdCard('En bancos', bancos, 'var(--jal)', bancosSaldos.length?('al cierre de este mes '+fmt(proyectado)):'sin capturar')+
+    '</div>';
+
+  h+=rdLista('Nos deben', rdCuentasDe('cobrar'), 'var(--green)', 'cobrar');
+  h+=rdLista('Le debemos por mercancía', rdCuentasDe('pagar','comercial'), 'var(--fram)', 'pagar');
+  h+=rdLista('Préstamos y gastos', rdCuentasDe('pagar','financiera'), 'var(--fram)', 'pagar');
+
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:18px">'+
+    '<button onclick="setDeudaTab(\'clientes\')" style="padding:10px 16px;font-size:13px;font-weight:600;font-family:var(--font);border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer">Clientes</button>'+
+    '<button onclick="nuevoCargoManual()" style="padding:10px 16px;font-size:13px;font-weight:600;font-family:var(--font);border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer">+ Cargo manual</button>'+
+    '</div>';
+  cont.innerHTML=h;
+}
+
+// ══ FLUJO DE EFECTIVO ═════════════════════════════════════════
+// Qué entra y qué sale este mes, el próximo y después, contra el dinero que hay
+// en bancos. Los vencimientos de cuentas NO se capturan: salen solos.
+var FLUJO_LBL=['Vencido','Este mes','Próximo mes','Después'];
+// Lo vencido va en su PROPIA columna, no revuelto con este mes: si no, todo lo
+// que arrastra el negocio se amontona en el mes en curso y los meses siguientes
+// salen en cero, que es justo lo que no deja planear.
+// Los meses se comparan por clave año*12+mes para no pelearse con zonas horarias.
+function flujoPeriodoDe(fecha){
+  if(!fecha) return 3;
+  var hoy=new Date();
+  var hoyStr=hoy.getFullYear()+'-'+('0'+(hoy.getMonth()+1)).slice(-2)+'-'+('0'+hoy.getDate()).slice(-2);
+  if(String(fecha)<hoyStr) return 0;
+  var km=hoy.getFullYear()*12+hoy.getMonth();
+  var p=String(fecha).split('-');
+  var k=(parseInt(p[0],10)||0)*12+((parseInt(p[1],10)||1)-1);
+  if(k===km) return 1;
+  if(k===km+1) return 2;
+  return 3;
+}
+function flujoCalc(){
+  var per=[{ent:0,sal:0,det:[]},{ent:0,sal:0,det:[]},{ent:0,sal:0,det:[]},{ent:0,sal:0,det:[]}];
+  // Cuentas con un abono ya programado: para ellas manda el abono, no el
+  // vencimiento del saldo completo. Es lo que evita contar el mismo dinero dos
+  // veces, que es justo lo que descuadraba la hoja de Excel.
+  var conAbono={};
+  programados.forEach(function(p){
+    if(!p.cumplido && p.contraparte) conAbono[p.direccion+'|'+p.contraparte]=true;
+  });
+  ['cobrar','pagar'].forEach(function(tipo){
+    var esEnt=(tipo==='cobrar');
+    var dir=esEnt?'cobro':'pago';
+    var nombres={};
+    deudas.forEach(function(d){ if(d.tipo===tipo) nombres[d.contraparte]=true; });
+    Object.keys(nombres).forEach(function(nom){
+      if(conAbono[dir+'|'+nom]) return;
+      var c=getContraparte(nom)||{};
+      var f=(c.moneda==='USD')?(parseFloat(c.tipoCambio)||0):1;
+      cuentaPendientes(tipo,nom).forEach(function(x){
+        var monto=x.saldo*f; if(monto<=0.5) return;
+        var i=flujoPeriodoDe(deudaVence(x.deuda));
+        if(esEnt) per[i].ent+=monto; else per[i].sal+=monto;
+        var it=(x.deuda.items&&x.deuda.items[0])?x.deuda.items[0].concepto:'';
+        per[i].det.push({dir:dir, nombre:nom, concepto:x.deuda.folioExterno||x.deuda.desc||it||'Cargo',
+          monto:monto, fecha:deudaVence(x.deuda), prog:false});
+      });
+    });
+  });
+  programados.forEach(function(p){
+    if(p.cumplido) return;
+    var monto=parseFloat(p.monto)||0; if(monto<=0) return;
+    var i=flujoPeriodoDe(p.fecha);
+    if(p.direccion==='cobro') per[i].ent+=monto; else per[i].sal+=monto;
+    per[i].det.push({dir:p.direccion, nombre:p.contraparte||'', concepto:p.concepto||'(sin concepto)',
+      monto:monto, fecha:p.fecha, prog:true, id:p.id});
+  });
+  per.forEach(function(x){ x.det.sort(function(a,b){ return (a.fecha||'')<(b.fecha||'')?-1:1; }); });
+  return {per:per};
+}
+function renderFlujoEfectivo(){
+  var cont=document.getElementById('deuda-flujo-sec'); if(!cont) return;
+  var fl=flujoCalc(), bancos=rdBancosTotal(), saldo=bancos;
+  var h='<div class="aging-card">'+
+    '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px">'+
+      '<div class="kpi-lbl" style="margin:0">En bancos</div>'+
+      '<button onclick="abrirEditarBancos()" style="background:none;border:none;color:var(--jal);font-size:12px;cursor:pointer;font-family:var(--font);padding:0">Actualizar saldos</button>'+
+    '</div>';
+  if(!bancosSaldos.length){
+    h+='<div style="font-size:13px;color:var(--text3)">Sin saldos capturados. El flujo no puede decirte si alcanza.</div>';
+  } else {
+    h+='<div style="display:flex;flex-wrap:wrap;gap:16px 26px;align-items:baseline">';
+    bancosSaldos.forEach(function(b){
+      h+='<div><div style="font-size:11px;color:var(--text3)">'+b.nombre+
+        (b.fechaCorte?' · '+fmtFechaCorta(b.fechaCorte):'')+'</div>'+
+        '<div style="font-family:var(--mono);font-weight:700;font-size:15px">'+fmt(b.saldo)+'</div></div>';
+    });
+    h+='<div style="margin-left:auto"><div style="font-size:11px;color:var(--text3)">Total</div>'+
+      '<div style="font-family:var(--mono);font-weight:700;font-size:19px;color:var(--jal)">'+fmt(bancos)+'</div></div>';
+    h+='</div>';
+  }
+  h+='</div>';
+
+  h+='<div class="deuda-kpis" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:12px">';
+  fl.per.forEach(function(p,i){
+    saldo=saldo+p.ent-p.sal;
+    h+='<div class="kpi-card"><div class="kpi-accent" style="background:'+(saldo>=0?'var(--green)':'var(--rojo)')+'"></div>'+
+      '<div class="kpi-lbl">'+FLUJO_LBL[i]+'</div>'+
+      '<div style="display:flex;gap:12px;flex-wrap:wrap;margin:2px 0 6px">'+
+        '<div><div style="font-size:10px;color:var(--text3)">entra</div><div style="font-family:var(--mono);font-weight:700;color:var(--green)">'+fmt(p.ent)+'</div></div>'+
+        '<div><div style="font-size:10px;color:var(--text3)">sale</div><div style="font-family:var(--mono);font-weight:700;color:var(--fram)">'+fmt(p.sal)+'</div></div>'+
+      '</div>'+
+      '<div style="font-size:10px;color:var(--text3)">queda</div>'+
+      '<div class="kpi-val" style="font-size:19px;color:'+(saldo>=0?'var(--green)':'var(--rojo)')+'">'+fmt(saldo)+'</div>'+
+      '</div>';
+  });
+  h+='</div>';
+
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 6px">'+
+    '<button class="btn-main" style="width:auto;margin:0;padding:10px 16px;font-size:13px" onclick="abrirProgramado(\'pago\')">+ Pago programado</button>'+
+    '<button onclick="abrirProgramado(\'cobro\')" style="padding:10px 16px;font-size:13px;font-weight:600;font-family:var(--font);border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer">+ Cobro esperado</button>'+
+    '</div>';
+
+  fl.per.forEach(function(p,i){
+    if(!p.det.length) return;
+    h+='<div style="margin-top:14px"><div class="kpi-lbl" style="margin-bottom:6px">'+FLUJO_LBL[i]+'</div>';
+    p.det.forEach(function(x){
+      var esEnt=(x.dir==='cobro');
+      h+='<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:7px 0;border-bottom:0.5px solid var(--border)">'+
+        '<span style="min-width:0">'+
+          '<span style="color:var(--text3);font-size:11px;font-family:var(--mono)">'+(x.fecha?fmtFechaCorta(x.fecha):'—')+'</span> '+
+          (x.nombre?x.nombre+' · ':'')+'<span style="color:var(--text2)">'+x.concepto+'</span>'+
+          (x.prog?' <span style="font-size:9px;color:var(--jal)">programado</span>':'')+
+        '</span>'+
+        '<span style="white-space:nowrap">'+
+          '<span style="font-family:var(--mono);font-weight:700;color:'+(esEnt?'var(--green)':'var(--fram)')+'">'+
+            (esEnt?'+':'−')+fmt(x.monto)+'</span>'+
+          (x.prog?' <button onclick="cumplirProgramado('+x.id+')" title="Marcar cumplido" style="background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:0 2px">✓</button>'+
+                  '<button onclick="borrarProgramado('+x.id+')" title="Quitar" style="background:none;border:none;color:var(--text3);font-size:15px;cursor:pointer;padding:0 2px">×</button>':'')+
+        '</span></div>';
+    });
+    h+='</div>';
+  });
+  cont.innerHTML=h;
+}
+
+// ── Agenda de programados ───────────────────────────────────────
+// Un renglón NO es una cuenta: no lleva saldo, no acepta abonos y no deja
+// historial contable. Cuando el pago ocurre, el gasto se captura en el módulo de
+// Gastos y aquí solo se marca cumplido.
+function abrirProgramado(dir){
+  var esCobro=(dir==='cobro');
+  var hoy=new Date().toISOString().substring(0,10);
+  var opts='<option value="">— Ninguna (compromiso suelto) —</option>';
+  contrapartes.slice().sort(function(a,b){return a.nombre.localeCompare(b.nombre,'es');})
+    .forEach(function(c){ opts+='<option value="'+c.nombre+'">'+c.nombre+'</option>'; });
+  document.getElementById('mo-title').innerHTML=esCobro?'Cobro esperado':'Pago programado';
+  document.getElementById('mo-body').innerHTML=
+    '<div class="field" style="margin-bottom:10px"><label>Concepto</label>'+
+      '<input type="text" id="pg-concepto" placeholder="'+(esCobro?'Apoyo de gobierno, devolución...':'IMSS, contabilidad, intereses...')+'" style="width:100%"></div>'+
+    '<div class="field" style="margin-bottom:10px"><label>Monto</label>'+
+      '<div class="monto-wrap"><span class="monto-prefix">$</span><input type="number" id="pg-monto" placeholder="0.00" min="0" step="0.01"></div></div>'+
+    '<div class="field" style="margin-bottom:10px"><label>Fecha</label>'+
+      '<input type="date" id="pg-fecha" value="'+hoy+'" style="'+_dsInput+'"></div>'+
+    '<div class="field" style="margin-bottom:6px"><label>'+(esCobro?'Cuenta por cobrar':'Cuenta por pagar')+' <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(opcional)</span></label>'+
+      '<select id="pg-contraparte" style="'+_dsInput+'">'+opts+'</select></div>'+
+    '<div style="font-size:11px;color:var(--text3);margin-bottom:14px;line-height:1.5">Si eliges una cuenta, el flujo usa este monto en vez del saldo completo — es lo que de verdad va a salir del banco. La cuenta no se modifica.</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+      '<button onclick="closeModal()" style="padding:11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Cancelar</button>'+
+      '<button class="btn-main" style="margin:0" onclick="guardarProgramado(\''+dir+'\')">Guardar</button>'+
+    '</div>';
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(function(){var i=document.getElementById('pg-concepto'); if(i) i.focus();},100);
+}
+function guardarProgramado(dir){
+  var concepto=(document.getElementById('pg-concepto').value||'').trim();
+  var monto=parseFloat(document.getElementById('pg-monto').value)||0;
+  var fecha=document.getElementById('pg-fecha').value;
+  var contraparte=document.getElementById('pg-contraparte').value||'';
+  if(!concepto){ showToast('Escribe un concepto'); return; }
+  if(monto<=0){ showToast('Escribe un monto'); return; }
+  var p={id:Date.now(), direccion:dir, fecha:fecha||'', concepto:concepto, monto:monto,
+    contraparte:contraparte, cumplido:false};
+  programados.push(p); saveProgramados(); sbSaveProgramado(p);
+  closeModal(); renderFlujoEfectivo();
+  showToast(dir==='cobro'?'Cobro agendado':'Pago agendado');
+}
+function cumplirProgramado(id){
+  var p=null;
+  for(var i=0;i<programados.length;i++){ if(String(programados[i].id)===String(id)){ p=programados[i]; break; } }
+  if(!p) return;
+  p.cumplido=true; saveProgramados(); sbSaveProgramado(p);
+  renderFlujoEfectivo();
+  showToast('Marcado como cumplido — captúralo en Gastos');
+}
+function borrarProgramado(id){
+  programados=programados.filter(function(p){ return String(p.id)!==String(id); });
+  saveProgramados(); sbDeleteProgramado(id);
+  renderFlujoEfectivo(); showToast('Quitado de la agenda');
+}
+// Saldos de banco: se capturan a mano cuando se revisan, con su fecha de corte.
+function abrirEditarBancos(){
+  var lista=bancos.slice();
+  bancosSaldos.forEach(function(b){ if(lista.indexOf(b.nombre)<0) lista.push(b.nombre); });
+  lista.sort(function(a,b){return a.localeCompare(b,'es');});
+  var hoy=new Date().toISOString().substring(0,10);
+  var h='<div style="font-size:11px;color:var(--text3);margin-bottom:12px">Lo que hay hoy en cada banco. Deja vacío el que no quieras contar.</div>';
+  if(!lista.length) h+='<div style="font-size:13px;color:var(--text3);margin-bottom:12px">No hay bancos en el catálogo todavía.</div>';
+  lista.forEach(function(nom,i){
+    var b=null;
+    for(var k=0;k<bancosSaldos.length;k++){ if(bancosSaldos[k].nombre===nom){ b=bancosSaldos[k]; break; } }
+    h+='<div class="field" style="margin-bottom:10px"><label>'+nom+'</label>'+
+      '<div class="monto-wrap"><span class="monto-prefix">$</span>'+
+      '<input type="number" id="bs-'+i+'" data-nom="'+nom+'" value="'+(b?b.saldo:'')+'" placeholder="0.00" step="0.01"></div></div>';
+  });
+  h+='<div class="field" style="margin-bottom:14px"><label>Fecha de corte</label>'+
+    '<input type="date" id="bs-fecha" value="'+hoy+'" style="'+_dsInput+'"></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+      '<button onclick="closeModal()" style="padding:11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Cancelar</button>'+
+      '<button class="btn-main" style="margin:0" onclick="guardarBancosSaldos('+lista.length+')">Guardar</button>'+
+    '</div>';
+  document.getElementById('mo-title').innerHTML='Saldo en bancos';
+  document.getElementById('mo-body').innerHTML=h;
+  document.getElementById('overlay').classList.add('open');
+}
+function guardarBancosSaldos(n){
+  var fecha=document.getElementById('bs-fecha').value||'';
+  for(var i=0;i<n;i++){
+    var inp=document.getElementById('bs-'+i); if(!inp) continue;
+    var nom=inp.dataset.nom, v=(inp.value||'').trim();
+    bancosSaldos=bancosSaldos.filter(function(b){ return b.nombre!==nom; });
+    if(v===''){ sbDeleteBancoSaldo(nom); continue; }
+    var b={nombre:nom, saldo:parseFloat(v)||0, fechaCorte:fecha};
+    bancosSaldos.push(b); sbSaveBancoSaldo(b);
+  }
+  bancosSaldos.sort(function(a,b){return a.nombre.localeCompare(b.nombre,'es');});
+  saveBancosSaldos();
+  closeModal(); renderFlujoEfectivo();
+  showToast('Saldos guardados');
+}
+
 function renderDeudas(){
   var tipo=deudaTabSel;
   if(tipo!=='cobrar' && tipo!=='pagar') return;
@@ -10135,43 +10536,20 @@ function renderDeudas(){
   var saldadas=lista.filter(function(x){return x.saldo<=0.5 && x.aFavor<=0.5;});
   document.getElementById('deuda-count-val').textContent=abiertas.length+(abiertas.length===1?' cuenta abierta':' cuentas abiertas');
 
-  // ── Vencido / por vencer / cargo más viejo ──
+  // ── Vencido / por vencer ──
   document.getElementById('deuda-venc-val').textContent=fmt(cartera.vencido);
   document.getElementById('deuda-venc-sub').innerHTML=(cartera.total>0.5 && cartera.vencido>0.5)
     ? Math.round(cartera.vencido/cartera.total*100)+'% de la cartera'
     : (cartera.total>0.5?'nada vencido':'&nbsp;');
   document.getElementById('deuda-sem-val').textContent=fmt(cartera.semana);
   document.getElementById('deuda-sem-sub').innerHTML=(cartera.semana>0.5)?'vence en los próximos 7 días':'&nbsp;';
-  var vv=document.getElementById('deuda-viejo-val'), vs=document.getElementById('deuda-viejo-sub');
-  if(cartera.masViejo!==null){
-    vv.textContent=cartera.masViejo+' d';
-    var dv=cartera.masViejoDeuda||{};
-    vs.textContent=(dv.folioExterno||cartera.masViejoNom)+' · '+fmtFechaCorta(dv.fecha);
-  } else { vv.textContent='—'; vs.innerHTML=(cartera.total>0.5)?'sin cargos vencidos':'&nbsp;'; }
 
-  // ── Barra de antigüedad de toda la cartera ──
-  var agc=document.getElementById('deuda-aging');
-  if(agc){
-    if(cartera.total>0.5){
-      var claves=AGING_TRAMOS.map(function(t){
-        return '<span><i class="aging-dot" style="background:'+t.col+'"></i>'+t.lbl+' <b>'+fmt(cartera[t.k])+'</b></span>';
-      }).join('');
-      agc.innerHTML='<div class="aging-card">'+
-        '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap">'+
-          '<div class="kpi-lbl" style="margin:0">Antigüedad de la cartera</div>'+
-          '<div style="font-size:11px;color:var(--text3)">'+cartera.nPend+' cargo'+(cartera.nPend===1?'':'s')+' pendiente'+(cartera.nPend===1?'':'s')+'</div>'+
-        '</div>'+
-        agingBarHtml(cartera)+
-        '<div class="aging-key">'+claves+'</div>'+
-      '</div>';
-    } else agc.innerHTML='';
-  }
   var cont=document.getElementById('deuda-list');
   var tbody=document.getElementById('deuda-table-body');
   if(!lista.length){
     var msgVacio='Sin cuentas '+(tipo==='cobrar'?'por cobrar':'por pagar')+' aún.';
     cont.innerHTML='<div class="empty" style="padding:44px 20px;text-align:center"><div class="empty-icon" style="font-size:40px">📒</div><div class="empty-text" style="margin-top:10px">'+msgVacio+'</div></div>';
-    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text3)">'+msgVacio+'</td></tr>';
+    tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--text3)">'+msgVacio+'</td></tr>';
     return;
   }
 
@@ -10193,7 +10571,7 @@ function renderDeudas(){
   if(!vista.length){
     var msgFiltro='Ninguna cuenta coincide con la búsqueda o el filtro.';
     cont.innerHTML='<div class="empty" style="padding:44px 20px;text-align:center"><div class="empty-icon" style="font-size:40px">🔍</div><div class="empty-text" style="margin-top:10px">'+msgFiltro+'</div></div>';
-    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text3)">'+msgFiltro+'</td></tr>';
+    tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--text3)">'+msgFiltro+'</td></tr>';
     return;
   }
   // Con "con saldo" o "solo vencido" las saldadas ya quedaron fuera de `vista`,
@@ -10221,7 +10599,6 @@ function renderDeudas(){
         '<div class="deuda-nom">'+(x.clave?'<span style="font-family:var(--mono);font-size:11px;color:var(--text3)">'+x.clave+'</span> · ':'')+x.nombre+
           (x.moneda==='USD'?' <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:var(--green-bg);color:var(--green)">USD</span>':'')+'</div>'+
         '<div class="deuda-sub">'+sub+'</div>'+
-        (esHist?'':agingMiniHtml(ag))+
       '</div>'+
       '<div style="text-align:right">'+
         '<div class="deuda-sub">saldo</div>'+
@@ -10230,9 +10607,7 @@ function renderDeudas(){
       '<svg viewBox="0 0 24 24" fill="none" stroke="var(--text3)" style="width:18px;height:18px;stroke-width:2;flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>';
     cont.appendChild(card);
   }
-  // Fila de la tabla de escritorio, misma data que la tarjeta, ordenada como una
-  // hoja de cálculo: ID, cliente, saldo, vencido, antigüedad, cargo más viejo,
-  // plazo, último abono.
+  // Fila de la tabla de escritorio, misma data que la tarjeta: ID, cliente, saldo, vencido.
   function pintaFila(x, esHist){
     var tr=document.createElement('tr');
     if(esHist) tr.style.opacity='0.55';
@@ -10242,18 +10617,13 @@ function renderDeudas(){
     var saldoTxt=fmtMon(x.saldo,x.moneda);
     var vencidoHay=(!esHist&&ag.vencido>0.5);
     var vencTxt=vencidoHay?fmtMon(ag.vencido,x.moneda):'—';
-    var viejoBadge=(!esHist&&ag.masViejoDeuda)?diasDeudaBadge(ag.masViejoDeuda):'<span style="color:var(--text3)">—</span>';
     tr.innerHTML=
       '<td class="txt mono" style="color:var(--text3)">'+(x.clave||'—')+'</td>'+
       '<td class="txt">'+x.nombre+
         (x.moneda==='USD'?' <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:var(--green-bg);color:var(--green)">USD</span>':'')+
         (x.aFavor>0.5?'<div style="font-size:11px;color:var(--jal)">a su favor '+fmtMon(x.aFavor,x.moneda)+'</div>':'')+'</td>'+
       '<td class="num" style="font-size:14px;font-weight:700;color:'+(esHist?'var(--text3)':accent)+'">'+saldoTxt+'</td>'+
-      '<td class="num" style="font-weight:'+(vencidoHay?'700':'400')+';color:'+(vencidoHay?'var(--rojo)':'var(--text3)')+'">'+vencTxt+'</td>'+
-      '<td class="txt">'+(esHist?'':(agingMiniHtml(ag)||'<span style="color:var(--text3)">—</span>'))+'</td>'+
-      '<td class="num">'+viejoBadge+'</td>'+
-      '<td class="num" style="color:var(--text3)">'+cpDiasCredito(x.nombre)+' d</td>'+
-      '<td class="num" style="color:var(--text3)">'+(x.ultimoAbono?fmtFechaCorta(x.ultimoAbono):'—')+'</td>';
+      '<td class="num" style="font-weight:'+(vencidoHay?'700':'400')+';color:'+(vencidoHay?'var(--rojo)':'var(--text3)')+'">'+vencTxt+'</td>';
     tbody.appendChild(tr);
   }
   abiertasV.forEach(function(x){ pintaCard(x,false); pintaFila(x,false); });
@@ -10263,7 +10633,7 @@ function renderDeudas(){
     hdr.textContent='Historial (saldadas)';
     cont.appendChild(hdr);
     var trh=document.createElement('tr');
-    trh.innerHTML='<td colspan="8" style="background:var(--surface2);font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;padding:8px 10px">Historial (saldadas)</td>';
+    trh.innerHTML='<td colspan="4" style="background:var(--surface2);font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;padding:8px 10px">Historial (saldadas)</td>';
     tbody.appendChild(trh);
     saldadasV.forEach(function(x){ pintaCard(x,true); pintaFila(x,true); });
   }
@@ -10362,156 +10732,498 @@ function renderCuentaDeuda(){
 // Colores fijos en hex, no var(--...): la imagen la recibe alguien sin el
 // tema de la app — tiene que verse igual sin importar si quien la genera
 // está en modo oscuro. Son los mismos hex del :root claro de arriba.
-var DCTA_SHARE_ACCENT={cobrar:'#1A7A57', pagar:'#B03A6A'};
-var DCTA_SHARE_AGING={corriente:'#1A7A57', b1:'#B8860B', b2:'#C45B0A', b3:'#D64545', b4:'#8F2222'};
+var DOC_ACCENT={cobrar:'#1A7A57', pagar:'#B03A6A'};
+var DOC_PAD=26;
+var DOC_TINTA='#1A1714', DOC_TENUE='#9E9890', DOC_TEXTO2='#6B6560',
+    DOC_LINEA='#E2DDD6', DOC_ROJO='#D64545', DOC_VERDE='#1A7A57',
+    DOC_FONDO='#FFFFFF', DOC_GRUPO='#F0EBE3', DOC_RESALTE='#FFF8D6';
 
-// Alturas fijas de cada bloque, en el mismo orden en que se dibujan. Un solo
-// arreglo de constantes gobierna el alto total del canvas Y las coordenadas Y
-// de cada bloque — evita que el cálculo de altura y el dibujado se
-// desincronicen (ese fue justo el primer bug de esta función).
-var DCTA_SHARE_W=480, DCTA_SHARE_PAD=24;
-var DCTA_SHARE_ROW_H=26, DCTA_SHARE_HEAD_H=62, DCTA_SHARE_TABLE_HEAD_H=20,
-    DCTA_SHARE_TOTAL_ROW_H=30, DCTA_SHARE_SALDO_H=68, DCTA_SHARE_VACIO_H=40,
-    DCTA_SHARE_AGING_H=18, DCTA_SHARE_VENCIDO_H=18, DCTA_SHARE_FOOTER_H=26;
-
-function dctaShareCanvas(tipo, nombre){
-  var c=getContraparte(nombre)||{};
-  var mon=(c.moneda==='USD')?'USD':'MXN';
-  var esCorriente=(cpModo(nombre)==='corriente');
-  var ag=agingCuenta(tipo,nombre);
-  var accent=DCTA_SHARE_ACCENT[tipo]||'#1A7A57';
-  var hoy=new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
-  var W=DCTA_SHARE_W, PAD=DCTA_SHARE_PAD, CW=W-PAD*2;
-
-  var pend=[], r=null, rc=null;
-  if(esCorriente){ rc=calcCorriente(tipo,nombre); }
-  else {
-    r=calcContraparte(tipo,nombre);
-    pend=r.items.filter(function(s){return !s.liquidada;}).sort(function(a,b){return a.deuda.fecha<b.deuda.fecha?-1:1;});
-  }
-  var showAging=ag.total>0.5, showVencido=ag.vencido>0.5;
-
-  var H=PAD+DCTA_SHARE_HEAD_H;
-  if(esCorriente) H+=DCTA_SHARE_SALDO_H;
-  else if(pend.length) H+=DCTA_SHARE_TABLE_HEAD_H+pend.length*DCTA_SHARE_ROW_H+DCTA_SHARE_TOTAL_ROW_H;
-  else H+=DCTA_SHARE_VACIO_H;
-  if(showAging) H+=DCTA_SHARE_AGING_H;
-  if(showVencido) H+=DCTA_SHARE_VENCIDO_H;
-  H+=DCTA_SHARE_FOOTER_H+PAD;
-
-  var ratio=2;
-  var canvas=document.createElement('canvas');
+// ── Motor de dibujo ─────────────────────────────────────────────
+// Cada documento arma un arreglo de bloques {h, draw}. El alto total del canvas
+// es la suma de los h, y el dibujado avanza `y` con EL MISMO h. Así el cálculo
+// de altura y el dibujo no se pueden desincronizar — que es justo el bug que
+// tenía el canvas viejo, donde las alturas vivían en constantes sueltas y había
+// que acordarse de sumarlas en dos lugares.
+function docPintar(bloques, W){
+  var H=DOC_PAD*2;
+  bloques.forEach(function(b){ H+=b.h; });
+  var ratio=2, canvas=document.createElement('canvas');
   canvas.width=Math.round(W*ratio); canvas.height=Math.round(H*ratio);
   var ctx=canvas.getContext('2d');
   ctx.scale(ratio,ratio);
-  ctx.fillStyle='#FFFFFF'; ctx.fillRect(0,0,W,H);
-
-  var y=PAD;
-  ctx.textAlign='left'; ctx.fillStyle='#1A1714';
-  ctx.font='700 16px "DM Sans",sans-serif';
-  ctx.fillText('Golden Valley Farms', PAD, y+14);
-  ctx.font='400 11px "DM Sans",sans-serif'; ctx.fillStyle='#9E9890';
-  ctx.fillText('Estado de cuenta', PAD, y+30);
-  ctx.textAlign='right'; ctx.fillStyle='#1A1714';
-  ctx.font='700 15px "DM Sans",sans-serif';
-  ctx.fillText(nombre, W-PAD, y+14);
-  ctx.font='400 11px "DM Mono",monospace'; ctx.fillStyle='#9E9890';
-  ctx.fillText(hoy, W-PAD, y+30);
-  y+=44;
-  ctx.strokeStyle=accent; ctx.lineWidth=2;
-  ctx.beginPath(); ctx.moveTo(PAD,y); ctx.lineTo(W-PAD,y); ctx.stroke();
-  y+=DCTA_SHARE_HEAD_H-44;
-
-  ctx.textAlign='left';
-  if(esCorriente){
-    var lblSaldo=(rc.saldoTotal>=0)?((tipo==='cobrar')?'Nos debe':'Le debemos'):'A su favor';
-    ctx.textAlign='center';
-    ctx.font='600 11px "DM Sans",sans-serif'; ctx.fillStyle='#9E9890';
-    ctx.fillText(lblSaldo.toUpperCase(), W/2, y+11);
-    ctx.font='700 30px "DM Mono",monospace'; ctx.fillStyle=accent;
-    ctx.fillText(fmtMon(Math.abs(rc.saldoTotal),mon), W/2, y+49);
-    ctx.textAlign='left';
-    y+=DCTA_SHARE_SALDO_H;
-  } else if(pend.length){
-    ctx.font='600 10px "DM Sans",sans-serif'; ctx.fillStyle='#9E9890';
-    ctx.fillText('FOLIO', PAD, y+9);
-    ctx.fillText('VENCE', PAD+150, y+9);
-    ctx.textAlign='right'; ctx.fillText('SALDO', W-PAD, y+9); ctx.textAlign='left';
-    y+=DCTA_SHARE_TABLE_HEAD_H;
-    pend.forEach(function(s){
-      var d=s.deuda, dv=deudaDiasVencido(d);
-      var etq=d.folioExterno||(d.origen==='manual'?'Manual':(d.origen||'Cargo'));
-      ctx.strokeStyle='#E2DDD6'; ctx.lineWidth=1;
-      ctx.beginPath(); ctx.moveTo(PAD,y); ctx.lineTo(W-PAD,y); ctx.stroke();
-      ctx.font='500 12.5px "DM Mono",monospace'; ctx.fillStyle='#1A1714';
-      ctx.fillText(etq, PAD, y+17);
-      ctx.fillStyle=(dv!==null&&dv>0)?'#D64545':'#6B6560';
-      ctx.fillText(fmtFechaCorta(deudaVence(d)), PAD+150, y+17);
-      ctx.font='700 12.5px "DM Mono",monospace'; ctx.fillStyle='#1A1714';
-      ctx.textAlign='right'; ctx.fillText(fmtMon(Math.max(0,s.saldo),mon), W-PAD, y+17); ctx.textAlign='left';
-      y+=DCTA_SHARE_ROW_H;
-    });
-    ctx.strokeStyle='#1A1714'; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.moveTo(PAD,y); ctx.lineTo(W-PAD,y); ctx.stroke();
-    ctx.font='700 13px "DM Sans",sans-serif'; ctx.fillStyle='#1A1714';
-    ctx.fillText('Total', PAD, y+22);
-    ctx.font='700 15px "DM Mono",monospace'; ctx.fillStyle=accent;
-    ctx.textAlign='right'; ctx.fillText(fmtMon(r.saldoTotal,mon), W-PAD, y+22); ctx.textAlign='left';
-    y+=DCTA_SHARE_TOTAL_ROW_H;
-  } else {
-    ctx.font='400 13px "DM Sans",sans-serif'; ctx.fillStyle='#6B6560'; ctx.textAlign='center';
-    ctx.fillText('Sin cargos pendientes — cuenta al corriente.', W/2, y+22);
-    ctx.textAlign='left';
-    y+=DCTA_SHARE_VACIO_H;
-  }
-
-  if(showAging){
-    var x=PAD;
-    ['corriente','b1','b2','b3','b4'].forEach(function(k){
-      var v=ag[k]; if(v<=0.5) return;
-      var w=v/ag.total*CW;
-      ctx.fillStyle=DCTA_SHARE_AGING[k];
-      ctx.fillRect(x,y,w,10);
-      x+=w;
-    });
-    y+=DCTA_SHARE_AGING_H;
-  }
-  if(showVencido){
-    ctx.font='700 12px "DM Sans",sans-serif'; ctx.fillStyle='#D64545';
-    ctx.textAlign=esCorriente?'center':'left';
-    ctx.fillText('Vencido '+fmtMon(ag.vencido,mon)+' de '+fmtMon(ag.total,mon), esCorriente?W/2:PAD, y+11);
-    ctx.textAlign='left';
-    y+=DCTA_SHARE_VENCIDO_H;
-  }
-
-  y+=DCTA_SHARE_FOOTER_H-14;
-  ctx.font='400 10px "DM Sans",sans-serif'; ctx.fillStyle='#9E9890'; ctx.textAlign='center';
-  ctx.fillText('Generado el '+hoy, W/2, y+10);
+  ctx.fillStyle=DOC_FONDO; ctx.fillRect(0,0,W,H);
+  var y=DOC_PAD;
+  bloques.forEach(function(b){ if(b.draw) b.draw(ctx,y,W); y+=b.h; });
   return canvas;
 }
+function docFS(peso,tam){ return peso+' '+tam+'px "DM Sans",sans-serif'; }
+function docFM(peso,tam){ return peso+' '+tam+'px "DM Mono",monospace'; }
+function docTxt(ctx,txt,x,y,font,color,align){
+  ctx.font=font; ctx.fillStyle=color; ctx.textAlign=align||'left';
+  ctx.fillText(String(txt==null?'':txt),x,y); ctx.textAlign='left';
+}
+function docRegla(ctx,y,x1,x2,color,ancho){
+  ctx.strokeStyle=color; ctx.lineWidth=ancho||1;
+  ctx.beginPath(); ctx.moveTo(x1,y); ctx.lineTo(x2,y); ctx.stroke();
+}
+function docCorta(ctx,txt,maxW,font){
+  ctx.font=font; txt=String(txt==null?'':txt);
+  if(ctx.measureText(txt).width<=maxW) return txt;
+  while(txt.length>1 && ctx.measureText(txt+'…').width>maxW) txt=txt.slice(0,-1);
+  return txt+'…';
+}
+function docMon(n){ n=parseFloat(n)||0; return '$'+n.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function docMonCta(n,mon){ return mon==='USD'?fmtUSD(n):docMon(n); }
+function docKg(n,dec){ n=parseFloat(n)||0; dec=(dec==null)?1:dec; return n.toLocaleString('es-MX',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
+function docHoy(){ return new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}); }
+function docFechaLarga(f){
+  if(!f) return '';
+  try{ return new Date(f+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); }
+  catch(e){ return f; }
+}
+function docAnio(f){ return String(f||'').substring(0,4); }
+function docHead(sub, dcha1, dcha2, accent){
+  return {h:64, draw:function(ctx,y,W){
+    docTxt(ctx,'Golden Valley Farms',DOC_PAD,y+14,docFS(700,16),DOC_TINTA);
+    docTxt(ctx,sub,DOC_PAD,y+30,docFS(400,11),DOC_TENUE);
+    if(dcha1) docTxt(ctx,dcha1,W-DOC_PAD,y+14,docFS(700,15),DOC_TINTA,'right');
+    if(dcha2) docTxt(ctx,dcha2,W-DOC_PAD,y+30,docFM(400,11),DOC_TENUE,'right');
+    docRegla(ctx,y+44,DOC_PAD,W-DOC_PAD,accent,2);
+  }};
+}
+function docPie(){
+  var hoy=docHoy();
+  return {h:28, draw:function(ctx,y,W){
+    docTxt(ctx,'Generado el '+hoy,W/2,y+18,docFS(400,10),DOC_TENUE,'center');
+  }};
+}
 
-function compartirEstadoCuenta(){
-  var tipo=deudaModalTipo, nombre=deudaModalNombre;
-  if(!nombre){ showToast('Abre una cuenta primero'); return; }
-  // Espera a que la fuente termine de cargar: si se dibuja antes, el canvas
-  // sale con el fallback sans-serif del sistema (sin error, solo se ve distinto).
+// ── Segregación de información ──────────────────────────────────
+// Cada documento se arma con una función distinta que SOLO recibe los campos de
+// su lado. No es que se oculten datos al pintar: nunca entran a la función que
+// dibuja. A un cliente no se le dice de dónde salió el camote ni a qué se
+// compró; a un proveedor no se le dice a quién ni a qué precio se vendió.
+//
+// El mismo cargo se llama distinto de cada lado —lo que para nosotros es "Venta
+// Blanco" el cliente lo vive como una compra—, así que el concepto se neutraliza
+// a "Camote Blanco" y ningún documento delata desde qué lado se generó.
+// Los cargos importados del Excel traen el concepto ya redactado ("Venta de
+// Camote Blanco"), los generados por la app solo la variedad ("Venta Blanco").
+// Se le quita el prefijo a los dos y solo se antepone "Camote" si no lo trae ya,
+// o el histórico saldría como "Camote de Camote Blanco".
+function docConcepto(c){
+  c=String(c||'').trim();
+  var m=c.match(/^(?:Venta|Compra)\s+(?:de\s+)?(.*)$/i);
+  if(!m) return c;
+  var resto=m[1].trim();
+  if(!resto) return 'Camote';
+  return /^camote\b/i.test(resto) ? resto : ('Camote '+resto);
+}
+function docEnvioDe(d){
+  if(!d || !d.refId) return null;
+  for(var i=0;i<envios.length;i++){ if(String(envios[i].id)===String(d.refId)) return envios[i]; }
+  return null;
+}
+// Detalle que SÍ puede ver un cliente: variedad, kg y precio de venta.
+function docLineasVenta(d){
+  var e=docEnvioDe(d), out=[];
+  if(e){
+    (e.partidas||[]).forEach(function(p){
+      var kg=parseFloat(p.pesoNeto)||parseFloat(p.kgRecibidos)||0;
+      var pr=parseFloat(p.precio)||parseFloat(p.precioVenta)||0;
+      if(kg<=0 && pr<=0) return;
+      out.push({concepto:'Camote '+(p.variedad||''), kg:kg, precio:pr, monto:Math.round(kg*pr*100)/100});
+    });
+    var fl=parseFloat(e.flete)||0;
+    if(fl>0) out.push({concepto:'Fletes', kg:0, precio:0, monto:fl});
+  }
+  if(!out.length){
+    (d.items||[]).forEach(function(it){
+      out.push({concepto:docConcepto(it.concepto), kg:0, precio:0, monto:parseFloat(it.monto)||0});
+    });
+  }
+  return out;
+}
+// Detalle que SÍ puede ver un proveedor: lo que nos entregó y a qué nos lo vendió.
+function docLineasCompra(d){
+  var out=[];
+  if(d && d.refKind==='alm_compra_pagar'){
+    almLotes.forEach(function(l){
+      if(l.loc!=='com' || String(loteCompraId(l))!==String(d.refId)) return;
+      var bruto=parseFloat(l.kgTotal)||0;
+      var neto=(l.kgPagar!=null&&l.kgPagar!=='')?(parseFloat(l.kgPagar)||0):bruto;
+      var pr=parseFloat(l.precioCompra)||0;
+      out.push({concepto:'Camote '+(l.variedad||''), bruto:bruto, desc:parseFloat(l.descPct)||0,
+        neto:neto, precio:pr, monto:Math.round(neto*pr*100)/100});
+    });
+  } else {
+    var e=docEnvioDe(d);
+    if(e) (e.partidas||[]).forEach(function(p){
+      var bruto=parseFloat(p.kgRecibidos)||parseFloat(p.pesoNeto)||0;
+      var neto=(p.kgPagar!=null&&p.kgPagar!=='')?(parseFloat(p.kgPagar)||0):bruto;
+      var pr=parseFloat(p.precioCompra)||0;
+      if(pr<=0 && neto<=0) return;
+      out.push({concepto:'Camote '+(p.variedad||''), bruto:bruto, desc:parseFloat(p.descPct)||0,
+        neto:neto, precio:pr, monto:Math.round(neto*pr*100)/100});
+    });
+  }
+  if(!out.length){
+    (d.items||[]).forEach(function(it){
+      out.push({concepto:docConcepto(it.concepto), bruto:0, desc:0, neto:0, precio:0, monto:parseFloat(it.monto)||0});
+    });
+  }
+  return out;
+}
+// En el Excel del usuario -33 significa "33 días vencido" y 12 "faltan 12".
+// deudaDiasVencido() devuelve POSITIVO cuando está vencido, así que aquí va negado.
+function docPlazo(d){
+  var dv=deudaDiasVencido(d);
+  if(dv===null) return null;
+  var n=-dv;
+  return {txt:String(n), col:(n<0?DOC_ROJO:DOC_VERDE)};
+}
+function docResumenCuenta(tipo, nombre){
+  var fact=0, pag=0;
+  deudas.forEach(function(d){ if(d.tipo===tipo && d.contraparte===nombre) fact+=parseFloat(d.monto)||0; });
+  pagosDeuda.forEach(function(p){ if(p.tipo===tipo && p.contraparte===nombre) pag+=parseFloat(p.monto)||0; });
+  return {facturado:fact, pagado:pag, saldo:fact-pag};
+}
+function docAniosCuenta(tipo, nombre){
+  var set={};
+  deudas.forEach(function(d){ if(d.tipo===tipo && d.contraparte===nombre && d.fecha) set[docAnio(d.fecha)]=true; });
+  pagosDeuda.forEach(function(p){ if(p.tipo===tipo && p.contraparte===nombre && p.fecha) set[docAnio(p.fecha)]=true; });
+  var a=Object.keys(set).sort(); return a.length?a.reverse():[String(new Date().getFullYear())];
+}
+
+// ── a) Nota de envío ────────────────────────────────────────────
+// Un solo envío, al cliente, al momento de la venta.
+function docNotaEnvio(deudaId){
+  var d=null;
+  for(var i=0;i<deudas.length;i++){ if(String(deudas[i].id)===String(deudaId)){ d=deudas[i]; break; } }
+  if(!d) return null;
+  var mon=((getContraparte(d.contraparte)||{}).moneda==='USD')?'USD':'MXN';
+  var lineas=docLineasVenta(d), W=520;
+  var xKg=DOC_PAD+250, xPr=DOC_PAD+340, xTot=W-DOC_PAD;
+  var totKg=0, totMonto=0;
+  lineas.forEach(function(l){ totKg+=l.kg; totMonto+=l.monto; });
+  var bloques=[docHead('Nota de envío', d.folioExterno||'—', '', DOC_ACCENT.cobrar)];
+  bloques.push({h:30, draw:function(ctx,y,W){
+    docTxt(ctx,docFechaLarga(d.fecha),W/2,y+16,docFS(600,12),DOC_TEXTO2,'center');
+  }});
+  bloques.push({h:24, draw:function(ctx,y,W){
+    docTxt(ctx,'VARIEDAD',DOC_PAD,y+12,docFS(600,10),DOC_TENUE);
+    docTxt(ctx,'PESO NETO (KG)',xKg,y+12,docFS(600,10),DOC_TENUE,'right');
+    docTxt(ctx,'PRECIO',xPr,y+12,docFS(600,10),DOC_TENUE,'right');
+    docTxt(ctx,'TOTAL',xTot,y+12,docFS(600,10),DOC_TENUE,'right');
+    docRegla(ctx,y+18,DOC_PAD,W-DOC_PAD,DOC_LINEA,1);
+  }});
+  lineas.forEach(function(l){
+    bloques.push({h:26, draw:function(ctx,y,W){
+      docTxt(ctx,docCorta(ctx,l.concepto,220,docFS(500,12.5)),DOC_PAD,y+17,docFS(500,12.5),DOC_TINTA);
+      if(l.kg>0) docTxt(ctx,docKg(l.kg,2),xKg,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
+      if(l.precio>0) docTxt(ctx,docMonCta(l.precio,mon),xPr,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
+      docTxt(ctx,docMonCta(l.monto,mon),xTot,y+17,docFM(500,12.5),DOC_TINTA,'right');
+      docRegla(ctx,y+25,DOC_PAD,W-DOC_PAD,DOC_LINEA,1);
+    }});
+  });
+  bloques.push({h:38, draw:function(ctx,y,W){
+    ctx.fillStyle=DOC_RESALTE; ctx.fillRect(xPr-6,y+2,xTot-xPr+12,30);
+    docTxt(ctx,'TOTAL',DOC_PAD,y+22,docFS(700,13),DOC_TINTA);
+    docTxt(ctx,docKg(totKg,2),xKg,y+22,docFM(700,13),DOC_TINTA,'right');
+    docTxt(ctx,docMonCta(totMonto,mon),xTot,y+22,docFM(700,14),DOC_TINTA,'right');
+  }});
+  bloques.push(docPie());
+  return docPintar(bloques,W);
+}
+
+// ── b) Estado de cuenta de cliente ──────────────────────────────
+// Cargos pendientes, cada uno con sus abonos aplicados debajo.
+function docEstadoCliente(nombre){ return docEstadoFifo('cobrar',nombre); }
+function docEstadoProveedor(nombre){ return docEstadoFifo('pagar',nombre); }
+
+function docEstadoFifo(tipo, nombre){
+  if(cpModo(nombre)==='corriente') return docEstadoCorriente(tipo,nombre);
+  var esCliente=(tipo==='cobrar');
+  var mon=((getContraparte(nombre)||{}).moneda==='USD')?'USD':'MXN';
+  var accent=DOC_ACCENT[tipo];
+  var r=calcContraparte(tipo,nombre);
+  var pend=r.items.filter(function(s){return !s.liquidada;})
+    .sort(function(a,b){return (a.deuda.fecha||'')<(b.deuda.fecha||'')?-1:1;});
+  // El de proveedor va más ancho porque lleva cuatro columnas más (bruto,
+  // descuento, neto y precio de compra). Son documentos distintos, no uno con
+  // columnas ocultas.
+  var W=esCliente?640:800;
+  var xCon=DOC_PAD+120;
+  var xBruto=DOC_PAD+330, xDesc=DOC_PAD+378, xNeto=DOC_PAD+460, xPrecio=DOC_PAD+530;
+  var xKgCli=DOC_PAD+390;
+  var xMonto=esCliente?(DOC_PAD+490):(DOC_PAD+640);
+  var xSaldo=W-DOC_PAD;
+  var totVencido=0;
+  pend.forEach(function(s){
+    var dv=deudaDiasVencido(s.deuda);
+    if(dv!==null && dv>0) totVencido+=Math.max(0,s.saldo);
+  });
+
+  var bloques=[docHead('Estado de cuenta', nombre, docHoy(), accent)];
+  bloques.push({h:24, draw:function(ctx,y,W){
+    docTxt(ctx,'FOLIO / FECHA',DOC_PAD,y+12,docFS(600,10),DOC_TENUE);
+    docTxt(ctx,'CONCEPTO',xCon,y+12,docFS(600,10),DOC_TENUE);
+    if(esCliente){
+      docTxt(ctx,'PESO',xKgCli,y+12,docFS(600,10),DOC_TENUE,'right');
+    } else {
+      docTxt(ctx,'BRUTO',xBruto,y+12,docFS(600,10),DOC_TENUE,'right');
+      docTxt(ctx,'DESC.',xDesc,y+12,docFS(600,10),DOC_TENUE,'right');
+      docTxt(ctx,'NETO',xNeto,y+12,docFS(600,10),DOC_TENUE,'right');
+      docTxt(ctx,'PRECIO',xPrecio,y+12,docFS(600,10),DOC_TENUE,'right');
+    }
+    docTxt(ctx,'MONTO',xMonto,y+12,docFS(600,10),DOC_TENUE,'right');
+    docTxt(ctx,'SALDO',xSaldo,y+12,docFS(600,10),DOC_TENUE,'right');
+    docRegla(ctx,y+18,DOC_PAD,W-DOC_PAD,DOC_TINTA,1.5);
+  }});
+
+  if(!pend.length){
+    bloques.push({h:46, draw:function(ctx,y,W){
+      docTxt(ctx,'Sin cargos pendientes — cuenta al corriente.',W/2,y+26,docFS(400,13),DOC_TEXTO2,'center');
+    }});
+  }
+  pend.forEach(function(s){
+    var d=s.deuda, pl=docPlazo(d);
+    var lineas=esCliente?docLineasVenta(d):docLineasCompra(d);
+    var etq=d.folioExterno||(d.origen==='manual'?'Manual':(d.origen||'Cargo'));
+    bloques.push({h:24, draw:function(ctx,y,W){
+      ctx.fillStyle=DOC_GRUPO; ctx.fillRect(DOC_PAD,y+2,W-DOC_PAD*2,20);
+      docTxt(ctx,etq,DOC_PAD+6,y+16,docFM(700,12),DOC_TINTA);
+      docTxt(ctx,'PENDIENTE',xMonto,y+16,docFS(700,10),DOC_TEXTO2,'right');
+      if(pl) docTxt(ctx,pl.txt,xSaldo,y+16,docFM(700,12),pl.col,'right');
+    }});
+    lineas.forEach(function(l){
+      bloques.push({h:22, draw:function(ctx,y,W){
+        docTxt(ctx,fmtFechaCorta(d.fecha),DOC_PAD+6,y+15,docFS(400,10.5),DOC_TENUE);
+        docTxt(ctx,docCorta(ctx,l.concepto,esCliente?250:172,docFS(400,12)),xCon,y+15,docFS(400,12),DOC_TEXTO2);
+        if(esCliente){
+          if(l.kg>0) docTxt(ctx,docKg(l.kg,1),xKgCli,y+15,docFM(400,11.5),DOC_TEXTO2,'right');
+        } else {
+          if(l.bruto>0) docTxt(ctx,docKg(l.bruto,1),xBruto,y+15,docFM(400,11.5),DOC_TEXTO2,'right');
+          if(l.desc>0) docTxt(ctx,l.desc+'%',xDesc,y+15,docFM(400,11.5),DOC_TEXTO2,'right');
+          if(l.neto>0) docTxt(ctx,docKg(l.neto,1),xNeto,y+15,docFM(400,11.5),DOC_TEXTO2,'right');
+          if(l.precio>0) docTxt(ctx,docMonCta(l.precio,mon),xPrecio,y+15,docFM(400,11.5),DOC_TEXTO2,'right');
+        }
+        docTxt(ctx,docMonCta(l.monto,mon),xMonto,y+15,docFM(400,11.5),DOC_TINTA,'right');
+      }});
+    });
+    bloques.push({h:22, draw:function(ctx,y,W){
+      docRegla(ctx,y+2,xCon,W-DOC_PAD,DOC_LINEA,1);
+      docTxt(ctx,'Cargo',xCon,y+16,docFS(600,11),DOC_TENUE);
+      docTxt(ctx,docMonCta(d.monto,mon),xMonto,y+16,docFM(700,12),DOC_TINTA,'right');
+      if(!s.pagos.length) docTxt(ctx,docMonCta(Math.max(0,s.saldo),mon),xSaldo,y+16,docFM(700,12),accent,'right');
+    }});
+    s.pagos.forEach(function(pp,idx){
+      var ultimo=(idx===s.pagos.length-1);
+      bloques.push({h:22, draw:function(ctx,y,W){
+        docTxt(ctx,docCorta(ctx,pp.pago.folio||'PAGO',xCon-DOC_PAD-16,docFM(500,11)),DOC_PAD+6,y+15,docFM(500,11),DOC_TINTA);
+        docTxt(ctx,fmtFechaCorta(pp.pago.fecha),xCon,y+15,docFS(400,11),DOC_TENUE);
+        docTxt(ctx,'−'+docMonCta(pp.monto,mon),xMonto,y+15,docFM(500,11.5),DOC_VERDE,'right');
+        docTxt(ctx,docMonCta(Math.max(0,pp.saldoDespues),mon),xSaldo,y+15,
+          ultimo?docFM(700,12):docFM(400,11.5), ultimo?accent:DOC_TEXTO2,'right');
+      }});
+    });
+    bloques.push({h:6});
+  });
+
+  bloques.push({h:34, draw:function(ctx,y,W){
+    docRegla(ctx,y+6,DOC_PAD,W-DOC_PAD,DOC_TINTA,1.5);
+    if(totVencido>0.5){
+      docTxt(ctx,'TOTAL VENCIDO',xMonto-34,y+26,docFS(700,12),DOC_TINTA,'right');
+      docTxt(ctx,docMonCta(totVencido,mon),xSaldo,y+26,docFM(700,14),DOC_ROJO,'right');
+    }
+  }});
+  bloques.push({h:32, draw:function(ctx,y,W){
+    docTxt(ctx,esCliente?'TOTAL':'TOTAL A PAGAR',xMonto-34,y+20,docFS(700,13),DOC_TINTA,'right');
+    docTxt(ctx,docMonCta(r.saldoTotal,mon),xSaldo,y+20,docFM(700,16),accent,'right');
+  }});
+  var res=docResumenCuenta(tipo,nombre);
+  bloques.push({h:56, draw:function(ctx,y,W){
+    docRegla(ctx,y+8,DOC_PAD,W-DOC_PAD,DOC_LINEA,1);
+    var cols=[['Facturado',res.facturado],['Pagado',res.pagado],['Saldo pendiente',res.saldo]];
+    var ancho=(W-DOC_PAD*2)/3;
+    cols.forEach(function(c,i){
+      var cx=DOC_PAD+ancho*i+ancho/2;
+      docTxt(ctx,c[0].toUpperCase(),cx,y+28,docFS(600,9.5),DOC_TENUE,'center');
+      docTxt(ctx,docMonCta(c[1],mon),cx,y+46,docFM(700,13),i===2?accent:DOC_TEXTO2,'center');
+    });
+  }});
+  bloques.push(docPie());
+  return docPintar(bloques,W);
+}
+
+// Cuentas corriente: saldo corrido renglón a renglón, sin cargos que desglosar.
+function docEstadoCorriente(tipo, nombre){
+  var mon=((getContraparte(nombre)||{}).moneda==='USD')?'USD':'MXN';
+  var accent=DOC_ACCENT[tipo];
+  var rc=calcCorriente(tipo,nombre);
+  var movs=rc.movs.slice(-40);
+  var W=600, xCon=DOC_PAD+110, xCargo=DOC_PAD+360, xAbono=DOC_PAD+450, xSaldo=W-DOC_PAD;
+  var bloques=[docHead('Estado de cuenta', nombre, docHoy(), accent)];
+  bloques.push({h:24, draw:function(ctx,y,W){
+    docTxt(ctx,'FECHA',DOC_PAD,y+12,docFS(600,10),DOC_TENUE);
+    docTxt(ctx,'CONCEPTO',xCon,y+12,docFS(600,10),DOC_TENUE);
+    docTxt(ctx,'CARGO',xCargo,y+12,docFS(600,10),DOC_TENUE,'right');
+    docTxt(ctx,'ABONO',xAbono,y+12,docFS(600,10),DOC_TENUE,'right');
+    docTxt(ctx,'SALDO',xSaldo,y+12,docFS(600,10),DOC_TENUE,'right');
+    docRegla(ctx,y+18,DOC_PAD,W-DOC_PAD,DOC_TINTA,1.5);
+  }});
+  movs.forEach(function(m){
+    bloques.push({h:22, draw:function(ctx,y,W){
+      docTxt(ctx,fmtFechaCorta(m.fecha),DOC_PAD,y+15,docFS(400,11),DOC_TENUE);
+      docTxt(ctx,docCorta(ctx,docConcepto(m.concepto),230,docFS(400,12)),xCon,y+15,docFS(400,12),DOC_TEXTO2);
+      if(m.esCargo) docTxt(ctx,docMonCta(m.cargo+m.interes-m.nc,mon),xCargo,y+15,docFM(400,11.5),DOC_TINTA,'right');
+      else docTxt(ctx,docMonCta(m.abono,mon),xAbono,y+15,docFM(400,11.5),DOC_VERDE,'right');
+      docTxt(ctx,docMonCta(m.saldoDespues,mon),xSaldo,y+15,docFM(500,11.5),DOC_TEXTO2,'right');
+      docRegla(ctx,y+21,DOC_PAD,W-DOC_PAD,DOC_LINEA,1);
+    }});
+  });
+  var lbl=(rc.saldoTotal>=0)?((tipo==='cobrar')?'SALDO A CARGO':'SALDO A PAGAR'):'SALDO A FAVOR';
+  bloques.push({h:52, draw:function(ctx,y,W){
+    docRegla(ctx,y+6,DOC_PAD,W-DOC_PAD,DOC_TINTA,1.5);
+    docTxt(ctx,lbl,xAbono,y+30,docFS(700,12),DOC_TINTA,'right');
+    docTxt(ctx,docMonCta(Math.abs(rc.saldoTotal),mon),xSaldo,y+30,docFM(700,16),accent,'right');
+  }});
+  bloques.push(docPie());
+  return docPintar(bloques,W);
+}
+
+// ── d) Historial completo ───────────────────────────────────────
+// Solo si la contraparte lo pide. Filtra por año calendario (los folios son
+// B&M/2026/028), no por ciclo agrícola. El resumen del pie es global, para que
+// siempre cuadre con el saldo que muestra la cuenta.
+function docHistorial(tipo, nombre, anio){
+  var mon=((getContraparte(nombre)||{}).moneda==='USD')?'USD':'MXN';
+  var accent=DOC_ACCENT[tipo];
+  var esCliente=(tipo==='cobrar');
+  var cargos=deudas.filter(function(d){return d.tipo===tipo && d.contraparte===nombre && docAnio(d.fecha)===anio;})
+    .sort(function(a,b){return (a.fecha||'')<(b.fecha||'')?-1:1;});
+  var pagos=pagosDeuda.filter(function(p){return p.tipo===tipo && p.contraparte===nombre && docAnio(p.fecha)===anio;})
+    .sort(function(a,b){return (a.fecha||'')<(b.fecha||'')?-1:1;});
+  var n=Math.max(cargos.length,pagos.length);
+  var W=700, mitad=W/2, gap=12;
+  var izqX=DOC_PAD, izqFin=mitad-gap/2, derX=mitad+gap/2, derFin=W-DOC_PAD;
+  var totCargos=cargos.reduce(function(a,d){return a+(parseFloat(d.monto)||0);},0);
+  var totPagos=pagos.reduce(function(a,p){return a+(parseFloat(p.monto)||0);},0);
+  function cabTabla(ctx,y,x1,x2,titulo){
+    ctx.fillStyle=DOC_GRUPO; ctx.fillRect(x1,y,x2-x1,20);
+    docTxt(ctx,titulo,(x1+x2)/2,y+14,docFS(700,11),DOC_TINTA,'center');
+  }
+  function fila(ctx,y,x1,x2,folio,fecha,monto,col){
+    docTxt(ctx,docCorta(ctx,folio,(x2-x1)*0.42,docFM(500,10.5)),x1+4,y+14,docFM(500,10.5),DOC_TINTA);
+    docTxt(ctx,fmtFechaCorta(fecha),x1+(x2-x1)*0.46,y+14,docFS(400,10),DOC_TENUE);
+    docTxt(ctx,docMonCta(monto,mon),x2-4,y+14,docFM(500,10.5),col,'right');
+    docRegla(ctx,y+19,x1,x2,DOC_LINEA,1);
+  }
+  var bloques=[docHead('Historial '+anio, nombre, docHoy(), accent)];
+  bloques.push({h:26, draw:function(ctx,y,W){
+    cabTabla(ctx,y+2,izqX,izqFin,esCliente?'ENVÍOS':'COMPRAS');
+    cabTabla(ctx,y+2,derX,derFin,esCliente?'PAGOS':'ABONOS');
+  }});
+  var i;
+  for(i=0;i<n;i++){
+    (function(k){
+      bloques.push({h:20, draw:function(ctx,y,W){
+        var c=cargos[k], p=pagos[k];
+        if(c) fila(ctx,y,izqX,izqFin,c.folioExterno||c.factura||'Cargo',c.fecha,c.monto,DOC_TINTA);
+        if(p) fila(ctx,y,derX,derFin,p.folio||'PAGO',p.fecha,p.monto,DOC_VERDE);
+      }});
+    })(i);
+  }
+  bloques.push({h:30, draw:function(ctx,y,W){
+    docRegla(ctx,y+2,izqX,izqFin,DOC_TINTA,1.5);
+    docRegla(ctx,y+2,derX,derFin,DOC_TINTA,1.5);
+    docTxt(ctx,'Total '+anio,izqX+4,y+20,docFS(700,11),DOC_TINTA);
+    docTxt(ctx,docMonCta(totCargos,mon),izqFin-4,y+20,docFM(700,12),DOC_TINTA,'right');
+    docTxt(ctx,'Total '+anio,derX+4,y+20,docFS(700,11),DOC_TINTA);
+    docTxt(ctx,docMonCta(totPagos,mon),derFin-4,y+20,docFM(700,12),DOC_VERDE,'right');
+  }});
+  var res=docResumenCuenta(tipo,nombre);
+  bloques.push({h:74, draw:function(ctx,y,W){
+    var bx=W/2-150, bw=300;
+    ctx.fillStyle=DOC_GRUPO; ctx.fillRect(bx,y+14,bw,52);
+    var filas=[['Facturado',res.facturado,DOC_TINTA],['Pagado',res.pagado,DOC_VERDE],['Saldo pendiente',res.saldo,accent]];
+    filas.forEach(function(f,k){
+      docTxt(ctx,f[0],bx+10,y+30+k*16,docFS(600,10.5),DOC_TEXTO2);
+      docTxt(ctx,docMonCta(f[1],mon),bx+bw-10,y+30+k*16,docFM(700,11),f[2],'right');
+    });
+  }});
+  bloques.push(docPie());
+  return docPintar(bloques,W);
+}
+
+// ── Entrega ─────────────────────────────────────────────────────
+// Espera a que la fuente termine de cargar: si se dibuja antes, el canvas sale
+// con el fallback sans-serif del sistema (sin error, solo se ve distinto).
+function docCompartir(fabrica, archivo, titulo){
   var listo=(document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
   listo.then(function(){
     var canvas;
-    try{ canvas=dctaShareCanvas(tipo,nombre); }
-    catch(e){ console.error('Error armando el estado de cuenta:', e); showToast('No se pudo generar la imagen'); return; }
+    try{ canvas=fabrica(); }
+    catch(e){ console.error('Error armando el documento:', e); showToast('No se pudo generar la imagen'); return; }
+    if(!canvas){ showToast('No se pudo generar la imagen'); return; }
     canvas.toBlob(function(blob){
       if(!blob){ showToast('No se pudo generar la imagen'); return; }
-      var archivo;
-      try{ archivo=new File([blob],'Estado de cuenta - '+nombre+'.png',{type:'image/png'}); }catch(e){}
-      if(archivo && navigator.canShare && navigator.canShare({files:[archivo]})){
-        navigator.share({files:[archivo], title:'Estado de cuenta', text:'Estado de cuenta — '+nombre}).catch(function(){});
+      var f;
+      try{ f=new File([blob],archivo+'.png',{type:'image/png'}); }catch(e){}
+      if(f && navigator.canShare && navigator.canShare({files:[f]})){
+        navigator.share({files:[f], title:titulo, text:titulo}).catch(function(){});
       } else {
         window.open(URL.createObjectURL(blob),'_blank');
         showToast('Imagen lista — guárdala o compártela desde ahí');
       }
     }, 'image/png');
   });
+}
+function docCompartirEstado(){
+  var tipo=deudaModalTipo, nombre=deudaModalNombre;
+  if(!nombre){ showToast('Abre una cuenta primero'); return; }
+  closeModal();
+  docCompartir(function(){ return docEstadoFifo(tipo,nombre); },
+    'Estado de cuenta - '+nombre, 'Estado de cuenta — '+nombre);
+}
+function docCompartirHistorial(){
+  var tipo=deudaModalTipo, nombre=deudaModalNombre;
+  var sel=document.getElementById('doc-anio');
+  var anio=sel?sel.value:String(new Date().getFullYear());
+  closeModal();
+  docCompartir(function(){ return docHistorial(tipo,nombre,anio); },
+    'Historial '+anio+' - '+nombre, 'Historial '+anio+' — '+nombre);
+}
+function docCompartirNota(deudaId){
+  closeModal();
+  docCompartir(function(){ return docNotaEnvio(deudaId); }, 'Nota de envío', 'Nota de envío');
+}
+// Menú de documentos de la cuenta. Solo ofrece los que aplican a esa dirección:
+// una cuenta por cobrar no puede generar un documento de proveedor.
+function abrirDocsCuenta(){
+  var tipo=deudaModalTipo, nombre=deudaModalNombre;
+  if(!nombre){ showToast('Abre una cuenta primero'); return; }
+  var esCliente=(tipo==='cobrar');
+  var anios=docAniosCuenta(tipo,nombre);
+  var opts=anios.map(function(a){return '<option value="'+a+'">'+a+'</option>';}).join('');
+  var btn='padding:12px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);width:100%;text-align:left';
+  document.getElementById('mo-title').innerHTML='Documentos — '+nombre;
+  document.getElementById('mo-body').innerHTML=
+    '<div style="font-size:11px;color:var(--text3);margin-bottom:12px">Para enviar a '+
+      (esCliente?'este cliente':'este proveedor')+'. Solo lleva la información de su lado.</div>'+
+    '<button style="'+btn+';margin-bottom:8px" onclick="docCompartirEstado()">'+
+      '<div style="font-weight:700">Estado de cuenta</div>'+
+      '<div style="font-size:11px;color:var(--text3);font-weight:400;margin-top:2px">Cargos pendientes con sus '+
+        (esCliente?'pagos':'abonos')+' aplicados</div></button>'+
+    '<div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:4px">'+
+      '<div style="font-weight:700;font-size:13px;margin-bottom:2px">Historial completo</div>'+
+      '<div style="font-size:11px;color:var(--text3);margin-bottom:10px">Todos los movimientos del año</div>'+
+      '<div style="display:flex;gap:8px">'+
+        '<select id="doc-anio" style="flex:1;padding:9px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none">'+opts+'</select>'+
+        '<button class="btn-main" style="margin:0;width:auto;padding:9px 16px;font-size:13px" onclick="docCompartirHistorial()">Generar</button>'+
+      '</div>'+
+    '</div>';
+  document.getElementById('overlay').classList.add('open');
 }
 
 // Encabezado: quién, cuánto, cuánto vencido y la barra de antigüedad. Igual para
@@ -10550,12 +11262,11 @@ function dctaHeadHtml(tipo, nombre, esCorriente){
       (ag.vencido>0.5?'<div><div class="kpi-lbl">Vencido</div><div class="dcta-stat-val" style="color:var(--rojo)">'+fmtMon(ag.vencido,mon)+'</div></div>':'')+
       '<div><div class="kpi-lbl">Pendientes</div><div class="dcta-stat-val">'+ag.nPend+'</div></div>'+
     '</div>';
-  h+=agingBarHtml(ag,10);
   h+='</div>';
   h+='<div style="display:flex;gap:8px;flex-wrap:wrap">'+
       '<button class="btn-main" style="width:auto;padding:10px 16px;font-size:13px" onclick="abrirRegistrarPago()">'+
         ((tipo==='cobrar')?'Registrar pago':'Registrar abono')+'</button>'+
-      '<button style="padding:10px 16px;font-size:13px;font-weight:600;font-family:var(--font);border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer" onclick="compartirEstadoCuenta()">Compartir estado</button>'+
+      '<button style="padding:10px 16px;font-size:13px;font-weight:600;font-family:var(--font);border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer" onclick="abrirDocsCuenta()">Documentos</button>'+
     '</div>';
   h+='</div></div>';
   return h;
@@ -10648,6 +11359,9 @@ function dctaDetalleHtml(s, palabraPago){
   } else h+='<div style="color:var(--text3);padding:3px 0">Sin abonos todavía</div>';
   h+='</div></div>';
   h+='<div style="display:flex;gap:14px;margin-top:10px;flex-wrap:wrap">'+
+    // La nota de envío es un documento para el cliente, así que solo aparece del
+    // lado de cobrar y solo si el cargo viene de un envío real.
+    ((d.tipo==='cobrar'&&docEnvioDe(d))?'<button onclick="event.stopPropagation();docCompartirNota('+d.id+')" style="background:none;border:none;color:var(--green);font-size:12px;cursor:pointer;font-family:var(--font);padding:0">Nota de envío</button>':'')+
     '<button onclick="event.stopPropagation();abrirEditarPlazoDeuda('+d.id+')" style="background:none;border:none;color:var(--jal);font-size:12px;cursor:pointer;font-family:var(--font);padding:0">Cambiar plazo (hoy '+deudaPlazo(d)+' d'+(d.plazoDias?'':', del cliente')+')</button>'+
     (d.origen==='manual'?'<button onclick="event.stopPropagation();borrarDeudaDesdeModal('+d.id+')" style="background:none;border:none;color:var(--fram);font-size:12px;cursor:pointer;font-family:var(--font);padding:0">Eliminar cargo</button>':'')+
     '</div>';

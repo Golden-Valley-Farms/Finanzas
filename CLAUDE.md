@@ -72,7 +72,7 @@ JS usa camelCase, Supabase usa snake_case: `fechaVal`↔`fecha`, `tipoCamote`↔
 
 ### Claves de localStorage
 
-`cc_gastos3`, `cc_ingresos`, `cc_envios`, `cc_alm_lotes`, `cc_fram`, `cc_fram_fin`, `cc_fram_cosechas`, `cc_maiz`, `cc_intermediarios`, `cc_receptores_factura`, `cc_choferes`, `cc_deudas`, `cc_pagosdeuda`, `cc_contrapartes`, `cc_clientes`, `cc_proveedores`, `cc_proveedores_comer`, `cc_clientes_comer`, `cc_deudores`, `cc_acreedores`, `cc_bancos`, `cc_trabajadores`, `cc_cats`, `cc_cats_ing`, `cc_presentaciones`.
+`cc_gastos3`, `cc_ingresos`, `cc_envios`, `cc_alm_lotes`, `cc_fram`, `cc_fram_fin`, `cc_fram_cosechas`, `cc_maiz`, `cc_intermediarios`, `cc_receptores_factura`, `cc_choferes`, `cc_deudas`, `cc_pagosdeuda`, `cc_contrapartes`, `cc_clientes`, `cc_proveedores`, `cc_proveedores_comer`, `cc_clientes_comer`, `cc_deudores`, `cc_acreedores`, `cc_bancos`, `cc_bancos_saldos`, `cc_programados`, `cc_trabajadores`, `cc_cats`, `cc_cats_ing`, `cc_presentaciones`.
 
 ## Modelo de negocios (`NEGOCIOS`)
 
@@ -154,7 +154,7 @@ Los colores de categoría (`catColor()`) buscan en `CAT_COLORS` por nombre norma
 
 Rediseñado en ago-2026 (spec en `docs/superpowers/specs/2026-08-07-modulo-deudas-design.md`).
 
-**Catálogo único de clientes** (ago-2026). Cada cliente vive en `contrapartes` con `{nombre, tipo, clave, modo, moneda, tipoCambio}` y se busca **solo por nombre**: `getContraparte(nombre)`, `cpModo(nombre)`, `cpMoneda(nombre)`. **El mismo cliente sirve para cuentas por cobrar y por pagar**, con un solo ID, modo, moneda y tipo de cambio. La `clave` es un ID corto que asigna el usuario a mano (ej. `Clem`, `AgrLB`), único, con mayúsculas/minúsculas respetadas. Registrar deudas exige elegir un cliente del catálogo.
+**Catálogo único de clientes** (ago-2026). Cada cliente vive en `contrapartes` con `{nombre, tipo, clave, modo, moneda, tipoCambio, diasCredito, categoria}` y se busca **solo por nombre**: `getContraparte(nombre)`, `cpModo(nombre)`, `cpMoneda(nombre)`, `cpDiasCredito(nombre)`, `cpCategoria(nombre)`. **El mismo cliente sirve para cuentas por cobrar y por pagar**, con un solo ID, modo, moneda y tipo de cambio. La `clave` es un ID corto que asigna el usuario a mano (ej. `Clem`, `AgrLB`), único, con mayúsculas/minúsculas respetadas. Registrar deudas exige elegir un cliente del catálogo.
 
 El `cobrar`/`pagar` **sigue existiendo, pero como dirección de cada movimiento** (`deuda.tipo`, `pago.tipo`), nunca como clasificación del cliente. Las pantallas Por cobrar / Por pagar no cambiaron.
 
@@ -167,9 +167,9 @@ Dos candados que **no hay que quitar**, porque un caché viejo de `localStorage`
 
 **`renderDeudas()` ya no siembra las pestañas desde el catálogo.** Antes agregaba las contrapartes de ese tipo aunque no tuvieran movimientos; con el catálogo unificado eso pondría los 10 clientes en **las dos** pestañas con saldo cero. Ahora una cuenta aparece cuando tiene su primer movimiento de esa dirección. Un cliente recién dado de alta se ve de inmediato en Clientes → Historial, no en las pestañas.
 
-**"Registrar" tiene sub-pestañas: Deuda / Clientes** (`setDrSubTab()`, estado en `drSubTabSel`). En "Deuda", el selector de cliente es un `<select>` de solo elección (`dr-contraparte`, poblado por `renderDrContraparteSelect()`/`drContraparteLista()` con el catálogo completo) — ya no se puede escribir un nombre libre ni dar de alta desde ahí, y cambiar el tipo de deuda ya no vacía la selección. **Ese formulario solo registra cargos**: la caja "Movimiento" (Cargo / Abono-Pago) se quitó en ago-2026 porque su opción de abono llamaba exactamente a la misma `registrarPagoDeuda()` que el botón "Registrar pago" del modal de la cuenta, pero a ciegas —sin ver el saldo— y además tiraba el campo Factura, que los pagos no guardan. "Clientes" a su vez tiene sub-pestañas **Registro** / **Historial** (`setDrClientesTab()`, estado en `drClientesTabSel`): Registro (`registrarClienteForm()`) pide nombre e ID — crea con `modo:'fifo'`, `moneda:'MXN'` por defecto; Historial (`renderClientesHistorial()`) lista todos los clientes en orden alfabético, con modo y moneda pero **sin** etiqueta de deudor/acreedor, y botón ✏️ para editar vía `abrirEditarContraparte(nombre, 'clientes')`.
+**El formulario de cargo manual** (`deuda-registrar-sec`) usa un `<select>` de solo elección para el cliente (`dr-contraparte`, poblado por `renderDrContraparteSelect()`/`drContraparteLista()` con el catálogo completo) — no se puede escribir un nombre libre ni dar de alta desde ahí, y cambiar el tipo de deuda no vacía la selección. **Solo registra cargos**: la caja "Movimiento" (Cargo / Abono-Pago) se quitó en ago-2026 porque su opción de abono llamaba exactamente a la misma `registrarPagoDeuda()` que el botón "Registrar pago" de la cuenta, pero a ciegas —sin ver el saldo— y además tiraba el campo Factura, que los pagos no guardan.
 
-**`abrirEditarContraparte(nombre, contexto, tipoRetorno)`** es el modal único de edición, reutilizado en dos contextos: `'cuenta'` (default, desde el ⚙️ del modal de una cuenta en Por cobrar/pagar — al cerrar vuelve a esa cuenta, y `tipoRetorno` es lo único que dice a cuál) y `'clientes'` (desde el Historial — al cerrar vuelve al Historial). `_ecTipo` guarda ese retorno y se satura a `cobrar`/`pagar`, porque `deudaTabSel` puede venir en `'registrar'` y `abrirDeudaContraparte('registrar')` no pinta nada. No editar el `nombre` de un cliente: es lo que enlaza con sus `deudas`/`pagos_deuda` existentes; cambiarlo huerfanaría esos movimientos.
+**`abrirEditarContraparte(nombre, contexto, tipoRetorno)`** es el modal único de edición —ID, modo, moneda, tipo de cambio, plazo de crédito y categoría comercial/financiera—, reutilizado en dos contextos: `'cuenta'` (default, desde el ⚙️ de una cuenta en Cobrar/Pagar — al cerrar vuelve a esa cuenta, y `tipoRetorno` es lo único que dice a cuál) y `'clientes'` (desde el catálogo — al cerrar vuelve ahí). `_ecTipo` guarda ese retorno y se satura a `cobrar`/`pagar`, porque `deudaTabSel` puede venir en `'registrar'` y `abrirDeudaContraparte('registrar')` no pinta nada. No editar el `nombre` de un cliente: es lo que enlaza con sus `deudas`/`pagos_deuda` existentes; cambiarlo huerfanaría esos movimientos.
 
 **Dos modos por cuenta**, guardados en `contraparte.modo`:
 
@@ -226,7 +226,13 @@ Fase 2 del rediseño de cobranza (ago-2026, mismo spec que la fase anterior).
 
 **`eqSaldo()`/`eqVencido()`** convierten USD a MXN con el tipo de cambio de la ficha antes de ordenar o sumar — sin esto, ordenar "por saldo" mezclaría escalas de las dos monedas.
 
-La tabla reusa la clase `.fintab` / `.fintab-wrap.auto` que ya usa Finanzas (Reportes → Frambuesa), no un componente nuevo. La columna "Cargo más viejo" llama a `diasDeudaBadge(ag.masViejoDeuda)` — la misma insignia que ya se pinta en la cuenta, no una copia.
+La tabla reusa la clase `.fintab` / `.fintab-wrap.auto` que ya usa Finanzas (Reportes → Frambuesa), no un componente nuevo.
+
+**Sep-2026: la cartera se limpió.** La tabla quedó en cuatro columnas —**ID · Cliente · Saldo · Vencido**— y arriba tres KPIs (Total · Vencido · Vence esta semana). Se quitaron, a pedido del usuario, la barra de antigüedad de la cartera (`#deuda-aging` ya no existe), la tarjeta "Cargo más viejo", las columnas Antigüedad / Cargo más viejo / Plazo / Últ. abono, y la mini-barra de cada tarjeta en móvil: le robaban atención al saldo y al vencido, que son los dos números con los que decide a quién marcarle.
+
+**Los cálculos de antigüedad siguen vivos** (`agingCuenta`, `agingCartera`, `agingBucket`, `AGING_TRAMOS`, `deudaVence`, `deudaDiasVencido`): alimentan el vencido, el Resumen y el Flujo de efectivo. Lo único que se dejó de pintar es la barra. `agingBarHtml()` y `agingMiniHtml()` quedaron sin uso; se conservan por si vuelve a pedirse.
+
+La barra de controles lleva además un botón **+ Cargo** que abre el formulario de cargo manual ya con la dirección de la pestaña puesta (`nuevoCargoManual()`).
 
 ### Estado de cuenta: pantalla propia, no modal
 
@@ -255,9 +261,11 @@ Los dos hacen `closeModal()` al entrar: los sub-modales siguen viviendo en el `#
 
 Verificado contra B&M: $150,000 liquida los cuatro cargos más viejos y deja $5,150 parcial en el quinto (suma exacta); dirigido a `B&M/2026/022` lo aplica primero y el resto sigue por antigüedad; $1,000,000 deja $232,200 a favor.
 
-### Clientes: catálogo de primer nivel, con las dos direcciones a la vista
+### Clientes: catálogo con las dos direcciones a la vista
 
-Fase 4 del rediseño de cobranza (ago-2026, mismo spec). "Clientes" pasó de ser una sub-pestaña anidada dentro de Registrar a su propia pestaña de `#sc-deudas`, junto a Registrar / Por cobrar / Por pagar. `setDeudaTab()` ahora despacha las **cuatro**, y con eso también se corrigió un bug que ya traía: al entrar a Registrar, `#deuda-aging` y `#deuda-ctrls` (de las Fases 1-2) se quedaban visibles encima del formulario porque `setDeudaTab()` nunca las ocultaba. Ahora las cinco secciones de la pantalla (`deuda-kpi-row`, `deuda-aging`, `deuda-ctrls`, `deuda-table-wrap`, `deuda-list`, `deuda-registrar-sec`, `deuda-clientes-sec`) son mutuamente excluyentes y se ocultan/muestran juntas por un solo `forEach`.
+Fase 4 del rediseño de cobranza (ago-2026). `setDeudaTab()` despacha todas las vistas de `#sc-deudas` ocultando y mostrando secciones mutuamente excluyentes con un solo recorrido de un mapa `{id: visible}`.
+
+**Sep-2026: "Clientes" dejó de ser pestaña.** Se llega por un botón dentro de Resumen y regresa ahí con un `‹ Resumen`. Ver "Estructura de pestañas".
 
 `renderClientesCatalogo()` reemplaza a `renderClientesHistorial()` (borrada). Cada fila pinta **las dos direcciones a la vez** —"Nos debe" / "Le debemos", vía `calcSaldoCuenta('cobrar',…)` y `calcSaldoCuenta('pagar',…)`— con botones que, si hay saldo, llevan directo a `abrirDeudaContraparte()` de esa dirección; sin saldo el botón queda deshabilitado. Es lo que evita el "cambiar de pestaña para ver los dos lados" que tenía el diseño viejo.
 
@@ -265,15 +273,58 @@ Alta de cliente: `abrirNuevoClienteCatalogo()` / `confirmarNuevoClienteCatalogo(
 
 `initDeudaRegistrarForm()` se simplificó: como Clientes ya no vive dentro de Registrar, ya no hay sub-pestañas ahí (`setDrSubTab`/`setDrClientesTab`/`drSubTabSel`/`drClientesTabSel` **se borraron**) — el formulario de Deuda se muestra directo.
 
-### Compartir estado de cuenta como imagen
+### Estructura de pestañas (sep-2026)
 
-También Fase 4. Botón "Compartir estado" en `dctaHeadHtml()`, junto a "Registrar pago". Genera un PNG con `dctaShareCanvas()` (dibujado en `<canvas>`, no con `html-to-image` — ver la nota de esa librería más abajo en "Supabase/CDN") y lo entrega con `canvas.toBlob()`: si el navegador soporta `navigator.share` con archivos (típico en celular) abre el share sheet nativo directo a WhatsApp/lo que sea; si no, abre la imagen en una pestaña nueva para guardarla o compartirla a mano.
+**Resumen · Cobrar · Pagar · Flujo.** El módulo abre en Resumen: mostrando información, no un formulario.
 
-**Colores en hex fijo, no `var(--...)`.** La imagen la recibe alguien sin el tema de la app — tiene que verse igual sin importar si quien la genera está en modo oscuro. Son los mismos hex del `:root` claro.
+"Registrar" y "Clientes" siguen existiendo como vistas (`deuda-registrar-sec`, `deuda-clientes-sec`) pero ya no ocupan pestaña — se llega por el botón **+ Cargo** de la cartera y por el de **Clientes** en Resumen, y cada una lleva un `‹ Resumen` para volver. `deudaTabSel` arranca en `'resumen'` y `goSc('deudas')` llama `setDeudaTab(deudaTabSel)`, no `renderDeudas()` directo.
 
-**Un solo arreglo de constantes de altura gobierna el alto total del canvas Y las coordenadas Y de cada bloque** (`DCTA_SHARE_HEAD_H`, `DCTA_SHARE_ROW_H`, etc.) — evita que el cálculo de altura y el dibujado se desincronicen, que fue el primer bug al escribirla. Si se agrega o quita un bloque, hay que sumarlo/restarlo en el cálculo de `H` **y** en el avance de `y` del dibujado.
+Ojo: `deudaTabSel` puede valer `'resumen'` o `'flujo'`, que **no son direcciones de cuenta**. `renderDeudas()` sale temprano si no es cobrar/pagar, y `abrirEditarContraparte()` satura su valor de retorno — no romper esos guards.
 
-Funciona para los dos modos de cuenta: fifo pinta la tabla de cargos pendientes (folio/vence/saldo) + total; corriente pinta el saldo grande centrado. Las dos comparten la barra de antigüedad y la línea de vencido si aplica.
+### Documentos compartibles (sep-2026)
+
+Reemplazan al viejo "Compartir estado" (`dctaShareCanvas()` y `compartirEstadoCuenta()` **ya no existen**). Botón **Documentos** en `dctaHeadHtml()` → `abrirDocsCuenta()`, más "Nota de envío" en el detalle de cada cargo.
+
+Cuatro documentos, cada uno con su público:
+
+| función | para | lleva |
+|---|---|---|
+| `docNotaEnvio(deudaId)` | cliente | folio, fecha, variedades, peso neto, precio, total |
+| `docEstadoFifo('cobrar',n)` | cliente | cargos pendientes con sus pagos aplicados, vencido, total, resumen |
+| `docEstadoFifo('pagar',n)` | proveedor | lo mismo + peso bruto, descuento, neto y precio de compra |
+| `docHistorial(tipo,n,año)` | cualquiera | envíos y pagos del año en dos columnas + resumen global |
+
+**La segregación es por construcción, no por ocultar campos al pintar.** `docLineasVenta()` solo lee precio de venta; `docLineasCompra()` solo lee precio de compra, `kgPagar` y `descPct`. Ninguna de las dos puede filtrar lo del otro lado porque nunca lo recibe. `docConcepto()` neutraliza "Venta X"/"Compra X" a "Camote X" para que el documento no delate desde qué lado se generó — y no antepone "Camote" si el texto ya lo trae, o los cargos importados saldrían como "Camote de Camote Blanco".
+
+**El motor de dibujo cambió.** `docPintar(bloques, W)` recibe un arreglo de `{h, draw}`: el alto del canvas es la suma de los `h` y el dibujado avanza `y` con **el mismo** `h`, así que altura y posición no se pueden desincronizar. Eso sustituye a las constantes sueltas `DCTA_SHARE_*`, que obligaban a acordarse de sumar en dos lugares. Para agregar un bloque basta con insertarlo en el arreglo.
+
+Siguen valiendo las dos reglas de antes: **`<canvas>`, nunca `html-to-image`** (ver la nota de esa librería en "Desplegar y probar"), y **colores en hex fijo, no `var(--...)`** — la imagen la recibe alguien sin el tema de la app.
+
+**El plazo va con el signo del Excel del usuario**: `-33` es "33 días vencido", `12` es "faltan 12". `deudaDiasVencido()` devuelve **positivo** cuando está vencido, así que `docPlazo()` pinta el negado. Es fácil equivocarse de signo.
+
+El historial filtra por **año calendario** (los folios son `B&M/2026/028`), no por ciclo agrícola; su resumen del pie es **global**, para que siempre cuadre con el saldo que muestra la cuenta.
+
+### Resumen: posición del negocio (sep-2026)
+
+Fusiona las dos hojas de control interno que el usuario llevaba a mano (balance de compra-venta y balance de deudas). Todo derivado; lo único capturado son bancos y la agenda.
+
+`rdTotales(tipo, categoria)` da saldo y vencido de una dirección, opcionalmente filtrando por categoría; `rdCuentasDe()` la lista por cuenta. Los dos convierten USD con el tipo de cambio de la ficha.
+
+**El dato central es "cuánto del cobro es realmente nuestro"** = lo que nos deben − lo que le debemos a proveedores **comerciales**. Eso es lo que el usuario armaba a mano cada vez.
+
+**`cpCategoria(nombre)` clasifica la cuenta en `comercial` o `financiera`.** Lo que el usuario marque en la ficha (columna `contrapartes.categoria`) manda siempre. **Sin marcar NO se asume comercial: se deriva del origen de sus cargos** — `refKind` de `com_pagar`/`alm_compra_pagar`/`com_cobrar`/`camote_cobrar` es mercancía, todo lo demás (manual o importado) es préstamo o gasto. Por eso no hubo que migrar las 11 fichas existentes y el balance sale bien desde el primer día: si se asumiera comercial, Asciende, Arca y Nacho se restarían de la cobranza y el resultado sería falso (se probó, y daba −$405,290 en vez de $370,557).
+
+### Flujo de efectivo (sep-2026)
+
+`flujoCalc()` reparte entradas y salidas en **cuatro** periodos: **Vencido · Este mes · Próximo mes · Después** (`FLUJO_LBL`, `flujoPeriodoDe()`). Lo vencido va en su **propia** columna, no revuelto con el mes en curso: si no, todo lo que arrastra el negocio se amontona ahí y los meses siguientes salen en cero, que es justo lo que no deja planear.
+
+**Los vencimientos de cuentas no se capturan: salen de `cuentaPendientes()`**, que se extrajo de `agingCuenta()` para que la antigüedad y el flujo lean de la misma derivación y no puedan contradecirse.
+
+**Regla anti-duplicado, la más importante:** si una cuenta tiene un abono programado sin cumplir, el flujo cuenta **el abono programado** y **omite por completo** los vencimientos de esa cuenta. Nunca los dos. Es lo que descuadraba la hoja de Excel, donde Los Blancas aparecía con $193,037 en deudas y otra vez con $20,000 en pagos próximos.
+
+**La agenda (`programados`) no es una cuenta**: no lleva saldo, no acepta abonos y no deja historial contable — el gasto real se captura en el módulo de Gastos y aquí solo se marca cumplido (`cumplirProgramado`). Dos formas de renglón: `contraparte` vacío = compromiso suelto (IMSS, contabilidad); con valor = abono planeado a esa cuenta, que **no la modifica**.
+
+`bancosSaldos` se captura a mano por banco con su fecha de corte (`abrirEditarBancos`). Es **tabla aparte y no columnas en `bancos`**: el arreglo JS `bancos` es de strings y alimenta los dropdowns del módulo de Gastos; volverlo objetos rompería ese módulo.
 
 ## Módulo de maíz
 
@@ -638,7 +689,9 @@ Antes de modificar cualquier función, `grep` por `function nombre(` para confir
 
 URL y clave publicable están en duro al inicio del script (líneas ~1911-1912). La clave es *publishable*, no secreta — la seguridad real depende de las políticas RLS del proyecto, no de ocultarla. El repo es público, así que ese archivo es visible para cualquiera: **RLS es la única defensa real de los datos.**
 
-Tablas: `gastos`, `ingresos`, `categorias_ingresos`, `envios`, `alm_lotes`, `fram_registros`, `fram_finanzas`, `fram_cosechas`, `maiz_registros`, `intermediarios`, `receptores_factura`, `choferes`, `deudas`, `pagos_deuda`, `contrapartes`, `clientes`, `proveedores`, `proveedores_comer`, `clientes_comer`, `deudores`, `acreedores`, `bancos`, `trabajadores`, `categorias`.
+Tablas: `gastos`, `ingresos`, `categorias_ingresos`, `envios`, `alm_lotes`, `fram_registros`, `fram_finanzas`, `fram_cosechas`, `maiz_registros`, `intermediarios`, `receptores_factura`, `choferes`, `deudas`, `pagos_deuda`, `contrapartes`, `clientes`, `proveedores`, `proveedores_comer`, `clientes_comer`, `deudores`, `acreedores`, `bancos`, `bancos_saldos`, `programados`, `trabajadores`, `categorias`.
+
+`bancos_saldos` y `programados` se crearon en sep-2026 con el rediseño de Deudas, ya con RLS y la misma política `for all to authenticated` de las otras.
 
 Si una tabla regresa vacía teniendo datos, casi siempre es RLS — el código ya avisa esto por consola para `fram_registros`.
 
