@@ -6578,8 +6578,22 @@ function renderRfrResumen(data, opts){
   var gridCol=rfrGridCol(); var textMuted='#898781';
 
   setTimeout(function(){
+    var trabLabelPlugin = {
+      id:'resTrabBarLabels',
+      afterDatasetsDraw:function(chart){
+        var ctx=chart.ctx; var ds=chart.data.datasets[0]; var meta=chart.getDatasetMeta(0);
+        var tinta=rfrTintaPunto('#1baf7a');
+        meta.data.forEach(function(bar,i){
+          var v=ds.data[i]; if(!v) return;
+          ctx.save(); ctx.fillStyle=tinta; ctx.font='bold 11px monospace';
+          ctx.textAlign='center'; ctx.textBaseline='bottom';
+          ctx.fillText(v.toLocaleString('es-MX'), bar.x, bar.y-4); ctx.restore();
+        });
+      }
+    };
     mkRfrChart('rfr-res-trab-chart',{
       type:'bar',
+      plugins:[trabLabelPlugin],
       data:{
         labels:trabArr.map(function(t){return t.nombre;}),
         datasets:[
