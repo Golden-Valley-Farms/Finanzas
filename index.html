@@ -10472,26 +10472,11 @@ function renderFlujoEfectivo(){
     '<button onclick="abrirProgramado(\'cobro\')" style="padding:10px 16px;font-size:13px;font-weight:600;font-family:var(--font);border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer">+ Cobro esperado</button>'+
     '</div>';
 
-  fl.per.forEach(function(p,i){
-    if(!p.det.length) return;
-    h+='<div style="margin-top:14px"><div class="kpi-lbl" style="margin-bottom:6px">'+lbls[i]+'</div>';
-    p.det.forEach(function(x){
-      var esEnt=(x.dir==='cobro');
-      h+='<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:7px 0;border-bottom:0.5px solid var(--border)">'+
-        '<span style="min-width:0">'+
-          '<span style="color:var(--text3);font-size:11px;font-family:var(--mono)">'+(x.fecha?fmtFechaCorta(x.fecha):'—')+'</span> '+
-          (x.nombre?x.nombre+' · ':'')+'<span style="color:var(--text2)">'+x.concepto+'</span>'+
-          (x.prog?' <span style="font-size:9px;color:var(--jal)">programado</span>':'')+
-        '</span>'+
-        '<span style="white-space:nowrap">'+
-          '<span style="font-family:var(--mono);font-weight:700;color:'+(esEnt?'var(--green)':'var(--fram)')+'">'+
-            (esEnt?'+':'−')+fmt(x.monto)+'</span>'+
-          (x.prog?' <button onclick="cumplirProgramado('+x.id+')" title="Marcar cumplido" style="background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:0 2px">✓</button>'+
-                  '<button onclick="borrarProgramado('+x.id+')" title="Quitar" style="background:none;border:none;color:var(--text3);font-size:15px;cursor:pointer;padding:0 2px">×</button>':'')+
-        '</span></div>';
-    });
-    h+='</div>';
-  });
+  // El detalle renglón por renglón que iba aquí se quitó a pedido del usuario
+  // (sep-2026, "de mientras"). `flujoCalc` sigue llenando `per[i].det`, así que
+  // devolverlo es volver a pintarlo; nada más se borró.
+  // Ojo: ahí vivían los únicos botones de ✓ cumplir y × quitar de un programado,
+  // así que hoy la agenda se puede capturar pero no marcar cumplida desde la UI.
   cont.innerHTML=h;
 }
 
