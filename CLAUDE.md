@@ -324,7 +324,21 @@ Fusiona las dos hojas de control interno que el usuario llevaba a mano (balance 
 
 **Lo vencido no tiene tarjeta propia: va dentro de la semana en curso, en su propia columna.** Esa primera tarjeta es una rejilla de cuatro columnas —rótulo · Vencido · Por vencer · Total— alimentada por `per[0]`/`per[1]`; las otras tres son la misma rejilla con una sola columna de valores y son las que pinta el `for`. Es dinero que se mueve ahora, pero el usuario quiere poder mirarlo aparte de lo que apenas está por vencer. Los buckets **siguen separados** en `flujoCalc` — la fusión es solo de la tarjeta.
 
-**El detalle renglón por renglón bajo las tarjetas se quitó** (sep-2026, a pedido del usuario, "de mientras"). `flujoCalc` sigue llenando `per[i].det`, así que devolverlo es volver a pintarlo. Ojo: ahí vivían **los únicos botones de ✓ cumplir y × quitar un programado**, así que hoy la agenda se captura pero no se puede marcar cumplida desde la UI — si se van a usar los programados en serio, ese es el hueco a tapar.
+**El detalle renglón por renglón bajo las tarjetas se quitó** (sep-2026, a pedido del usuario, "de mientras"). `flujoCalc` sigue llenando `per[i].det`, así que devolverlo es volver a pintarlo.
+
+### Caja de gastos planeados
+
+Sustituye al botón "+ Pago programado" y su modal (sep-2026). Es una **caja de captura fija**, del mismo corte que "Cubetas por trabajador" en el registro de Frambuesa: tres columnas —**Concepto · Cantidad · Fecha límite**—, un `+` para agregar y una `×` por renglón. `gastosPlaneados()` · `renderGastosPlaneados()` · `agregarGastoPlaneado()` · `editGastoPlaneado()` · `removeGastoPlaneado()`.
+
+**A diferencia de la caja de Frambuesa, esta no es estado temporal de un formulario**: la pantalla no tiene botón de "Guardar", así que cada renglón se persiste en cuanto se captura o se edita. No hay entidad nueva — son `programados` de dirección `pago` y `contraparte` vacía, con las mismas cuatro capas de siempre.
+
+**La pantalla se pinta en tres piezas con contenedor propio** —bancos, `#flujo-cards` y `#flujo-plan-list`— para que editar un renglón repinte **solo las tarjetas** (`renderFlujoTarjetas()`). Repintar la sección entera le quitaría el foco al input que se está escribiendo, la misma trampa de `dgSetKg()` y `recalcFramFin()`. Por lo mismo los renglones guardan en `onchange`, no en `oninput`.
+
+**Un programado sin contraparte siempre suma en el flujo, aunque esté filtrado a camote**: es dinero que el usuario mismo dijo que va a salir. Con contraparte se respeta el filtro. Esto invirtió la regla anterior, donde los compromisos sueltos (IMSS, contabilidad) quedaban fuera — ahora son justo lo que esta caja captura.
+
+**La rejilla `.gp-grid` se parte en dos renglones debajo de 560px** (concepto y la `×` arriba, cantidad y fecha abajo) y ahí se oculta la cabecera: el input de fecha no cabe junto a los otros tres, y los rótulos dejarían de caer sobre su columna.
+
+**Huecos conocidos:** un pago programado ya no se puede atar a una cuenta (eso vivía en el modal que se quitó), así que la regla anti-duplicado de `conAbono` hoy solo aplica a cobros. Y "+ Cobro esperado" sigue siendo un modal cuyos renglones **no se ven ni se borran en ningún lado** desde que se quitó el detalle. `cumplirProgramado()` y `borrarProgramado()` quedaron sin uso desde la UI.
 
 **`flujoCalc(soloCamote, porMes)` reparte por mes cuando se le pide**, con `flujoPeriodoMes()` y tres buckets (Vencido · Este mes · Próximo mes). El único que lo usa es el **Resumen**, cuyo "al cierre de este mes" seguiría diciendo lo mismo aunque la pantalla de Flujo cambie de escala: llama `flujoCalc(false, true)`. Si el Flujo vuelve a cambiar de periodo, ese `porMes` es lo que evita que el Resumen se vaya con él.
 

@@ -456,6 +456,23 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
    partir de 700px, los cuatro en fila (ver el @media de mas abajo). */
 .deuda-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px}
 .deuda-kpi-sub{font-size:11px;color:var(--text3);margin-top:2px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Gastos planeados (Deudas > Flujo): rejilla de captura fija, del mismo corte
+   que "Cubetas por trabajador" en Frambuesa. Debajo de 560px el input de fecha
+   ya no cabe junto a los otros tres, asi que el renglon se parte en dos —
+   concepto y la x arriba, cantidad y fecha abajo— y la cabecera se oculta
+   porque sus rotulos dejarian de caer sobre su columna. */
+.gp-grid{display:grid;grid-template-columns:1fr 108px 148px 28px;gap:6px;align-items:center}
+@media (max-width:560px){
+  .gp-grid{grid-template-columns:1fr 1fr 28px}
+  .gp-grid>.gp-con{grid-column:1/3;grid-row:1}
+  .gp-grid>.gp-x{grid-column:3;grid-row:1}
+  .gp-grid>.gp-mon{grid-column:1;grid-row:2}
+  .gp-grid>.gp-fec{grid-column:2;grid-row:2}
+  .gp-head{display:none}
+}
+.gp-inp{width:100%;padding:9px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;font-family:var(--font)}
+.gp-num{font-size:14px;font-weight:600;color:var(--fram);font-family:var(--mono);text-align:right;padding:9px 8px}
+.gp-btn{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:none;cursor:pointer;color:var(--text3);font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .aging-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:13px 15px;margin-bottom:12px;box-shadow:var(--shadow)}
 .aging-bar{display:flex;gap:2px;height:12px;border-radius:6px;overflow:hidden;margin:9px 0 10px}
 .aging-key{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12px;color:var(--text2)}
@@ -10378,9 +10395,11 @@ function flujoCalc(soloCamote, porMes){
   });
   programados.forEach(function(p){
     if(p.cumplido) return;
-    // Un compromiso suelto (IMSS, contabilidad) no tiene cuenta, así que no es
-    // compra-venta de camote y no entra al flujo filtrado.
-    if(soloCamote && !(p.contraparte && cpCategoria(p.contraparte)==='comercial')) return;
+    // Un renglón SIN cuenta es un gasto planeado que el usuario capturó a mano
+    // en la caja de abajo: siempre cuenta, aunque el flujo esté filtrado a
+    // camote — es dinero que él mismo dijo que va a salir. Con cuenta, en
+    // cambio, se respeta el filtro.
+    if(soloCamote && p.contraparte && cpCategoria(p.contraparte)!=='comercial') return;
     var monto=parseFloat(p.monto)||0; if(monto<=0) return;
     var i=bucket(p.fecha); if(i<0) return;
     if(p.direccion==='cobro') per[i].ent+=monto; else per[i].sal+=monto;
@@ -10390,9 +10409,13 @@ function flujoCalc(soloCamote, porMes){
   per.forEach(function(x){ x.det.sort(function(a,b){ return (a.fecha||'')<(b.fecha||'')?-1:1; }); });
   return {per:per};
 }
+// La pantalla se pinta en tres piezas con contenedor propio —bancos, tarjetas y
+// la caja de gastos planeados— para que editar un renglón de la caja pueda
+// repintar SOLO las tarjetas. Repintar la sección entera le quitaría el foco al
+// input que se está escribiendo, la misma trampa de dgSetKg() y recalcFramFin().
 function renderFlujoEfectivo(){
   var cont=document.getElementById('deuda-flujo-sec'); if(!cont) return;
-  var fl=flujoCalc(true), bancos=rdBancosTotal();
+  var bancos=rdBancosTotal();
   var h='<div class="aging-card">'+
     '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px">'+
       '<div class="kpi-lbl" style="margin:0">En bancos</div>'+
@@ -10413,13 +10436,61 @@ function renderFlujoEfectivo(){
   }
   h+='</div>';
 
+  h+='<div id="flujo-cards"></div>';
+
+  // Caja de gastos planeados, fija en la pantalla — mismo corte que "Cubetas por
+  // trabajador" en el registro de Frambuesa. A diferencia de aquélla, esta NO es
+  // estado temporal de un formulario: cada renglón se guarda en cuanto se
+  // captura o se edita, porque esta pantalla no tiene botón de "Guardar".
+  var hoyGp=new Date().toISOString().substring(0,10);
+  h+='<div class="step-label" style="margin-top:16px">Gastos planeados</div>'+
+    '<div class="card" style="margin-bottom:12px">'+
+      '<div class="gp-grid gp-head" style="margin-bottom:6px;padding:0 2px">'+
+        '<span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Concepto</span>'+
+        '<span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;text-align:right">Cantidad</span>'+
+        '<span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;text-align:center">Fecha límite</span>'+
+        '<span></span>'+
+      '</div>'+
+      '<div id="flujo-plan-list"></div>'+
+      '<div class="gp-grid" style="margin-top:6px">'+
+        '<input type="text" id="gp-concepto" class="gp-inp gp-con" placeholder="IMSS, contabilidad, nómina..." autocomplete="off"'+
+          ' onkeydown="if(event.key===\'Enter\'){event.preventDefault();agregarGastoPlaneado();}">'+
+        '<input type="number" id="gp-monto" class="gp-inp gp-num gp-mon" placeholder="0.00" min="0" step="0.01"'+
+          ' onkeydown="if(event.key===\'Enter\'){event.preventDefault();agregarGastoPlaneado();}">'+
+        '<input type="date" id="gp-fecha" class="gp-inp gp-fec" value="'+hoyGp+'">'+
+        '<button class="gp-btn gp-x" onclick="agregarGastoPlaneado()" title="Agregar"'+
+          ' style="border:none;background:var(--green);color:#fff;font-size:18px">+</button>'+
+      '</div>'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">'+
+        '<span style="font-size:12px;color:var(--text2);font-weight:500">Total planeado</span>'+
+        '<span id="gp-total" style="font-size:18px;font-weight:700;color:var(--fram);font-family:var(--mono)">$0</span>'+
+      '</div>'+
+    '</div>';
+
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 6px">'+
+    '<button onclick="abrirProgramado(\'cobro\')" style="padding:10px 16px;font-size:13px;font-weight:600;font-family:var(--font);border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer">+ Cobro esperado</button>'+
+    '</div>';
+
+  // El detalle renglón por renglón que iba aquí se quitó a pedido del usuario
+  // (sep-2026, "de mientras"). `flujoCalc` sigue llenando `per[i].det`, así que
+  // devolverlo es volver a pintarlo; nada más se borró.
+  cont.innerHTML=h;
+  renderFlujoTarjetas();
+  renderGastosPlaneados();
+}
+
+// Solo las tarjetas. La llaman los renglones de gastos planeados al editarse,
+// para no repintar (y desenfocar) la caja de captura.
+function renderFlujoTarjetas(){
+  var cont=document.getElementById('flujo-cards'); if(!cont) return;
+  var fl=flujoCalc(true);
   // Cuatro tarjetas: la semana en curso y las tres siguientes, rotuladas con su
   // número de semana ISO. Cada una lleva entra, sale y el neto de ESA semana —
   // no es saldo corrido, el dinero en bancos vive arriba.
   // Lo vencido no tiene tarjeta propia: va DENTRO de la semana en curso en su
   // propia columna, porque es dinero que se mueve ahora pero conviene poder
   // mirarlo aparte de lo que apenas está por vencer.
-  var lbls=flujoLblSemanas();
+  var h='', lbls=flujoLblSemanas();
   var semEnt=fl.per[0].ent+fl.per[1].ent, semSal=fl.per[0].sal+fl.per[1].sal;
   function flCel(v, col, fuerte){
     return '<span style="font-family:var(--mono);text-align:right;color:'+col+';font-weight:'+(fuerte?700:500)+
@@ -10466,18 +10537,77 @@ function renderFlujoEfectivo(){
         '</div></div>';
   }
   h+='</div>';
-
-  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 6px">'+
-    '<button class="btn-main" style="width:auto;margin:0;padding:10px 16px;font-size:13px" onclick="abrirProgramado(\'pago\')">+ Pago programado</button>'+
-    '<button onclick="abrirProgramado(\'cobro\')" style="padding:10px 16px;font-size:13px;font-weight:600;font-family:var(--font);border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer">+ Cobro esperado</button>'+
-    '</div>';
-
-  // El detalle renglón por renglón que iba aquí se quitó a pedido del usuario
-  // (sep-2026, "de mientras"). `flujoCalc` sigue llenando `per[i].det`, así que
-  // devolverlo es volver a pintarlo; nada más se borró.
-  // Ojo: ahí vivían los únicos botones de ✓ cumplir y × quitar de un programado,
-  // así que hoy la agenda se puede capturar pero no marcar cumplida desde la UI.
   cont.innerHTML=h;
+}
+
+// ── Gastos planeados (caja fija del Flujo) ──────────────────────
+// Son `programados` de dirección 'pago'. NO generan deuda, gasto ni movimiento
+// contable: el usuario los pone y los quita para ver cómo le queda la semana.
+// Cuando el gasto ocurre de verdad se captura en el módulo de Gastos.
+function gastosPlaneados(){
+  return programados.filter(function(p){
+    return p.direccion==='pago' && !p.cumplido;
+  }).sort(function(a,b){ return (a.fecha||'')<(b.fecha||'')?-1:1; });
+}
+function renderGastosPlaneados(){
+  var cont=document.getElementById('flujo-plan-list'); if(!cont) return;
+  var lista=gastosPlaneados(), h='', tot=0;
+  lista.forEach(function(p){
+    tot+=parseFloat(p.monto)||0;
+    var id=p.id;
+    // Los renglones viejos que se ataron a una cuenta (con el modal que había
+    // antes) siguen aquí para poder quitarlos; se marcan para que no se lean
+    // como un gasto suelto más.
+    var chip=p.contraparte?'<span style="font-size:9px;color:var(--jal);margin-left:6px">'+p.contraparte+'</span>':'';
+    h+='<div class="gp-grid" style="margin-bottom:6px">'+
+      '<span class="gp-con" style="position:relative;display:block">'+
+        '<input type="text" class="gp-inp" value="'+String(p.concepto||'').replace(/"/g,'&quot;')+'"'+
+          ' onchange="editGastoPlaneado('+id+',\'concepto\',this.value)">'+chip+
+      '</span>'+
+      '<input type="number" class="gp-inp gp-num gp-mon" value="'+(parseFloat(p.monto)||'')+'" placeholder="0.00" min="0" step="0.01"'+
+        ' onchange="editGastoPlaneado('+id+',\'monto\',this.value)">'+
+      '<input type="date" class="gp-inp gp-fec" value="'+(p.fecha||'')+'"'+
+        ' onchange="editGastoPlaneado('+id+',\'fecha\',this.value)">'+
+      '<button class="gp-btn gp-x" onclick="removeGastoPlaneado('+id+')" title="Eliminar">×</button>'+
+      '</div>';
+  });
+  cont.innerHTML=h;
+  var t=document.getElementById('gp-total'); if(t) t.textContent=fmt(tot);
+}
+function agregarGastoPlaneado(){
+  var cInp=document.getElementById('gp-concepto'),
+      mInp=document.getElementById('gp-monto'),
+      fInp=document.getElementById('gp-fecha');
+  if(!cInp||!mInp||!fInp) return;
+  var concepto=(cInp.value||'').trim(), monto=parseFloat(mInp.value)||0;
+  if(!concepto){ showToast('Escribe un concepto'); cInp.focus(); return; }
+  if(monto<=0){ showToast('Escribe una cantidad'); mInp.focus(); return; }
+  var p={id:Date.now(), direccion:'pago', fecha:fInp.value||'', concepto:concepto,
+    monto:monto, contraparte:'', cumplido:false};
+  programados.push(p); saveProgramados(); sbSaveProgramado(p);
+  cInp.value=''; mInp.value='';
+  renderGastosPlaneados(); renderFlujoTarjetas();
+  cInp.focus();
+}
+// Muta y guarda un solo campo. Va en onchange (no oninput) para no escribir a
+// Supabase en cada tecla, y repinta SOLO las tarjetas: repintar la lista dejaría
+// al usuario sin foco a media captura.
+function editGastoPlaneado(id, campo, valor){
+  var p=null;
+  for(var i=0;i<programados.length;i++){ if(String(programados[i].id)===String(id)){ p=programados[i]; break; } }
+  if(!p) return;
+  if(campo==='monto') p.monto=parseFloat(valor)||0;
+  else if(campo==='concepto') p.concepto=(valor||'').trim();
+  else if(campo==='fecha') p.fecha=valor||'';
+  saveProgramados(); sbSaveProgramado(p);
+  renderFlujoTarjetas();
+  var t=document.getElementById('gp-total');
+  if(t) t.textContent=fmt(gastosPlaneados().reduce(function(a,x){return a+(parseFloat(x.monto)||0);},0));
+}
+function removeGastoPlaneado(id){
+  programados=programados.filter(function(p){ return String(p.id)!==String(id); });
+  saveProgramados(); sbDeleteProgramado(id);
+  renderGastosPlaneados(); renderFlujoTarjetas();
 }
 
 // ── Agenda de programados ───────────────────────────────────────
