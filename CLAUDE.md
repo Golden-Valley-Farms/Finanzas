@@ -318,7 +318,11 @@ Fusiona las dos hojas de control interno que el usuario llevaba a mano (balance 
 
 `flujoCalc(soloCamote)` reparte entradas y salidas en **tres** periodos: **Vencido · Este mes · Próximo mes** (`FLUJO_LBL`, `flujoPeriodoDe()`). Lo vencido va en su **propia** columna, no revuelto con el mes en curso: si no, todo lo que arrastra el negocio se amontona ahí y el mes siguiente sale en cero, que es justo lo que no deja planear. Lo que cae más adelante **queda fuera**: `flujoPeriodoDe()` devuelve `-1` y quien la llama descarta ese movimiento (antes había un cuarto periodo "Después"; se quitó en sep-2026).
 
-**Cada tarjeta es independiente y lleva tres renglones — Entra · Sale · Resultado**, donde Resultado es `entra − sale` de **ese** periodo. **No es saldo corrido**: el dinero en bancos vive en su propia tarjeta arriba y no se mezcla. Antes las tarjetas encadenaban un saldo que arrancaba en bancos; se cambió a pedido del usuario en sep-2026.
+**Son dos tarjetas —Este mes y Próximo mes— con tres renglones cada una: Entra · Sale · Resultado**, donde Resultado es `entra − sale` de **ese** periodo. **No es saldo corrido**: el dinero en bancos vive en su propia tarjeta arriba y no se mezcla. Antes las tarjetas encadenaban un saldo que arrancaba en bancos; se cambió a pedido del usuario en sep-2026.
+
+**Lo vencido no tiene tarjeta propia: va dentro de "Este mes", en su propia columna.** Esa tarjeta es una rejilla de cuatro columnas —rótulo · Vencido · Por vencer · Total— y `per[0]`/`per[1]` alimentan las dos primeras; "Próximo mes" es la misma rejilla con una sola columna de valores. Es dinero que se mueve ahora, pero el usuario quiere poder mirarlo aparte de lo que apenas está por vencer. `flujoCalc()` **sigue devolviendo los tres periodos por separado** — la fusión es solo de la tarjeta, y el detalle de abajo conserva su sección "Vencido".
+
+Los helpers de dibujo (`flCel`, `flEncabezado`, `flRotulo`) son locales a `renderFlujoEfectivo()` a propósito: no se invocan desde HTML, solo arman cadenas.
 
 **La pantalla mira solo compra-venta de camote** (sep-2026): `renderFlujoEfectivo()` llama `flujoCalc(true)` y ese flag **filtra por cuenta, no por cargo**, reusando `cpCategoria(nombre)==='comercial'`. Una cuenta comercial entra con **todo** su saldo pendiente, cargos manuales incluidos; una financiera (Nacho, Asciende, Arca) no entra en absoluto. Un `programado` cuenta solo si su contraparte es comercial, así que los compromisos sueltos (IMSS, contabilidad) quedan fuera.
 
