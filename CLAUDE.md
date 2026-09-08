@@ -326,6 +326,16 @@ Fusiona las dos hojas de control interno que el usuario llevaba a mano (balance 
 
 **El detalle renglón por renglón bajo las tarjetas se quitó** (sep-2026, a pedido del usuario, "de mientras"). `flujoCalc` sigue llenando `per[i].det`, así que devolverlo es volver a pintarlo.
 
+### Encabezado y saldo en bancos
+
+**La tira "En bancos" que abría la pantalla se quitó** (sep-2026) y en su lugar van **tres tarjetas KPI: Nos deben · Debemos · Balance** (cobrar − pagar). Van con `rdTotales(tipo,'comercial')`, o sea **el mismo filtro comercial que las tarjetas de semana**, para que toda la pantalla hable del mismo universo; el Resumen conserva sus propias cifras, esas sí de todas las cuentas.
+
+**El saldo en bancos pasó a una caja de captura de dos renglones —MXN y USD—** (`renderSaldoBancos()` / `setSaldoBanco()`), a media anchura, encima de Gastos planeados. No hay entidad nueva: son filas de `bancosSaldos` llamadas `'MXN'` y `'USD'`, aprovechando que la tabla está llaveada por `nombre`. `fechaCorte` guarda **la fecha en que se capturó la cifra** y se pinta como leyenda ("actualizado 08 sep 2026"); el usuario no la captura.
+
+**MXN y USD no se suman.** La app no tiene un tipo de cambio general —solo uno por ficha de cliente—, así que convertir aquí obligaría a inventar uno. Por lo mismo **`rdBancosTotal()` devuelve solo el renglón `MXN`**, y mientras ese renglón no exista cae a los saldos por banco del modal viejo, para que el "En bancos" del Resumen no se vacíe de golpe al estrenar la caja.
+
+`abrirEditarBancos()` y `guardarBancosSaldos()` **quedaron sin punto de entrada** al desaparecer el botón "Actualizar saldos"; se conservan porque el fallback de arriba todavía lee los datos que crearon.
+
 ### Caja de gastos planeados
 
 Sustituye al botón "+ Pago programado" y su modal (sep-2026). Es una **caja de captura fija**, del mismo corte que "Cubetas por trabajador" en el registro de Frambuesa: tres columnas —**Concepto · Cantidad · Fecha límite**—, un `+` para agregar y una `×` por renglón. `gastosPlaneados()` · `renderGastosPlaneados()` · `agregarGastoPlaneado()` · `editGastoPlaneado()` · `removeGastoPlaneado()`.
@@ -335,6 +345,8 @@ Sustituye al botón "+ Pago programado" y su modal (sep-2026). Es una **caja de 
 **La pantalla se pinta en tres piezas con contenedor propio** —bancos, `#flujo-cards` y `#flujo-plan-list`— para que editar un renglón repinte **solo las tarjetas** (`renderFlujoTarjetas()`). Repintar la sección entera le quitaría el foco al input que se está escribiendo, la misma trampa de `dgSetKg()` y `recalcFramFin()`. Por lo mismo los renglones guardan en `onchange`, no en `oninput`.
 
 **Un programado sin contraparte siempre suma en el flujo, aunque esté filtrado a camote**: es dinero que el usuario mismo dijo que va a salir. Con contraparte se respeta el filtro. Esto invirtió la regla anterior, donde los compromisos sueltos (IMSS, contabilidad) quedaban fuera — ahora son justo lo que esta caja captura.
+
+**Las dos cajas de captura van a media anchura** en escritorio (`.gp-half`, `calc(50% - 6px)` a partir de 700px) y a ancho completo en móvil, que es lo único legible ahí.
 
 **La rejilla `.gp-grid` se parte en dos renglones debajo de 560px** (concepto y la `×` arriba, cantidad y fecha abajo) y ahí se oculta la cabecera: el input de fecha no cabe junto a los otros tres, y los rótulos dejarían de caer sobre su columna.
 
