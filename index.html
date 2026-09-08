@@ -10242,7 +10242,7 @@ function renderResumenDeudas(){
   // es el dinero con el que hay que pagarles la mercancía que ya revendimos.
   var nuestro=cobrar.total-pagarCom.total;
   var bancos=rdBancosTotal();
-  var fl=flujoCalc();
+  var fl=flujoCalc(false, true); // por MES: la pantalla de Flujo va por semana
   // Al cierre de este mes entra y sale también lo ya vencido: sigue pendiente de
   // moverse, no desaparece por haber pasado su fecha.
   var proyectado=bancos+(fl.per[0].ent-fl.per[0].sal)+(fl.per[1].ent-fl.per[1].sal);
@@ -10287,23 +10287,55 @@ function renderResumenDeudas(){
 // Qué entra y qué sale en lo vencido, este mes y el próximo, contra el dinero
 // que hay en bancos. Los vencimientos de cuentas NO se capturan: salen solos.
 // La pantalla mira SOLO cuentas de compra-venta de camote (ver flujoCalc).
-var FLUJO_LBL=['Vencido','Este mes','Próximo mes'];
-// Lo vencido va en su PROPIA columna, no revuelto con este mes: si no, todo lo
-// que arrastra el negocio se amontona en el mes en curso y el mes siguiente sale
-// en cero, que es justo lo que no deja planear. Lo que cae más adelante queda
-// fuera (índice -1): la pantalla es para los dos meses que se pueden trabajar.
-// Los meses se comparan por clave año*12+mes para no pelearse con zonas horarias.
-function flujoPeriodoDe(fecha){
+// La pantalla trabaja por SEMANA ISO (sep-2026; antes era por mes): la semana en
+// curso y las tres siguientes. El índice 0 es siempre lo vencido, que no tiene
+// tarjeta propia sino una columna dentro de la primera. Lo que cae más adelante
+// queda fuera (índice -1): la pantalla es para lo que se puede trabajar.
+var FLUJO_SEMANAS=4;
+function flujoHoyStr(){
+  var h=new Date();
+  return h.getFullYear()+'-'+('0'+(h.getMonth()+1)).slice(-2)+'-'+('0'+h.getDate()).slice(-2);
+}
+// Lunes de la semana ISO de una fecha, en UTC para que el horario de verano no
+// mueva el corte. Restar dos lunes da semanas exactas, cosa que restar números
+// de semana no logra en el cambio de año (52 → 1).
+function flujoLunesDe(fecha){
+  var p=String(fecha).split('-');
+  var d=new Date(Date.UTC(parseInt(p[0],10)||1970, (parseInt(p[1],10)||1)-1, parseInt(p[2],10)||1));
+  var dow=d.getUTCDay()||7; // 1 = lunes … 7 = domingo
+  d.setUTCDate(d.getUTCDate()-(dow-1));
+  return d;
+}
+function flujoPeriodoSemana(fecha){
   if(!fecha) return -1;
-  var hoy=new Date();
-  var hoyStr=hoy.getFullYear()+'-'+('0'+(hoy.getMonth()+1)).slice(-2)+'-'+('0'+hoy.getDate()).slice(-2);
-  if(String(fecha)<hoyStr) return 0;
-  var km=hoy.getFullYear()*12+hoy.getMonth();
+  if(String(fecha)<flujoHoyStr()) return 0;
+  var off=Math.round((flujoLunesDe(fecha)-flujoLunesDe(flujoHoyStr()))/604800000);
+  if(off<0 || off>=FLUJO_SEMANAS) return -1;
+  return off+1;
+}
+// El Resumen sigue proyectando el cierre del MES, así que conserva su propio
+// reparto. Los meses se comparan por clave año*12+mes para no pelearse con
+// zonas horarias.
+function flujoPeriodoMes(fecha){
+  if(!fecha) return -1;
+  if(String(fecha)<flujoHoyStr()) return 0;
+  var hoy=new Date(), km=hoy.getFullYear()*12+hoy.getMonth();
   var p=String(fecha).split('-');
   var k=(parseInt(p[0],10)||0)*12+((parseInt(p[1],10)||1)-1);
   if(k===km) return 1;
   if(k===km+1) return 2;
   return -1;
+}
+// Rótulos de las tarjetas: 'Vencido' y luego 'Semana 37', 'Semana 38'… con el
+// número de semana ISO real, que es como el usuario lleva el calendario.
+function flujoLblSemanas(){
+  var l=['Vencido'], lun=flujoLunesDe(flujoHoyStr());
+  for(var i=0;i<FLUJO_SEMANAS;i++){
+    var d=new Date(lun.getTime()+i*604800000);
+    var iso=d.getUTCFullYear()+'-'+('0'+(d.getUTCMonth()+1)).slice(-2)+'-'+('0'+d.getUTCDate()).slice(-2);
+    l.push('Semana '+semanaISO(iso));
+  }
+  return l;
 }
 // Compra-venta de camote: se filtra por CUENTA, no por cargo, reusando
 // cpCategoria(). Una cuenta comercial entra con TODO su saldo pendiente —los
@@ -10313,8 +10345,10 @@ function flujoPeriodoDe(fecha){
 // De paso, el usuario puede forzar la clasificación desde el ⚙️ de la ficha.
 // El filtro es de la PANTALLA de Flujo, no de flujoCalc en general: el "Al
 // cierre de este mes" del Resumen sigue proyectando todo el dinero.
-function flujoCalc(soloCamote){
-  var per=[{ent:0,sal:0,det:[]},{ent:0,sal:0,det:[]},{ent:0,sal:0,det:[]}];
+function flujoCalc(soloCamote, porMes){
+  var bucket=porMes?flujoPeriodoMes:flujoPeriodoSemana;
+  var per=[], nper=porMes?3:(FLUJO_SEMANAS+1);
+  for(var q=0;q<nper;q++) per.push({ent:0,sal:0,det:[]});
   // Cuentas con un abono ya programado: para ellas manda el abono, no el
   // vencimiento del saldo completo. Es lo que evita contar el mismo dinero dos
   // veces, que es justo lo que descuadraba la hoja de Excel.
@@ -10334,7 +10368,7 @@ function flujoCalc(soloCamote){
       var f=(c.moneda==='USD')?(parseFloat(c.tipoCambio)||0):1;
       cuentaPendientes(tipo,nom).forEach(function(x){
         var monto=x.saldo*f; if(monto<=0.5) return;
-        var i=flujoPeriodoDe(deudaVence(x.deuda)); if(i<0) return;
+        var i=bucket(deudaVence(x.deuda)); if(i<0) return;
         if(esEnt) per[i].ent+=monto; else per[i].sal+=monto;
         var it=(x.deuda.items&&x.deuda.items[0])?x.deuda.items[0].concepto:'';
         per[i].det.push({dir:dir, nombre:nom, concepto:x.deuda.folioExterno||x.deuda.desc||it||'Cargo',
@@ -10348,7 +10382,7 @@ function flujoCalc(soloCamote){
     // compra-venta de camote y no entra al flujo filtrado.
     if(soloCamote && !(p.contraparte && cpCategoria(p.contraparte)==='comercial')) return;
     var monto=parseFloat(p.monto)||0; if(monto<=0) return;
-    var i=flujoPeriodoDe(p.fecha); if(i<0) return;
+    var i=bucket(p.fecha); if(i<0) return;
     if(p.direccion==='cobro') per[i].ent+=monto; else per[i].sal+=monto;
     per[i].det.push({dir:p.direccion, nombre:p.contraparte||'', concepto:p.concepto||'(sin concepto)',
       monto:monto, fecha:p.fecha, prog:true, id:p.id});
@@ -10379,12 +10413,14 @@ function renderFlujoEfectivo(){
   }
   h+='</div>';
 
-  // Dos tarjetas: este mes y el siguiente. Cada una lleva entra, sale y el neto
-  // de ESE periodo — no es saldo corrido, el dinero en bancos vive arriba.
-  // Lo vencido no tiene tarjeta propia: va DENTRO de "Este mes" en su propia
-  // columna, porque es dinero que se mueve ahora pero conviene poder mirarlo
-  // aparte de lo que apenas está por vencer.
-  var mesEnt=fl.per[0].ent+fl.per[1].ent, mesSal=fl.per[0].sal+fl.per[1].sal;
+  // Cuatro tarjetas: la semana en curso y las tres siguientes, rotuladas con su
+  // número de semana ISO. Cada una lleva entra, sale y el neto de ESA semana —
+  // no es saldo corrido, el dinero en bancos vive arriba.
+  // Lo vencido no tiene tarjeta propia: va DENTRO de la semana en curso en su
+  // propia columna, porque es dinero que se mueve ahora pero conviene poder
+  // mirarlo aparte de lo que apenas está por vencer.
+  var lbls=flujoLblSemanas();
+  var semEnt=fl.per[0].ent+fl.per[1].ent, semSal=fl.per[0].sal+fl.per[1].sal;
   function flCel(v, col, fuerte){
     return '<span style="font-family:var(--mono);text-align:right;color:'+col+';font-weight:'+(fuerte?700:500)+
       ';font-size:'+(fuerte?'15px':'13px')+(fuerte?'':';opacity:.7')+'">'+
@@ -10395,37 +10431,41 @@ function renderFlujoEfectivo(){
   }
   function flRotulo(t){ return '<span style="font-size:12px;color:var(--text3)">'+t+'</span>'; }
 
-  var netoMes=mesEnt-mesSal, colMes=(netoMes>=0?'var(--green)':'var(--rojo)');
+  function flNeto(v){
+    var col=(v>=0?'var(--green)':'var(--rojo)');
+    return '<span style="font-family:var(--mono);text-align:right;font-weight:700;font-size:19px;color:'+col+'">'+
+      (v<0?'−':'')+fmt(Math.abs(v))+'</span>';
+  }
+  var netoSem=semEnt-semSal;
   h+='<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px">'+
     '<div class="kpi-card" style="flex:2 1 330px;margin:0">'+
-      '<div class="kpi-accent" style="background:'+colMes+'"></div>'+
-      '<div class="kpi-lbl">Este mes</div>'+
+      '<div class="kpi-accent" style="background:'+(netoSem>=0?'var(--green)':'var(--rojo)')+'"></div>'+
+      '<div class="kpi-lbl">'+lbls[1]+'</div>'+
       '<div style="display:grid;grid-template-columns:auto repeat(3,1fr);gap:5px 12px;align-items:baseline;margin-top:6px">'+
         '<span></span>'+flEncabezado('Vencido')+flEncabezado('Por vencer')+flEncabezado('Total')+
-        flRotulo('Entra')+flCel(fl.per[0].ent,'var(--green)')+flCel(fl.per[1].ent,'var(--green)')+flCel(mesEnt,'var(--green)',1)+
-        flRotulo('Sale')+flCel(fl.per[0].sal,'var(--fram)')+flCel(fl.per[1].sal,'var(--fram)')+flCel(mesSal,'var(--fram)',1)+
+        flRotulo('Entra')+flCel(fl.per[0].ent,'var(--green)')+flCel(fl.per[1].ent,'var(--green)')+flCel(semEnt,'var(--green)',1)+
+        flRotulo('Sale')+flCel(fl.per[0].sal,'var(--fram)')+flCel(fl.per[1].sal,'var(--fram)')+flCel(semSal,'var(--fram)',1)+
         '<span style="grid-column:1/-1;border-top:0.5px solid var(--border);margin-top:2px"></span>'+
         flRotulo('Resultado')+
           flCel(fl.per[0].ent-fl.per[0].sal, (fl.per[0].ent-fl.per[0].sal)>=0?'var(--green)':'var(--rojo)')+
           flCel(fl.per[1].ent-fl.per[1].sal, (fl.per[1].ent-fl.per[1].sal)>=0?'var(--green)':'var(--rojo)')+
-          '<span style="font-family:var(--mono);text-align:right;font-weight:700;font-size:19px;color:'+colMes+'">'+
-            (netoMes<0?'−':'')+fmt(Math.abs(netoMes))+'</span>'+
+          flNeto(netoSem)+
       '</div></div>';
 
-  var p2=fl.per[2], neto2=p2.ent-p2.sal, col2=(neto2>=0?'var(--green)':'var(--rojo)');
-  h+='<div class="kpi-card" style="flex:1 1 200px;margin:0">'+
-      '<div class="kpi-accent" style="background:'+col2+'"></div>'+
-      '<div class="kpi-lbl">Próximo mes</div>'+
-      '<div style="display:grid;grid-template-columns:auto 1fr;gap:5px 12px;align-items:baseline;margin-top:6px">'+
-        '<span></span>'+flEncabezado('Total')+
-        flRotulo('Entra')+flCel(p2.ent,'var(--green)',1)+
-        flRotulo('Sale')+flCel(p2.sal,'var(--fram)',1)+
-        '<span style="grid-column:1/-1;border-top:0.5px solid var(--border);margin-top:2px"></span>'+
-        flRotulo('Resultado')+
-          '<span style="font-family:var(--mono);text-align:right;font-weight:700;font-size:19px;color:'+col2+'">'+
-            (neto2<0?'−':'')+fmt(Math.abs(neto2))+'</span>'+
-      '</div></div>'+
-    '</div>';
+  for(var s=2;s<=FLUJO_SEMANAS;s++){
+    var ps=fl.per[s], netoS=ps.ent-ps.sal;
+    h+='<div class="kpi-card" style="flex:1 1 175px;margin:0">'+
+        '<div class="kpi-accent" style="background:'+(netoS>=0?'var(--green)':'var(--rojo)')+'"></div>'+
+        '<div class="kpi-lbl">'+lbls[s]+'</div>'+
+        '<div style="display:grid;grid-template-columns:auto 1fr;gap:5px 12px;align-items:baseline;margin-top:6px">'+
+          '<span></span>'+flEncabezado('Total')+
+          flRotulo('Entra')+flCel(ps.ent,'var(--green)',1)+
+          flRotulo('Sale')+flCel(ps.sal,'var(--fram)',1)+
+          '<span style="grid-column:1/-1;border-top:0.5px solid var(--border);margin-top:2px"></span>'+
+          flRotulo('Resultado')+flNeto(netoS)+
+        '</div></div>';
+  }
+  h+='</div>';
 
   h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 6px">'+
     '<button class="btn-main" style="width:auto;margin:0;padding:10px 16px;font-size:13px" onclick="abrirProgramado(\'pago\')">+ Pago programado</button>'+
@@ -10434,7 +10474,7 @@ function renderFlujoEfectivo(){
 
   fl.per.forEach(function(p,i){
     if(!p.det.length) return;
-    h+='<div style="margin-top:14px"><div class="kpi-lbl" style="margin-bottom:6px">'+FLUJO_LBL[i]+'</div>';
+    h+='<div style="margin-top:14px"><div class="kpi-lbl" style="margin-bottom:6px">'+lbls[i]+'</div>';
     p.det.forEach(function(x){
       var esEnt=(x.dir==='cobro');
       h+='<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:7px 0;border-bottom:0.5px solid var(--border)">'+

@@ -316,11 +316,15 @@ Fusiona las dos hojas de control interno que el usuario llevaba a mano (balance 
 
 ### Flujo de efectivo (sep-2026)
 
-`flujoCalc(soloCamote)` reparte entradas y salidas en **tres** periodos: **Vencido · Este mes · Próximo mes** (`FLUJO_LBL`, `flujoPeriodoDe()`). Lo vencido va en su **propia** columna, no revuelto con el mes en curso: si no, todo lo que arrastra el negocio se amontona ahí y el mes siguiente sale en cero, que es justo lo que no deja planear. Lo que cae más adelante **queda fuera**: `flujoPeriodoDe()` devuelve `-1` y quien la llama descarta ese movimiento (antes había un cuarto periodo "Después"; se quitó en sep-2026).
+**La pantalla va por semana ISO** (sep-2026; antes por mes): `flujoCalc(soloCamote)` reparte en **cinco** buckets — `per[0]` es lo **vencido** y `per[1..4]` la **semana en curso y las tres siguientes**, rotuladas con su número real (`Semana 37`, `Semana 38`…) por `flujoLblSemanas()`. Lo que cae más adelante **queda fuera**: `flujoPeriodoSemana()` devuelve `-1` y quien la llama descarta el movimiento.
 
-**Son dos tarjetas —Este mes y Próximo mes— con tres renglones cada una: Entra · Sale · Resultado**, donde Resultado es `entra − sale` de **ese** periodo. **No es saldo corrido**: el dinero en bancos vive en su propia tarjeta arriba y no se mezcla. Antes las tarjetas encadenaban un saldo que arrancaba en bancos; se cambió a pedido del usuario en sep-2026.
+**El reparto se hace restando lunes, no números de semana** (`flujoLunesDe()`, en UTC): restar semanas ISO se rompe en el cambio de año, donde la 52 es anterior a la 1. Ese helper es la razón de que no haga falta tratar el fin de año como caso especial.
 
-**Lo vencido no tiene tarjeta propia: va dentro de "Este mes", en su propia columna.** Esa tarjeta es una rejilla de cuatro columnas —rótulo · Vencido · Por vencer · Total— y `per[0]`/`per[1]` alimentan las dos primeras; "Próximo mes" es la misma rejilla con una sola columna de valores. Es dinero que se mueve ahora, pero el usuario quiere poder mirarlo aparte de lo que apenas está por vencer. `flujoCalc()` **sigue devolviendo los tres periodos por separado** — la fusión es solo de la tarjeta, y el detalle de abajo conserva su sección "Vencido".
+**Son cuatro tarjetas con tres renglones cada una: Entra · Sale · Resultado**, donde Resultado es `entra − sale` de **esa** semana. **No es saldo corrido**: el dinero en bancos vive en su propia tarjeta arriba y no se mezcla.
+
+**Lo vencido no tiene tarjeta propia: va dentro de la semana en curso, en su propia columna.** Esa primera tarjeta es una rejilla de cuatro columnas —rótulo · Vencido · Por vencer · Total— alimentada por `per[0]`/`per[1]`; las otras tres son la misma rejilla con una sola columna de valores y son las que pinta el `for`. Es dinero que se mueve ahora, pero el usuario quiere poder mirarlo aparte de lo que apenas está por vencer. Los buckets **siguen separados** en `flujoCalc` — la fusión es solo de la tarjeta, y el detalle de abajo conserva su sección "Vencido".
+
+**`flujoCalc(soloCamote, porMes)` reparte por mes cuando se le pide**, con `flujoPeriodoMes()` y tres buckets (Vencido · Este mes · Próximo mes). El único que lo usa es el **Resumen**, cuyo "al cierre de este mes" seguiría diciendo lo mismo aunque la pantalla de Flujo cambie de escala: llama `flujoCalc(false, true)`. Si el Flujo vuelve a cambiar de periodo, ese `porMes` es lo que evita que el Resumen se vaya con él.
 
 Los helpers de dibujo (`flCel`, `flEncabezado`, `flRotulo`) son locales a `renderFlujoEfectivo()` a propósito: no se invocan desde HTML, solo arman cadenas.
 
