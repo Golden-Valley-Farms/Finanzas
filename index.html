@@ -10286,7 +10286,7 @@ function renderResumenDeudas(){
 // ══ FLUJO DE EFECTIVO ═════════════════════════════════════════
 // Qué entra y qué sale en lo vencido, este mes y el próximo, contra el dinero
 // que hay en bancos. Los vencimientos de cuentas NO se capturan: salen solos.
-// La pantalla mira SOLO compra-venta de camote (ver FLUJO_REFKINDS).
+// La pantalla mira SOLO cuentas de compra-venta de camote (ver flujoCalc).
 var FLUJO_LBL=['Vencido','Este mes','Próximo mes'];
 // Lo vencido va en su PROPIA columna, no revuelto con este mes: si no, todo lo
 // que arrastra el negocio se amontona en el mes en curso y el mes siguiente sale
@@ -10305,21 +10305,14 @@ function flujoPeriodoDe(fecha){
   if(k===km+1) return 2;
   return -1;
 }
-// Compra-venta de camote: los mismos refKind que cpCategoria() trata como
-// mercancía. Préstamos, gastos y cargos manuales quedan fuera cuando se pide
-// filtrado. El filtro es de la PANTALLA de Flujo, no de flujoCalc en general:
-// el "Al cierre de este mes" del Resumen sigue proyectando todo el dinero.
-var FLUJO_REFKINDS={com_pagar:1, alm_compra_pagar:1, com_cobrar:1, camote_cobrar:1};
-function flujoEsCamote(d){ return !!(d && FLUJO_REFKINDS[d.refKind]); }
-// Un abono programado solo entra al flujo filtrado si su cuenta tiene cargos de
-// camote en esa dirección; los compromisos sueltos (IMSS, contabilidad) no.
-function flujoCuentaCamote(tipo, nombre){
-  for(var i=0;i<deudas.length;i++){
-    var d=deudas[i];
-    if(d.tipo===tipo && d.contraparte===nombre && flujoEsCamote(d)) return true;
-  }
-  return false;
-}
+// Compra-venta de camote: se filtra por CUENTA, no por cargo, reusando
+// cpCategoria(). Una cuenta comercial entra con TODO su saldo pendiente —los
+// cargos manuales incluidos— para que el Flujo nunca muestre menos vencido que
+// la cuenta: filtrando cargo por cargo, un ajuste manual a un proveedor de
+// camote se quedaba fuera y los dos números no cuadraban.
+// De paso, el usuario puede forzar la clasificación desde el ⚙️ de la ficha.
+// El filtro es de la PANTALLA de Flujo, no de flujoCalc en general: el "Al
+// cierre de este mes" del Resumen sigue proyectando todo el dinero.
 function flujoCalc(soloCamote){
   var per=[{ent:0,sal:0,det:[]},{ent:0,sal:0,det:[]},{ent:0,sal:0,det:[]}];
   // Cuentas con un abono ya programado: para ellas manda el abono, no el
@@ -10333,17 +10326,13 @@ function flujoCalc(soloCamote){
     var esEnt=(tipo==='cobrar');
     var dir=esEnt?'cobro':'pago';
     var nombres={};
-    deudas.forEach(function(d){
-      if(d.tipo!==tipo) return;
-      if(soloCamote && !flujoEsCamote(d)) return;
-      nombres[d.contraparte]=true;
-    });
+    deudas.forEach(function(d){ if(d.tipo===tipo) nombres[d.contraparte]=true; });
     Object.keys(nombres).forEach(function(nom){
+      if(soloCamote && cpCategoria(nom)!=='comercial') return;
       if(conAbono[dir+'|'+nom]) return;
       var c=getContraparte(nom)||{};
       var f=(c.moneda==='USD')?(parseFloat(c.tipoCambio)||0):1;
       cuentaPendientes(tipo,nom).forEach(function(x){
-        if(soloCamote && !flujoEsCamote(x.deuda)) return;
         var monto=x.saldo*f; if(monto<=0.5) return;
         var i=flujoPeriodoDe(deudaVence(x.deuda)); if(i<0) return;
         if(esEnt) per[i].ent+=monto; else per[i].sal+=monto;
@@ -10355,7 +10344,9 @@ function flujoCalc(soloCamote){
   });
   programados.forEach(function(p){
     if(p.cumplido) return;
-    if(soloCamote && !(p.contraparte && flujoCuentaCamote(p.direccion==='cobro'?'cobrar':'pagar', p.contraparte))) return;
+    // Un compromiso suelto (IMSS, contabilidad) no tiene cuenta, así que no es
+    // compra-venta de camote y no entra al flujo filtrado.
+    if(soloCamote && !(p.contraparte && cpCategoria(p.contraparte)==='comercial')) return;
     var monto=parseFloat(p.monto)||0; if(monto<=0) return;
     var i=flujoPeriodoDe(p.fecha); if(i<0) return;
     if(p.direccion==='cobro') per[i].ent+=monto; else per[i].sal+=monto;

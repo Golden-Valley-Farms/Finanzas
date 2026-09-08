@@ -320,7 +320,9 @@ Fusiona las dos hojas de control interno que el usuario llevaba a mano (balance 
 
 **Cada tarjeta es independiente y lleva tres renglones — Entra · Sale · Resultado**, donde Resultado es `entra − sale` de **ese** periodo. **No es saldo corrido**: el dinero en bancos vive en su propia tarjeta arriba y no se mezcla. Antes las tarjetas encadenaban un saldo que arrancaba en bancos; se cambió a pedido del usuario en sep-2026.
 
-**La pantalla mira solo compra-venta de camote** (sep-2026): `renderFlujoEfectivo()` llama `flujoCalc(true)` y ese flag filtra por `FLUJO_REFKINDS` — `com_pagar`, `alm_compra_pagar`, `com_cobrar`, `camote_cobrar`, los mismos cuatro que `cpCategoria()` trata como mercancía. Préstamos, gastos y cargos manuales o importados no entran. Un `programado` solo cuenta si su contraparte tiene cargos de camote en esa dirección (`flujoCuentaCamote()`), así que los compromisos sueltos (IMSS, contabilidad) tampoco.
+**La pantalla mira solo compra-venta de camote** (sep-2026): `renderFlujoEfectivo()` llama `flujoCalc(true)` y ese flag **filtra por cuenta, no por cargo**, reusando `cpCategoria(nombre)==='comercial'`. Una cuenta comercial entra con **todo** su saldo pendiente, cargos manuales incluidos; una financiera (Nacho, Asciende, Arca) no entra en absoluto. Un `programado` cuenta solo si su contraparte es comercial, así que los compromisos sueltos (IMSS, contabilidad) quedan fuera.
+
+Filtrar por cargo fue el primer intento y **estaba mal**: el ajuste manual de $20,660 a Agroproductos los Blancas —cuenta de camote— se quedaba fuera, y el Flujo mostraba $172,378 de vencido contra los $193,038 de la cuenta. Por cuenta los dos números cuadran siempre. De paso, el usuario puede forzar la clasificación desde el ⚙️ de la ficha, que es lo que `cpCategoria()` respeta antes que nada.
 
 **El filtro es de la pantalla, no de `flujoCalc`.** El "Al cierre de este mes" del **Resumen** llama `flujoCalc()` sin flag y sigue proyectando todo el dinero — es una cifra de caja total, no de camote. Si algún día se quiere que coincidan, hay que decidir cuál de las dos cambia.
 
