@@ -10284,15 +10284,17 @@ function renderResumenDeudas(){
 }
 
 // ══ FLUJO DE EFECTIVO ═════════════════════════════════════════
-// Qué entra y qué sale este mes, el próximo y después, contra el dinero que hay
-// en bancos. Los vencimientos de cuentas NO se capturan: salen solos.
-var FLUJO_LBL=['Vencido','Este mes','Próximo mes','Después'];
+// Qué entra y qué sale en lo vencido, este mes y el próximo, contra el dinero
+// que hay en bancos. Los vencimientos de cuentas NO se capturan: salen solos.
+// La pantalla mira SOLO compra-venta de camote (ver FLUJO_REFKINDS).
+var FLUJO_LBL=['Vencido','Este mes','Próximo mes'];
 // Lo vencido va en su PROPIA columna, no revuelto con este mes: si no, todo lo
-// que arrastra el negocio se amontona en el mes en curso y los meses siguientes
-// salen en cero, que es justo lo que no deja planear.
+// que arrastra el negocio se amontona en el mes en curso y el mes siguiente sale
+// en cero, que es justo lo que no deja planear. Lo que cae más adelante queda
+// fuera (índice -1): la pantalla es para los dos meses que se pueden trabajar.
 // Los meses se comparan por clave año*12+mes para no pelearse con zonas horarias.
 function flujoPeriodoDe(fecha){
-  if(!fecha) return 3;
+  if(!fecha) return -1;
   var hoy=new Date();
   var hoyStr=hoy.getFullYear()+'-'+('0'+(hoy.getMonth()+1)).slice(-2)+'-'+('0'+hoy.getDate()).slice(-2);
   if(String(fecha)<hoyStr) return 0;
@@ -10301,10 +10303,25 @@ function flujoPeriodoDe(fecha){
   var k=(parseInt(p[0],10)||0)*12+((parseInt(p[1],10)||1)-1);
   if(k===km) return 1;
   if(k===km+1) return 2;
-  return 3;
+  return -1;
 }
-function flujoCalc(){
-  var per=[{ent:0,sal:0,det:[]},{ent:0,sal:0,det:[]},{ent:0,sal:0,det:[]},{ent:0,sal:0,det:[]}];
+// Compra-venta de camote: los mismos refKind que cpCategoria() trata como
+// mercancía. Préstamos, gastos y cargos manuales quedan fuera cuando se pide
+// filtrado. El filtro es de la PANTALLA de Flujo, no de flujoCalc en general:
+// el "Al cierre de este mes" del Resumen sigue proyectando todo el dinero.
+var FLUJO_REFKINDS={com_pagar:1, alm_compra_pagar:1, com_cobrar:1, camote_cobrar:1};
+function flujoEsCamote(d){ return !!(d && FLUJO_REFKINDS[d.refKind]); }
+// Un abono programado solo entra al flujo filtrado si su cuenta tiene cargos de
+// camote en esa dirección; los compromisos sueltos (IMSS, contabilidad) no.
+function flujoCuentaCamote(tipo, nombre){
+  for(var i=0;i<deudas.length;i++){
+    var d=deudas[i];
+    if(d.tipo===tipo && d.contraparte===nombre && flujoEsCamote(d)) return true;
+  }
+  return false;
+}
+function flujoCalc(soloCamote){
+  var per=[{ent:0,sal:0,det:[]},{ent:0,sal:0,det:[]},{ent:0,sal:0,det:[]}];
   // Cuentas con un abono ya programado: para ellas manda el abono, no el
   // vencimiento del saldo completo. Es lo que evita contar el mismo dinero dos
   // veces, que es justo lo que descuadraba la hoja de Excel.
@@ -10316,14 +10333,19 @@ function flujoCalc(){
     var esEnt=(tipo==='cobrar');
     var dir=esEnt?'cobro':'pago';
     var nombres={};
-    deudas.forEach(function(d){ if(d.tipo===tipo) nombres[d.contraparte]=true; });
+    deudas.forEach(function(d){
+      if(d.tipo!==tipo) return;
+      if(soloCamote && !flujoEsCamote(d)) return;
+      nombres[d.contraparte]=true;
+    });
     Object.keys(nombres).forEach(function(nom){
       if(conAbono[dir+'|'+nom]) return;
       var c=getContraparte(nom)||{};
       var f=(c.moneda==='USD')?(parseFloat(c.tipoCambio)||0):1;
       cuentaPendientes(tipo,nom).forEach(function(x){
+        if(soloCamote && !flujoEsCamote(x.deuda)) return;
         var monto=x.saldo*f; if(monto<=0.5) return;
-        var i=flujoPeriodoDe(deudaVence(x.deuda));
+        var i=flujoPeriodoDe(deudaVence(x.deuda)); if(i<0) return;
         if(esEnt) per[i].ent+=monto; else per[i].sal+=monto;
         var it=(x.deuda.items&&x.deuda.items[0])?x.deuda.items[0].concepto:'';
         per[i].det.push({dir:dir, nombre:nom, concepto:x.deuda.folioExterno||x.deuda.desc||it||'Cargo',
@@ -10333,8 +10355,9 @@ function flujoCalc(){
   });
   programados.forEach(function(p){
     if(p.cumplido) return;
+    if(soloCamote && !(p.contraparte && flujoCuentaCamote(p.direccion==='cobro'?'cobrar':'pagar', p.contraparte))) return;
     var monto=parseFloat(p.monto)||0; if(monto<=0) return;
-    var i=flujoPeriodoDe(p.fecha);
+    var i=flujoPeriodoDe(p.fecha); if(i<0) return;
     if(p.direccion==='cobro') per[i].ent+=monto; else per[i].sal+=monto;
     per[i].det.push({dir:p.direccion, nombre:p.contraparte||'', concepto:p.concepto||'(sin concepto)',
       monto:monto, fecha:p.fecha, prog:true, id:p.id});
@@ -10344,7 +10367,7 @@ function flujoCalc(){
 }
 function renderFlujoEfectivo(){
   var cont=document.getElementById('deuda-flujo-sec'); if(!cont) return;
-  var fl=flujoCalc(), bancos=rdBancosTotal(), saldo=bancos;
+  var fl=flujoCalc(true), bancos=rdBancosTotal();
   var h='<div class="aging-card">'+
     '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px">'+
       '<div class="kpi-lbl" style="margin:0">En bancos</div>'+
@@ -10365,18 +10388,26 @@ function renderFlujoEfectivo(){
   }
   h+='</div>';
 
-  h+='<div class="deuda-kpis" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:12px">';
+  // Cada tarjeta es independiente: entra, sale y el neto de ESE periodo. No es
+  // saldo corrido — el dinero en bancos vive en su propia tarjeta, arriba.
+  h+='<div class="deuda-kpis" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin-top:12px">';
   fl.per.forEach(function(p,i){
-    saldo=saldo+p.ent-p.sal;
-    h+='<div class="kpi-card"><div class="kpi-accent" style="background:'+(saldo>=0?'var(--green)':'var(--rojo)')+'"></div>'+
+    var neto=p.ent-p.sal;
+    var colNeto=(neto>=0?'var(--green)':'var(--rojo)');
+    h+='<div class="kpi-card"><div class="kpi-accent" style="background:'+colNeto+'"></div>'+
       '<div class="kpi-lbl">'+FLUJO_LBL[i]+'</div>'+
-      '<div style="display:flex;gap:12px;flex-wrap:wrap;margin:2px 0 6px">'+
-        '<div><div style="font-size:10px;color:var(--text3)">entra</div><div style="font-family:var(--mono);font-weight:700;color:var(--green)">'+fmt(p.ent)+'</div></div>'+
-        '<div><div style="font-size:10px;color:var(--text3)">sale</div><div style="font-family:var(--mono);font-weight:700;color:var(--fram)">'+fmt(p.sal)+'</div></div>'+
-      '</div>'+
-      '<div style="font-size:10px;color:var(--text3)">queda</div>'+
-      '<div class="kpi-val" style="font-size:19px;color:'+(saldo>=0?'var(--green)':'var(--rojo)')+'">'+fmt(saldo)+'</div>'+
-      '</div>';
+      '<div style="margin-top:6px">'+
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:4px 0">'+
+          '<span style="font-size:12px;color:var(--text3)">Entra</span>'+
+          '<span style="font-family:var(--mono);font-weight:700;font-size:15px;color:var(--green)">'+fmt(p.ent)+'</span></div>'+
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:4px 0;border-bottom:0.5px solid var(--border)">'+
+          '<span style="font-size:12px;color:var(--text3)">Sale</span>'+
+          '<span style="font-family:var(--mono);font-weight:700;font-size:15px;color:var(--fram)">'+fmt(p.sal)+'</span></div>'+
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:7px 0 0">'+
+          '<span style="font-size:12px;color:var(--text3)">Resultado</span>'+
+          '<span style="font-family:var(--mono);font-weight:700;font-size:19px;color:'+colNeto+'">'+
+            (neto<0?'−':'')+fmt(Math.abs(neto))+'</span></div>'+
+      '</div></div>';
   });
   h+='</div>';
 

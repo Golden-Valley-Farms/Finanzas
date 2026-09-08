@@ -316,7 +316,13 @@ Fusiona las dos hojas de control interno que el usuario llevaba a mano (balance 
 
 ### Flujo de efectivo (sep-2026)
 
-`flujoCalc()` reparte entradas y salidas en **cuatro** periodos: **Vencido · Este mes · Próximo mes · Después** (`FLUJO_LBL`, `flujoPeriodoDe()`). Lo vencido va en su **propia** columna, no revuelto con el mes en curso: si no, todo lo que arrastra el negocio se amontona ahí y los meses siguientes salen en cero, que es justo lo que no deja planear.
+`flujoCalc(soloCamote)` reparte entradas y salidas en **tres** periodos: **Vencido · Este mes · Próximo mes** (`FLUJO_LBL`, `flujoPeriodoDe()`). Lo vencido va en su **propia** columna, no revuelto con el mes en curso: si no, todo lo que arrastra el negocio se amontona ahí y el mes siguiente sale en cero, que es justo lo que no deja planear. Lo que cae más adelante **queda fuera**: `flujoPeriodoDe()` devuelve `-1` y quien la llama descarta ese movimiento (antes había un cuarto periodo "Después"; se quitó en sep-2026).
+
+**Cada tarjeta es independiente y lleva tres renglones — Entra · Sale · Resultado**, donde Resultado es `entra − sale` de **ese** periodo. **No es saldo corrido**: el dinero en bancos vive en su propia tarjeta arriba y no se mezcla. Antes las tarjetas encadenaban un saldo que arrancaba en bancos; se cambió a pedido del usuario en sep-2026.
+
+**La pantalla mira solo compra-venta de camote** (sep-2026): `renderFlujoEfectivo()` llama `flujoCalc(true)` y ese flag filtra por `FLUJO_REFKINDS` — `com_pagar`, `alm_compra_pagar`, `com_cobrar`, `camote_cobrar`, los mismos cuatro que `cpCategoria()` trata como mercancía. Préstamos, gastos y cargos manuales o importados no entran. Un `programado` solo cuenta si su contraparte tiene cargos de camote en esa dirección (`flujoCuentaCamote()`), así que los compromisos sueltos (IMSS, contabilidad) tampoco.
+
+**El filtro es de la pantalla, no de `flujoCalc`.** El "Al cierre de este mes" del **Resumen** llama `flujoCalc()` sin flag y sigue proyectando todo el dinero — es una cifra de caja total, no de camote. Si algún día se quiere que coincidan, hay que decidir cuál de las dos cambia.
 
 **Los vencimientos de cuentas no se capturan: salen de `cuentaPendientes()`**, que se extrajo de `agingCuenta()` para que la antigüedad y el flujo lean de la misma derivación y no puedan contradecirse.
 
@@ -718,16 +724,16 @@ Verificado el 1-sep-2026: lectura anónima con la clave publishable devuelve **0
 
 ## Flujo de trabajo
 
-**Claude publica los cambios; el usuario no sube archivos a mano.** Pero **primero los ve corriendo, y solo entonces se suben** (regla del 1-sep-2026, reemplaza el push automático que había antes). El ciclo completo de cada cambio es:
+**Claude publica los cambios; el usuario no sube archivos a mano.** Se suben **directo a `main`** y el usuario los revisa **en la página en vivo** (regla del 8-sep-2026, que retira el paso de previsualización local que hubo entre el 1 y el 8 de sep). El ciclo de cada cambio es:
 
-1. Editar `index.html` en este clon local. **Sin commitear.**
-2. Levantar el preview local (`preview_start` con `gvf-local`) y dejarlo abierto en la pantalla donde se ve el cambio. Decirle en una o dos líneas dónde mirar — el usuario prefiere ver el resultado a que se lo expliquen. El candado de previsualización impide que el preview escriba en Supabase (ver "Desplegar y probar").
-3. Iterar sobre el mismo archivo según lo que pida, siempre sin commitear.
-4. **Solo cuando el usuario apruebe** ("súbelo" o equivalente): `git add` + commit descriptivo + `git push origin main` — GitHub Pages despliega solo.
+1. Editar `index.html` en este clon local.
+2. `git add` + commit descriptivo + `git push origin main` — GitHub Pages despliega solo.
+3. Decirle en una o dos líneas dónde mirar en la app en vivo. El usuario prefiere ver el resultado a que se lo expliquen.
+4. Iterar según lo que pida, con el mismo ciclo.
 
-Si el usuario rechaza la propuesta, revertir con `git checkout -- index.html`.
+**No levantar el preview local ni pedirle aprobación antes de subir**: le resulta un paso de más. Si rechaza el cambio, se revierte con otro commit. La tarea no termina hasta que está en `main` remoto: no dejar commits locales sin pushear.
 
-Una vez aprobado, la tarea no termina hasta que está en `main` remoto: no dejar commits locales sin pushear.
+El candado de previsualización y el `.claude/launch.json` siguen existiendo (ver "Desplegar y probar") por si hace falta revisar la consola o probar algo local, pero ya no son parte del flujo normal.
 
 ### Recomendar el modelo antes de empezar
 
