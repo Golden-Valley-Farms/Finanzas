@@ -117,7 +117,7 @@ O sea: un registro sin ciclo puede estar invisible en Historial y a la vez suman
 
 ### `finUsaCiclo()` está desactivado
 
-`finUsaCiclo(neg)` (línea ~6548) es un stub que **siempre devuelve `false`**, así que el dashboard financiero agrupa por año calendario para todos los negocios, nunca por ciclo. Es el interruptor para volver a activar el agrupamiento por ciclo cuando se decida. No es un bug.
+`finUsaCiclo(neg)` (línea ~8532) es un stub que **siempre devuelve `false`**, así que el dashboard financiero agrupa por año calendario para todos los negocios, nunca por ciclo. Es el interruptor para volver a activar el agrupamiento por ciclo cuando se decida. No es un bug.
 
 ## Ingresos manuales
 
@@ -328,9 +328,17 @@ Fusiona las dos hojas de control interno que el usuario llevaba a mano (balance 
 
 ### Encabezado y saldo en bancos
 
-**La tira "En bancos" que abría la pantalla se quitó** (sep-2026) y en su lugar van **tres tarjetas KPI: Nos deben · Debemos · Balance** (cobrar − pagar). Van con `rdTotales(tipo,'comercial')`, o sea **el mismo filtro comercial que las tarjetas de semana**, para que toda la pantalla hable del mismo universo; el Resumen conserva sus propias cifras, esas sí de todas las cuentas.
+**La tira "En bancos" que abría la pantalla se quitó** (sep-2026) y en su lugar van **tres tarjetas KPI: Nos deben · Debemos · Balance** (cobrar − pagar).
 
-**El saldo en bancos pasó a una caja de captura de dos renglones —MXN y USD—** (`renderSaldoBancos()` / `setSaldoBanco()`), a media anchura, encima de Gastos planeados. No hay entidad nueva: son filas de `bancosSaldos` llamadas `'MXN'` y `'USD'`, aprovechando que la tabla está llaveada por `nombre`. `fechaCorte` guarda **la fecha en que se capturó la cifra** y se pinta como leyenda ("actualizado 08 sep 2026"); el usuario no la captura.
+Esos tres KPIs van con `rdTotales(tipo)` **sin filtro de categoría**, o sea **las mismas cifras que el Resumen** (sep-2026; antes iban filtrados a `'comercial'`). El motivo del cambio: el usuario está migrando el Resumen hacia el Flujo y quiere que el Flujo sea el nuevo resumen del módulo, así que esos números tienen que cuadrar con los que ya conocía. **Las tarjetas de semana sí siguen filtradas a compra-venta de camote** (`flujoCalc(true)`) — responden otra pregunta: qué dinero se mueve, no cuánto se debe.
+
+**El saldo en bancos pasó a una caja de captura de dos renglones —MXN y USD—** (`renderSaldoBancos()` / `setSaldoBanco()`), encima de Gastos planeados. No hay entidad nueva: son filas de `bancosSaldos` llamadas `'MXN'` y `'USD'`, aprovechando que la tabla está llaveada por `nombre`. `fechaCorte` guarda **la fecha en que se capturó la cifra** y se pinta como leyenda ("actualizado 08 sep 2026"); el usuario no la captura.
+
+**Las cajas son `<input type="text">`, no `number`** (sep-2026): un input numérico no admite el separador de miles y aquí la cifra se lee más de lo que se escribe. `sbNumIn()` limpia lo que se teclee (comas, `$`, espacios) y `sbFmtNum(n,min,max)` lo devuelve formateado; `sbValInp()` pinta **vacío como vacío**, porque un cero de fábrica se leería como "no hay dinero". Cada handler reformatea su propio input y toca solo la leyenda — repintar la caja le quitaría el foco al campo recién capturado, la misma trampa de `dgSetKg()`.
+
+**El renglón de dólares son tres cajas: USD × tipo de cambio = MXN**, la tercera de solo lectura (`sbEquivUsd()` / `sbPintaEquivUsd()`). Los signos `×` y `=` entre ellas son lo que dice qué hace cada caja, sin rótulos. El tipo de cambio se guarda en la **misma fila** `'USD'` de `bancosSaldos` (`tipoCambio` ↔ columna `bancos_saldos.tipo_cambio`, agregada en sep-2026), con las cuatro capas cableadas.
+
+**Ese equivalente en pesos NO entra a ningún total.** `rdBancosTotal()` sigue devolviendo solo el renglón `MXN`: el "En bancos" del Resumen es una cifra en pesos y sumarle los dólares convertidos cambiaría en silencio un número que el usuario ya venía leyendo. Si algún día se quiere el total combinado, el tipo de cambio ya está capturado y el único lugar a tocar es `rdBancosTotal()`.
 
 **MXN y USD no se suman.** La app no tiene un tipo de cambio general —solo uno por ficha de cliente—, así que convertir aquí obligaría a inventar uno. Por lo mismo **`rdBancosTotal()` devuelve solo el renglón `MXN`**, y mientras ese renglón no exista cae a los saldos por banco del modal viejo, para que el "En bancos" del Resumen no se vacíe de golpe al estrenar la caja.
 
@@ -346,7 +354,7 @@ Sustituye al botón "+ Pago programado" y su modal (sep-2026). Es una **caja de 
 
 **Un programado sin contraparte siempre suma en el flujo, aunque esté filtrado a camote**: es dinero que el usuario mismo dijo que va a salir. Con contraparte se respeta el filtro. Esto invirtió la regla anterior, donde los compromisos sueltos (IMSS, contabilidad) quedaban fuera — ahora son justo lo que esta caja captura.
 
-**Las dos cajas de captura van a media anchura** en escritorio (`.gp-half`, `calc(50% - 6px)` a partir de 700px) y a ancho completo en móvil, que es lo único legible ahí.
+**Las dos cajas de captura se alinean al ancho de la tarjeta de la semana en curso** (sep-2026; antes eran media anchura con `.gp-half`). Cada una va dentro de un `.flujo-cap-row` que **copia las proporciones de la fila de tarjetas** — la caja es `flex:2 1 330px` y la siguen **tres `.flujo-gap` vacíos** de `flex:1 1 175px`, exactamente los mismos valores que la tarjeta grande y las tres chicas. Así crecen y se envuelven igual por construcción, en cualquier ancho. Un porcentaje fijo no serviría: el ancho de esa tarjeta depende de cuánto espacio libre reparta el flex, no del ancho del contenedor. Si cambian los `flex` de `renderFlujoTarjetas()`, hay que cambiar los de esta regla CSS.
 
 **La rejilla `.gp-grid` se parte en dos renglones debajo de 560px** (concepto y la `×` arriba, cantidad y fecha abajo) y ahí se oculta la cabecera: el input de fecha no cabe junto a los otros tres, y los rótulos dejarían de caer sobre su columna.
 
@@ -386,7 +394,7 @@ No hay columnas ni claves nuevas: todo se deriva de `maiz_registros`. Si algún 
 
 ### Reporte de cosecha (Reportes → Maíz)
 
-`renderRepMaiz()` (línea ~3599) es el **espejo de `renderRcmCosecha()`** (camote jal/nay) con el eje de agrupación cambiado de **sector a parcela**, que es como se captura el maíz. Mismas tres tarjetas KPI y mismas seis visualizaciones: Promedio Ton/Ha, Toneladas x Parcela, Hectáreas x Parcela, Eficiencia x Parcela (dispersión), Cosecha por Variedad (pastel) e Ingreso x Parcela.
+`renderRepMaiz()` (línea ~4291) es el **espejo de `renderRcmCosecha()`** (camote jal/nay) con el eje de agrupación cambiado de **sector a parcela**, que es como se captura el maíz. Mismas tres tarjetas KPI y mismas seis visualizaciones: Promedio Ton/Ha, Toneladas x Parcela, Hectáreas x Parcela, Eficiencia x Parcela (dispersión), Cosecha por Variedad (pastel) e Ingreso x Parcela.
 
 **No lleva la tabla "Ganancias x Sector"** que sí tiene camote: esa tabla resta el costo prorrateado por sector (`rcmCostoPorSector`), y el maíz no tiene gastos prorrateables por parcela. Por eso "Ingreso x Parcela" va a ancho completo (`fin-chart-full`) en vez de compartir fila.
 
@@ -722,10 +730,10 @@ Persistencia completa (los cuatro lugares): `framCosechas` `[{ciclo, corte}]` ·
 
 Hay **definiciones duplicadas**; por hoisting gana siempre la última:
 
-- `fmt()` en 2369 y **8465** — gana la de 8465 (`parseFloat(n)||0`, tolera basura; la primera hace `Number(n)` y da `$NaN`).
-- `updateClientesDatalist()` en 8014 y **8294** — gana la de 8294, que **está vacía**. Las llamadas a esa función no hacen nada. Si necesitas ese comportamiento, el código real está en 8014.
-- `VARIEDADES` en 6809 y 8073 — mismo contenido, inofensivo por ahora, pero editar solo uno no surte efecto.
-- `confirmarNuevoCliente()` — ya existía uno (línea ~10988, alta rápida de cliente/comercializadora en Ventas). Al agregar el catálogo de Clientes de Deudas (ago-2026) se necesitaba una función con el mismo propósito, y **se nombró distinto a propósito** (`confirmarNuevoClienteCatalogo()` / `abrirNuevoClienteCatalogo()`) para no chocar. Si algún día se renombra cualquiera de las dos, verificar que no vuelvan a coincidir.
+- `fmt()` en 3182 y **12442** — gana la de 12442 (`parseFloat(n)||0`, tolera basura; la primera hace `Number(n)` y da `$NaN`).
+- `updateClientesDatalist()` en 12058 y **12338** — gana la de 12338, que **está vacía**. Las llamadas a esa función no hacen nada. Si necesitas ese comportamiento, el código real está en 12058.
+- `VARIEDADES` en 8793 y 12117 — mismo contenido, inofensivo por ahora, pero editar solo uno no surte efecto.
+- `confirmarNuevoCliente()` — ya existía uno (línea ~12385, alta rápida de cliente/comercializadora en Ventas). Al agregar el catálogo de Clientes de Deudas (ago-2026) se necesitaba una función con el mismo propósito, y **se nombró distinto a propósito** (`confirmarNuevoClienteCatalogo()` / `abrirNuevoClienteCatalogo()`) para no chocar. Si algún día se renombra cualquiera de las dos, verificar que no vuelvan a coincidir.
 
 Antes de modificar cualquier función, `grep` por `function nombre(` para confirmar que no exista otra definición más abajo.
 

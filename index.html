@@ -470,10 +470,22 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   .gp-grid>.gp-fec{grid-column:2;grid-row:2}
   .gp-head{display:none}
 }
-/* Las dos cajas de captura del Flujo (saldo en bancos y gastos planeados) van a
-   media anchura en escritorio; en movil ocupan todo, que es lo unico legible. */
-.gp-half{width:100%}
-@media (min-width:700px){ .gp-half{width:calc(50% - 6px)} }
+/* Las dos cajas de captura del Flujo (saldo en bancos y gastos planeados) se
+   alinean al ancho de la tarjeta de la semana en curso. Para lograrlo cada una
+   va en una fila con las MISMAS proporciones que la fila de tarjetas —una de
+   2 1 330px y tres huecos de 1 1 175px—, asi que crecen y se envuelven igual
+   por construccion. Un porcentaje fijo no serviria: el ancho de esa tarjeta
+   depende de cuanto espacio libre reparta el flex. */
+.flujo-cap-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.flujo-cap-row>.flujo-cap{flex:2 1 330px;margin:0}
+.flujo-cap-row>.flujo-gap{flex:1 1 175px}
+/* Saldo en bancos: el renglon de dolares es USD x tipo de cambio = MXN. Los
+   signos entre cajas dicen que hace cada una sin necesidad de rotulos. */
+.sb-usd{display:grid;grid-template-columns:1fr 12px 82px 12px 1fr;gap:6px;align-items:center}
+.sb-op{font-size:13px;color:var(--text3);text-align:center}
+@media (max-width:560px){
+  .sb-usd{grid-template-columns:1fr 10px 68px 10px 1fr;gap:4px}
+}
 .gp-inp{width:100%;padding:9px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);outline:none;font-family:var(--font)}
 .gp-num{font-size:14px;font-weight:600;color:var(--fram);font-family:var(--mono);text-align:right;padding:9px 8px}
 .gp-btn{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:none;cursor:pointer;color:var(--text3);font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -2765,7 +2777,7 @@ async function cargarDesdeSB(){
       categoria:c.categoria||''}; }));
     saveContrapartes();
   }
-  if(bsData){ bancosSaldos = bsData.map(function(b){ return {nombre:b.nombre, saldo:parseFloat(b.saldo||0), fechaCorte:b.fecha_corte||''}; }); saveBancosSaldos(); }
+  if(bsData){ bancosSaldos = bsData.map(function(b){ return {nombre:b.nombre, saldo:parseFloat(b.saldo||0), fechaCorte:b.fecha_corte||'', tipoCambio:(b.tipo_cambio===null||b.tipo_cambio===undefined?'':parseFloat(b.tipo_cambio))}; }); saveBancosSaldos(); }
   if(prData){ programados = prData.map(function(p){ return {id:p.id, direccion:p.direccion||'pago', fecha:p.fecha||'',
     concepto:p.concepto||'', monto:parseFloat(p.monto||0), contraparte:p.contraparte||'', cumplido:!!p.cumplido}; }); saveProgramados(); }
   if(typeof renderDeudas==='function' && document.getElementById('sc-deudas') && document.getElementById('sc-deudas').classList.contains('active')) renderDeudas();
@@ -9524,7 +9536,8 @@ function saveProgramados(){try{localStorage.setItem('cc_programados',JSON.string
 async function sbSaveBancoSaldo(b){
   if(!sbOnline||!sb) return;
   await sb.from('bancos_saldos').upsert({nombre:b.nombre, saldo:parseFloat(b.saldo)||0,
-    fecha_corte:b.fechaCorte||null},{onConflict:'nombre'});
+    fecha_corte:b.fechaCorte||null,
+    tipo_cambio:(parseFloat(b.tipoCambio)||null)},{onConflict:'nombre'});
 }
 async function sbDeleteBancoSaldo(nombre){ if(!sbOnline||!sb) return; await sb.from('bancos_saldos').delete().eq('nombre',nombre); }
 async function sbSaveProgramado(p){
@@ -10426,11 +10439,13 @@ function flujoCalc(soloCamote, porMes){
 // input que se está escribiendo, la misma trampa de dgSetKg() y recalcFramFin().
 function renderFlujoEfectivo(){
   var cont=document.getElementById('deuda-flujo-sec'); if(!cont) return;
-  // Encabezado: lo que nos deben, lo que debemos y la resta de los dos. Van con
-  // el MISMO filtro comercial que las tarjetas de semana, para que toda la
-  // pantalla hable del mismo universo — el Resumen tiene sus propias cifras,
-  // esas sí de todas las cuentas.
-  var rdCob=rdTotales('cobrar','comercial'), rdPag=rdTotales('pagar','comercial');
+  // Encabezado: lo que nos deben, lo que debemos y la resta de los dos. Van SIN
+  // filtro de categoría —las mismas cifras que el Resumen— porque el Flujo se
+  // está convirtiendo en el nuevo resumen del módulo (sep-2026) y esos tres
+  // números tienen que cuadrar con los que el usuario ya conocía ahí. Las
+  // tarjetas de semana sí siguen filtradas a compra-venta de camote: son otra
+  // pregunta (qué dinero se mueve), no el balance de la casa.
+  var rdCob=rdTotales('cobrar'), rdPag=rdTotales('pagar');
   var balance=rdCob.total-rdPag.total;
   var h='<div class="deuda-kpis" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">'+
     rdCard('Nos deben', rdCob.total, 'var(--green)', rdCob.cuentas+' cuenta'+(rdCob.cuentas===1?'':'s'))+
@@ -10440,12 +10455,13 @@ function renderFlujoEfectivo(){
 
   h+='<div id="flujo-cards"></div>';
 
-  // Saldo en bancos: captura manual, un renglón por moneda. MXN y USD NO se
-  // suman — la app no tiene un tipo de cambio general, solo uno por cliente, así
-  // que convertir aquí obligaría a inventar uno. Cada cifra guarda la fecha en
-  // que se capturó y la muestra como leyenda.
+  // Saldo en bancos: captura manual, un renglón por moneda. El de dólares lleva
+  // su propio tipo de cambio y muestra el equivalente en pesos, pero las dos
+  // monedas siguen SIN sumarse en un total: `rdBancosTotal()` sigue leyendo solo
+  // el renglón MXN. Cada cifra guarda la fecha en que se capturó.
   h+='<div class="step-label" style="margin-top:16px">Saldo en bancos</div>'+
-    '<div class="card gp-half" style="margin-bottom:12px"><div id="flujo-bancos"></div></div>';
+    '<div class="flujo-cap-row"><div class="card flujo-cap"><div id="flujo-bancos"></div></div>'+
+      '<span class="flujo-gap"></span><span class="flujo-gap"></span><span class="flujo-gap"></span></div>';
 
   // Caja de gastos planeados, fija en la pantalla — mismo corte que "Cubetas por
   // trabajador" en el registro de Frambuesa. A diferencia de aquélla, esta NO es
@@ -10453,7 +10469,7 @@ function renderFlujoEfectivo(){
   // captura o se edita, porque esta pantalla no tiene botón de "Guardar".
   var hoyGp=new Date().toISOString().substring(0,10);
   h+='<div class="step-label">Gastos planeados</div>'+
-    '<div class="card gp-half" style="margin-bottom:12px">'+
+    '<div class="flujo-cap-row"><div class="card flujo-cap">'+
       '<div class="gp-grid gp-head" style="margin-bottom:6px;padding:0 2px">'+
         '<span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Concepto</span>'+
         '<span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;text-align:right">Cantidad</span>'+
@@ -10474,7 +10490,8 @@ function renderFlujoEfectivo(){
         '<span style="font-size:12px;color:var(--text2);font-weight:500">Total planeado</span>'+
         '<span id="gp-total" style="font-size:18px;font-weight:700;color:var(--fram);font-family:var(--mono)">$0</span>'+
       '</div>'+
-    '</div>';
+    '</div>'+
+    '<span class="flujo-gap"></span><span class="flujo-gap"></span><span class="flujo-gap"></span></div>';
 
   h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 6px">'+
     '<button onclick="abrirProgramado(\'cobro\')" style="padding:10px 16px;font-size:13px;font-weight:600;font-family:var(--font);border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer">+ Cobro esperado</button>'+
@@ -10560,36 +10577,97 @@ function saldoBancoDe(moneda){
   for(var i=0;i<bancosSaldos.length;i++){ if(bancosSaldos[i].nombre===moneda) return bancosSaldos[i]; }
   return null;
 }
+// Las cajas son `text`, no `number`: un input numérico no admite el separador de
+// miles y aquí la cifra se lee más de lo que se escribe. `sbNumIn()` limpia lo
+// que se teclee (comas, $, espacios) y `sbFmtNum()` lo devuelve formateado.
+function sbNumIn(v){ return parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,''))||0; }
+function sbFmtNum(n, min, max){
+  return (parseFloat(n)||0).toLocaleString('es-MX',{minimumFractionDigits:min, maximumFractionDigits:max});
+}
+// Vacío se pinta vacío: un cero de fábrica se leería como "no hay dinero".
+function sbValInp(v, min, max){
+  if(v===''||v===null||v===undefined||isNaN(parseFloat(v))) return '';
+  return sbFmtNum(v, min, max);
+}
+function sbInpHtml(id, val, col, handler, extra){
+  return '<input type="text" inputmode="decimal" id="'+id+'" class="gp-inp" value="'+val+'" placeholder="0.00"'+
+    ' style="font-family:var(--mono);font-weight:700;font-size:15px;text-align:right;color:'+col+(extra||'')+'"'+
+    (handler?' onchange="'+handler+'"':' readonly')+'>';
+}
+function sbLeyenda(b, k){
+  return '<span id="sb-fecha-'+k+'" style="font-size:10px;color:var(--text3);text-align:right">'+
+    (b&&b.fechaCorte?'actualizado '+fmtFechaCorta(b.fechaCorte):'sin capturar')+'</span>';
+}
+// El renglón de dólares se captura en tres cajas —cantidad, tipo de cambio y el
+// equivalente en pesos, esta última de solo lectura— con los signos × y = entre
+// ellas. Ese equivalente NO entra al total de bancos: `rdBancosTotal()` sigue
+// leyendo solo el renglón MXN.
 function renderSaldoBancos(){
   var cont=document.getElementById('flujo-bancos'); if(!cont) return;
   var h='';
   SB_MONEDAS.forEach(function(m){
     var b=saldoBancoDe(m.k);
+    var celda;
+    if(m.k==='USD'){
+      celda='<div class="sb-usd">'+
+        sbInpHtml('sb-inp-USD', sbValInp(b?b.saldo:'',2,2), m.col, 'setSaldoBanco(\'USD\',this)')+
+        '<span class="sb-op">×</span>'+
+        sbInpHtml('sb-tc-USD', sbValInp(b?b.tipoCambio:'',2,4), 'var(--text2)', 'setTipoCambioBanco(this)')+
+        '<span class="sb-op">=</span>'+
+        sbInpHtml('sb-eq-USD', sbEquivUsd(), 'var(--jal)', '', ';background:var(--surface);cursor:default')+
+        '</div>';
+    } else {
+      celda=sbInpHtml('sb-inp-'+m.k, sbValInp(b?b.saldo:'',2,2), m.col, 'setSaldoBanco(\''+m.k+'\',this)');
+    }
     h+='<div style="display:grid;grid-template-columns:46px 1fr;gap:4px 10px;align-items:center;margin-bottom:8px">'+
       '<span style="font-size:12px;font-weight:600;color:var(--text3);font-family:var(--mono)">'+m.lbl+'</span>'+
-      '<input type="number" class="gp-inp" value="'+(b&&b.saldo!==''?parseFloat(b.saldo):'')+'" placeholder="0.00" step="0.01"'+
-        ' style="font-family:var(--mono);font-weight:700;font-size:15px;text-align:right;color:'+m.col+'"'+
-        ' onchange="setSaldoBanco(\''+m.k+'\',this.value)">'+
-      '<span></span>'+
-      '<span id="sb-fecha-'+m.k+'" style="font-size:10px;color:var(--text3);text-align:right">'+
-        (b&&b.fechaCorte?'actualizado '+fmtFechaCorta(b.fechaCorte):'sin capturar')+'</span>'+
+      celda+'<span></span>'+sbLeyenda(b, m.k)+
       '</div>';
   });
   cont.innerHTML=h;
 }
+// Equivalente en pesos del renglón USD. Vacío mientras falte cualquiera de los
+// dos datos: un "$0.00" ahí se leería como una conversión hecha.
+function sbEquivUsd(){
+  var b=saldoBancoDe('USD');
+  if(!b) return '';
+  var usd=parseFloat(b.saldo), tc=parseFloat(b.tipoCambio);
+  if(isNaN(usd)||isNaN(tc)||!tc) return '';
+  return sbFmtNum(usd*tc,2,2);
+}
+function sbPintaEquivUsd(){
+  var e=document.getElementById('sb-eq-USD'); if(e) e.value=sbEquivUsd();
+}
 // Guarda la cifra y sella la fecha de HOY: la leyenda dice cuándo se modificó,
-// no una fecha de corte que el usuario tenga que capturar aparte.
-function setSaldoBanco(moneda, valor){
+// no una fecha de corte que el usuario tenga que capturar aparte. Reformatea su
+// propio input y toca solo la leyenda: repintar la caja le quitaría el foco al
+// campo recién capturado.
+function sbTocaBanco(moneda){
   var b=saldoBancoDe(moneda);
+  if(!b){ b={nombre:moneda, saldo:0, fechaCorte:'', tipoCambio:''}; bancosSaldos.push(b); }
   var hoy=new Date();
-  var hoyStr=hoy.getFullYear()+'-'+('0'+(hoy.getMonth()+1)).slice(-2)+'-'+('0'+hoy.getDate()).slice(-2);
-  if(!b){ b={nombre:moneda, saldo:0, fechaCorte:''}; bancosSaldos.push(b); }
-  b.saldo=parseFloat(valor)||0;
-  b.fechaCorte=hoyStr;
+  b.fechaCorte=hoy.getFullYear()+'-'+('0'+(hoy.getMonth()+1)).slice(-2)+'-'+('0'+hoy.getDate()).slice(-2);
+  return b;
+}
+function sbGuardaBanco(b, moneda){
   saveBancosSaldos(); sbSaveBancoSaldo(b);
-  // Solo la leyenda: repintar la caja le quitaría el foco al campo recién tocado.
   var s=document.getElementById('sb-fecha-'+moneda);
-  if(s) s.textContent='actualizado '+fmtFechaCorta(hoyStr);
+  if(s) s.textContent='actualizado '+fmtFechaCorta(b.fechaCorte);
+}
+function setSaldoBanco(moneda, el){
+  var b=sbTocaBanco(moneda);
+  b.saldo=sbNumIn(el&&el.value!==undefined?el.value:el);
+  if(el&&el.value!==undefined) el.value=sbFmtNum(b.saldo,2,2);
+  sbGuardaBanco(b, moneda);
+  if(moneda==='USD') sbPintaEquivUsd();
+}
+function setTipoCambioBanco(el){
+  var b=sbTocaBanco('USD');
+  var tc=sbNumIn(el.value);
+  b.tipoCambio=tc?tc:'';
+  el.value=tc?sbFmtNum(tc,2,4):'';
+  sbGuardaBanco(b, 'USD');
+  sbPintaEquivUsd();
 }
 
 // ── Gastos planeados (caja fija del Flujo) ──────────────────────
