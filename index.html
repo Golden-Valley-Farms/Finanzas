@@ -10448,9 +10448,9 @@ function renderFlujoEfectivo(){
   var rdCob=rdTotales('cobrar'), rdPag=rdTotales('pagar');
   var balance=rdCob.total-rdPag.total;
   var h='<div class="deuda-kpis" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">'+
-    rdCard('Nos deben', rdCob.total, 'var(--green)', rdCob.cuentas+' cuenta'+(rdCob.cuentas===1?'':'s'))+
-    rdCard('Debemos', rdPag.total, 'var(--fram)', rdPag.cuentas+' cuenta'+(rdPag.cuentas===1?'':'s'))+
-    rdCard('Balance', balance, balance>=0?'var(--green)':'var(--rojo)', 'nos deben menos lo que debemos')+
+    rdCard('Nos deben', rdCob.total, 'var(--green)')+
+    rdCard('Debemos', rdPag.total, 'var(--fram)')+
+    rdCard('Balance', balance, balance>=0?'var(--green)':'var(--rojo)')+
     '</div>';
 
   h+='<div id="flujo-cards"></div>';
@@ -10632,7 +10632,7 @@ function renderSaldoBancos(){
     }
     h+='<div style="display:grid;grid-template-columns:46px 1fr;gap:4px 10px;align-items:center;margin-bottom:8px">'+
       '<span style="font-size:12px;font-weight:600;color:var(--text3);font-family:var(--mono)">'+m.lbl+'</span>'+
-      celda+'<span></span>'+sbLeyenda(b, m.k)+
+      celda+
       '</div>';
   });
   cont.innerHTML=h;
