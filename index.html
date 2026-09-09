@@ -10591,10 +10591,10 @@ function sbValInp(v, min, max){
 }
 function sbInpHtml(id, val, col, handler, extra, prefix){
   if(!prefix) prefix='';
-  return '<div style="position:relative;display:flex;align-items:center">'+
-    (prefix?'<span style="position:absolute;left:8px;font-family:var(--mono);font-weight:700;color:'+col+'">'+prefix+'</span>':'') +
+  return '<div style="display:flex;align-items:center;gap:2px">'+
+    (prefix?'<span style="font-family:var(--mono);font-weight:700;color:'+col+'">'+prefix+'</span>':'') +
     '<input type="text" inputmode="decimal" id="'+id+'" class="gp-inp" value="'+val+'" placeholder="0.00"'+
-    ' style="'+(prefix?'padding-left:24px;':'')+'font-family:var(--mono);font-weight:700;font-size:15px;text-align:right;color:'+col+(extra||'')+'"'+
+    ' style="flex:1;font-family:var(--mono);font-weight:700;font-size:15px;text-align:right;color:'+col+(extra||'')+'"'+
     (handler?' onchange="'+handler+'"':' readonly')+'>'+
     '</div>';
 }
@@ -10615,7 +10615,7 @@ function renderSaldoBancos(){
     if(m.k==='USD'){
       celda='<div>'+
         '<div class="sb-usd">'+
-          sbInpHtml('sb-inp-USD', sbValInp(b?b.saldo:'',2,2), m.col, 'setSaldoBanco(\'USD\',this)', '', 'US$')+
+          sbInpHtml('sb-inp-USD', sbValInp(b?b.saldo:'',2,2), m.col, 'setSaldoBanco(\'USD\',this)', '', '$')+
           '<span class="sb-op">×</span>'+
           sbInpHtml('sb-tc-USD', sbValInp(b?b.tipoCambio:'',2,4), 'var(--text2)', 'setTipoCambioBanco(this)')+
           '<span class="sb-op">=</span>'+
