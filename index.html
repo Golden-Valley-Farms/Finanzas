@@ -10589,10 +10589,14 @@ function sbValInp(v, min, max){
   if(v===''||v===null||v===undefined||isNaN(parseFloat(v))) return '';
   return sbFmtNum(v, min, max);
 }
-function sbInpHtml(id, val, col, handler, extra){
-  return '<input type="text" inputmode="decimal" id="'+id+'" class="gp-inp" value="'+val+'" placeholder="0.00"'+
-    ' style="font-family:var(--mono);font-weight:700;font-size:15px;text-align:right;color:'+col+(extra||'')+'"'+
-    (handler?' onchange="'+handler+'"':' readonly')+'>';
+function sbInpHtml(id, val, col, handler, extra, prefix){
+  if(!prefix) prefix='';
+  return '<div style="position:relative;display:flex;align-items:center">'+
+    (prefix?'<span style="position:absolute;left:8px;font-family:var(--mono);font-weight:700;color:'+col+'">'+prefix+'</span>':'') +
+    '<input type="text" inputmode="decimal" id="'+id+'" class="gp-inp" value="'+val+'" placeholder="0.00"'+
+    ' style="'+(prefix?'padding-left:24px;':'')+'font-family:var(--mono);font-weight:700;font-size:15px;text-align:right;color:'+col+(extra||'')+'"'+
+    (handler?' onchange="'+handler+'"':' readonly')+'>'+
+    '</div>';
 }
 function sbLeyenda(b, k){
   return '<span id="sb-fecha-'+k+'" style="font-size:10px;color:var(--text3);text-align:right">'+
@@ -10609,15 +10613,22 @@ function renderSaldoBancos(){
     var b=saldoBancoDe(m.k);
     var celda;
     if(m.k==='USD'){
-      celda='<div class="sb-usd">'+
-        sbInpHtml('sb-inp-USD', sbValInp(b?b.saldo:'',2,2), m.col, 'setSaldoBanco(\'USD\',this)')+
-        '<span class="sb-op">×</span>'+
-        sbInpHtml('sb-tc-USD', sbValInp(b?b.tipoCambio:'',2,4), 'var(--text2)', 'setTipoCambioBanco(this)')+
-        '<span class="sb-op">=</span>'+
-        sbInpHtml('sb-eq-USD', sbEquivUsd(), 'var(--jal)', '', ';background:var(--surface);cursor:default')+
-        '</div>';
+      celda='<div>'+
+        '<div class="sb-usd">'+
+          sbInpHtml('sb-inp-USD', sbValInp(b?b.saldo:'',2,2), m.col, 'setSaldoBanco(\'USD\',this)', '', 'US$')+
+          '<span class="sb-op">×</span>'+
+          sbInpHtml('sb-tc-USD', sbValInp(b?b.tipoCambio:'',2,4), 'var(--text2)', 'setTipoCambioBanco(this)')+
+          '<span class="sb-op">=</span>'+
+          sbInpHtml('sb-eq-USD', sbEquivUsd(), 'var(--jal)', '', ';background:var(--surface);cursor:default', '$')+
+        '</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 82px 1fr;gap:6px;margin-top:6px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;font-weight:600">'+
+          '<span>Saldo en USD</span>'+
+          '<span style="text-align:center">Tipo de cambio</span>'+
+          '<span style="text-align:right">Saldo en MXN</span>'+
+        '</div>'+
+      '</div>';
     } else {
-      celda=sbInpHtml('sb-inp-'+m.k, sbValInp(b?b.saldo:'',2,2), m.col, 'setSaldoBanco(\''+m.k+'\',this)');
+      celda=sbInpHtml('sb-inp-'+m.k, sbValInp(b?b.saldo:'',2,2), m.col, 'setSaldoBanco(\''+m.k+'\',this)', '', '$');
     }
     h+='<div style="display:grid;grid-template-columns:46px 1fr;gap:4px 10px;align-items:center;margin-bottom:8px">'+
       '<span style="font-size:12px;font-weight:600;color:var(--text3);font-family:var(--mono)">'+m.lbl+'</span>'+
