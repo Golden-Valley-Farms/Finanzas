@@ -10480,8 +10480,11 @@ function renderFlujoEfectivo(){
       '<div class="gp-grid" style="margin-top:6px">'+
         '<input type="text" id="gp-concepto" class="gp-inp gp-con" placeholder="IMSS, contabilidad, nómina..." autocomplete="off"'+
           ' onkeydown="if(event.key===\'Enter\'){event.preventDefault();agregarGastoPlaneado();}">'+
-        '<input type="number" id="gp-monto" class="gp-inp gp-num gp-mon" placeholder="0.00" min="0" step="0.01"'+
-          ' onkeydown="if(event.key===\'Enter\'){event.preventDefault();agregarGastoPlaneado();}">'+
+        '<div style="display:flex;align-items:center;gap:2px">'+
+          '<span style="font-family:var(--mono);font-weight:700;color:var(--fram)">$</span>'+
+          '<input type="text" id="gp-monto" class="gp-inp gp-num gp-mon" placeholder="0.00" style="flex:1"'+
+            ' onkeydown="if(event.key===\'Enter\'){event.preventDefault();agregarGastoPlaneado();}">'+
+        '</div>'+
         '<input type="date" id="gp-fecha" class="gp-inp gp-fec" value="'+hoyGp+'">'+
         '<button class="gp-btn gp-x" onclick="agregarGastoPlaneado()" title="Agregar"'+
           ' style="border:none;background:var(--green);color:#fff;font-size:18px">+</button>'+
@@ -10700,13 +10703,17 @@ function renderGastosPlaneados(){
     // antes) siguen aquí para poder quitarlos; se marcan para que no se lean
     // como un gasto suelto más.
     var chip=p.contraparte?'<span style="font-size:9px;color:var(--jal);margin-left:6px">'+p.contraparte+'</span>':'';
+    var montoFormato=parseFloat(p.monto)?fmt(parseFloat(p.monto)):'';
     h+='<div class="gp-grid" style="margin-bottom:6px">'+
       '<span class="gp-con" style="position:relative;display:block">'+
         '<input type="text" class="gp-inp" value="'+String(p.concepto||'').replace(/"/g,'&quot;')+'"'+
           ' onchange="editGastoPlaneado('+id+',\'concepto\',this.value)">'+chip+
       '</span>'+
-      '<input type="number" class="gp-inp gp-num gp-mon" value="'+(parseFloat(p.monto)||'')+'" placeholder="0.00" min="0" step="0.01"'+
-        ' onchange="editGastoPlaneado('+id+',\'monto\',this.value)">'+
+      '<div style="display:flex;align-items:center;gap:2px">'+
+        '<span style="font-family:var(--mono);font-weight:700;color:var(--fram)">$</span>'+
+        '<input type="text" class="gp-inp gp-num gp-mon" value="'+montoFormato+'" placeholder="0.00"'+
+          ' style="flex:1" onchange="editGastoPlaneado('+id+',\'monto\',this.value,this)">'+
+      '</div>'+
       '<input type="date" class="gp-inp gp-fec" value="'+(p.fecha||'')+'"'+
         ' onchange="editGastoPlaneado('+id+',\'fecha\',this.value)">'+
       '<button class="gp-btn gp-x" onclick="removeGastoPlaneado('+id+')" title="Eliminar">×</button>'+
@@ -10720,7 +10727,7 @@ function agregarGastoPlaneado(){
       mInp=document.getElementById('gp-monto'),
       fInp=document.getElementById('gp-fecha');
   if(!cInp||!mInp||!fInp) return;
-  var concepto=(cInp.value||'').trim(), monto=parseFloat(mInp.value)||0;
+  var concepto=(cInp.value||'').trim(), monto=sbNumIn(mInp.value);
   if(!concepto){ showToast('Escribe un concepto'); cInp.focus(); return; }
   if(monto<=0){ showToast('Escribe una cantidad'); mInp.focus(); return; }
   var p={id:Date.now(), direccion:'pago', fecha:fInp.value||'', concepto:concepto,
@@ -10732,13 +10739,16 @@ function agregarGastoPlaneado(){
 }
 // Muta y guarda un solo campo. Va en onchange (no oninput) para no escribir a
 // Supabase en cada tecla, y repinta SOLO las tarjetas: repintar la lista dejaría
-// al usuario sin foco a media captura.
-function editGastoPlaneado(id, campo, valor){
+// al usuario sin foco a media captura. Cuando cambia monto, reformatea el input.
+function editGastoPlaneado(id, campo, valor, el){
   var p=null;
   for(var i=0;i<programados.length;i++){ if(String(programados[i].id)===String(id)){ p=programados[i]; break; } }
   if(!p) return;
-  if(campo==='monto') p.monto=parseFloat(valor)||0;
-  else if(campo==='concepto') p.concepto=(valor||'').trim();
+  if(campo==='monto'){
+    p.monto=parseFloat(valor)||0;
+    // Reformatear el input: limpiar lo que se tecleó y mostrar con $ y comas
+    if(el) el.value=p.monto?fmt(p.monto):'';
+  } else if(campo==='concepto') p.concepto=(valor||'').trim();
   else if(campo==='fecha') p.fecha=valor||'';
   saveProgramados(); sbSaveProgramado(p);
   renderFlujoTarjetas();
