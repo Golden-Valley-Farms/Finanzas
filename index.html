@@ -10703,7 +10703,7 @@ function renderGastosPlaneados(){
     // antes) siguen aquí para poder quitarlos; se marcan para que no se lean
     // como un gasto suelto más.
     var chip=p.contraparte?'<span style="font-size:9px;color:var(--jal);margin-left:6px">'+p.contraparte+'</span>':'';
-    var montoFormato=parseFloat(p.monto)?fmt(parseFloat(p.monto)):'';
+    var montoFormato=parseFloat(p.monto)?sbFmtNum(parseFloat(p.monto),2,2):'';
     h+='<div class="gp-grid" style="margin-bottom:6px">'+
       '<span class="gp-con" style="position:relative;display:block">'+
         '<input type="text" class="gp-inp" value="'+String(p.concepto||'').replace(/"/g,'&quot;')+'"'+
