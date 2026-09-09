@@ -10738,22 +10738,20 @@ function agregarGastoPlaneado(){
   cInp.focus();
 }
 // Muta y guarda un solo campo. Va en onchange (no oninput) para no escribir a
-// Supabase en cada tecla, y repinta SOLO las tarjetas: repintar la lista dejaría
-// al usuario sin foco a media captura. Cuando cambia monto, reformatea el input.
+// Supabase en cada tecla. `onchange` ya dispara en el blur del campo —el
+// usuario "da click en otro lado" antes de que esto corra—, así que repintar
+// aquí (y no solo las tarjetas) no le quita el foco a nada: es lo que reordena
+// la lista por fecha en cuanto se sale del campo editado, sea concepto, monto
+// o fecha, en vez de esperar a la siguiente fila nueva.
 function editGastoPlaneado(id, campo, valor, el){
   var p=null;
   for(var i=0;i<programados.length;i++){ if(String(programados[i].id)===String(id)){ p=programados[i]; break; } }
   if(!p) return;
-  if(campo==='monto'){
-    p.monto=parseFloat(valor)||0;
-    // Reformatear el input: limpiar lo que se tecleó y mostrar con $ y comas
-    if(el) el.value=p.monto?fmt(p.monto):'';
-  } else if(campo==='concepto') p.concepto=(valor||'').trim();
+  if(campo==='monto') p.monto=sbNumIn(valor);
+  else if(campo==='concepto') p.concepto=(valor||'').trim();
   else if(campo==='fecha') p.fecha=valor||'';
   saveProgramados(); sbSaveProgramado(p);
-  renderFlujoTarjetas();
-  var t=document.getElementById('gp-total');
-  if(t) t.textContent=fmt(gastosPlaneados().reduce(function(a,x){return a+(parseFloat(x.monto)||0);},0));
+  renderGastosPlaneados(); renderFlujoTarjetas();
 }
 function removeGastoPlaneado(id){
   programados=programados.filter(function(p){ return String(p.id)!==String(id); });
