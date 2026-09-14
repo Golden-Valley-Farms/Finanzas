@@ -704,6 +704,27 @@ Persistencia completa (los cuatro lugares): `framCosechas` `[{ciclo, corte}]` ·
   **No agregarle `proveedor` al envío de un despacho**, por dos razones: con reparto FIFO un envío puede traer camote de varias compras a proveedores distintos, así que un campo de un solo valor mentiría; y `sincronizarDeudasEnvio()` dispara la cuenta por pagar con solo ver que el envío traiga `proveedor`, así que crearía una **segunda** por pagar por el mismo monto. El origen se **deriva** de `loteIds` en `envioOrigenHtml()`, que lo pinta en el detalle del envío (negocio, fecha de entrada, kg y proveedor si es com). `partidas[k]` corresponde a `loteIds[k]` — `confirmarDespachoGeneral()` los arma juntos.
 
   **La venta por almacén queda idéntica a una operación comer directa.** Verificado con 1,000 kg a $80 de compra y $110 de venta: mismos gastos (Compra Mercancía $80,000 + Fletes $5,000), misma por pagar ($80,000 sin flete de compra), misma por cobrar ($122,000 con flete de venta), mismo folio `Comer/…` y mismo margen. La única diferencia es que el gasto y la por pagar llevan la **fecha de entrada al almacén**, no la de la venta — es lo correcto (se debe desde que se recibió), pero si la entrada y la venta caen en ciclos distintos, gasto e ingreso se reportan en periodos distintos.
+- **Envío → almacén (mandar parte de la carga).** Botón **📦 Mandar a almacén** en el detalle del envío (`verEnvio`), disponible en los tres negocios y ausente en cancelados y en despachos. `abrirMandarAlmacen(envioId)` abre el modal: se marcan las variedades y cada una elige **Toda / Solo una parte** con su campo de kg.
+
+  **El principio es que mandar kg a almacén mueve la VENTA, nunca el COSTO.** El costo ya ocurrió cuando se compró o se cosechó, así que se queda entero en el envío: **un solo gasto de flete, un solo gasto de compra y un solo cargo al proveedor**. Eso es lo que pidió el usuario y es la razón de ser del módulo — partir la operación en dos registros dejaba dos renglones de flete contra una sola factura del fletero.
+
+  **Los kg mandados no se guardan en el envío: se derivan de los lotes** que lo apuntan (`origenEnvioId` ↔ columna `alm_lotes.origen_envio_id`, sep-2026). Una sola fuente, así que reeditar el envío por el formulario no los pierde y no hay que conservarlos en `partidasTemp`/`comerPartidasTemp`.
+
+  `envioNetoPartidas(e)` es el corazón: devuelve cada partida con `kgAlm`/`kgNeto`/`totalNeto`. **La usan `envioTotal()`, `sincronizarDeudasEnvio()` y `verEnvio()`**, para que los tres no puedan contradecirse. Como `envioTotal()` es el único punto por donde pasan los 8 lugares que suman ventas, no hay que filtrar pantalla por pantalla.
+
+  La rama `pagar` de `sincronizarDeudasEnvio()` **no se tocó**: sigue usando `kgPagar` completo. Es justo lo que mantiene el cargo único al proveedor.
+
+  El lote nace **sin costo propio** (`precioCompra:0`, `fleteCompra:0`, sin `proveedor`, sin `compraId`) y con `precioEst` = precio de venta de la partida. **Va con `hectareas:0`** aunque conserve el `sector`: las hectáreas ya se contaron en el envío de origen, y con ellas `almHectareasDespacho()` las volvería a sumar al sector y duplicaría el Ton/Ha.
+
+  Tres candados que no hay que quitar:
+  - `editarLote()` rechaza los lotes con `origenEnvioId` — guardarlos por ahí llamaría a `sincronizarCompra()` y crearía un gasto y una cuenta por pagar duplicados.
+  - `confirmarMandarAlmacen()` **rehace desde cero**: borra los lotes sin despachos de ese envío y recrea con lo elegido, así quitar una variedad devuelve sus kg a la venta. Una variedad con despachos queda intocable (la mercancía ya salió y ya se le cobró a alguien).
+  - `delEnvio()` borra los lotes que el envío mandó, y **bloquea el borrado** si alguno ya se despachó.
+
+  `maSetKg()` solo repinta el resumen (`maPintaResumen`), no la lista: repintar por tecla le quitaría el foco al input, la misma trampa de `dgSetKg()`. `envioAlmacenHtml(e)` es el espejo de `envioOrigenHtml(e)` y pinta el desglose en el detalle.
+
+  Cancelar un envío **no toca sus lotes**, igual que no toca el almacén en el resto de los casos: la mercancía guardada sigue siendo real.
+
 - **Frambuesa: registros → nómina → finanzas.** `framFinanzas` guarda en `gastoIds` las referencias a los gastos que generó, para el mismo ciclo de vida que arriba.
 
   **Prestamo ya no genera gasto** (ago-2026, decisión del usuario). De los cinco descuentos del Registro de Finanzas, cuatro siguen creando su gasto `autoGen` —Intereses, Planta, Inocuidad, Material— y **Prestamo no**. El campo se sigue capturando, se sigue guardando en `descPrestamo` y se sigue restando del pagado; lo único que se quitó es la generación del gasto. Por eso salió del arreglo `descuentos` de `guardarRegistroFinanzasFram()` y no de ningún otro lado.
@@ -744,6 +765,8 @@ URL y clave publicable están en duro al inicio del script (líneas ~1911-1912).
 Tablas: `gastos`, `ingresos`, `categorias_ingresos`, `envios`, `alm_lotes`, `fram_registros`, `fram_finanzas`, `fram_cosechas`, `maiz_registros`, `intermediarios`, `receptores_factura`, `choferes`, `deudas`, `pagos_deuda`, `contrapartes`, `clientes`, `proveedores`, `proveedores_comer`, `clientes_comer`, `deudores`, `acreedores`, `bancos`, `bancos_saldos`, `programados`, `trabajadores`, `categorias`.
 
 `bancos_saldos` y `programados` se crearon en sep-2026 con el rediseño de Deudas, ya con RLS y la misma política `for all to authenticated` de las otras.
+
+`alm_lotes.origen_envio_id` se agregó en sep-2026 para «Mandar a almacén» (ver ese acoplamiento). Es el envío del que salió el lote; vacío en los lotes de compra normales.
 
 Si una tabla regresa vacía teniendo datos, casi siempre es RLS — el código ya avisa esto por consola para `fram_registros`.
 

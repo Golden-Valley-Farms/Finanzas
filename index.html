@@ -2697,7 +2697,7 @@ async function cargarDesdeSB(){
         proveedor:l.proveedor||'', precioCompra:parseFloat(l.precio_compra||0),
         fleteCompra:parseFloat(l.flete_compra||0), gastoIds:l.gasto_ids||[],
         compraId:l.compra_id||null, kgPagar:parseFloat(l.kg_pagar||0),
-        descPct:parseFloat(l.desc_pct||0),
+        descPct:parseFloat(l.desc_pct||0), origenEnvioId:l.origen_envio_id||null,
         despachos:l.despachos||[], cerrado:l.cerrado||false};
     });
     saveAlmLotes();
@@ -9133,6 +9133,11 @@ function guardarEnvio(){
     envios.unshift(envioObj);
     showToast('Envio guardado: '+fmt(totalVenta));
   }
+  // Los kg que este envio tenga en almacen no son venta: sin esto, reeditarlo
+  // dejaria el total en bruto aunque la cuenta por cobrar si baje.
+  var ntG=envioNetoPartidas(envioObj).reduce(function(a,x){return a+x.totalNeto;},0);
+  envioObj.totalVenta=ntG;
+  envioObj.total=ntG+(flete||0);
   saveEnvios();
   sbSaveEnvio(envioObj);
   sincronizarDeudasEnvio(envioObj);
@@ -9326,22 +9331,242 @@ function envioOrigenHtml(e){
     filas+'</div>';
 }
 
+// ==== MANDAR A ALMACEN DESDE UN ENVIO ====
+// Espejo de envioOrigenHtml: aquel pinta de que lote SALIO un envio de despacho,
+// este pinta que kg de un envio se QUEDARON en el almacen.
+// El principio del modulo: el envio es donde ocurrio el costo, asi que la compra,
+// el flete y los gastos de cosecha se quedan enteros ahi (un solo gasto de flete,
+// un solo cargo al proveedor). Lo unico que baja es la venta y la cuenta por
+// cobrar del cliente. El lote no genera gastos ni deuda propios.
+var maEnvio=null, maSel={};
+
+function envioAlmacenHtml(e){
+  if(!e || !e.id) return '';
+  var netos=envioNetoPartidas(e).filter(function(x){return x.kgAlm>0.009;});
+  if(!netos.length) return '';
+  var filas=netos.map(function(x){
+    var l=almLotes.filter(function(y){
+      return String(y.origenEnvioId||'')===String(e.id) && (y.variedad||'')===(x.p.variedad||'');
+    })[0];
+    var desp=l&&(l.despachos||[]).length;
+    return '<div style="display:flex;align-items:center;gap:8px;padding:3px 0">'+
+      '<span style="flex:1;min-width:0;font-size:12px;color:var(--text2)">'+(x.p.variedad||'-')+
+        (desp?'<span style="font-size:11px;color:var(--text3)"> · ya despachado</span>':'')+'</span>'+
+      '<span style="font-family:var(--mono);font-size:12px;color:var(--text)">'+
+        x.kgAlm.toLocaleString('es-MX')+' kg</span>'+
+    '</div>';
+  }).join('');
+  return '<div style="margin-top:12px;padding-top:8px;border-top:1px solid var(--border)">'+
+    '<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Mandado a almacén</div>'+
+    filas+'</div>';
+}
+
+// Un lote ya despachado no se puede deshacer: la mercancia salio del almacen y
+// ya se le cobro a alguien. Mismo candado que al editar una compra.
+function maLoteConDespacho(e, variedad){
+  var out=null;
+  almLotes.forEach(function(l){
+    if(String(l.origenEnvioId||'')===String(e.id) && (l.variedad||'')===variedad &&
+       (l.despachos||[]).length) out=l;
+  });
+  return out;
+}
+
+function abrirMandarAlmacen(envioId){
+  var e=envios.filter(function(x){return String(x.id)===String(envioId);})[0];
+  if(!e){showToast('No se encontró el envío');return;}
+  if(e.cancelado){showToast('Un envío cancelado no puede mandar a almacén');return;}
+  if(e.esDespachoAlm){showToast('Este envío ya salió del almacén');return;}
+  maEnvio=e; maSel={};
+  // Siembra con lo ya mandado, para poder cambiarlo o quitarlo.
+  envioNetoPartidas(e).forEach(function(x,i){
+    if(x.kgAlm>0.009) maSel[i]={on:true, modo:(x.kgAlm>=x.kgBruto-0.01?'todo':'parte'), kg:x.kgAlm};
+  });
+  renderMandarAlmacen();
+  document.getElementById('overlay').classList.add('open');
+}
+
+function maKgDe(x, i){
+  var s=maSel[i]||{};
+  if(!s.on) return 0;
+  var kg=(s.modo==='parte')?(parseFloat(s.kg)||0):x.kgBruto;
+  return kg>x.kgBruto?x.kgBruto:kg;
+}
+
+function maTotales(){
+  var e=maEnvio, kgAlm=0, kgEnt=0, venta=0, bruto=0;
+  envioNetoPartidas(e).forEach(function(x,i){
+    var kg=maLoteConDespacho(e,x.p.variedad||'')?x.kgAlm:maKgDe(x,i);
+    kgAlm+=kg; kgEnt+=x.kgBruto-kg;
+    venta+=(x.kgBruto-kg)*x.precioVenta;
+    bruto+=x.totalBruto+x.kgAlm*x.precioVenta;
+  });
+  var fl=parseFloat(e.flete)||0;
+  return {kgAlm:kgAlm, kgEnt:kgEnt, venta:venta+fl, bruto:bruto+fl};
+}
+
+function maPintaResumen(){
+  var box=document.getElementById('ma-resumen');
+  if(!box) return;
+  var t=maTotales();
+  var kg=function(n){return n.toLocaleString('es-MX',{maximumFractionDigits:2})+' kg';};
+  box.innerHTML=
+    '<div style="display:flex;justify-content:space-between;padding:2px 0"><span style="color:var(--text3)">A almacén</span>'+
+      '<span style="font-family:var(--mono)">'+kg(t.kgAlm)+'</span></div>'+
+    '<div style="display:flex;justify-content:space-between;padding:2px 0"><span style="color:var(--text3)">Se le entrega</span>'+
+      '<span style="font-family:var(--mono)">'+kg(t.kgEnt)+'</span></div>'+
+    '<div style="display:flex;justify-content:space-between;padding:4px 0 0;margin-top:4px;border-top:1px solid var(--border)">'+
+      '<span style="color:var(--text3)">Total de venta</span>'+
+      '<span style="font-family:var(--mono);color:var(--green);font-weight:600">'+fmt(t.venta)+
+      (Math.abs(t.venta-t.bruto)>0.5?'<span style="color:var(--text3);font-weight:400"> de '+fmt(t.bruto)+'</span>':'')+
+      '</span></div>';
+}
+
+function maSetOn(i,on){
+  if(!maSel[i]) maSel[i]={modo:'todo',kg:''};
+  maSel[i].on=!!on;
+  renderMandarAlmacen();
+}
+function maSetModo(i,modo){
+  if(!maSel[i]) maSel[i]={on:true};
+  maSel[i].modo=modo;
+  renderMandarAlmacen();
+}
+// Solo repinta el resumen: repintar la lista por tecla le quitaria el foco al
+// input que se esta escribiendo (misma trampa que dgSetKg).
+function maSetKg(i,val){
+  if(!maSel[i]) maSel[i]={on:true,modo:'parte'};
+  maSel[i].kg=val;
+  maPintaResumen();
+}
+
+function renderMandarAlmacen(){
+  var e=maEnvio; if(!e) return;
+  var filas=envioNetoPartidas(e).map(function(x,i){
+    var s=maSel[i]||{}, on=!!s.on, bloq=maLoteConDespacho(e,x.p.variedad||'');
+    var kgTxt=x.kgBruto.toLocaleString('es-MX',{maximumFractionDigits:2});
+    var h='<div style="padding:9px 0;border-bottom:1px solid var(--border)">'+
+      '<label style="display:flex;align-items:center;gap:10px;'+(bloq?'opacity:.5':'cursor:pointer')+'">'+
+        '<input type="checkbox" '+(on&&!bloq?'checked':'')+(bloq?' disabled':'')+
+          ' onchange="maSetOn('+i+',this.checked)" style="width:17px;height:17px;flex-shrink:0">'+
+        '<span style="flex:1;min-width:0;font-weight:600">'+(x.p.variedad||'-')+'</span>'+
+        '<span style="font-family:var(--mono);font-size:13px;color:var(--text2)">'+kgTxt+' kg</span>'+
+      '</label>';
+    if(bloq){
+      h+='<div style="font-size:11px;color:var(--text3);padding:4px 0 0 27px;font-family:var(--mono)">'+
+        x.kgAlm.toLocaleString('es-MX',{maximumFractionDigits:2})+' kg en almacén · ya despachado</div>';
+    } else if(on){
+      var modo=s.modo||'todo';
+      h+='<div style="padding:8px 0 2px 27px;display:flex;flex-direction:column;gap:7px">'+
+        '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">'+
+          '<input type="radio" name="ma-modo-'+i+'"'+(modo==='todo'?' checked':'')+
+            ' onchange="maSetModo('+i+',\'todo\')">'+
+          '<span>Toda la variedad — '+kgTxt+' kg</span></label>'+
+        '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">'+
+          '<input type="radio" name="ma-modo-'+i+'"'+(modo==='parte'?' checked':'')+
+            ' onchange="maSetModo('+i+',\'parte\')">'+
+          '<span>Solo una parte:</span>'+
+          '<input type="number" min="0" step="any" max="'+x.kgBruto+'"'+
+            ' value="'+(modo==='parte'&&s.kg!=null?s.kg:'')+'"'+(modo==='parte'?'':' disabled')+
+            ' oninput="maSetKg('+i+',this.value)"'+
+            ' style="width:92px;padding:4px 6px;font-family:var(--mono);font-size:13px">'+
+          '<span style="font-size:12px;color:var(--text3)">kg</span></label>'+
+      '</div>';
+    }
+    return h+'</div>';
+  }).join('');
+  document.getElementById('mo-title').innerHTML='&#128230; Mandar a almacén&nbsp;'+
+    '<span class="chip '+(e.loc||'jal')+'">'+(e.num||'')+'</span>';
+  document.getElementById('mo-body').innerHTML=
+    filas+
+    '<div id="ma-resumen" style="margin-top:12px;font-size:13px"></div>'+
+    '<div style="display:flex;gap:8px;margin-top:14px">'+
+      '<button class="ven-del-btn" style="flex:1;margin-top:0" onclick="verEnvio(maEnvio)">Cancelar</button>'+
+      '<button class="ven-del-btn" style="flex:1;margin-top:0;border-color:var(--green-border);color:var(--green)" onclick="confirmarMandarAlmacen()">Mandar a almacén</button>'+
+    '</div>';
+  maPintaResumen();
+}
+
+function confirmarMandarAlmacen(){
+  var e=maEnvio; if(!e) return;
+  var netos=envioNetoPartidas(e), acciones=[];
+  for(var i=0;i<netos.length;i++){
+    var x=netos[i], s=maSel[i]||{};
+    if(maLoteConDespacho(e,x.p.variedad||'')) continue; // intocable
+    var kg=maKgDe(x,i);
+    if(s.on && s.modo==='parte' && !(kg>0)){
+      showToast('Captura los kg de «'+(x.p.variedad||'')+'»');return;
+    }
+    if(kg>x.kgBruto+0.01){
+      showToast('«'+(x.p.variedad||'')+'» solo tiene '+x.kgBruto.toLocaleString('es-MX')+' kg');return;
+    }
+    acciones.push({p:x.p, kg:kg});
+  }
+  // Se rehace desde cero: los lotes sin despachos de este envio se borran y se
+  // recrean con lo elegido, asi quitar una variedad devuelve sus kg a la venta.
+  almLotes=almLotes.filter(function(l){
+    if(String(l.origenEnvioId||'')===String(e.id) && !(l.despachos||[]).length){
+      sbDeleteAlmLote(l.id); return false;
+    }
+    return true;
+  });
+  var ocupados=almIdsOcupados(), creados=0;
+  acciones.forEach(function(a){
+    if(!(a.kg>0.009)) return;
+    var lote={
+      id:almNuevoId(ocupados), loc:e.loc, compraId:null,
+      fecha:e.fecha, fechaLbl:e.fechaLbl||'', ciclo:e.ciclo||'',
+      variedad:a.p.variedad||'', notas:'',
+      kgTotal:a.kg, descPct:0, kgPagar:a.kg,
+      // El costo se quedo entero en el envio de origen: este lote no genera
+      // gasto ni cuenta por pagar, por eso va sin precio de compra ni flete.
+      precioCompra:0, fleteCompra:0, proveedor:'',
+      precioEst:envioPrecioVenta(a.p),
+      // Las hectareas ya se contaron en el envio de origen. En 0 para que el
+      // despacho no las vuelva a sumar al sector y el Ton/Ha no se duplique.
+      hectareas:0, sector:a.p.sector||'',
+      gastoIds:[], despachos:[], cerrado:false,
+      origenEnvioId:e.id
+    };
+    almLotes.unshift(lote);
+    sbSaveAlmLote(lote);
+    creados++;
+  });
+  saveAlmLotes();
+  // La venta baja: se reescriben los totales del envio y su cuenta por cobrar.
+  var nt=envioNetoPartidas(e).reduce(function(a,x){return a+x.totalNeto;},0);
+  e.totalVenta=nt;
+  e.total=nt+(parseFloat(e.flete)||0);
+  saveEnvios();
+  sbSaveEnvio(e);
+  sincronizarDeudasEnvio(e);
+  if(typeof renderEnvios==='function') renderEnvios();
+  if(typeof renderAlmLotes==='function') renderAlmLotes();
+  showToast(creados?('Mandado a almacén: '+creados+(creados>1?' lotes':' lote')):'Almacén actualizado');
+  verEnvio(e);
+}
+
 function verEnvio(e){
   envioActual=e;
   var locNames={jal:'Jalisco',nay:'Nayarit',com:'Comercial.'};
-  var rows=e.partidas.map(function(p){
-    var tha=p.hectareas>0?(p.toneladas/p.hectareas).toFixed(2):'-';
-    var secTxt = p.sector || '-';
+  // Los kg mandados a almacen ya no son venta: la tabla muestra el neto y el
+  // desglose de lo guardado va abajo, en envioAlmacenHtml.
+  var netosV=envioNetoPartidas(e);
+  var ventaNetaV=netosV.reduce(function(a,x){return a+x.totalNeto;},0);
+  var totalNetoV=ventaNetaV+(parseFloat(e.flete)||0);
+  var rows=netosV.map(function(x){
+    var p=x.p, ha=parseFloat(p.hectareas)||0;
+    var ton=Math.round((x.kgNeto/1000)*1000)/1000;
+    var tha=ha>0?(ton/ha).toFixed(2):'-';
     return '<tr>'+
       '<td>'+p.variedad+'</td>'+
-      '<td style="text-align:right">'+secTxt+'</td>'+
-      '<td style="text-align:right">'+p.hectareas+'</td>'+
-
-      '<td style="text-align:right">'+(p.pesoNeto?p.pesoNeto.toLocaleString('es-MX'):'-')+'</td>'+
-      '<td style="text-align:right">'+p.toneladas+'</td>'+
+      '<td style="text-align:right">'+(p.sector||'-')+'</td>'+
+      '<td style="text-align:right">'+ha+'</td>'+
+      '<td style="text-align:right">'+(x.kgNeto?x.kgNeto.toLocaleString('es-MX'):'-')+'</td>'+
+      '<td style="text-align:right">'+ton+'</td>'+
       '<td style="text-align:right">'+tha+'</td>'+
-      '<td style="text-align:right">'+fmt(p.precio)+'</td>'+
-      '<td style="text-align:right;font-weight:600;color:var(--green)">'+fmt(p.total!=null?p.total:(parseFloat(p.pesoNeto)||0)*(parseFloat(p.precio)||0))+'</td>'+
+      '<td style="text-align:right">'+fmt(x.precioVenta)+'</td>'+
+      '<td style="text-align:right;font-weight:600;color:var(--green)">'+fmt(x.totalNeto)+'</td>'+
     '</tr>';
   }).join('');
 
@@ -9355,8 +9580,8 @@ function verEnvio(e){
     '<div class="modal-row"><span class="modal-key">Ciclo</span><span class="modal-val">'+e.ciclo+'</span></div>'+
     (e.factura?'<div class="modal-row"><span class="modal-key">Factura</span><span class="modal-val">'+e.factura+'</span></div>':'')+
     (e.flete?'<div class="modal-row"><span class="modal-key">Flete</span><span class="modal-val" style="color:var(--camote);font-family:var(--mono)">'+fmt(e.flete)+'</span></div>':'')+
-    '<div class="modal-row"><span class="modal-key">Total venta</span><span class="modal-val" style="font-family:var(--mono)">'+fmt(e.totalVenta||e.total)+'</span></div>'+
-    '<div class="modal-row"><span class="modal-key">Total con flete</span><span class="modal-val" style="font-size:16px;color:var(--green);font-family:var(--mono)">'+fmt(e.total)+'</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Total venta</span><span class="modal-val" style="font-family:var(--mono)">'+fmt(ventaNetaV)+'</span></div>'+
+    '<div class="modal-row"><span class="modal-key">Total con flete</span><span class="modal-val" style="font-size:16px;color:var(--green);font-family:var(--mono)">'+fmt(totalNetoV)+'</span></div>'+
     '<div style="overflow-x:auto;margin-top:10px">'+
     '<table class="ven-modal-table">'+
       '<thead><tr>'+
@@ -9367,7 +9592,14 @@ function verEnvio(e){
       '<tbody>'+rows+'</tbody>'+
     '</table></div>'+
     envioOrigenHtml(e)+
-    '<div style="display:flex;gap:8px;margin-top:14px">'+
+    envioAlmacenHtml(e)+
+    // Un despacho ya salio del almacen y un cancelado no manda nada: solo los
+    // envios de captura propia pueden guardar parte de su carga.
+    ((!e.cancelado && !e.esDespachoAlm)?
+      '<div style="display:flex;margin-top:14px">'+
+      '<button class="ven-del-btn" style="flex:1;margin-top:0" onclick="abrirMandarAlmacen('+e.id+')">📦 Mandar a almacén</button>'+
+      '</div>':'')+
+    '<div style="display:flex;gap:8px;margin-top:8px">'+
     '<button class="ven-del-btn" style="flex:1;margin-top:0;border-color:var(--green-border);color:var(--green)" onmouseover="this.style.background=\'var(--green-bg)\'" onmouseout="this.style.background=\'none\'" onclick="editarEnvio(envioActual)">✏️ Editar</button>'+
     (e.cancelado?
       '<button class="ven-del-btn" style="flex:1;margin-top:0;border-color:var(--green-border);color:var(--green)" onclick="reactivarEnvio('+e.id+')">↩️ Reactivar</button>':
@@ -9488,6 +9720,22 @@ function delEnvio(id){
   // Si es operación de comercializadora, limpia también los gastos auto-generados
   // (Compra Mercancia / Flete compra) que creó al guardarse.
   var envDel=envios.find(function(e){return e.id===id;});
+  // Lotes que este envio mando al almacen. Los que ya se despacharon no se pueden
+  // soltar: esa mercancia ya se vendio y borrar su origen dejaria el rastro roto.
+  var lotesOrigen=almLotes.filter(function(l){return String(l.origenEnvioId||'')===String(id);});
+  var yaDespachado=lotesOrigen.filter(function(l){return (l.despachos||[]).length;})[0];
+  if(yaDespachado){
+    showToast('«'+(yaDespachado.variedad||'')+'» ya se despachó del almacén: no se puede eliminar el envío');
+    return;
+  }
+  if(lotesOrigen.length){
+    almLotes=almLotes.filter(function(l){
+      if(String(l.origenEnvioId||'')===String(id)){ sbDeleteAlmLote(l.id); return false; }
+      return true;
+    });
+    saveAlmLotes();
+    if(typeof renderAlmLotes==='function') renderAlmLotes();
+  }
   if(envDel && envDel.esComer===true){
     var num=envDel.num||'';
     var descsCom=['Compra mercancia op. '+num, 'Flete compra op. '+num];
@@ -9685,9 +9933,11 @@ function sincronizarDeudasEnvio(e){
     }
     if(e.cliente){
       var itC=[];
-      (e.partidas||[]).forEach(function(p){
-        var m=r2((parseFloat(p.kgRecibidos)||parseFloat(p.pesoNeto)||0)*(parseFloat(p.precioVenta)||parseFloat(p.precio)||0));
-        if(m>0) itC.push({concepto:'Venta '+(p.variedad||''), monto:m});
+      // Neto: lo que se mando al almacen no se le cobra al cliente hasta que se
+      // despache, y entonces nace su propio envio con su folio y su plazo.
+      envioNetoPartidas(e).forEach(function(x){
+        var m=r2(x.totalNeto);
+        if(m>0) itC.push({concepto:'Venta '+(x.p.variedad||''), monto:m});
       });
       // El flete de VENTA siempre se le cobra al cliente, en los tres negocios de camote.
       // El que nunca se le carga a la contraparte es el flete de COMPRA: se paga aparte.
@@ -9699,9 +9949,9 @@ function sincronizarDeudasEnvio(e){
   } else if(e.loc==='jal' || e.loc==='nay'){
     if(e.cliente){
       var itK=[];
-      (e.partidas||[]).forEach(function(p){
-        var m=r2((parseFloat(p.pesoNeto)||0)*(parseFloat(p.precio)||0));
-        if(m>0) itK.push({concepto:'Venta '+(p.variedad||''), monto:m});
+      envioNetoPartidas(e).forEach(function(x){
+        var m=r2(x.totalNeto);
+        if(m>0) itK.push({concepto:'Venta '+(x.p.variedad||''), monto:m});
       });
       var fk=parseFloat(e.flete)||0; if(fk>0) itK.push({concepto:'Fletes', monto:r2(fk)});
       var totK=itK.reduce(function(a,i){return a+i.monto;},0);
@@ -12517,24 +12767,63 @@ function confirmarNuevoBanco(){
 }
 
 // ---- envioTotal ----
+// Kg de una partida: comercializadora captura kgRecibidos, la captura directa
+// pesoNeto. Es lo COMPRADO/COSECHADO, no lo entregado.
+function envioKgPartida(p){
+  if(p.kgRecibidos!==undefined && p.kgRecibidos!=='') return parseFloat(p.kgRecibidos)||0;
+  return parseFloat(p.pesoNeto)||0;
+}
+function envioPrecioVenta(p){
+  if(p.precioVenta!==undefined && p.precioVenta!=='') return parseFloat(p.precioVenta)||0;
+  return parseFloat(p.precio)||0;
+}
+
+// Kg que este envio mando al almacen, por variedad. NO se guardan en el envio:
+// se derivan de los lotes que lo apuntan (origenEnvioId), para que haya una sola
+// fuente y reeditar el envio no los pierda. Devuelve null si no mando nada, para
+// que quien la llame salga temprano.
+function envioKgAlm(envioId){
+  var map=null;
+  for(var i=0;i<almLotes.length;i++){
+    var l=almLotes[i];
+    if(!l.origenEnvioId || String(l.origenEnvioId)!==String(envioId)) continue;
+    if(!map) map={};
+    var v=l.variedad||'';
+    map[v]=(map[v]||0)+(parseFloat(l.kgTotal)||0);
+  }
+  return map;
+}
+
+// Partidas con lo mandado a almacen ya descontado. El costo (compra, flete,
+// gastos de cosecha) se queda entero en el envio: mandar kg a almacen solo baja
+// la VENTA. Lo usan envioTotal, sincronizarDeudasEnvio y verEnvio, para que los
+// tres no puedan contradecirse.
+function envioNetoPartidas(e){
+  var kgAlm=(e && e.id)?envioKgAlm(e.id):null;
+  var rest={};
+  if(kgAlm){ for(var k in kgAlm){ if(kgAlm.hasOwnProperty(k)) rest[k]=kgAlm[k]; } }
+  return (e.partidas||[]).map(function(p){
+    var kgP=envioKgPartida(p), pv=envioPrecioVenta(p), v=p.variedad||'';
+    // p.total ya viene guardado por las tres rutas que crean partidas (captura
+    // directa, comercializadora y despacho de almacén). Los fallbacks son solo
+    // para partidas históricas sin ese campo. Sin este orden, un envío de
+    // despacho a Comercializadora (esComer:true pero con partidas pesoNeto/
+    // precio, no kgRecibidos/precioVenta) sumaba $0.
+    var bruto=(p.total!=null)?(parseFloat(p.total)||0):(kgP*pv);
+    // Dos partidas de la misma variedad se reparten los kg mandados en orden.
+    var toma=kgAlm?Math.min(rest[v]||0, kgP):0;
+    if(toma>0) rest[v]-=toma;
+    return {p:p, kgBruto:kgP, kgAlm:toma, kgNeto:kgP-toma,
+      precioVenta:pv, totalBruto:bruto, totalNeto:Math.max(0, bruto-toma*pv)};
+  });
+}
+
 function envioTotal(e){
   // Un envio cancelado no es ingreso. Aqui se corta una sola vez: esta funcion
   // la suman los 8 puntos donde aparecen ventas (reportes, EDR, resumen por
   // negocio, ingresos por mes/ciclo), asi que no hay que filtrar en cada uno.
   if(e && e.cancelado) return 0;
-  return (e.partidas||[]).reduce(function(a,p){
-    // p.total ya viene guardado por las tres rutas que crean partidas (captura
-    // directa, comercializadora y despacho de almacén) y es lo que hay que sumar.
-    // Los fallbacks son solo para partidas históricas sin ese campo: kgRecibidos/
-    // precioVenta en comercializadora, pesoNeto/precio en captura directa. Sin
-    // este orden, un envío de despacho a Comercializadora (esComer:true pero con
-    // partidas pesoNeto/precio, no kgRecibidos/precioVenta) sumaba $0.
-    if(p.total!=null) return a+(parseFloat(p.total)||0);
-    if(e.esComer||p.kgRecibidos!==undefined){
-      return a+(parseFloat(p.kgRecibidos||0)*parseFloat(p.precioVenta||0));
-    }
-    return a+(parseFloat(p.pesoNeto||0)*parseFloat(p.precio||0));
-  },0)+parseFloat(e.flete||0);
+  return envioNetoPartidas(e).reduce(function(a,x){return a+x.totalNeto;},0)+parseFloat(e.flete||0);
 }
 
 function fmt(n){return '$'+(parseFloat(n)||0).toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:0});}
@@ -12939,6 +13228,10 @@ function guardarOperacionComer(){
         precioCompra:p.precioCompra,precioVenta:p.precioVenta,pesoNeto:p.kgRecibidos,precio:p.precioVenta,total:totalPartida,sector:''};
     })
   };
+  // Los kg que esta operacion tenga en almacen no son venta todavia.
+  var ntC=envioNetoPartidas(envioObj).reduce(function(a,x){return a+x.totalNeto;},0);
+  envioObj.totalVenta=ntC;
+  envioObj.total=ntC+fleteVenta;
   if(esEdicion){
     // Reemplazo en sitio; conserva la posición del registro en la lista.
     var idxE=envios.findIndex(function(x){return x.id===editandoComerId;});
@@ -14592,6 +14885,7 @@ async function sbSaveAlmLote(l){
     proveedor:l.proveedor||'', precio_compra:l.precioCompra||0,
     flete_compra:l.fleteCompra||0, gasto_ids:l.gastoIds||[],
     compra_id:l.compraId||null, kg_pagar:l.kgPagar||0, desc_pct:l.descPct||0,
+    origen_envio_id:l.origenEnvioId||null,
     despachos:l.despachos||[], cerrado:l.cerrado||false
   });
 }
@@ -14638,6 +14932,13 @@ function almTab(t){
 function editarLote(loteId){
   var lote=almLotes.find(function(l){return l.id===loteId;});
   if(!lote) return;
+  // Un lote que vino de un envio no es una compra: su costo, su flete y su
+  // cuenta por pagar viven en el envio. Guardarlo por aqui llamaria a
+  // sincronizarCompra y crearia un gasto y una deuda duplicados.
+  if(lote.origenEnvioId){
+    showToast('Este lote vino de un envío: edítalo desde ahí');
+    return;
+  }
   almTab('nuevo'); // esto llama initAlmForm() y resetea el form a "nuevo"
   editandoLoteId=loteId;
   document.getElementById('alm-form-title').textContent='Editar lote';
