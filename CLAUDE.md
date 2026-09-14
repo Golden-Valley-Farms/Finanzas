@@ -194,7 +194,13 @@ Ojo (ago-2026): hasta este cambio, la rama `com` de `sincronizarDeudasEnvio()` e
 
 **Folio Negocio junto al Folio Cliente en la cuenta.** `deudaFolioNegocio(d)` busca el envío por `d.refId` y devuelve su `e.num` (vacío si no hay envío, o si ya es igual al `folioExterno`). Se pinta en las dos vistas de cuenta — `abrirDeudaContraparte()` (fifo) y `renderModalCorriente()` (corriente) — porque el modo depende de la contraparte, no del origen del movimiento. Hace falta porque un despacho que cruza negocios crea **dos** cargos con el **mismo** Folio Cliente, y sin distinguirlos se leen como una captura duplicada. Es derivado: sin campos ni columnas nuevas.
 
-**Histórico importado.** Los movimientos migrados del Excel original tienen `ref_kind:'importado'` e ids `9000000000000xx`. La migración fue única (ago-2026); no hay código de importación de Excel en la app.
+**Histórico importado.** Los movimientos migrados del Excel original tienen `ref_kind:'importado'` (o `'importada'`) e ids `9000000000000xx` y `17000000000xx`. La migración fue única (ago-2026); no hay código de importación de Excel en la app.
+
+**El envío adopta a su cargo importado** (sep-2026). Un cargo importado y el envío que lo originó son **el mismo movimiento**, pero el importado no tiene `refId`, así que `borrarDeudasDeEnvio()` no lo veía: reguardar un envío histórico generaba el suyo y **la venta quedaba contada dos veces** en la cartera. Pasó con `ProdNay/2026/013` / `B&M/2026/023`.
+
+`adoptarImportadasDeEnvio(nuevas)` retira el importado cuando el envío genera el suyo. Manda el del envío: trae ciclo, folio de negocio y se resincroniza solo. El match es **(tipo, contraparte, folio externo)** — un Folio Cliente identifica una venta — y **sin folio no adopta nada**, para no borrar por coincidencia. Un importado de otro cliente con el mismo folio no se toca.
+
+**No hubo migración masiva**: había 27 envíos vivos con cargo importado del mismo folio y solo uno estaba duplicado. Cada uno se limpia solo la próxima vez que se guarde ese envío.
 
 ### El alta espera al borrado (carrera de ids)
 

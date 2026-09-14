@@ -9936,6 +9936,29 @@ function borrarDeudasDeEnvio(envioId){
   deudas=quedan; saveDeudas();
   return Promise.all(pend);
 }
+// Los cargos historicos del Excel (ref_kind importado/importada, sin refId) son
+// el MISMO movimiento que el envio, pero capturados antes de que el envio
+// existiera. Al reguardar el envio se generaba el suyo y quedaban los dos, con
+// la venta contada doble en la cartera. El del envio manda —trae ciclo, folio de
+// negocio y se resincroniza solo—, asi que adopta al importado y lo retira.
+// El match es (tipo, contraparte, folio externo): un Folio Cliente identifica
+// una venta. Sin folio no se adopta nada, para no borrar por coincidencia.
+function adoptarImportadasDeEnvio(nuevas){
+  if(!nuevas.length) return Promise.resolve();
+  var pend=[], quedan=[];
+  deudas.forEach(function(d){
+    var esImportada = !d.refId && ['importado','importada'].indexOf(d.refKind)>=0;
+    var dup = esImportada && nuevas.some(function(n){
+      var f=(n.folioExterno||'').trim();
+      return f!=='' && n.tipo===d.tipo && n.contraparte===d.contraparte &&
+             f===(d.folioExterno||'').trim();
+    });
+    if(dup) pend.push(sbDeleteDeuda(d.id)); else quedan.push(d);
+  });
+  deudas=quedan;
+  return Promise.all(pend);
+}
+
 function sincronizarDeudasEnvio(e){
   if(!e || !e.id) return;
   var borrado=borrarDeudasDeEnvio(e.id);
@@ -9984,12 +10007,13 @@ function sincronizarDeudasEnvio(e){
         origen:'camote', folioExterno:folioExt, refId:e.id, refKind:'camote_cobrar', items:itK, monto:r2(totK), desc:''});
     }
   }
+  var adoptado=adoptarImportadasDeEnvio(nuevas);
   nuevas.forEach(function(d){ deudas.push(d); registrarContraparte(d.contraparte); });
   saveDeudas();
   // El alta va DESPUES de que los borrados terminen: comparten id con las que se
   // acaban de borrar, y sin esperar el delete puede pisar a la nueva y dejar el
   // envio sin cuenta por cobrar ni por pagar, sin un solo error en consola.
-  borrado.then(function(){ nuevas.forEach(function(d){ sbSaveDeuda(d); }); });
+  Promise.all([borrado, adoptado]).then(function(){ nuevas.forEach(function(d){ sbSaveDeuda(d); }); });
   if(document.getElementById('sc-deudas') && document.getElementById('sc-deudas').classList.contains('active')) renderDeudas();
 }
 
