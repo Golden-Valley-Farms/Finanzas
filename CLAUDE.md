@@ -196,6 +196,18 @@ Ojo (ago-2026): hasta este cambio, la rama `com` de `sincronizarDeudasEnvio()` e
 
 **Histórico importado.** Los movimientos migrados del Excel original tienen `ref_kind:'importado'` e ids `9000000000000xx`. La migración fue única (ago-2026); no hay código de importación de Excel en la app.
 
+### El alta espera al borrado (carrera de ids)
+
+**Las deudas derivadas reusan el id de lo que reemplazan**: las de un envío son `e.id*10+1` (pagar) y `e.id*10+2` (cobrar), y la de una compra de almacén `compraId*10+1`. `sincronizarDeudasEnvio()` y `sincronizarCompra()` **borran y recrean**, así que el `DELETE` y el `UPSERT` van contra la **misma fila**.
+
+Los helpers `sbDeleteDeuda`/`sbSaveDeuda` son `async` y se llamaban sin esperar, así que el orden de llegada al servidor no estaba garantizado: **cuando el DELETE llegaba después del UPSERT, borraba la fila recién escrita** y el envío quedaba sin cuenta por cobrar *ni* por pagar. Sin un solo error en consola, porque las dos peticiones respondían bien por separado.
+
+Mordió en sep-2026 al estrenar «Mandar a almacén»: ese camino llega a `sincronizarDeudasEnvio()` con menos trabajo async intermedio que los formularios, y destapó la carrera. Se perdieron las dos deudas de `Comer/2026/005`; se recuperaron reguardando el envío.
+
+Por eso `borrarDeudasDeEnvio()` **devuelve la promesa** de sus `DELETE` y el alta va encadenada (`borrado.then(...)`); `sincronizarCompra()` hace lo mismo con `borradoCompra`. **No volver a llamar `sbSaveDeuda()` dentro del mismo `forEach` que dispara los borrados.** Quien solo borra (`delEnvio`, cancelar) puede ignorar la promesa.
+
+Los gastos `autoGen` no tienen este problema: se recrean con ids nuevos (`Date.now()+n`), no con el del que se borró.
+
 ### Plazo de crédito y antigüedad de saldos
 
 Fase 1 del rediseño de cobranza (ago-2026, spec en `docs/superpowers/specs/2026-08-28-rediseno-cobranza-design.md`).
