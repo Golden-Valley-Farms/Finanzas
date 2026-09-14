@@ -9927,14 +9927,18 @@ function registrarContraparte(nombre){
   }
 }
 
+// Devuelve la promesa de los DELETE para poder encadenar el alta: las deudas de
+// un envio reusan su id (e.id*10+1 / +2), asi que un delete que llegue despues
+// del upsert borraria la fila recien escrita. Quien solo borra puede ignorarla.
 function borrarDeudasDeEnvio(envioId){
-  var quedan=[];
-  deudas.forEach(function(d){ if(d.refId===envioId){ sbDeleteDeuda(d.id); } else quedan.push(d); });
+  var quedan=[], pend=[];
+  deudas.forEach(function(d){ if(d.refId===envioId){ pend.push(sbDeleteDeuda(d.id)); } else quedan.push(d); });
   deudas=quedan; saveDeudas();
+  return Promise.all(pend);
 }
 function sincronizarDeudasEnvio(e){
   if(!e || !e.id) return;
-  borrarDeudasDeEnvio(e.id);
+  var borrado=borrarDeudasDeEnvio(e.id);
   var nuevas=[];
   var folioExt=(e.folio||'').trim() || (e.num||'');
   var esCom=(e.esComer===true);
@@ -9980,8 +9984,12 @@ function sincronizarDeudasEnvio(e){
         origen:'camote', folioExterno:folioExt, refId:e.id, refKind:'camote_cobrar', items:itK, monto:r2(totK), desc:''});
     }
   }
-  nuevas.forEach(function(d){ deudas.push(d); sbSaveDeuda(d); registrarContraparte(d.contraparte); });
+  nuevas.forEach(function(d){ deudas.push(d); registrarContraparte(d.contraparte); });
   saveDeudas();
+  // El alta va DESPUES de que los borrados terminen: comparten id con las que se
+  // acaban de borrar, y sin esperar el delete puede pisar a la nueva y dejar el
+  // envio sin cuenta por cobrar ni por pagar, sin un solo error en consola.
+  borrado.then(function(){ nuevas.forEach(function(d){ sbSaveDeuda(d); }); });
   if(document.getElementById('sc-deudas') && document.getElementById('sc-deudas').classList.contains('active')) renderDeudas();
 }
 
@@ -14854,10 +14862,12 @@ function sincronizarCompra(compraId, soloLimpiar, idsHuerfanos){
       return true;
     });
   }
+  var borradoCompra=[];
   deudas=deudas.filter(function(d){
-    if(d.refId===compraId && d.refKind==='alm_compra_pagar'){ sbDeleteDeuda(d.id); return false; }
+    if(d.refId===compraId && d.refKind==='alm_compra_pagar'){ borradoCompra.push(sbDeleteDeuda(d.id)); return false; }
     return true;
   });
+  borradoCompra=Promise.all(borradoCompra);
   if(!soloLimpiar && lotes.length){
     var base=lotes[0];
     var proveedor=base.proveedor||'';
@@ -14889,7 +14899,10 @@ function sincronizarCompra(compraId, soloLimpiar, idsHuerfanos){
         refKind:'alm_compra_pagar',
         items:lotes.map(function(l){return {concepto:'Compra '+(l.variedad||''), monto:almMontoPartida(l)};}),
         monto:montoMercancia, desc:''};
-      deudas.push(deudaP); sbSaveDeuda(deudaP); registrarContraparte(proveedor);
+      deudas.push(deudaP); registrarContraparte(proveedor);
+      // Reusa el id de la que se acaba de borrar (compraId*10+1): sin esperar al
+      // delete, este puede pisar a la nueva y dejar la compra sin cuenta por pagar.
+      borradoCompra.then(function(){ sbSaveDeuda(deudaP); });
       agregarProveedorComerSiNuevo(proveedor);
     }
   }
