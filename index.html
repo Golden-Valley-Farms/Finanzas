@@ -9257,17 +9257,35 @@ function renderEnvios(){
   data.forEach(function(e){
     var item=document.createElement('div'); item.className='envio-item';
     if(e.cancelado) item.style.opacity='.6';
-    var miniRows = e.partidas.map(function(p){
+    // Netos: sin esto el renglon mostraria el bruto y contradiria al total del
+    // encabezado, que si descuenta lo mandado al almacen.
+    var netosE=envioNetoPartidas(e);
+    var miniRows = netosE.map(function(x){
+      var p=x.p;
       if(!p.pesoNeto && !p.hectareas && !p.precio) return '';
+      // La que se fue entera al almacen no es venta: sale de la tabla y queda
+      // contada en el renglon "a almacen" de abajo.
+      if(x.kgAlm>0.009 && x.kgNeto<=0.009) return '';
       return '<tr>'+
         '<td>'+p.variedad+'</td>'+
         '<td style="text-align:right">'+(p.sector||'-')+'</td>'+
         '<td style="text-align:right">'+(p.hectareas||'-')+'</td>'+
-        '<td style="text-align:right">'+(p.pesoNeto?p.pesoNeto.toLocaleString('es-MX'):'-')+'</td>'+
-        '<td style="text-align:right">'+(p.precio?'$'+p.precio:'-')+'</td>'+
-        '<td style="text-align:right;color:var(--green);font-weight:600">'+fmt(p.total!=null?p.total:(parseFloat(p.pesoNeto)||0)*(parseFloat(p.precio)||0))+'</td>'+
+        '<td style="text-align:right">'+(x.kgNeto?x.kgNeto.toLocaleString('es-MX'):'-')+'</td>'+
+        '<td style="text-align:right">'+(x.precioVenta?'$'+x.precioVenta:'-')+'</td>'+
+        '<td style="text-align:right;color:var(--green);font-weight:600">'+fmt(x.totalNeto)+'</td>'+
       '</tr>';
     }).join('');
+
+    var kgAlmE=netosE.reduce(function(a,x){return a+x.kgAlm;},0);
+    // No se usa envioTotal: devuelve 0 en cancelados y aqui el monto se muestra
+    // tachado, no en cero.
+    var totalNetoE=netosE.reduce(function(a,x){return a+x.totalNeto;},0)+(parseFloat(e.flete)||0);
+    var almRow = kgAlmE>0.009 ?
+      '<tr>'+
+        '<td colspan="5" style="color:var(--text3);padding-top:8px;border-top:1px solid var(--border)">A almacén</td>'+
+        '<td style="text-align:right;color:var(--text3);font-family:var(--mono);padding-top:8px;border-top:1px solid var(--border)">'+
+          kgAlmE.toLocaleString('es-MX',{maximumFractionDigits:2})+' kg</td>'+
+      '</tr>' : '';
 
     var fleteRow = e.flete ?
       '<tr>'+
@@ -9281,7 +9299,7 @@ function renderEnvios(){
           '<div class="envio-num">'+(e.num||'Sin folio')+'</div>'+
           '<div class="envio-meta">'+e.fechaLbl+' · '+e.cliente+'</div>'+
         '</div>'+
-        '<div class="envio-total"'+(e.cancelado?' style="text-decoration:line-through;color:var(--text3)"':'')+'>'+fmt(e.total)+'</div>'+
+        '<div class="envio-total"'+(e.cancelado?' style="text-decoration:line-through;color:var(--text3)"':'')+'>'+fmt(totalNetoE)+'</div>'+
       '</div>'+
       '<div class="envio-tags" style="margin-bottom:8px">'+
         '<span class="tag '+(e.loc||'jal')+'">'+(locNames[e.loc]||e.loc)+'</span>'+
@@ -9298,7 +9316,7 @@ function renderEnvios(){
             '<th style="text-align:right">$/kg</th>'+
             '<th style="text-align:right">Total</th>'+
           '</tr></thead>'+
-          '<tbody>'+miniRows+fleteRow+'</tbody>'+
+          '<tbody>'+miniRows+fleteRow+almRow+'</tbody>'+
         '</table>':''
       );
     item.addEventListener('click',function(){verEnvio(e);});
@@ -9556,6 +9574,9 @@ function verEnvio(e){
   var totalNetoV=ventaNetaV+(parseFloat(e.flete)||0);
   var rows=netosV.map(function(x){
     var p=x.p, ha=parseFloat(p.hectareas)||0;
+    // La que se fue entera al almacen no es venta: sale de la tabla y queda
+    // contada abajo, en envioAlmacenHtml.
+    if(x.kgAlm>0.009 && x.kgNeto<=0.009) return '';
     var ton=Math.round((x.kgNeto/1000)*1000)/1000;
     var tha=ha>0?(ton/ha).toFixed(2):'-';
     return '<tr>'+
