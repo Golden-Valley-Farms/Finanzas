@@ -8846,6 +8846,10 @@ var editandoEnvioId = null;
 var envioActual = null;
 
 function editarEnvio(e){
+  // Un despacho de almacen no se edita por formulario: los dos formularios lo
+  // reescribirian como captura propia (sin loteIds ni esDespachoAlm) y el de
+  // comercializadora le volveria a cargar la compra, que ya vive en el lote.
+  if(e && e.esDespachoAlm){ showToast('Este envío salió del almacén: no se edita desde aquí'); return; }
   // Las operaciones de comercializadora se editan en su propio formulario,
   // que conserva proveedor, precios de compra/venta, descuentos y fletes.
   // Se detectan por la bandera esComer o por loc==='com' (registros viejos o
@@ -9621,7 +9625,8 @@ function verEnvio(e){
       '<button class="ven-del-btn" style="flex:1;margin-top:0" onclick="abrirMandarAlmacen('+e.id+')">📦 Mandar a almacén</button>'+
       '</div>':'')+
     '<div style="display:flex;gap:8px;margin-top:8px">'+
-    '<button class="ven-del-btn" style="flex:1;margin-top:0;border-color:var(--green-border);color:var(--green)" onmouseover="this.style.background=\'var(--green-bg)\'" onmouseout="this.style.background=\'none\'" onclick="editarEnvio(envioActual)">✏️ Editar</button>'+
+    (e.esDespachoAlm?'':
+    '<button class="ven-del-btn" style="flex:1;margin-top:0;border-color:var(--green-border);color:var(--green)" onmouseover="this.style.background=\'var(--green-bg)\'" onmouseout="this.style.background=\'none\'" onclick="editarEnvio(envioActual)">✏️ Editar</button>')+
     (e.cancelado?
       '<button class="ven-del-btn" style="flex:1;margin-top:0;border-color:var(--green-border);color:var(--green)" onclick="reactivarEnvio('+e.id+')">↩️ Reactivar</button>':
       '<button class="ven-del-btn" style="flex:1;margin-top:0;border-color:var(--camote);color:var(--camote)" onclick="abrirCancelarEnvio('+e.id+')">🚫 Cancelar</button>')+
