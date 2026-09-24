@@ -350,51 +350,64 @@ Fusiona las dos hojas de control interno que el usuario llevaba a mano (balance 
 
 **El reparto se hace restando lunes, no números de semana** (`flujoLunesDe()`, en UTC): restar semanas ISO se rompe en el cambio de año, donde la 52 es anterior a la 1. Ese helper es la razón de que no haga falta tratar el fin de año como caso especial.
 
-**Son cuatro tarjetas con tres renglones cada una: Entra · Sale · Resultado**, donde Resultado es `entra − sale` de **esa** semana. **No es saldo corrido**: el dinero en bancos vive en su propia tarjeta arriba y no se mezcla.
+### Flujo como nuevo resumen: paneles Total y Semana (sep-2026)
 
-**Lo vencido no tiene tarjeta propia: va dentro de la semana en curso, en su propia columna.** Esa primera tarjeta es una rejilla de cuatro columnas —rótulo · Vencido · Por vencer · Total— alimentada por `per[0]`/`per[1]`; las otras tres son la misma rejilla con una sola columna de valores y son las que pinta el `for`. Es dinero que se mueve ahora, pero el usuario quiere poder mirarlo aparte de lo que apenas está por vencer. Los buckets **siguen separados** en `flujoCalc` — la fusión es solo de la tarjeta.
+El Flujo es el **nuevo resumen del módulo**; la pestaña Resumen se va a eliminar cuando el usuario apruebe este diseño (propuesta subida el 23-sep-2026, pendiente de su visto bueno). La pantalla abre con **dos paneles** (`#flujo-resumen`), cada uno con **A favor / En contra** lado a lado y el **Balance** (a favor − en contra) en una barra abajo. Las definiciones son las del usuario:
 
-**El detalle renglón por renglón bajo las tarjetas se quitó** (sep-2026, a pedido del usuario, "de mientras"). `flujoCalc` sigue llenando `per[i].det`, así que devolverlo es volver a pintarlo.
+| panel | a favor | en contra |
+|---|---|---|
+| **Total** (`fxPanelTotal`) | bancos + lo que nos deben (por cliente) + cobros esperados | lo que debemos, por cuenta |
+| **Semana en curso** (`fxPanelSemana`) | bancos + cobros de clientes de la semana | gastos planeados + pagos a proveedores de la semana |
 
-### Encabezado y saldo en bancos
+- **Total va sin filtro de categoría** (`rdCuentasDe()` de las dos direcciones): los préstamos también se deben. Lo que debemos se parte en **Proveedores** (comercial) y **Préstamos y gastos**, igual que el Resumen. **Los gastos planeados NO entran al total en contra**: así lo definió el usuario. El Excel viejo sí los sumaba; si lo pide, se agregan en `fxPanelTotal()`.
+- **Un cobro esperado atado a una cuenta no suma al Total**: ya va dentro del saldo de esa cuenta. Solo los sueltos son dinero de más.
+- **Semana es exactamente lo que movía la tarjeta de la semana en curso**: `flujoCalc(true)`, `per[0]` (vencido) + `per[1]` (la semana), **solo compra-venta de camote**. Se arma renglón por renglón del `det`, agrupando los cargos por cuenta, así que no puede contradecir al flujo. Lo vencido se ve debajo de cada renglón y debajo del total de cada columna.
+- **Bancos entra a los dos paneles con los dólares convertidos** (`fxBancos()`): MXN + USD × el tipo de cambio del renglón USD. `rdBancosTotal()` y el Resumen siguen leyendo solo pesos.
+- Los renglones de cuentas abren su estado de cuenta (`abrirDeudaContraparte`).
 
-**La tira "En bancos" que abría la pantalla se quitó** (sep-2026) y en su lugar van **tres tarjetas KPI: Nos deben · Debemos · Balance** (cobrar − pagar).
+Debajo van **tres tarjetas chicas con las semanas siguientes** (`fxProximasHtml`, `#flujo-cards`): Entra · Sale · Resultado de **esa** semana. **No es saldo corrido**: el dinero en bancos vive en los paneles.
 
-Esos tres KPIs van con `rdTotales(tipo)` **sin filtro de categoría**, o sea **las mismas cifras que el Resumen** (sep-2026; antes iban filtrados a `'comercial'`). El motivo del cambio: el usuario está migrando el Resumen hacia el Flujo y quiere que el Flujo sea el nuevo resumen del módulo, así que esos números tienen que cuadrar con los que ya conocía. **Las tarjetas de semana sí siguen filtradas a compra-venta de camote** (`flujoCalc(true)`) — responden otra pregunta: qué dinero se mueve, no cuánto se debe.
+**Se quitaron** las tres tarjetas KPI del encabezado (Nos deben · Debemos · Balance), porque el panel Total las contiene, y la tarjeta grande de la semana en curso con columnas Vencido · Por vencer · Total, porque la sustituye el panel Semana. Los buckets `per[0]`/`per[1]` **siguen separados** en `flujoCalc`.
 
-**El saldo en bancos pasó a una caja de captura de dos renglones —MXN y USD—** (`renderSaldoBancos()` / `setSaldoBanco()`), encima de Gastos planeados. No hay entidad nueva: son filas de `bancosSaldos` llamadas `'MXN'` y `'USD'`, aprovechando que la tabla está llaveada por `nombre`. `fechaCorte` guarda **la fecha en que se capturó la cifra** y se pinta como leyenda ("actualizado 08 sep 2026"); el usuario no la captura.
+**CSS `.fx-*`**: en escritorio (≥1100px) los dos paneles van lado a lado **estirados a la misma altura**, así las barras de balance quedan alineadas; abajo de eso se apilan, y abajo de 560px también se apilan sus dos columnas. Las cajas de captura (`.fx-caps`) siguen el mismo corte: **a la izquierda lo que suma a favor** (saldo en bancos y cobros esperados) y **a la derecha lo que sale** (gastos planeados).
+
+**El detalle renglón por renglón bajo las tarjetas se quitó** (sep-2026, a pedido del usuario, "de mientras"). `flujoCalc` sigue llenando `per[i].det`; los paneles lo usan.
+
+### Saldo en bancos
+
+**El saldo en bancos es una caja de captura de dos renglones —MXN y USD—** (`renderSaldoBancos()` / `setSaldoBanco()`), encima de Cobros esperados. No hay entidad nueva: son filas de `bancosSaldos` llamadas `'MXN'` y `'USD'`, aprovechando que la tabla está llaveada por `nombre`. `fechaCorte` guarda **la fecha en que se capturó la cifra** y se pinta como leyenda ("actualizado 08 sep 2026"); el usuario no la captura.
 
 **Las cajas son `<input type="text">`, no `number`** (sep-2026): un input numérico no admite el separador de miles y aquí la cifra se lee más de lo que se escribe. `sbNumIn()` limpia lo que se teclee (comas, `$`, espacios) y `sbFmtNum(n,min,max)` lo devuelve formateado; `sbValInp()` pinta **vacío como vacío**, porque un cero de fábrica se leería como "no hay dinero". Cada handler reformatea su propio input y toca solo la leyenda — repintar la caja le quitaría el foco al campo recién capturado, la misma trampa de `dgSetKg()`.
 
 **El renglón de dólares son tres cajas: USD × tipo de cambio = MXN**, la tercera de solo lectura (`sbEquivUsd()` / `sbPintaEquivUsd()`). Los signos `×` y `=` entre ellas son lo que dice qué hace cada caja, sin rótulos. El tipo de cambio se guarda en la **misma fila** `'USD'` de `bancosSaldos` (`tipoCambio` ↔ columna `bancos_saldos.tipo_cambio`, agregada en sep-2026), con las cuatro capas cableadas.
 
-**Ese equivalente en pesos NO entra a ningún total.** `rdBancosTotal()` sigue devolviendo solo el renglón `MXN`: el "En bancos" del Resumen es una cifra en pesos y sumarle los dólares convertidos cambiaría en silencio un número que el usuario ya venía leyendo. Si algún día se quiere el total combinado, el tipo de cambio ya está capturado y el único lugar a tocar es `rdBancosTotal()`.
+**Ese equivalente en pesos solo entra a los paneles del Flujo** (`fxBancos()`, sep-2026): el usuario definió el total a favor como "lo actual en bancos", y el tipo de cambio ya se captura en el mismo renglón USD. **`rdBancosTotal()` sigue devolviendo solo el renglón `MXN`**: el "En bancos" del Resumen es una cifra en pesos y sumarle los dólares cambiaría en silencio un número que el usuario ya venía leyendo. Mientras ese renglón no exista, cae a los saldos por banco del modal viejo.
 
-**MXN y USD no se suman.** La app no tiene un tipo de cambio general —solo uno por ficha de cliente—, así que convertir aquí obligaría a inventar uno. Por lo mismo **`rdBancosTotal()` devuelve solo el renglón `MXN`**, y mientras ese renglón no exista cae a los saldos por banco del modal viejo, para que el "En bancos" del Resumen no se vacíe de golpe al estrenar la caja.
+Cada handler de la caja, además de su input y su leyenda, repinta **solo los paneles** (`renderFlujoTarjetas()` desde `sbGuardaBanco()`), nunca la caja.
 
 `abrirEditarBancos()` y `guardarBancosSaldos()` **quedaron sin punto de entrada** al desaparecer el botón "Actualizar saldos"; se conservan porque el fallback de arriba todavía lee los datos que crearon.
 
-### Caja de gastos planeados
+### Cajas de gastos planeados y cobros esperados
 
-Sustituye al botón "+ Pago programado" y su modal (sep-2026). Es una **caja de captura fija**, del mismo corte que "Cubetas por trabajador" en el registro de Frambuesa: tres columnas —**Concepto · Cantidad · Fecha límite**—, un `+` para agregar y una `×` por renglón. `gastosPlaneados()` · `renderGastosPlaneados()` · `agregarGastoPlaneado()` · `editGastoPlaneado()` · `removeGastoPlaneado()`.
+Dos **cajas de captura fijas** con la misma rejilla —del mismo corte que "Cubetas por trabajador" en Frambuesa—: **Concepto · Cantidad · Fecha** (en gastos, "Fecha límite"), un `+` para agregar y una `×` por renglón. Gastos planeados sustituyó al botón "+ Pago programado" y su modal; **Cobros esperados** (sep-2026) sustituyó al botón "+ Cobro esperado" y su modal, cuyos renglones no se veían ni se borraban en ningún lado.
 
-**A diferencia de la caja de Frambuesa, esta no es estado temporal de un formulario**: la pantalla no tiene botón de "Guardar", así que cada renglón se persiste en cuanto se captura o se edita. No hay entidad nueva — son `programados` de dirección `pago` y `contraparte` vacía, con las mismas cuatro capas de siempre.
+**Un solo juego de funciones para las dos**, parametrizado por dirección (`'pago'` | `'cobro'`) con la configuración en `PG_CAJAS` (prefijo de ids `gp-`/`ce-`, título, color, placeholder): `programadosDe(dir)` · `pgCajaHtml(dir)` · `renderProgramadosCaja(dir)` · `agregarProgramado(dir)` · `editProgramado(id,campo,valor,dir)` · `removeProgramado(id,dir)`. Las viejas `gastosPlaneados()`/`renderGastosPlaneados()`/`agregarGastoPlaneado()`/`editGastoPlaneado()`/`removeGastoPlaneado()` **ya no existen**.
 
-**La pantalla se pinta en tres piezas con contenedor propio** —bancos, `#flujo-cards` y `#flujo-plan-list`— para que editar un renglón repinte **solo las tarjetas** (`renderFlujoTarjetas()`). Repintar la sección entera le quitaría el foco al input que se está escribiendo, la misma trampa de `dgSetKg()` y `recalcFramFin()`. Por lo mismo los renglones guardan en `onchange`, no en `oninput`.
+**A diferencia de la caja de Frambuesa, estas no son estado temporal de un formulario**: la pantalla no tiene botón de "Guardar", así que cada renglón se persiste en cuanto se captura o se edita. No hay entidad nueva — son `programados` de dirección `pago`/`cobro` y `contraparte` vacía, con las mismas cuatro capas de siempre.
 
-**Un programado sin contraparte siempre suma en el flujo, aunque esté filtrado a camote**: es dinero que el usuario mismo dijo que va a salir. Con contraparte se respeta el filtro. Esto invirtió la regla anterior, donde los compromisos sueltos (IMSS, contabilidad) quedaban fuera — ahora son justo lo que esta caja captura.
+**La pantalla se pinta en piezas con contenedor propio** —`#flujo-resumen` (paneles), `#flujo-cards` (próximas semanas), `#flujo-bancos`, `#gp-list` y `#ce-list`— para que editar un renglón repinte **solo los paneles** (`renderFlujoTarjetas()`) y su propia lista. Repintar la sección entera le quitaría el foco al input que se está escribiendo, la misma trampa de `dgSetKg()` y `recalcFramFin()`. Por lo mismo los renglones guardan en `onchange`, no en `oninput`, y **nunca se repinta la otra caja**: podría borrar el campo al que el usuario se acaba de mover.
 
-**Las dos cajas de captura se alinean al ancho de la tarjeta de la semana en curso** (sep-2026; antes eran media anchura con `.gp-half`). Cada una va dentro de un `.flujo-cap-row` que **copia las proporciones de la fila de tarjetas** — la caja es `flex:2 1 330px` y la siguen **tres `.flujo-gap` vacíos** de `flex:1 1 175px`, exactamente los mismos valores que la tarjeta grande y las tres chicas. Así crecen y se envuelven igual por construcción, en cualquier ancho. Un porcentaje fijo no serviría: el ancho de esa tarjeta depende de cuánto espacio libre reparta el flex, no del ancho del contenedor. Si cambian los `flex` de `renderFlujoTarjetas()`, hay que cambiar los de esta regla CSS.
+**Un programado sin contraparte siempre suma en el flujo, aunque esté filtrado a camote**: es dinero que el usuario mismo dijo que va a entrar o salir. Con contraparte se respeta el filtro. Esto invirtió la regla anterior, donde los compromisos sueltos (IMSS, contabilidad) quedaban fuera — ahora son justo lo que estas cajas capturan.
 
 **La rejilla `.gp-grid` se parte en dos renglones debajo de 560px** (concepto y la `×` arriba, cantidad y fecha abajo) y ahí se oculta la cabecera: el input de fecha no cabe junto a los otros tres, y los rótulos dejarían de caer sobre su columna.
 
-**Huecos conocidos:** un pago programado ya no se puede atar a una cuenta (eso vivía en el modal que se quitó), así que la regla anti-duplicado de `conAbono` hoy solo aplica a cobros. Y "+ Cobro esperado" sigue siendo un modal cuyos renglones **no se ven ni se borran en ningún lado** desde que se quitó el detalle. `cumplirProgramado()` y `borrarProgramado()` quedaron sin uso desde la UI.
+**Huecos conocidos:** un programado ya no se puede atar a una cuenta desde la UI (eso vivía en los modales que se quitaron), así que la regla anti-duplicado de `conAbono` solo aplica a renglones viejos. `abrirProgramado()`, `guardarProgramado()`, `cumplirProgramado()` y `borrarProgramado()` quedaron sin uso desde la UI.
 
 **`flujoCalc(soloCamote, porMes)` reparte por mes cuando se le pide**, con `flujoPeriodoMes()` y tres buckets (Vencido · Este mes · Próximo mes). El único que lo usa es el **Resumen**, cuyo "al cierre de este mes" seguiría diciendo lo mismo aunque la pantalla de Flujo cambie de escala: llama `flujoCalc(false, true)`. Si el Flujo vuelve a cambiar de periodo, ese `porMes` es lo que evita que el Resumen se vaya con él.
 
-Los helpers de dibujo (`flCel`, `flEncabezado`, `flRotulo`) son locales a `renderFlujoEfectivo()` a propósito: no se invocan desde HTML, solo arman cadenas.
+Los helpers de dibujo de las próximas semanas (`flCel`, `flEncabezado`, `flRotulo`, `flNeto`) son locales a `fxProximasHtml()` a propósito: no se invocan desde HTML, solo arman cadenas.
 
-**La pantalla mira solo compra-venta de camote** (sep-2026): `renderFlujoEfectivo()` llama `flujoCalc(true)` y ese flag **filtra por cuenta, no por cargo**, reusando `cpCategoria(nombre)==='comercial'`. Una cuenta comercial entra con **todo** su saldo pendiente, cargos manuales incluidos; una financiera (Nacho, Asciende, Arca) no entra en absoluto. Un `programado` cuenta solo si su contraparte es comercial, así que los compromisos sueltos (IMSS, contabilidad) quedan fuera.
+**La pantalla mira solo compra-venta de camote** (sep-2026): `renderFlujoEfectivo()` llama `flujoCalc(true)` y ese flag **filtra por cuenta, no por cargo**, reusando `cpCategoria(nombre)==='comercial'`. Una cuenta comercial entra con **todo** su saldo pendiente, cargos manuales incluidos; una financiera (Nacho, Asciende, Arca) no entra en absoluto. Un `programado` con contraparte cuenta solo si esa cuenta es comercial; los sueltos siempre cuentan. **El panel Total no usa este filtro**: ahí entran todas las cuentas.
 
 Filtrar por cargo fue el primer intento y **estaba mal**: el ajuste manual de $20,660 a Agroproductos los Blancas —cuenta de camote— se quedaba fuera, y el Flujo mostraba $172,378 de vencido contra los $193,038 de la cuenta. Por cuenta los dos números cuadran siempre. De paso, el usuario puede forzar la clasificación desde el ⚙️ de la ficha, que es lo que `cpCategoria()` respeta antes que nada.
 

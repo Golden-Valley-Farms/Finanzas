@@ -470,15 +470,43 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   .gp-grid>.gp-fec{grid-column:2;grid-row:2}
   .gp-head{display:none}
 }
-/* Las dos cajas de captura del Flujo (saldo en bancos y gastos planeados) se
-   alinean al ancho de la tarjeta de la semana en curso. Para lograrlo cada una
-   va en una fila con las MISMAS proporciones que la fila de tarjetas —una de
-   2 1 330px y tres huecos de 1 1 175px—, asi que crecen y se envuelven igual
-   por construccion. Un porcentaje fijo no serviria: el ancho de esa tarjeta
-   depende de cuanto espacio libre reparta el flex. */
-.flujo-cap-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
-.flujo-cap-row>.flujo-cap{flex:2 1 330px;margin:0}
-.flujo-cap-row>.flujo-gap{flex:1 1 175px}
+/* Flujo, el nuevo resumen de Deudas (sep-2026): dos paneles —Total y la semana
+   en curso— con A favor / En contra lado a lado y el balance abajo. En
+   escritorio van uno junto al otro y estirados a la misma altura, asi las dos
+   barras de balance quedan alineadas; debajo de 1100px se apilan, y debajo de
+   560px tambien se apilan sus dos columnas. Las cajas de captura siguen el
+   mismo corte: lo que suma a favor a la izquierda, lo que sale a la derecha. */
+.fx-panels{display:grid;grid-template-columns:1fr;gap:12px}
+.fx-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+.fx-title{font-size:13px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.05em;padding:14px 16px 0}
+.fx-cols{display:grid;grid-template-columns:1fr 1fr;padding:12px 16px 14px;flex:1}
+.fx-col{min-width:0}
+.fx-col:first-child{padding-right:16px}
+.fx-col+.fx-col{padding-left:16px;border-left:1px solid var(--border)}
+.fx-tot{font-size:24px;font-weight:700;font-family:var(--mono);letter-spacing:-0.02em;line-height:1.2}
+.fx-tot-venc{font-size:11px;font-weight:700;color:var(--rojo);min-height:15px}
+.fx-grp{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 1px}
+.fx-line{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-bottom:0.5px solid var(--border);font-size:13px}
+.fx-link{cursor:pointer}
+.fx-link:hover .fx-nom{color:var(--jal)}
+.fx-nomw{min-width:0}
+.fx-nom{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.fx-venc{font-size:10px;font-weight:700;color:var(--rojo)}
+.fx-mon{font-family:var(--mono);font-weight:700;white-space:nowrap}
+.fx-bal{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid var(--border)}
+.fx-bal-lbl{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em}
+.fx-bal-val{font-size:26px;font-weight:800;font-family:var(--mono);letter-spacing:-0.02em}
+.fx-caps{display:grid;grid-template-columns:1fr;gap:0 12px;margin-top:18px}
+@media (min-width:1100px){
+  .fx-panels,.fx-caps{grid-template-columns:1fr 1fr}
+}
+@media (max-width:560px){
+  .fx-cols{grid-template-columns:1fr}
+  .fx-col:first-child{padding-right:0}
+  .fx-col+.fx-col{padding-left:0;border-left:none;border-top:1px solid var(--border);margin-top:14px;padding-top:12px}
+  .fx-tot{font-size:21px}
+  .fx-bal-val{font-size:22px}
+}
 /* Saldo en bancos: el renglon de dolares es USD x tipo de cambio = MXN. Los
    signos entre cajas dicen que hace cada una sin necesidad de rotulos. */
 .sb-usd{display:grid;grid-template-columns:1fr 12px 82px 12px 1fr;gap:6px;align-items:center}
@@ -10778,126 +10806,171 @@ function flujoCalc(soloCamote, porMes){
   per.forEach(function(x){ x.det.sort(function(a,b){ return (a.fecha||'')<(b.fecha||'')?-1:1; }); });
   return {per:per};
 }
-// La pantalla se pinta en tres piezas con contenedor propio —bancos, tarjetas y
-// la caja de gastos planeados— para que editar un renglón de la caja pueda
-// repintar SOLO las tarjetas. Repintar la sección entera le quitaría el foco al
+// La pantalla se pinta en piezas con contenedor propio —los dos paneles, las
+// próximas semanas y las cajas de captura— para que capturar en una caja pueda
+// repintar SOLO los paneles. Repintar la sección entera le quitaría el foco al
 // input que se está escribiendo, la misma trampa de dgSetKg() y recalcFramFin().
 function renderFlujoEfectivo(){
   var cont=document.getElementById('deuda-flujo-sec'); if(!cont) return;
-  // Encabezado: lo que nos deben, lo que debemos y la resta de los dos. Van SIN
-  // filtro de categoría —las mismas cifras que el Resumen— porque el Flujo se
-  // está convirtiendo en el nuevo resumen del módulo (sep-2026) y esos tres
-  // números tienen que cuadrar con los que el usuario ya conocía ahí. Las
-  // tarjetas de semana sí siguen filtradas a compra-venta de camote: son otra
-  // pregunta (qué dinero se mueve), no el balance de la casa.
-  var rdCob=rdTotales('cobrar'), rdPag=rdTotales('pagar');
-  var balance=rdCob.total-rdPag.total;
-  var h='<div class="deuda-kpis" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">'+
-    rdCard('Nos deben', rdCob.total, 'var(--green)')+
-    rdCard('Debemos', rdPag.total, 'var(--fram)')+
-    rdCard('Balance', balance, balance>=0?'var(--green)':'var(--rojo)')+
-    '</div>';
-
-  h+='<div id="flujo-cards"></div>';
-
-  // Saldo en bancos: captura manual, un renglón por moneda. El de dólares lleva
-  // su propio tipo de cambio y muestra el equivalente en pesos, pero las dos
-  // monedas siguen SIN sumarse en un total: `rdBancosTotal()` sigue leyendo solo
-  // el renglón MXN. Cada cifra guarda la fecha en que se capturó.
-  h+='<div class="step-label" style="margin-top:16px">Saldo en bancos</div>'+
-    '<div class="flujo-cap-row"><div class="card flujo-cap"><div id="flujo-bancos"></div></div>'+
-      '<span class="flujo-gap"></span><span class="flujo-gap"></span><span class="flujo-gap"></span></div>';
-
-  // Caja de gastos planeados, fija en la pantalla — mismo corte que "Cubetas por
-  // trabajador" en el registro de Frambuesa. A diferencia de aquélla, esta NO es
-  // estado temporal de un formulario: cada renglón se guarda en cuanto se
-  // captura o se edita, porque esta pantalla no tiene botón de "Guardar".
-  var hoyGp=new Date().toISOString().substring(0,10);
-  h+='<div class="step-label">Gastos planeados</div>'+
-    '<div class="flujo-cap-row"><div class="card flujo-cap">'+
-      '<div class="gp-grid gp-head" style="margin-bottom:6px;padding:0 2px">'+
-        '<span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Concepto</span>'+
-        '<span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;text-align:right">Cantidad</span>'+
-        '<span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;text-align:center">Fecha límite</span>'+
-        '<span></span>'+
-      '</div>'+
-      '<div id="flujo-plan-list"></div>'+
-      '<div class="gp-grid" style="margin-top:6px">'+
-        '<input type="text" id="gp-concepto" class="gp-inp gp-con" placeholder="IMSS, contabilidad, nómina..." autocomplete="off"'+
-          ' onkeydown="if(event.key===\'Enter\'){event.preventDefault();agregarGastoPlaneado();}">'+
-        '<div style="display:flex;align-items:center;gap:2px">'+
-          '<span style="font-family:var(--mono);font-weight:700;color:var(--fram)">$</span>'+
-          '<input type="text" id="gp-monto" class="gp-inp gp-num gp-mon" placeholder="0.00" style="flex:1"'+
-            ' onkeydown="if(event.key===\'Enter\'){event.preventDefault();agregarGastoPlaneado();}">'+
-        '</div>'+
-        '<input type="date" id="gp-fecha" class="gp-inp gp-fec" value="'+hoyGp+'">'+
-        '<button class="gp-btn gp-x" onclick="agregarGastoPlaneado()" title="Agregar"'+
-          ' style="border:none;background:var(--green);color:#fff;font-size:18px">+</button>'+
-      '</div>'+
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">'+
-        '<span style="font-size:12px;color:var(--text2);font-weight:500">Total planeado</span>'+
-        '<span id="gp-total" style="font-size:18px;font-weight:700;color:var(--fram);font-family:var(--mono)">$0</span>'+
-      '</div>'+
-    '</div>'+
-    '<span class="flujo-gap"></span><span class="flujo-gap"></span><span class="flujo-gap"></span></div>';
-
-  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 6px">'+
-    '<button onclick="abrirProgramado(\'cobro\')" style="padding:10px 16px;font-size:13px;font-weight:600;font-family:var(--font);border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer">+ Cobro esperado</button>'+
-    '</div>';
-
-  // El detalle renglón por renglón que iba aquí se quitó a pedido del usuario
-  // (sep-2026, "de mientras"). `flujoCalc` sigue llenando `per[i].det`, así que
-  // devolverlo es volver a pintarlo; nada más se borró.
-  cont.innerHTML=h;
+  // Las cajas siguen el corte de los paneles: lo que suma a favor a la izquierda
+  // (bancos y cobros esperados) y lo que sale a la derecha (gastos planeados).
+  cont.innerHTML='<div id="flujo-resumen"></div><div id="flujo-cards"></div>'+
+    '<div class="fx-caps"><div>'+
+      '<div class="step-label">Saldo en bancos</div>'+
+      '<div class="card"><div id="flujo-bancos"></div></div>'+
+      pgCajaHtml('cobro')+
+    '</div><div>'+
+      pgCajaHtml('pago')+
+    '</div></div>';
   renderFlujoTarjetas();
   renderSaldoBancos();
-  renderGastosPlaneados();
+  renderProgramadosCaja('cobro');
+  renderProgramadosCaja('pago');
 }
 
-// Solo las tarjetas. La llaman los renglones de gastos planeados al editarse,
-// para no repintar (y desenfocar) la caja de captura.
+// Paneles y próximas semanas. La llaman también las cajas de captura al
+// editarse, para no repintar (y desenfocar) la caja misma.
 function renderFlujoTarjetas(){
-  var cont=document.getElementById('flujo-cards'); if(!cont) return;
-  var fl=flujoCalc(true);
-  // Cuatro tarjetas: la semana en curso y las tres siguientes, rotuladas con su
-  // número de semana ISO. Cada una lleva entra, sale y el neto de ESA semana —
-  // no es saldo corrido, el dinero en bancos vive arriba.
-  // Lo vencido no tiene tarjeta propia: va DENTRO de la semana en curso en su
-  // propia columna, porque es dinero que se mueve ahora pero conviene poder
-  // mirarlo aparte de lo que apenas está por vencer.
-  var h='', lbls=flujoLblSemanas();
-  var semEnt=fl.per[0].ent+fl.per[1].ent, semSal=fl.per[0].sal+fl.per[1].sal;
-  function flCel(v, col, fuerte){
-    return '<span style="font-family:var(--mono);text-align:right;color:'+col+';font-weight:'+(fuerte?700:500)+
-      ';font-size:'+(fuerte?'15px':'13px')+(fuerte?'':';opacity:.7')+'">'+
+  var res=document.getElementById('flujo-resumen'), cards=document.getElementById('flujo-cards');
+  if(!res && !cards) return;
+  var fl=flujoCalc(true), lbls=flujoLblSemanas(), bancos=fxBancos();
+  if(res) res.innerHTML='<div class="fx-panels">'+fxPanelTotal(bancos)+fxPanelSemana(fl, bancos, lbls[1])+'</div>';
+  if(cards) cards.innerHTML=fxProximasHtml(fl, lbls);
+}
+
+// Bancos: lo capturado en la caja de abajo. Aquí SÍ entran los dólares,
+// convertidos con el tipo de cambio del renglón USD —el total a favor es "lo
+// actual en bancos"—. `rdBancosTotal()` y el Resumen siguen leyendo solo pesos.
+function fxBancos(){
+  var mxn=rdBancosTotal();
+  var u=saldoBancoDe('USD');
+  var usd=u?(parseFloat(u.saldo)||0):0, tc=u?(parseFloat(u.tipoCambio)||0):0;
+  var lineas=[{lbl:'MXN', monto:mxn}];
+  if(usd) lineas.push({lbl:'USD', monto:usd*tc});
+  return {lineas:lineas, total:mxn+usd*tc};
+}
+function fxLineasBancos(bancos){
+  return bancos.lineas.map(function(b){ return fxLinea(b.lbl, b.monto, 'var(--jal)'); });
+}
+
+// TOTAL: todo lo que hay a favor —bancos, lo que nos deben y los cobros
+// esperados— contra todo lo que debemos, cuenta por cuenta. SIN filtro de
+// categoría: los préstamos también se deben, y así cuadra con las carteras.
+// Un cobro esperado atado a una cuenta no suma aquí porque ya va dentro del
+// saldo de esa cuenta; solo los sueltos son dinero de más.
+function fxPanelTotal(bancos){
+  var cob=rdCuentasDe('cobrar'), pag=rdCuentasDe('pagar');
+  var ce=programadosDe('cobro').filter(function(p){ return !p.contraparte && (parseFloat(p.monto)||0)>0; });
+  var fav={lbl:'A favor', col:'var(--green)', total:bancos.total, venc:0, grupos:[]};
+  fav.grupos.push({lbl:'Bancos', lineas:fxLineasBancos(bancos)});
+  fav.grupos.push({lbl:'Clientes', lineas:cob.map(function(x){
+    fav.total+=x.saldo; fav.venc+=x.vencido;
+    return fxLinea(x.nombre, x.saldo, 'var(--green)', x.vencido, 'cobrar');
+  })});
+  fav.grupos.push({lbl:'Cobros esperados', lineas:ce.map(function(p){
+    var m=parseFloat(p.monto)||0; fav.total+=m;
+    return fxLinea(p.concepto||'(sin concepto)', m, 'var(--green)');
+  })});
+  // Lo que debemos se parte como en el Resumen: mercancía contra préstamos.
+  var con={lbl:'En contra', col:'var(--fram)', total:0, venc:0, grupos:[]};
+  var linCon=function(esComercial){
+    return pag.filter(function(x){ return (cpCategoria(x.nombre)==='comercial')===esComercial; }).map(function(x){
+      con.total+=x.saldo; con.venc+=x.vencido;
+      return fxLinea(x.nombre, x.saldo, 'var(--fram)', x.vencido, 'pagar');
+    });
+  };
+  con.grupos.push({lbl:'Proveedores', lineas:linCon(true)});
+  con.grupos.push({lbl:'Préstamos y gastos', lineas:linCon(false)});
+  return fxPanelHtml('Total', fav, con);
+}
+
+// SEMANA: lo mismo que movía la tarjeta de la semana en curso —lo vencido más lo
+// que vence esta semana, solo compra-venta de camote— con el dinero en bancos
+// sumado a favor. Sale renglón por renglón del `det` de flujoCalc, así que el
+// panel no puede contradecir al flujo.
+function fxPanelSemana(fl, bancos, titulo){
+  var fav={lbl:'A favor', col:'var(--green)', total:bancos.total, venc:0, grupos:[]};
+  var con={lbl:'En contra', col:'var(--fram)', total:0, venc:0, grupos:[]};
+  var ctas={cobro:{}, pago:{}}, orden={cobro:[], pago:[]}, sueltos={cobro:[], pago:[]};
+  [0,1].forEach(function(i){
+    fl.per[i].det.forEach(function(x){
+      var venc=(i===0)?x.monto:0;
+      var lado=(x.dir==='cobro')?fav:con;
+      lado.total+=x.monto; lado.venc+=venc;
+      // Un programado sin cuenta es un gasto planeado o un cobro esperado suelto;
+      // todo lo demás (cargos, o un abono programado a una cuenta) va por cuenta.
+      if(x.prog && !x.nombre){ sueltos[x.dir].push({txt:x.concepto, monto:x.monto, venc:venc}); return; }
+      var m=ctas[x.dir];
+      if(!m[x.nombre]){ m[x.nombre]={monto:0, venc:0}; orden[x.dir].push(x.nombre); }
+      m[x.nombre].monto+=x.monto; m[x.nombre].venc+=venc;
+    });
+  });
+  var linCtas=function(dir, col, tipo){
+    return orden[dir].sort(function(a,b){ return ctas[dir][b].monto-ctas[dir][a].monto; }).map(function(n){
+      return fxLinea(n, ctas[dir][n].monto, col, ctas[dir][n].venc, tipo);
+    });
+  };
+  var linSueltos=function(dir, col){
+    return sueltos[dir].map(function(s){ return fxLinea(s.txt, s.monto, col, s.venc); });
+  };
+  fav.grupos.push({lbl:'Bancos', lineas:fxLineasBancos(bancos)});
+  fav.grupos.push({lbl:'Clientes', lineas:linCtas('cobro','var(--green)','cobrar')});
+  fav.grupos.push({lbl:'Cobros esperados', lineas:linSueltos('cobro','var(--green)')});
+  con.grupos.push({lbl:'Gastos planeados', lineas:linSueltos('pago','var(--fram)')});
+  con.grupos.push({lbl:'Proveedores', lineas:linCtas('pago','var(--fram)','pagar')});
+  return fxPanelHtml(titulo, fav, con);
+}
+
+// Un renglón de panel: el nombre a la izquierda —con lo vencido debajo, si hay—
+// y la cifra a la derecha. Si es una cuenta, abre su estado de cuenta.
+function fxLinea(txt, monto, col, venc, tipoCuenta){
+  var click=tipoCuenta?' onclick="abrirDeudaContraparte(\''+tipoCuenta+'\',\''+fxAttr(txt)+'\')"':'';
+  return '<div class="fx-line'+(tipoCuenta?' fx-link':'')+'"'+click+'>'+
+    '<div class="fx-nomw"><div class="fx-nom">'+fxTxt(txt)+'</div>'+
+      ((venc||0)>0.5?'<div class="fx-venc">'+fmt(venc)+' vencido</div>':'')+'</div>'+
+    '<span class="fx-mon" style="color:'+col+'">'+fmt(monto)+'</span></div>';
+}
+function fxTxt(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+// Para meter un nombre en un onclick: comilla simple escapada para el JS y lo
+// demás como entidad para el atributo.
+function fxAttr(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+function fxColHtml(c){
+  var h='<div class="fx-col"><div class="kpi-lbl">'+c.lbl+'</div>'+
+    '<div class="fx-tot" style="color:'+c.col+'">'+fmt(c.total)+'</div>'+
+    // El renglón de vencido se reserva aunque vaya vacío, para que los dos
+    // totales del panel queden a la misma altura.
+    '<div class="fx-tot-venc">'+(c.venc>0.5?fmt(c.venc)+' vencido':'')+'</div>';
+  c.grupos.forEach(function(g){
+    if(g.lineas.length) h+='<div class="fx-grp">'+g.lbl+'</div>'+g.lineas.join('');
+  });
+  return h+'</div>';
+}
+function fxPanelHtml(titulo, fav, con){
+  var bal=fav.total-con.total;
+  return '<div class="fx-panel"><div class="fx-title">'+titulo+'</div>'+
+    '<div class="fx-cols">'+fxColHtml(fav)+fxColHtml(con)+'</div>'+
+    '<div class="fx-bal" style="background:'+(bal>=0?'var(--green-bg)':'var(--rojo-bg)')+'">'+
+      '<span class="fx-bal-lbl">Balance</span>'+
+      '<span class="fx-bal-val" style="color:'+(bal>=0?'var(--green)':'var(--rojo)')+'">'+(bal<0?'−':'')+fmt(Math.abs(bal))+'</span>'+
+    '</div></div>';
+}
+
+// Las tres semanas siguientes: entra, sale y el neto de ESA semana. No es saldo
+// corrido: el dinero en bancos vive en los paneles.
+function fxProximasHtml(fl, lbls){
+  function flCel(v, col){
+    return '<span style="font-family:var(--mono);text-align:right;color:'+col+';font-weight:700;font-size:15px">'+
       (v<0?'−':'')+fmt(Math.abs(v))+'</span>';
   }
+  function flRotulo(t){ return '<span style="font-size:12px;color:var(--text3)">'+t+'</span>'; }
   function flEncabezado(t){
     return '<span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;text-align:right">'+t+'</span>';
   }
-  function flRotulo(t){ return '<span style="font-size:12px;color:var(--text3)">'+t+'</span>'; }
-
   function flNeto(v){
-    var col=(v>=0?'var(--green)':'var(--rojo)');
-    return '<span style="font-family:var(--mono);text-align:right;font-weight:700;font-size:19px;color:'+col+'">'+
+    return '<span style="font-family:var(--mono);text-align:right;font-weight:700;font-size:19px;color:'+(v>=0?'var(--green)':'var(--rojo)')+'">'+
       (v<0?'−':'')+fmt(Math.abs(v))+'</span>';
   }
-  var netoSem=semEnt-semSal;
-  h+='<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px">'+
-    '<div class="kpi-card" style="flex:2 1 330px;margin:0">'+
-      '<div class="kpi-accent" style="background:'+(netoSem>=0?'var(--green)':'var(--rojo)')+'"></div>'+
-      '<div class="kpi-lbl">'+lbls[1]+'</div>'+
-      '<div style="display:grid;grid-template-columns:auto repeat(3,1fr);gap:5px 12px;align-items:baseline;margin-top:6px">'+
-        '<span></span>'+flEncabezado('Vencido')+flEncabezado('Por vencer')+flEncabezado('Total')+
-        flRotulo('Entra')+flCel(fl.per[0].ent,'var(--green)')+flCel(fl.per[1].ent,'var(--green)')+flCel(semEnt,'var(--green)',1)+
-        flRotulo('Sale')+flCel(fl.per[0].sal,'var(--fram)')+flCel(fl.per[1].sal,'var(--fram)')+flCel(semSal,'var(--fram)',1)+
-        '<span style="grid-column:1/-1;border-top:0.5px solid var(--border);margin-top:2px"></span>'+
-        flRotulo('Resultado')+
-          flCel(fl.per[0].ent-fl.per[0].sal, (fl.per[0].ent-fl.per[0].sal)>=0?'var(--green)':'var(--rojo)')+
-          flCel(fl.per[1].ent-fl.per[1].sal, (fl.per[1].ent-fl.per[1].sal)>=0?'var(--green)':'var(--rojo)')+
-          flNeto(netoSem)+
-      '</div></div>';
-
+  var h='<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px">';
   for(var s=2;s<=FLUJO_SEMANAS;s++){
     var ps=fl.per[s], netoS=ps.ent-ps.sal;
     h+='<div class="kpi-card" style="flex:1 1 175px;margin:0">'+
@@ -10905,14 +10978,13 @@ function renderFlujoTarjetas(){
         '<div class="kpi-lbl">'+lbls[s]+'</div>'+
         '<div style="display:grid;grid-template-columns:auto 1fr;gap:5px 12px;align-items:baseline;margin-top:6px">'+
           '<span></span>'+flEncabezado('Total')+
-          flRotulo('Entra')+flCel(ps.ent,'var(--green)',1)+
-          flRotulo('Sale')+flCel(ps.sal,'var(--fram)',1)+
+          flRotulo('Entra')+flCel(ps.ent,'var(--green)')+
+          flRotulo('Sale')+flCel(ps.sal,'var(--fram)')+
           '<span style="grid-column:1/-1;border-top:0.5px solid var(--border);margin-top:2px"></span>'+
           flRotulo('Resultado')+flNeto(netoS)+
         '</div></div>';
   }
-  h+='</div>';
-  cont.innerHTML=h;
+  return h+'</div>';
 }
 
 // ── Saldo en bancos (caja fija del Flujo) ───────────────────────
@@ -11012,6 +11084,7 @@ function sbGuardaBanco(b, moneda){
   saveBancosSaldos(); sbSaveBancoSaldo(b);
   var s=document.getElementById('sb-fecha-'+moneda);
   if(s) s.textContent='actualizado '+fmtFechaCorta(b.fechaCorte);
+  renderFlujoTarjetas(); // los dos paneles suman bancos
 }
 function setSaldoBanco(moneda, el){
   var b=sbTocaBanco(moneda);
@@ -11029,66 +11102,103 @@ function setTipoCambioBanco(el){
   sbPintaEquivUsd();
 }
 
-// ── Gastos planeados (caja fija del Flujo) ──────────────────────
-// Son `programados` de dirección 'pago'. NO generan deuda, gasto ni movimiento
-// contable: el usuario los pone y los quita para ver cómo le queda la semana.
-// Cuando el gasto ocurre de verdad se captura en el módulo de Gastos.
-function gastosPlaneados(){
+// ── Gastos planeados y cobros esperados (cajas fijas del Flujo) ─────
+// Las dos cajas son la misma rejilla con distinto color: `programados` de
+// dirección 'pago' o 'cobro'. NO generan deuda, gasto ni movimiento contable:
+// el usuario los pone y los quita para ver cómo le queda la semana. Cuando el
+// gasto o el cobro ocurre de verdad se captura en su módulo.
+var PG_CAJAS={
+  pago:{pref:'gp', titulo:'Gastos planeados', col:'var(--fram)', ph:'IMSS, contabilidad, nómina...', fecha:'Fecha límite', tot:'Total planeado'},
+  cobro:{pref:'ce', titulo:'Cobros esperados', col:'var(--green)', ph:'Apoyo de gobierno, devolución...', fecha:'Fecha', tot:'Total esperado'}
+};
+function programadosDe(dir){
   return programados.filter(function(p){
-    return p.direccion==='pago' && !p.cumplido;
+    return p.direccion===dir && !p.cumplido;
   }).sort(function(a,b){ return (a.fecha||'')<(b.fecha||'')?-1:1; });
 }
-function renderGastosPlaneados(){
-  var cont=document.getElementById('flujo-plan-list'); if(!cont) return;
-  var lista=gastosPlaneados(), h='', tot=0;
-  lista.forEach(function(p){
+function pgCajaHtml(dir){
+  var c=PG_CAJAS[dir];
+  var enc='font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em';
+  var enter=' onkeydown="if(event.key===\'Enter\'){event.preventDefault();agregarProgramado(\''+dir+'\');}"';
+  return '<div class="step-label">'+c.titulo+'</div>'+
+    '<div class="card">'+
+      '<div class="gp-grid gp-head" style="margin-bottom:6px;padding:0 2px">'+
+        '<span style="'+enc+'">Concepto</span>'+
+        '<span style="'+enc+';text-align:right">Cantidad</span>'+
+        '<span style="'+enc+';text-align:center">'+c.fecha+'</span>'+
+        '<span></span>'+
+      '</div>'+
+      '<div id="'+c.pref+'-list"></div>'+
+      '<div class="gp-grid" style="margin-top:6px">'+
+        '<input type="text" id="'+c.pref+'-concepto" class="gp-inp gp-con" placeholder="'+c.ph+'" autocomplete="off"'+enter+'>'+
+        '<div style="display:flex;align-items:center;gap:2px">'+
+          '<span style="font-family:var(--mono);font-weight:700;color:'+c.col+'">$</span>'+
+          '<input type="text" inputmode="decimal" id="'+c.pref+'-monto" class="gp-inp gp-num gp-mon" placeholder="0.00" style="flex:1;color:'+c.col+'"'+enter+'>'+
+        '</div>'+
+        '<input type="date" id="'+c.pref+'-fecha" class="gp-inp gp-fec" value="'+flujoHoyStr()+'">'+
+        '<button class="gp-btn gp-x" onclick="agregarProgramado(\''+dir+'\')" title="Agregar"'+
+          ' style="border:none;background:var(--green);color:#fff;font-size:18px">+</button>'+
+      '</div>'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">'+
+        '<span style="font-size:12px;color:var(--text2);font-weight:500">'+c.tot+'</span>'+
+        '<span id="'+c.pref+'-total" style="font-size:18px;font-weight:700;color:'+c.col+';font-family:var(--mono)">$0</span>'+
+      '</div>'+
+    '</div>';
+}
+function renderProgramadosCaja(dir){
+  var c=PG_CAJAS[dir];
+  var cont=document.getElementById(c.pref+'-list'); if(!cont) return;
+  var h='', tot=0;
+  programadosDe(dir).forEach(function(p){
     tot+=parseFloat(p.monto)||0;
     var id=p.id;
     // Los renglones viejos que se ataron a una cuenta (con el modal que había
     // antes) siguen aquí para poder quitarlos; se marcan para que no se lean
-    // como un gasto suelto más.
+    // como uno suelto más.
     var chip=p.contraparte?'<span style="font-size:9px;color:var(--jal);margin-left:6px">'+p.contraparte+'</span>':'';
     var montoFormato=parseFloat(p.monto)?sbFmtNum(parseFloat(p.monto),2,2):'';
     h+='<div class="gp-grid" style="margin-bottom:6px">'+
       '<span class="gp-con" style="position:relative;display:block">'+
         '<input type="text" class="gp-inp" value="'+String(p.concepto||'').replace(/"/g,'&quot;')+'"'+
-          ' onchange="editGastoPlaneado('+id+',\'concepto\',this.value)">'+chip+
+          ' onchange="editProgramado('+id+',\'concepto\',this.value,\''+dir+'\')">'+chip+
       '</span>'+
       '<div style="display:flex;align-items:center;gap:2px">'+
-        '<span style="font-family:var(--mono);font-weight:700;color:var(--fram)">$</span>'+
-        '<input type="text" class="gp-inp gp-num gp-mon" value="'+montoFormato+'" placeholder="0.00"'+
-          ' style="flex:1" onchange="editGastoPlaneado('+id+',\'monto\',this.value,this)">'+
+        '<span style="font-family:var(--mono);font-weight:700;color:'+c.col+'">$</span>'+
+        '<input type="text" inputmode="decimal" class="gp-inp gp-num gp-mon" value="'+montoFormato+'" placeholder="0.00"'+
+          ' style="flex:1;color:'+c.col+'" onchange="editProgramado('+id+',\'monto\',this.value,\''+dir+'\')">'+
       '</div>'+
       '<input type="date" class="gp-inp gp-fec" value="'+(p.fecha||'')+'"'+
-        ' onchange="editGastoPlaneado('+id+',\'fecha\',this.value)">'+
-      '<button class="gp-btn gp-x" onclick="removeGastoPlaneado('+id+')" title="Eliminar">×</button>'+
+        ' onchange="editProgramado('+id+',\'fecha\',this.value,\''+dir+'\')">'+
+      '<button class="gp-btn gp-x" onclick="removeProgramado('+id+',\''+dir+'\')" title="Eliminar">×</button>'+
       '</div>';
   });
   cont.innerHTML=h;
-  var t=document.getElementById('gp-total'); if(t) t.textContent=fmt(tot);
+  var t=document.getElementById(c.pref+'-total'); if(t) t.textContent=fmt(tot);
 }
-function agregarGastoPlaneado(){
-  var cInp=document.getElementById('gp-concepto'),
-      mInp=document.getElementById('gp-monto'),
-      fInp=document.getElementById('gp-fecha');
+function agregarProgramado(dir){
+  var c=PG_CAJAS[dir];
+  var cInp=document.getElementById(c.pref+'-concepto'),
+      mInp=document.getElementById(c.pref+'-monto'),
+      fInp=document.getElementById(c.pref+'-fecha');
   if(!cInp||!mInp||!fInp) return;
   var concepto=(cInp.value||'').trim(), monto=sbNumIn(mInp.value);
   if(!concepto){ showToast('Escribe un concepto'); cInp.focus(); return; }
   if(monto<=0){ showToast('Escribe una cantidad'); mInp.focus(); return; }
-  var p={id:Date.now(), direccion:'pago', fecha:fInp.value||'', concepto:concepto,
+  var p={id:Date.now(), direccion:dir, fecha:fInp.value||'', concepto:concepto,
     monto:monto, contraparte:'', cumplido:false};
   programados.push(p); saveProgramados(); sbSaveProgramado(p);
   cInp.value=''; mInp.value='';
-  renderGastosPlaneados(); renderFlujoTarjetas();
+  renderProgramadosCaja(dir); renderFlujoTarjetas();
   cInp.focus();
 }
 // Muta y guarda un solo campo. Va en onchange (no oninput) para no escribir a
 // Supabase en cada tecla. `onchange` ya dispara en el blur del campo —el
 // usuario "da click en otro lado" antes de que esto corra—, así que repintar
-// aquí (y no solo las tarjetas) no le quita el foco a nada: es lo que reordena
+// aquí (y no solo los paneles) no le quita el foco a nada: es lo que reordena
 // la lista por fecha en cuanto se sale del campo editado, sea concepto, monto
-// o fecha, en vez de esperar a la siguiente fila nueva.
-function editGastoPlaneado(id, campo, valor, el){
+// o fecha, en vez de esperar a la siguiente fila nueva. Solo se repinta la
+// caja editada: repintar la otra podría borrar el campo al que se acaba de ir.
+function editProgramado(id, campo, valor, dir){
   var p=null;
   for(var i=0;i<programados.length;i++){ if(String(programados[i].id)===String(id)){ p=programados[i]; break; } }
   if(!p) return;
@@ -11096,12 +11206,12 @@ function editGastoPlaneado(id, campo, valor, el){
   else if(campo==='concepto') p.concepto=(valor||'').trim();
   else if(campo==='fecha') p.fecha=valor||'';
   saveProgramados(); sbSaveProgramado(p);
-  renderGastosPlaneados(); renderFlujoTarjetas();
+  renderProgramadosCaja(dir); renderFlujoTarjetas();
 }
-function removeGastoPlaneado(id){
+function removeProgramado(id, dir){
   programados=programados.filter(function(p){ return String(p.id)!==String(id); });
   saveProgramados(); sbDeleteProgramado(id);
-  renderGastosPlaneados(); renderFlujoTarjetas();
+  renderProgramadosCaja(dir); renderFlujoTarjetas();
 }
 
 // ── Agenda de programados ───────────────────────────────────────
