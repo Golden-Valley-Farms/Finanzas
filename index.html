@@ -2684,6 +2684,7 @@ async function cargarDesdeSB(){
         gastoCosechaIds:e.gasto_cosecha_ids||null,
         esDespachoAlm:e.es_despacho_alm||false,
         loteIds:e.lote_ids||null,
+        folioCompra:e.folio_compra||'',
         total:parseFloat(e.total||0), partidas:e.partidas||[]};
     });
     localStorage.setItem('cc_envios', JSON.stringify(envios));
@@ -2698,6 +2699,7 @@ async function cargarDesdeSB(){
         fleteCompra:parseFloat(l.flete_compra||0), gastoIds:l.gasto_ids||[],
         compraId:l.compra_id||null, kgPagar:parseFloat(l.kg_pagar||0),
         descPct:parseFloat(l.desc_pct||0), origenEnvioId:l.origen_envio_id||null,
+        folioCompra:l.folio_compra||'',
         despachos:l.despachos||[], cerrado:l.cerrado||false};
     });
     saveAlmLotes();
@@ -2911,7 +2913,8 @@ async function sbSaveEnvio(e){
     gastos_cosecha_totales:e.gastosCosechaTotales||null,
     gasto_cosecha_ids:e.gastoCosechaIds||null,
     es_despacho_alm:e.esDespachoAlm||false,
-    lote_ids:e.loteIds||null
+    lote_ids:e.loteIds||null,
+    folio_compra:e.folioCompra||''
   });
 }
 
@@ -9964,6 +9967,38 @@ function adoptarImportadasDeEnvio(nuevas){
   return Promise.all(pend);
 }
 
+// Folio de compra (sep-2026): Compra/<ID del proveedor>/<año>/<consecutivo>.
+// Es propio de la compra y distinto del Folio Cliente de la venta: dos compras
+// vendidas juntas comparten folio de venta pero cada una lleva el suyo. Se asigna
+// al guardar y vive en el origen (envio.folioCompra / lote.folioCompra), nunca
+// se recalcula: renumerar folios ya entregados al proveedor seria peor que un hueco.
+// Sin ID en la ficha se usa el nombre, para no dejar la compra sin folio.
+function folioCompraPrefijo(proveedor, fechaISO){
+  var c=getContraparte(proveedor);
+  return 'Compra/'+((c&&c.clave)?c.clave:proveedor)+'/'+String(fechaISO||'').substring(0,4)+'/';
+}
+// El consecutivo sale de TODO lo que ya trae folio de compra —cargos, envios y
+// lotes—, asi un envio cancelado conserva el suyo apartado igual que su Folio Negocio.
+function siguienteFolioCompra(proveedor, fechaISO){
+  var pref=folioCompraPrefijo(proveedor, fechaISO), max=0;
+  var ver=function(f){
+    f=String(f||'');
+    if(f.indexOf(pref)!==0) return;
+    var n=parseInt(f.substring(pref.length),10);
+    if(n>max) max=n;
+  };
+  deudas.forEach(function(d){ ver(d.folioExterno); });
+  envios.forEach(function(e){ ver(e.folioCompra); });
+  almLotes.forEach(function(l){ ver(l.folioCompra); });
+  return pref+String(max+1).padStart(3,'0');
+}
+// Al reeditar se conserva el folio mientras siga siendo del mismo proveedor y del
+// mismo año; si cambia cualquiera de los dos, toca el siguiente de su nueva serie.
+function folioCompraVigente(folioPrevio, proveedor, fechaISO){
+  if(folioPrevio && String(folioPrevio).indexOf(folioCompraPrefijo(proveedor, fechaISO))===0) return folioPrevio;
+  return siguienteFolioCompra(proveedor, fechaISO);
+}
+
 function sincronizarDeudasEnvio(e){
   if(!e || !e.id) return;
   var borrado=borrarDeudasDeEnvio(e.id);
@@ -9981,8 +10016,9 @@ function sincronizarDeudasEnvio(e){
       });
       // Los fletes de compra NO se le deben al proveedor: se pagan aparte (regla del negocio).
       var totP=itP.reduce(function(a,i){return a+i.monto;},0);
+      // Al proveedor le toca su folio de compra, nunca el Folio Cliente de la venta.
       if(totP>0) nuevas.push({id:e.id*10+1, tipo:'pagar', contraparte:e.proveedor, fecha:e.fecha, ciclo:e.ciclo||'',
-        origen:'comercializadora', folioExterno:folioExt, refId:e.id, refKind:'com_pagar', items:itP, monto:r2(totP), desc:''});
+        origen:'comercializadora', folioExterno:(e.folioCompra||'').trim(), refId:e.id, refKind:'com_pagar', items:itP, monto:r2(totP), desc:''});
     }
     if(e.cliente){
       var itC=[];
@@ -13275,9 +13311,11 @@ function guardarOperacionComer(){
   var totalVenta=comerPartidasTemp.reduce(function(a,p){return a+parseFloat(p.kgRecibidos||0)*parseFloat(p.precioVenta||0);},0)+fleteVenta;
   var cicloV=(document.getElementById('cf-ciclo')&&document.getElementById('cf-ciclo').value)||cicloFromFecha(fecha);
   var esEdicion = (editandoComerId!=null);
+  var previoC = esEdicion ? envios.find(function(x){return x.id===editandoComerId;}) : null;
   var envioObj={
     id: esEdicion?editandoComerId:Date.now(), num:num, folio:(document.getElementById('cf-folio').value||'').trim(), fecha:fecha, fechaLbl:fechaDisplay,
     loc:'com', ciclo:cicloV, cliente:cliente, proveedor:proveedor,
+    folioCompra:folioCompraVigente(previoC&&previoC.folioCompra, proveedor, fecha),
     flete:fleteVenta, fleteCompra:fleteCompra, factura:(document.getElementById('cf-factura').value||'').trim(), esComer:true, total:totalVenta,
     partidas:comerPartidasTemp.map(function(p){
       var kgPagar=p.kgRecibidos&&p.descPct!==''?p.kgRecibidos*(1-parseFloat(p.descPct)/100):parseFloat(p.kgRecibidos||0);
@@ -14924,7 +14962,7 @@ function sincronizarCompra(compraId, soloLimpiar, idsHuerfanos){
       // alcanza para limpiarla completa aunque se borren en cualquier orden.
       lotes.forEach(function(l){ l.gastoIds=nuevos.slice(); });
       var deudaP={id:compraId*10+1, tipo:'pagar', contraparte:proveedor, fecha:base.fecha,
-        ciclo:base.ciclo||'', origen:'comercializadora', folioExterno:'', refId:compraId,
+        ciclo:base.ciclo||'', origen:'comercializadora', folioExterno:base.folioCompra||'', refId:compraId,
         refKind:'alm_compra_pagar',
         items:lotes.map(function(l){return {concepto:'Compra '+(l.variedad||''), monto:almMontoPartida(l)};}),
         monto:montoMercancia, desc:''};
@@ -14949,6 +14987,7 @@ async function sbSaveAlmLote(l){
     flete_compra:l.fleteCompra||0, gasto_ids:l.gastoIds||[],
     compra_id:l.compraId||null, kg_pagar:l.kgPagar||0, desc_pct:l.descPct||0,
     origen_envio_id:l.origenEnvioId||null,
+    folio_compra:l.folioCompra||'',
     despachos:l.despachos||[], cerrado:l.cerrado||false
   });
 }
@@ -15362,6 +15401,10 @@ function guardarCompraAlm(fechaISO,fechaLbl,cicloV,notas){
   var sinPrecio=validas.filter(function(p){return !((parseFloat(p.precioCompra)||0)>0);});
   if(sinPrecio.length){showToast('Falta el precio de compra de «'+sinPrecio[0].variedad+'»');return;}
   var compraId=editandoCompraId||Date.now();
+  // Se lee antes de soltar las variedades quitadas: si se reemplazaran todas, el
+  // folio se iria con ellas y la compra estrenaria uno nuevo.
+  var folioPrevio=(almLotes.filter(function(l){return l.loc==='com' && loteCompraId(l)===compraId && l.folioCompra;})[0]||{}).folioCompra;
+  var folioCompra=folioCompraVigente(folioPrevio, proveedor, fechaISO);
   var conservados=validas.map(function(p){return p.loteId;});
   // Una variedad que se quita del formulario borra su lote. Si ya tiene despachos
   // la mercancia salio del almacen: borrarla descuadraria el stock y el envio.
@@ -15389,7 +15432,7 @@ function guardarCompraAlm(fechaISO,fechaLbl,cicloV,notas){
     lote.kgPagar=almKgPagarPartida(p);
     lote.precioCompra=parseFloat(p.precioCompra)||0;
     lote.precioEst=parseFloat(p.precioEst)||0;
-    lote.proveedor=proveedor;
+    lote.proveedor=proveedor; lote.folioCompra=folioCompra;
     // El flete es de la compra completa: se prorratea por kg entre sus lotes para
     // que sumarlos de vuelta de el total y ninguno lo cuente entero.
     lote.fleteCompra=kgCompra?Math.round(fleteTotal*(kgR/kgCompra)*100)/100:0;

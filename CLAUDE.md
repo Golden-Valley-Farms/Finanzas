@@ -202,6 +202,18 @@ Ojo (ago-2026): hasta este cambio, la rama `com` de `sincronizarDeudasEnvio()` e
 
 **No hubo migración masiva**: había 27 envíos vivos con cargo importado del mismo folio y solo uno estaba duplicado. Cada uno se limpia solo la próxima vez que se guarde ese envío.
 
+### Folio de compra (sep-2026)
+
+**Las cuentas por pagar de compras llevan su propio folio, `Compra/<ID del proveedor>/<año>/<consecutivo>`** (ej. `Compra/Pollo/2026/001`), no el Folio Cliente de la venta. Dos compras vendidas juntas comparten folio de venta, pero cada una tiene su folio de compra y su Folio Negocio. De paso, el proveedor ya no ve el folio del cliente en sus documentos.
+
+- **Vive en el origen, no en la deuda**: `envio.folioCompra` (columna `envios.folio_compra`) para operaciones de comercializadora y `lote.folioCompra` (`alm_lotes.folio_compra`, el mismo en todos los lotes de la compra) para compras de almacén. `sincronizarDeudasEnvio()` y `sincronizarCompra()` lo copian a `folioExterno` del cargo. Como las deudas se borran y recrean en cada guardado, guardarlo solo en la deuda lo perdería al cancelar y reactivar.
+- **Se asigna al guardar** (`guardarOperacionComer()` / `guardarCompraAlm()`) con `folioCompraVigente()`: al reeditar conserva el folio mientras no cambie el proveedor ni el año; si cambia alguno, toma el siguiente de la nueva serie. `sincronizarDeudasEnvio()` **no** asigna: los demás caminos (reactivar, mandar a almacén) guardan el envío antes de sincronizar y una segunda escritura competiría con la primera.
+- **El consecutivo** (`siguienteFolioCompra()`) es por proveedor y año, y sale de todo lo que ya trae folio de compra: cargos, envíos y lotes. Un envío cancelado conserva el suyo, igual que su Folio Negocio.
+- El ID es la `clave` de la ficha; **sin clave se usa el nombre** para no dejar la compra sin folio.
+- Los cargos manuales y los importados no se numeran solos.
+
+**Migración de sep-2026:** se numeraron a mano las compras de Pollo (001 = compra de almacén del 10 ago, 002-005 = `Comer/2026/009`-`012`) y de AgrLB. Las de AgrLB del 13 mar, 26 mar y 4 may existían dos veces: como envíos (`Comer/2026/002`-`004`, con proveedor escrito «Los Blancas») y como cargos importados del Excel, **uno por variedad**. Los envíos se renombraron a «Agroproductos los Blancas» y ahora generan su cargo `com_pagar` (001-003); los cinco importados se borraron. Los montos cuadraron al centavo. Las etiquetas de variedad del Excel del 4 may venían cruzadas; mandan las del envío. `Comer/2026/005` y `007` quedaron como 004 y 005. Los envíos viejos de comercializadora sin cuenta por pagar («Los Blancas» 2025, Clemente Duarte, Claudia Guillen) se dejaron **sin folio**: lo reciben la próxima vez que se guarden.
+
 ### El alta espera al borrado (carrera de ids)
 
 **Las deudas derivadas reusan el id de lo que reemplazan**: las de un envío son `e.id*10+1` (pagar) y `e.id*10+2` (cobrar), y la de una compra de almacén `compraId*10+1`. `sincronizarDeudasEnvio()` y `sincronizarCompra()` **borran y recrean**, así que el `DELETE` y el `UPSERT` van contra la **misma fila**.
@@ -787,6 +799,8 @@ Tablas: `gastos`, `ingresos`, `categorias_ingresos`, `envios`, `alm_lotes`, `fra
 `bancos_saldos` y `programados` se crearon en sep-2026 con el rediseño de Deudas, ya con RLS y la misma política `for all to authenticated` de las otras.
 
 `alm_lotes.origen_envio_id` se agregó en sep-2026 para «Mandar a almacén» (ver ese acoplamiento). Es el envío del que salió el lote; vacío en los lotes de compra normales.
+
+`envios.folio_compra` y `alm_lotes.folio_compra` (text, default `''`) se agregaron en sep-2026 para el folio de compra (ver "Folio de compra").
 
 Si una tabla regresa vacía teniendo datos, casi siempre es RLS — el código ya avisa esto por consola para `fram_registros`.
 
