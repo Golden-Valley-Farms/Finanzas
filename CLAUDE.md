@@ -260,7 +260,7 @@ La tabla reusa la clase `.fintab` / `.fintab-wrap.auto` que ya usa Finanzas (Rep
 
 **Sep-2026: la cartera se limpió.** La tabla quedó en cuatro columnas —**ID · Cliente · Saldo · Vencido**— y arriba tres KPIs (Total · Vencido · Vence esta semana). Se quitaron, a pedido del usuario, la barra de antigüedad de la cartera (`#deuda-aging` ya no existe), la tarjeta "Cargo más viejo", las columnas Antigüedad / Cargo más viejo / Plazo / Últ. abono, y la mini-barra de cada tarjeta en móvil: le robaban atención al saldo y al vencido, que son los dos números con los que decide a quién marcarle.
 
-**Los cálculos de antigüedad siguen vivos** (`agingCuenta`, `agingCartera`, `agingBucket`, `AGING_TRAMOS`, `deudaVence`, `deudaDiasVencido`): alimentan el vencido, el Resumen y el Flujo de efectivo. Lo único que se dejó de pintar es la barra. `agingBarHtml()` y `agingMiniHtml()` quedaron sin uso; se conservan por si vuelve a pedirse.
+**Los cálculos de antigüedad siguen vivos** (`agingCuenta`, `agingCartera`, `agingBucket`, `AGING_TRAMOS`, `deudaVence`, `deudaDiasVencido`): alimentan el vencido de la cartera y el Flujo de efectivo. Lo único que se dejó de pintar es la barra. `agingBarHtml()` y `agingMiniHtml()` quedaron sin uso; se conservan por si vuelve a pedirse.
 
 La barra de controles lleva además un botón **+ Cargo** que abre el formulario de cargo manual ya con la dirección de la pestaña puesta (`nuevoCargoManual()`).
 
@@ -295,7 +295,7 @@ Verificado contra B&M: $150,000 liquida los cuatro cargos más viejos y deja $5,
 
 Fase 4 del rediseño de cobranza (ago-2026). `setDeudaTab()` despacha todas las vistas de `#sc-deudas` ocultando y mostrando secciones mutuamente excluyentes con un solo recorrido de un mapa `{id: visible}`.
 
-**Sep-2026: "Clientes" dejó de ser pestaña.** Se llega por un botón dentro de Resumen y regresa ahí con un `‹ Resumen`. Ver "Estructura de pestañas".
+**Sep-2026: "Clientes" dejó de ser pestaña.** Se llega por un botón dentro de Flujo y regresa ahí con un `‹ Flujo`. Ver "Estructura de pestañas".
 
 `renderClientesCatalogo()` reemplaza a `renderClientesHistorial()` (borrada). Cada fila pinta **las dos direcciones a la vez** —"Nos debe" / "Le debemos", vía `calcSaldoCuenta('cobrar',…)` y `calcSaldoCuenta('pagar',…)`— con botones que, si hay saldo, llevan directo a `abrirDeudaContraparte()` de esa dirección; sin saldo el botón queda deshabilitado. Es lo que evita el "cambiar de pestaña para ver los dos lados" que tenía el diseño viejo.
 
@@ -303,13 +303,15 @@ Alta de cliente: `abrirNuevoClienteCatalogo()` / `confirmarNuevoClienteCatalogo(
 
 `initDeudaRegistrarForm()` se simplificó: como Clientes ya no vive dentro de Registrar, ya no hay sub-pestañas ahí (`setDrSubTab`/`setDrClientesTab`/`drSubTabSel`/`drClientesTabSel` **se borraron**) — el formulario de Deuda se muestra directo.
 
-### Estructura de pestañas (sep-2026)
+### Estructura de pestañas (sep-2026; Resumen eliminada el 23-sep-2026)
 
-**Resumen · Cobrar · Pagar · Flujo.** El módulo abre en Resumen: mostrando información, no un formulario.
+**Flujo · Cobrar · Pagar.** El módulo abre en **Flujo** — primera pestaña y default de `deudaTabSel`—, mostrando información, no un formulario.
 
-"Registrar" y "Clientes" siguen existiendo como vistas (`deuda-registrar-sec`, `deuda-clientes-sec`) pero ya no ocupan pestaña — se llega por el botón **+ Cargo** de la cartera y por el de **Clientes** en Resumen, y cada una lleva un `‹ Resumen` para volver. `deudaTabSel` arranca en `'resumen'` y `goSc('deudas')` llama `setDeudaTab(deudaTabSel)`, no `renderDeudas()` directo.
+**La pestaña Resumen se eliminó.** No fue una migración de datos: era una pantalla derivada (`renderResumenDeudas()`, `rdCard()`, `rdLista()`, todas borradas), así que no había nada que perder. Su contenido —Nos deben / Debemos / Balance, el desglose por cuenta— quedó cubierto por el panel **Total** de Flujo (ver "Flujo como nuevo resumen"), que es más completo: además suma bancos y cobros esperados del lado a favor. Lo único que no migró fue la tarjeta "Cuánto del cobro es realmente nuestro" (cobrar − proveedores comerciales) y el "al cierre de este mes" proyectado — si se vuelven a pedir, `rdTotales()`/`rdCuentasDe()`/`cpCategoria()` (que siguen vivas) alcanzan para rearmarlos.
 
-Ojo: `deudaTabSel` puede valer `'resumen'` o `'flujo'`, que **no son direcciones de cuenta**. `renderDeudas()` sale temprano si no es cobrar/pagar, y `abrirEditarContraparte()` satura su valor de retorno — no romper esos guards.
+"Registrar" y "Clientes" siguen existiendo como vistas (`deuda-registrar-sec`, `deuda-clientes-sec`) pero no ocupan pestaña — se llega por el botón **+ Cargo** de la cartera y por el de **Clientes** en Flujo, y cada una lleva un `‹ Flujo` para volver. `deudaTabSel` arranca en `'flujo'` y `goSc('deudas')` llama `setDeudaTab(deudaTabSel)`, no `renderDeudas()` directo.
+
+Ojo: `deudaTabSel` puede valer `'flujo'`, `'registrar'` o `'clientes'`, que **no son direcciones de cuenta**. `renderDeudas()` sale temprano si no es cobrar/pagar, y `abrirEditarContraparte()` satura su valor de retorno — no romper esos guards.
 
 ### Documentos compartibles (sep-2026)
 
@@ -334,13 +336,13 @@ Siguen valiendo las dos reglas de antes: **`<canvas>`, nunca `html-to-image`** (
 
 El historial filtra por **año calendario** (los folios son `B&M/2026/028`), no por ciclo agrícola; su resumen del pie es **global**, para que siempre cuadre con el saldo que muestra la cuenta.
 
-### Resumen: posición del negocio (sep-2026)
+### Posición del negocio: `rdTotales`/`rdCuentasDe`/`cpCategoria`
 
-Fusiona las dos hojas de control interno que el usuario llevaba a mano (balance de compra-venta y balance de deudas). Todo derivado; lo único capturado son bancos y la agenda.
+Nacieron para la pantalla Resumen (fusionaba las dos hojas de control interno que el usuario llevaba a mano: balance de compra-venta y balance de deudas) y **siguen vivas alimentando el panel Total de Flujo** aunque Resumen ya no exista (ver "Flujo como nuevo resumen"). Todo derivado; lo único capturado son bancos y la agenda.
 
 `rdTotales(tipo, categoria)` da saldo y vencido de una dirección, opcionalmente filtrando por categoría; `rdCuentasDe()` la lista por cuenta. Los dos convierten USD con el tipo de cambio de la ficha.
 
-**El dato central es "cuánto del cobro es realmente nuestro"** = lo que nos deben − lo que le debemos a proveedores **comerciales**. Eso es lo que el usuario armaba a mano cada vez.
+**El dato que Resumen destacaba era "cuánto del cobro es realmente nuestro"** = lo que nos deben − lo que le debemos a proveedores **comerciales**. Eso es lo que el usuario armaba a mano cada vez. Ese cálculo puntual no se llevó a Flujo (el panel Total ya separa Proveedores de Préstamos y gastos, pero no resta uno del otro); si se vuelve a pedir, los tres helpers de abajo alcanzan para rearmarlo.
 
 **`cpCategoria(nombre)` clasifica la cuenta en `comercial` o `financiera`.** Lo que el usuario marque en la ficha (columna `contrapartes.categoria`) manda siempre. **Sin marcar NO se asume comercial: se deriva del origen de sus cargos** — `refKind` de `com_pagar`/`alm_compra_pagar`/`com_cobrar`/`camote_cobrar` es mercancía, todo lo demás (manual o importado) es préstamo o gasto. Por eso no hubo que migrar las 11 fichas existentes y el balance sale bien desde el primer día: si se asumiera comercial, Asciende, Arca y Nacho se restarían de la cobranza y el resultado sería falso (se probó, y daba −$405,290 en vez de $370,557).
 
@@ -350,26 +352,29 @@ Fusiona las dos hojas de control interno que el usuario llevaba a mano (balance 
 
 **El reparto se hace restando lunes, no números de semana** (`flujoLunesDe()`, en UTC): restar semanas ISO se rompe en el cambio de año, donde la 52 es anterior a la 1. Ese helper es la razón de que no haga falta tratar el fin de año como caso especial.
 
+`flujoCalc()` tenía un segundo parámetro `porMes` (con `flujoPeriodoMes()`, tres buckets Vencido · Este mes · Próximo mes) que solo usaba la pantalla Resumen para su "al cierre de este mes". **Los dos se borraron en sep-2026 al quitar Resumen** — si algún día hace falta un reparto mensual, hay que rehacerlos; no quedó ningún llamador de referencia.
+
 ### Flujo como nuevo resumen: paneles Total y Semana (sep-2026)
 
-El Flujo es el **nuevo resumen del módulo**; la pestaña Resumen se va a eliminar cuando el usuario apruebe este diseño (propuesta subida el 23-sep-2026, pendiente de su visto bueno). La pantalla abre con **dos paneles** (`#flujo-resumen`), cada uno con **A favor / En contra** lado a lado y el **Balance** (a favor − en contra) en una barra abajo. Las definiciones son las del usuario:
+El Flujo es el **nuevo resumen del módulo** y reemplazó a la pestaña Resumen, que **se eliminó** (ver "Estructura de pestañas"). La pantalla abre con **las tres tarjetas de las próximas semanas arriba** (`fxProximasHtml`, `#flujo-cards`) y **dos paneles debajo** (`#flujo-resumen`), cada uno con **A favor / En contra** lado a lado y el **Balance** (a favor − en contra) en una barra abajo. Las definiciones son las del usuario:
 
 | panel | a favor | en contra |
 |---|---|---|
 | **Total** (`fxPanelTotal`) | bancos + lo que nos deben (por cliente) + cobros esperados | lo que debemos, por cuenta |
 | **Semana en curso** (`fxPanelSemana`) | bancos + cobros de clientes de la semana | gastos planeados + pagos a proveedores de la semana |
 
-- **Total va sin filtro de categoría** (`rdCuentasDe()` de las dos direcciones): los préstamos también se deben. Lo que debemos se parte en **Proveedores** (comercial) y **Préstamos y gastos**, igual que el Resumen. **Los gastos planeados NO entran al total en contra**: así lo definió el usuario. El Excel viejo sí los sumaba; si lo pide, se agregan en `fxPanelTotal()`.
+- **Total va sin filtro de categoría** (`rdCuentasDe()` de las dos direcciones): los préstamos también se deben. Lo que debemos se parte en **Proveedores** (comercial) y **Préstamos y gastos**. **Los gastos planeados NO entran al total en contra**: así lo definió el usuario. El Excel viejo sí los sumaba; si lo pide, se agregan en `fxPanelTotal()`.
 - **Un cobro esperado atado a una cuenta no suma al Total**: ya va dentro del saldo de esa cuenta. Solo los sueltos son dinero de más.
-- **Semana es exactamente lo que movía la tarjeta de la semana en curso**: `flujoCalc(true)`, `per[0]` (vencido) + `per[1]` (la semana), **solo compra-venta de camote**. Se arma renglón por renglón del `det`, agrupando los cargos por cuenta, así que no puede contradecir al flujo. Lo vencido se ve debajo de cada renglón y debajo del total de cada columna.
-- **Bancos entra a los dos paneles con los dólares convertidos** (`fxBancos()`): MXN + USD × el tipo de cambio del renglón USD. `rdBancosTotal()` y el Resumen siguen leyendo solo pesos.
+- **Semana es exactamente lo que movía la tarjeta de la semana en curso**: `flujoCalc(true)`, `per[0]` (vencido) + `per[1]` (la semana), **solo compra-venta de camote**. Se arma renglón por renglón del `det`, agrupando los cargos por cuenta, así que no puede contradecir al flujo.
+- **Bancos entra a los dos paneles con los dólares convertidos** (`fxBancos()`): MXN + USD × el tipo de cambio del renglón USD. `rdBancosTotal()` sigue leyendo solo pesos.
 - Los renglones de cuentas abren su estado de cuenta (`abrirDeudaContraparte`).
+- **Los botones Clientes y + Cargo manual** viven al fondo de la pantalla, después de las cajas de captura — se mudaron aquí al desaparecer Resumen.
 
-Debajo van **tres tarjetas chicas con las semanas siguientes** (`fxProximasHtml`, `#flujo-cards`): Entra · Sale · Resultado de **esa** semana. **No es saldo corrido**: el dinero en bancos vive en los paneles.
+**No hay letreros de "vencido" en rojo** (sep-2026, a pedido del usuario: "distraían sin aportar nada") — ni bajo cada renglón de cuenta ni bajo el total de cada columna. El cálculo sigue vivo (`venc`/`x.vencido` se sigue acumulando en `fxPanelTotal()`/`fxPanelSemana()`) pero `fxLinea()` y `fxColHtml()` ya no lo pintan; **el Balance sí sigue en verde/rojo**, porque ese número sí decide algo. Las clases CSS `.fx-venc`/`.fx-tot-venc` se borraron por quedar sin uso.
 
-**Se quitaron** las tres tarjetas KPI del encabezado (Nos deben · Debemos · Balance), porque el panel Total las contiene, y la tarjeta grande de la semana en curso con columnas Vencido · Por vencer · Total, porque la sustituye el panel Semana. Los buckets `per[0]`/`per[1]` **siguen separados** en `flujoCalc`.
+**Se quitaron** (al introducir los paneles) las tres tarjetas KPI del encabezado (Nos deben · Debemos · Balance), porque el panel Total las contiene, y la tarjeta grande de la semana en curso con columnas Vencido · Por vencer · Total, porque la sustituye el panel Semana. Los buckets `per[0]`/`per[1]` **siguen separados** en `flujoCalc`.
 
-**CSS `.fx-*`**: en escritorio (≥1100px) los dos paneles van lado a lado **estirados a la misma altura**, así las barras de balance quedan alineadas; abajo de eso se apilan, y abajo de 560px también se apilan sus dos columnas. Las cajas de captura (`.fx-caps`) siguen el mismo corte: **a la izquierda lo que suma a favor** (saldo en bancos y cobros esperados) y **a la derecha lo que sale** (gastos planeados).
+**CSS `.fx-*`**: en escritorio (≥1100px) los dos paneles van lado a lado **estirados a la misma altura**, así las barras de balance quedan alineadas; abajo de eso se apilan, y abajo de 560px también se apilan sus dos columnas. `.fx-panels` lleva `margin-top` porque ya no es lo primero de la pantalla (las tarjetas de semana van antes). Las cajas de captura (`.fx-caps`) siguen el mismo corte: **a la izquierda lo que suma a favor** (saldo en bancos y cobros esperados) y **a la derecha lo que sale** (gastos planeados).
 
 **El detalle renglón por renglón bajo las tarjetas se quitó** (sep-2026, a pedido del usuario, "de mientras"). `flujoCalc` sigue llenando `per[i].det`; los paneles lo usan.
 
@@ -381,7 +386,7 @@ Debajo van **tres tarjetas chicas con las semanas siguientes** (`fxProximasHtml`
 
 **El renglón de dólares son tres cajas: USD × tipo de cambio = MXN**, la tercera de solo lectura (`sbEquivUsd()` / `sbPintaEquivUsd()`). Los signos `×` y `=` entre ellas son lo que dice qué hace cada caja, sin rótulos. El tipo de cambio se guarda en la **misma fila** `'USD'` de `bancosSaldos` (`tipoCambio` ↔ columna `bancos_saldos.tipo_cambio`, agregada en sep-2026), con las cuatro capas cableadas.
 
-**Ese equivalente en pesos solo entra a los paneles del Flujo** (`fxBancos()`, sep-2026): el usuario definió el total a favor como "lo actual en bancos", y el tipo de cambio ya se captura en el mismo renglón USD. **`rdBancosTotal()` sigue devolviendo solo el renglón `MXN`**: el "En bancos" del Resumen es una cifra en pesos y sumarle los dólares cambiaría en silencio un número que el usuario ya venía leyendo. Mientras ese renglón no exista, cae a los saldos por banco del modal viejo.
+**Ese equivalente en pesos solo entra a los paneles del Flujo** (`fxBancos()`, sep-2026): el usuario definió el total a favor como "lo actual en bancos", y el tipo de cambio ya se captura en el mismo renglón USD. **`rdBancosTotal()` sigue devolviendo solo el renglón `MXN`** — es una cifra en pesos, y sumarle los dólares ahí cambiaría en silencio un número que otros lugares ya leen sin conversión. Mientras ese renglón no exista, cae a los saldos por banco del modal viejo.
 
 Cada handler de la caja, además de su input y su leyenda, repinta **solo los paneles** (`renderFlujoTarjetas()` desde `sbGuardaBanco()`), nunca la caja.
 
@@ -403,15 +408,11 @@ Dos **cajas de captura fijas** con la misma rejilla —del mismo corte que "Cube
 
 **Huecos conocidos:** un programado ya no se puede atar a una cuenta desde la UI (eso vivía en los modales que se quitaron), así que la regla anti-duplicado de `conAbono` solo aplica a renglones viejos. `abrirProgramado()`, `guardarProgramado()`, `cumplirProgramado()` y `borrarProgramado()` quedaron sin uso desde la UI.
 
-**`flujoCalc(soloCamote, porMes)` reparte por mes cuando se le pide**, con `flujoPeriodoMes()` y tres buckets (Vencido · Este mes · Próximo mes). El único que lo usa es el **Resumen**, cuyo "al cierre de este mes" seguiría diciendo lo mismo aunque la pantalla de Flujo cambie de escala: llama `flujoCalc(false, true)`. Si el Flujo vuelve a cambiar de periodo, ese `porMes` es lo que evita que el Resumen se vaya con él.
-
 Los helpers de dibujo de las próximas semanas (`flCel`, `flEncabezado`, `flRotulo`, `flNeto`) son locales a `fxProximasHtml()` a propósito: no se invocan desde HTML, solo arman cadenas.
 
 **La pantalla mira solo compra-venta de camote** (sep-2026): `renderFlujoEfectivo()` llama `flujoCalc(true)` y ese flag **filtra por cuenta, no por cargo**, reusando `cpCategoria(nombre)==='comercial'`. Una cuenta comercial entra con **todo** su saldo pendiente, cargos manuales incluidos; una financiera (Nacho, Asciende, Arca) no entra en absoluto. Un `programado` con contraparte cuenta solo si esa cuenta es comercial; los sueltos siempre cuentan. **El panel Total no usa este filtro**: ahí entran todas las cuentas.
 
 Filtrar por cargo fue el primer intento y **estaba mal**: el ajuste manual de $20,660 a Agroproductos los Blancas —cuenta de camote— se quedaba fuera, y el Flujo mostraba $172,378 de vencido contra los $193,038 de la cuenta. Por cuenta los dos números cuadran siempre. De paso, el usuario puede forzar la clasificación desde el ⚙️ de la ficha, que es lo que `cpCategoria()` respeta antes que nada.
-
-**El filtro es de la pantalla, no de `flujoCalc`.** El "Al cierre de este mes" del **Resumen** llama `flujoCalc()` sin flag y sigue proyectando todo el dinero — es una cifra de caja total, no de camote. Si algún día se quiere que coincidan, hay que decidir cuál de las dos cambia.
 
 **Los vencimientos de cuentas no se capturan: salen de `cuentaPendientes()`**, que se extrajo de `agingCuenta()` para que la antigüedad y el flujo lean de la misma derivación y no puedan contradecirse.
 

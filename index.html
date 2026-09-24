@@ -476,7 +476,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
    barras de balance quedan alineadas; debajo de 1100px se apilan, y debajo de
    560px tambien se apilan sus dos columnas. Las cajas de captura siguen el
    mismo corte: lo que suma a favor a la izquierda, lo que sale a la derecha. */
-.fx-panels{display:grid;grid-template-columns:1fr;gap:12px}
+.fx-panels{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px}
 .fx-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
 .fx-title{font-size:13px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.05em;padding:14px 16px 0}
 .fx-cols{display:grid;grid-template-columns:1fr 1fr;padding:12px 16px 14px;flex:1}
@@ -484,14 +484,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .fx-col:first-child{padding-right:16px}
 .fx-col+.fx-col{padding-left:16px;border-left:1px solid var(--border)}
 .fx-tot{font-size:24px;font-weight:700;font-family:var(--mono);letter-spacing:-0.02em;line-height:1.2}
-.fx-tot-venc{font-size:11px;font-weight:700;color:var(--rojo);min-height:15px}
 .fx-grp{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 1px}
 .fx-line{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-bottom:0.5px solid var(--border);font-size:13px}
 .fx-link{cursor:pointer}
 .fx-link:hover .fx-nom{color:var(--jal)}
 .fx-nomw{min-width:0}
 .fx-nom{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
-.fx-venc{font-size:10px;font-weight:700;color:var(--rojo)}
 .fx-mon{font-family:var(--mono);font-weight:700;white-space:nowrap}
 .fx-bal{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid var(--border)}
 .fx-bal-lbl{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em}
@@ -597,7 +595,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   }
   #sc-deudas > .rfr-topbar,
   #sc-deudas > #deuda-kpi-row,
-  #sc-deudas > #deuda-resumen-sec,
   #sc-deudas > #deuda-flujo-sec,
   #sc-deudas > #deuda-clientes-sec,
   #sc-deudas > #deuda-ctrls,
@@ -2264,12 +2261,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
   <div id="sc-deudas" class="screen">
     <div class="rfr-topbar" style="display:flex;gap:4px;margin-bottom:12px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
-      <button class="ven-tab active" id="deuda-tab-resumen" onclick="setDeudaTab('resumen')" style="flex:1">Resumen</button>
+      <button class="ven-tab active" id="deuda-tab-flujo" onclick="setDeudaTab('flujo')" style="flex:1">Flujo</button>
       <button class="ven-tab" id="deuda-tab-cobrar" onclick="setDeudaTab('cobrar')" style="flex:1">Cobrar</button>
       <button class="ven-tab" id="deuda-tab-pagar" onclick="setDeudaTab('pagar')" style="flex:1">Pagar</button>
-      <button class="ven-tab" id="deuda-tab-flujo" onclick="setDeudaTab('flujo')" style="flex:1">Flujo</button>
     </div>
-    <div id="deuda-resumen-sec" style="display:none"></div>
     <div id="deuda-flujo-sec" style="display:none"></div>
     <div id="deuda-kpi-row" class="deuda-kpis">
       <div class="kpi-card">
@@ -2316,7 +2311,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div id="deuda-list"></div>
     <div id="deuda-registrar-sec" style="display:none;max-width:520px;margin:0 auto">
       <div id="drsub-deuda">
-        <button class="dcta-back" onclick="setDeudaTab('resumen')">&lsaquo; Resumen</button>
+        <button class="dcta-back" onclick="setDeudaTab('flujo')">&lsaquo; Flujo</button>
         <div class="field" style="margin-bottom:12px"><label>Fecha</label>
           <input type="date" id="dr-fecha" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none"></div>
         <div class="field" style="margin-bottom:12px"><label>Tipo de deuda</label>
@@ -2347,7 +2342,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <!-- Clientes: catalogo unico, con las dos direcciones a la vista sin cambiar
          de pestaña. Antes vivia anidado dentro de Registrar. -->
     <div id="deuda-clientes-sec" style="display:none;max-width:640px;margin:0 auto">
-      <button class="dcta-back" onclick="setDeudaTab('resumen')">&lsaquo; Resumen</button>
+      <button class="dcta-back" onclick="setDeudaTab('flujo')">&lsaquo; Flujo</button>
       <div class="deuda-ctrls">
         <input type="text" id="dcli-search" placeholder="Buscar cliente o ID…" oninput="renderClientesCatalogo()">
       </div>
@@ -9832,8 +9827,8 @@ function savePagosDeuda(){try{localStorage.setItem('cc_pagosdeuda',JSON.stringif
 function saveContrapartes(){try{localStorage.setItem('cc_contrapartes',JSON.stringify(contrapartes));}catch(e){}}
 
 // ── Saldo en bancos y agenda de programados ─────────────────────
-// Dos entidades nuevas del rediseño de sep-2026. Alimentan el Resumen y el
-// Flujo de efectivo; no tocan cuentas, cargos ni pagos.
+// Dos entidades nuevas del rediseño de sep-2026. Alimentan el Flujo de
+// efectivo; no tocan cuentas, cargos ni pagos.
 var bancosSaldos=[], programados=[];
 try{var _bs=localStorage.getItem('cc_bancos_saldos'); if(_bs) bancosSaldos=JSON.parse(_bs);}catch(e){}
 try{var _pg=localStorage.getItem('cc_programados'); if(_pg) programados=JSON.parse(_pg);}catch(e){}
@@ -9875,7 +9870,7 @@ function cpCategoria(nombre){
   return 'financiera';
 }
 
-var deudaTabSel='resumen';
+var deudaTabSel='flujo';
 var deudaModalTipo='', deudaModalNombre='';
 
 async function sbSaveDeuda(d){
@@ -10352,22 +10347,23 @@ function diasDeudaBadge(d){
     'white-space:nowrap;background:'+bg+';color:'+col+'">'+txt+'</span>';
 }
 
-// Cuatro pestañas: Resumen, Cobrar, Pagar y Flujo. "Registrar" y "Clientes"
-// siguen existiendo como vistas —se llega a ellas por el botón + de la cartera y
-// por el de Resumen— pero ya no ocupan una pestaña: el módulo abre mostrando
-// información, no un formulario.
+// Tres pestañas: Flujo (primera, abre el módulo), Cobrar y Pagar. "Registrar" y
+// "Clientes" siguen existiendo como vistas —se llega a ellas por el botón + de
+// la cartera y por el de Flujo— pero ya no ocupan una pestaña: el módulo abre
+// mostrando información, no un formulario. Resumen se eliminó (sep-2026): su
+// información vive ahora en los paneles de Flujo (ver "Flujo como nuevo resumen").
 function setDeudaTab(t){
   deudaTabSel=t;
   var esCartera=(t==='cobrar'||t==='pagar');
-  [['deuda-tab-resumen','resumen'],['deuda-tab-cobrar','cobrar'],
-   ['deuda-tab-pagar','pagar'],['deuda-tab-flujo','flujo']].forEach(function(p){
+  [['deuda-tab-flujo','flujo'],['deuda-tab-cobrar','cobrar'],
+   ['deuda-tab-pagar','pagar']].forEach(function(p){
     var el=document.getElementById(p[0]); if(el) el.classList.toggle('active', t===p[1]);
   });
   // Todas las secciones son mutuamente excluyentes: solo una se pinta a la vez.
   var visibles={
     'deuda-kpi-row':esCartera, 'deuda-ctrls':esCartera,
     'deuda-table-wrap':esCartera, 'deuda-list':esCartera,
-    'deuda-resumen-sec':(t==='resumen'), 'deuda-flujo-sec':(t==='flujo'),
+    'deuda-flujo-sec':(t==='flujo'),
     'deuda-registrar-sec':(t==='registrar'), 'deuda-clientes-sec':(t==='clientes')
   };
   for(var id in visibles){
@@ -10375,7 +10371,6 @@ function setDeudaTab(t){
   }
   if(t==='registrar') initDeudaRegistrarForm();
   else if(t==='clientes') renderClientesCatalogo();
-  else if(t==='resumen') renderResumenDeudas();
   else if(t==='flujo') renderFlujoEfectivo();
   else renderDeudas();
 }
@@ -10609,7 +10604,7 @@ function rdTotales(tipo, categoria){
 // Solo el de pesos entra al total: no hay un tipo de cambio general con el cual
 // convertir el de dólares, y sumarlos crudos mentiría. Mientras no exista el
 // renglón 'MXN' se cae a los saldos por banco del modal viejo, para que el
-// Resumen no se vacíe de golpe al estrenar la caja nueva.
+// panel Total del Flujo no se vacíe de golpe al estrenar la caja nueva.
 function rdBancosTotal(){
   var mxn=saldoBancoDe('MXN');
   if(mxn) return parseFloat(mxn.saldo)||0;
@@ -10628,83 +10623,19 @@ function rdCuentasDe(tipo, categoria){
   });
   return out.sort(function(a,b){ return b.saldo-a.saldo; });
 }
-function rdCard(lbl, val, col, sub){
-  return '<div class="kpi-card"><div class="kpi-accent" style="background:'+col+'"></div>'+
-    '<div class="kpi-lbl">'+lbl+'</div>'+
-    '<div class="kpi-val" style="color:'+col+'">'+fmt(val)+'</div>'+
-    '<div class="deuda-kpi-sub">'+(sub||'&nbsp;')+'</div></div>';
-}
-function rdLista(titulo, filas, col, tipo){
-  if(!filas.length) return '';
-  var h='<div style="margin-top:14px"><div class="kpi-lbl" style="margin-bottom:6px">'+titulo+'</div>';
-  filas.forEach(function(x){
-    h+='<div onclick="abrirDeudaContraparte(\''+tipo+'\',\''+x.nombre.replace(/'/g,"\\'")+'\')" '+
-      'style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:7px 0;border-bottom:0.5px solid var(--border);cursor:pointer">'+
-      '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+x.nombre+
-        (x.vencido>0.5?' <span style="font-size:10px;font-weight:700;color:var(--rojo)">'+fmt(x.vencido)+' vencido</span>':'')+'</span>'+
-      '<span style="font-family:var(--mono);font-weight:700;color:'+col+';white-space:nowrap">'+fmt(x.saldo)+'</span></div>';
-  });
-  return h+'</div>';
-}
-function renderResumenDeudas(){
-  var cont=document.getElementById('deuda-resumen-sec'); if(!cont) return;
-  var cobrar=rdTotales('cobrar');
-  var pagarCom=rdTotales('pagar','comercial');
-  var pagarFin=rdTotales('pagar','financiera');
-  var debemos=pagarCom.total+pagarFin.total;
-  // De lo que nos deben, la parte comprometida con proveedores no es nuestra:
-  // es el dinero con el que hay que pagarles la mercancía que ya revendimos.
-  var nuestro=cobrar.total-pagarCom.total;
-  var bancos=rdBancosTotal();
-  var fl=flujoCalc(false, true); // por MES: la pantalla de Flujo va por semana
-  // Al cierre de este mes entra y sale también lo ya vencido: sigue pendiente de
-  // moverse, no desaparece por haber pasado su fecha.
-  var proyectado=bancos+(fl.per[0].ent-fl.per[0].sal)+(fl.per[1].ent-fl.per[1].sal);
-
-  var h='<div class="deuda-kpis" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">'+
-    rdCard('Nos deben', cobrar.total, 'var(--green)', cobrar.cuentas+' cuenta'+(cobrar.cuentas===1?'':'s'))+
-    rdCard('Debemos', debemos, 'var(--fram)', fmt(pagarCom.total)+' por mercancía')+
-    rdCard('Balance', cobrar.total-debemos, (cobrar.total-debemos)>=0?'var(--green)':'var(--rojo)', 'nos deben menos lo que debemos')+
-    '</div>';
-
-  h+='<div class="aging-card" style="margin-top:12px">'+
-    '<div class="kpi-lbl" style="margin-bottom:8px">Cuánto del cobro es realmente nuestro</div>'+
-    '<div style="display:flex;flex-wrap:wrap;gap:18px;align-items:baseline">'+
-      '<div><div style="font-size:11px;color:var(--text3)">Nos deben</div>'+
-        '<div style="font-family:var(--mono);font-weight:700;font-size:17px;color:var(--green)">'+fmt(cobrar.total)+'</div></div>'+
-      '<div style="font-size:17px;color:var(--text3)">−</div>'+
-      '<div><div style="font-size:11px;color:var(--text3)">Comprometido con proveedores</div>'+
-        '<div style="font-family:var(--mono);font-weight:700;font-size:17px;color:var(--fram)">'+fmt(pagarCom.total)+'</div></div>'+
-      '<div style="font-size:17px;color:var(--text3)">=</div>'+
-      '<div><div style="font-size:11px;color:var(--text3)">Nuestro</div>'+
-        '<div style="font-family:var(--mono);font-weight:700;font-size:21px;color:'+(nuestro>=0?'var(--green)':'var(--rojo)')+'">'+fmt(nuestro)+'</div></div>'+
-    '</div></div>';
-
-  h+='<div class="deuda-kpis" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-top:12px">'+
-    rdCard('Vencido a favor', cobrar.vencido, 'var(--rojo)', 'nos deben y ya venció')+
-    rdCard('Vencido en contra', pagarCom.vencido+pagarFin.vencido, 'var(--rojo)', 'debemos y ya venció')+
-    rdCard('En bancos', bancos, 'var(--jal)', bancosSaldos.length?('al cierre de este mes '+fmt(proyectado)):'sin capturar')+
-    '</div>';
-
-  h+=rdLista('Nos deben', rdCuentasDe('cobrar'), 'var(--green)', 'cobrar');
-  h+=rdLista('Le debemos por mercancía', rdCuentasDe('pagar','comercial'), 'var(--fram)', 'pagar');
-  h+=rdLista('Préstamos y gastos', rdCuentasDe('pagar','financiera'), 'var(--fram)', 'pagar');
-
-  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:18px">'+
-    '<button onclick="setDeudaTab(\'clientes\')" style="padding:10px 16px;font-size:13px;font-weight:600;font-family:var(--font);border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer">Clientes</button>'+
-    '<button onclick="nuevoCargoManual()" style="padding:10px 16px;font-size:13px;font-weight:600;font-family:var(--font);border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer">+ Cargo manual</button>'+
-    '</div>';
-  cont.innerHTML=h;
-}
-
 // ══ FLUJO DE EFECTIVO ═════════════════════════════════════════
-// Qué entra y qué sale en lo vencido, este mes y el próximo, contra el dinero
-// que hay en bancos. Los vencimientos de cuentas NO se capturan: salen solos.
-// La pantalla mira SOLO cuentas de compra-venta de camote (ver flujoCalc).
-// La pantalla trabaja por SEMANA ISO (sep-2026; antes era por mes): la semana en
-// curso y las tres siguientes. El índice 0 es siempre lo vencido, que no tiene
-// tarjeta propia sino una columna dentro de la primera. Lo que cae más adelante
-// queda fuera (índice -1): la pantalla es para lo que se puede trabajar.
+// (renderResumenDeudas()/rdCard()/rdLista() se borraron en sep-2026 al quitar
+// la pestaña Resumen: su información vive ahora en el panel Total de Flujo,
+// ver "Flujo como nuevo resumen". rdTotales()/rdCuentasDe()/rdBancosTotal()
+// siguen vivas —las usan fxPanelTotal()/fxPanelSemana()/fxBancos()— y los
+// botones Clientes / + Cargo manual se movieron a renderFlujoEfectivo().)
+// Qué entra y qué sale en lo vencido, la semana en curso y las tres
+// siguientes, contra el dinero que hay en bancos. Los vencimientos de cuentas
+// NO se capturan: salen solos. La pantalla mira SOLO cuentas de compra-venta
+// de camote (ver flujoCalc). El reparto es por SEMANA ISO (sep-2026; antes era
+// por mes). El índice 0 es siempre lo vencido, que no tiene tarjeta propia sino
+// una columna dentro de la primera. Lo que cae más adelante queda fuera
+// (índice -1): la pantalla es para lo que se puede trabajar.
 var FLUJO_SEMANAS=4;
 function flujoHoyStr(){
   var h=new Date();
@@ -10727,19 +10658,6 @@ function flujoPeriodoSemana(fecha){
   if(off<0 || off>=FLUJO_SEMANAS) return -1;
   return off+1;
 }
-// El Resumen sigue proyectando el cierre del MES, así que conserva su propio
-// reparto. Los meses se comparan por clave año*12+mes para no pelearse con
-// zonas horarias.
-function flujoPeriodoMes(fecha){
-  if(!fecha) return -1;
-  if(String(fecha)<flujoHoyStr()) return 0;
-  var hoy=new Date(), km=hoy.getFullYear()*12+hoy.getMonth();
-  var p=String(fecha).split('-');
-  var k=(parseInt(p[0],10)||0)*12+((parseInt(p[1],10)||1)-1);
-  if(k===km) return 1;
-  if(k===km+1) return 2;
-  return -1;
-}
 // Rótulos de las tarjetas: 'Vencido' y luego 'Semana 37', 'Semana 38'… con el
 // número de semana ISO real, que es como el usuario lleva el calendario.
 function flujoLblSemanas(){
@@ -10757,12 +10675,11 @@ function flujoLblSemanas(){
 // la cuenta: filtrando cargo por cargo, un ajuste manual a un proveedor de
 // camote se quedaba fuera y los dos números no cuadraban.
 // De paso, el usuario puede forzar la clasificación desde el ⚙️ de la ficha.
-// El filtro es de la PANTALLA de Flujo, no de flujoCalc en general: el "Al
-// cierre de este mes" del Resumen sigue proyectando todo el dinero.
-function flujoCalc(soloCamote, porMes){
-  var bucket=porMes?flujoPeriodoMes:flujoPeriodoSemana;
-  var per=[], nper=porMes?3:(FLUJO_SEMANAS+1);
-  for(var q=0;q<nper;q++) per.push({ent:0,sal:0,det:[]});
+// El filtro es de quien llama, no de flujoCalc en general: fxPanelTotal() no
+// lo aplica porque ese panel quiere ver TODO lo que se debe, no solo camote.
+function flujoCalc(soloCamote){
+  var per=[];
+  for(var q=0;q<FLUJO_SEMANAS+1;q++) per.push({ent:0,sal:0,det:[]});
   // Cuentas con un abono ya programado: para ellas manda el abono, no el
   // vencimiento del saldo completo. Es lo que evita contar el mismo dinero dos
   // veces, que es justo lo que descuadraba la hoja de Excel.
@@ -10782,7 +10699,7 @@ function flujoCalc(soloCamote, porMes){
       var f=(c.moneda==='USD')?(parseFloat(c.tipoCambio)||0):1;
       cuentaPendientes(tipo,nom).forEach(function(x){
         var monto=x.saldo*f; if(monto<=0.5) return;
-        var i=bucket(deudaVence(x.deuda)); if(i<0) return;
+        var i=flujoPeriodoSemana(deudaVence(x.deuda)); if(i<0) return;
         if(esEnt) per[i].ent+=monto; else per[i].sal+=monto;
         var it=(x.deuda.items&&x.deuda.items[0])?x.deuda.items[0].concepto:'';
         per[i].det.push({dir:dir, nombre:nom, concepto:x.deuda.folioExterno||x.deuda.desc||it||'Cargo',
@@ -10798,7 +10715,7 @@ function flujoCalc(soloCamote, porMes){
     // cambio, se respeta el filtro.
     if(soloCamote && p.contraparte && cpCategoria(p.contraparte)!=='comercial') return;
     var monto=parseFloat(p.monto)||0; if(monto<=0) return;
-    var i=bucket(p.fecha); if(i<0) return;
+    var i=flujoPeriodoSemana(p.fecha); if(i<0) return;
     if(p.direccion==='cobro') per[i].ent+=monto; else per[i].sal+=monto;
     per[i].det.push({dir:p.direccion, nombre:p.contraparte||'', concepto:p.concepto||'(sin concepto)',
       monto:monto, fecha:p.fecha, prog:true, id:p.id});
@@ -10806,22 +10723,30 @@ function flujoCalc(soloCamote, porMes){
   per.forEach(function(x){ x.det.sort(function(a,b){ return (a.fecha||'')<(b.fecha||'')?-1:1; }); });
   return {per:per};
 }
-// La pantalla se pinta en piezas con contenedor propio —los dos paneles, las
-// próximas semanas y las cajas de captura— para que capturar en una caja pueda
+// La pantalla se pinta en piezas con contenedor propio —las próximas semanas,
+// los dos paneles y las cajas de captura— para que capturar en una caja pueda
 // repintar SOLO los paneles. Repintar la sección entera le quitaría el foco al
 // input que se está escribiendo, la misma trampa de dgSetKg() y recalcFramFin().
 function renderFlujoEfectivo(){
   var cont=document.getElementById('deuda-flujo-sec'); if(!cont) return;
-  // Las cajas siguen el corte de los paneles: lo que suma a favor a la izquierda
-  // (bancos y cobros esperados) y lo que sale a la derecha (gastos planeados).
-  cont.innerHTML='<div id="flujo-resumen"></div><div id="flujo-cards"></div>'+
+  // Las tarjetas de las próximas semanas van arriba (sep-2026, a pedido del
+  // usuario) y los paneles Total/Semana debajo. Las cajas siguen el corte de
+  // los paneles: lo que suma a favor a la izquierda (bancos y cobros
+  // esperados) y lo que sale a la derecha (gastos planeados).
+  cont.innerHTML='<div id="flujo-cards"></div><div id="flujo-resumen"></div>'+
     '<div class="fx-caps"><div>'+
       '<div class="step-label">Saldo en bancos</div>'+
       '<div class="card"><div id="flujo-bancos"></div></div>'+
       pgCajaHtml('cobro')+
     '</div><div>'+
       pgCajaHtml('pago')+
-    '</div></div>';
+    '</div></div>'+
+    // Resumen se eliminó (sep-2026): estos dos botones vivían en su barra de
+    // acciones y se mudaron aquí, ahora que Flujo es la pantalla de entrada.
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:18px">'+
+      '<button onclick="setDeudaTab(\'clientes\')" style="padding:10px 16px;font-size:13px;font-weight:600;font-family:var(--font);border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer">Clientes</button>'+
+      '<button onclick="nuevoCargoManual()" style="padding:10px 16px;font-size:13px;font-weight:600;font-family:var(--font);border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer">+ Cargo manual</button>'+
+    '</div>';
   renderFlujoTarjetas();
   renderSaldoBancos();
   renderProgramadosCaja('cobro');
@@ -10840,7 +10765,7 @@ function renderFlujoTarjetas(){
 
 // Bancos: lo capturado en la caja de abajo. Aquí SÍ entran los dólares,
 // convertidos con el tipo de cambio del renglón USD —el total a favor es "lo
-// actual en bancos"—. `rdBancosTotal()` y el Resumen siguen leyendo solo pesos.
+// actual en bancos"—. `rdBancosTotal()` sigue leyendo solo pesos.
 function fxBancos(){
   var mxn=rdBancosTotal();
   var u=saldoBancoDe('USD');
@@ -10871,7 +10796,7 @@ function fxPanelTotal(bancos){
     var m=parseFloat(p.monto)||0; fav.total+=m;
     return fxLinea(p.concepto||'(sin concepto)', m, 'var(--green)');
   })});
-  // Lo que debemos se parte como en el Resumen: mercancía contra préstamos.
+  // Lo que debemos se parte en dos: mercancía contra préstamos y gastos.
   var con={lbl:'En contra', col:'var(--fram)', total:0, venc:0, grupos:[]};
   var linCon=function(esComercial){
     return pag.filter(function(x){ return (cpCategoria(x.nombre)==='comercial')===esComercial; }).map(function(x){
@@ -10921,25 +10846,26 @@ function fxPanelSemana(fl, bancos, titulo){
   return fxPanelHtml(titulo, fav, con);
 }
 
-// Un renglón de panel: el nombre a la izquierda —con lo vencido debajo, si hay—
-// y la cifra a la derecha. Si es una cuenta, abre su estado de cuenta.
+// Un renglón de panel: el nombre a la izquierda y la cifra a la derecha. Si es
+// una cuenta, abre su estado de cuenta. `venc` sigue llegando de los llamadores
+// pero ya no se pinta (sep-2026, a pedido del usuario: el rojo bajo cada
+// renglón distraía sin aportar nada) — se deja de leer en vez de quitarlo de
+// fxPanelTotal()/fxPanelSemana(), para poder volver a pintarlo sin tocarlos.
 function fxLinea(txt, monto, col, venc, tipoCuenta){
   var click=tipoCuenta?' onclick="abrirDeudaContraparte(\''+tipoCuenta+'\',\''+fxAttr(txt)+'\')"':'';
   return '<div class="fx-line'+(tipoCuenta?' fx-link':'')+'"'+click+'>'+
-    '<div class="fx-nomw"><div class="fx-nom">'+fxTxt(txt)+'</div>'+
-      ((venc||0)>0.5?'<div class="fx-venc">'+fmt(venc)+' vencido</div>':'')+'</div>'+
+    '<div class="fx-nomw"><div class="fx-nom">'+fxTxt(txt)+'</div></div>'+
     '<span class="fx-mon" style="color:'+col+'">'+fmt(monto)+'</span></div>';
 }
 function fxTxt(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
 // Para meter un nombre en un onclick: comilla simple escapada para el JS y lo
 // demás como entidad para el atributo.
 function fxAttr(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+// `c.venc` sigue llegando de fxPanelTotal()/fxPanelSemana() pero ya no se
+// pinta, misma razón que en fxLinea(): el usuario pidió quitar el rojo.
 function fxColHtml(c){
   var h='<div class="fx-col"><div class="kpi-lbl">'+c.lbl+'</div>'+
-    '<div class="fx-tot" style="color:'+c.col+'">'+fmt(c.total)+'</div>'+
-    // El renglón de vencido se reserva aunque vaya vacío, para que los dos
-    // totales del panel queden a la misma altura.
-    '<div class="fx-tot-venc">'+(c.venc>0.5?fmt(c.venc)+' vencido':'')+'</div>';
+    '<div class="fx-tot" style="color:'+c.col+'">'+fmt(c.total)+'</div>';
   c.grupos.forEach(function(g){
     if(g.lineas.length) h+='<div class="fx-grp">'+g.lbl+'</div>'+g.lineas.join('');
   });
