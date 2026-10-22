@@ -679,19 +679,11 @@ Ojo con el orden en el markup: la insignia tiene que ir **antes** del `.kpi-lbl`
 
 **Trampa en la que ya se cayó una vez:** los colores/insignias de Por semana se calculan usando `precioCajaSem`/`totalFacturadoSem`/`costoCubetaGeneral`/etc., variables `var` que la función declara **más abajo**, junto al `finRegSem`. Por hoisting no truena, pero si el bloque de colores se pone *antes* de esa declaración quedan todas `undefined` y el semáforo sale "sin dato" aunque sí haya cifra en pantalla (pasó con "Precio por caja": mostraba $77.16 pero en gris). El bloque de colores/insignias de Por semana tiene que ir **después** de que `finRegSem`/`precioCajaSem`/`totalFacturadoSem` ya estén asignados.
 
-### Eficiencia por trabajador: índice contra la cuadrilla (Por ciclo y Por cosecha, oct-2026)
+### Promedio de cubetas por trabajador en Por ciclo y Por cosecha (oct-2026)
 
-La gráfica de trabajadores de `renderRfrResumen()` (canvas `rfr-res-trab-chart`) **ya no muestra cubetas totales ni promedio por día**: muestra un **índice contra la cuadrilla**, para decidir a quién recontratar. 100 = rindió igual que los que fueron esos mismos días. Por semana conserva su "Promedio de cubetas por trabajador" con meta 25 / mínimo 20; no se tocó.
+La gráfica de trabajadores de `renderRfrResumen()` (canvas `rfr-res-trab-chart`) muestra **cubetas totales (incluido proceso) ÷ días trabajados**, ordenada de mejor a peor, con el mismo semáforo de Por semana (verde ≥25, amarillo ≥20, rojo abajo, líneas de meta y mínimo). Un día trabajado = un registro donde aparece (hay un registro por fecha).
 
-**Por qué contra la cuadrilla y no el promedio simple:** no todos los días rinden igual (hay semanas de 26 cubetas por persona y otras de 13, según la fruta). Con el promedio simple, quien solo fue en días flojos sale mal sin culpa, y quien solo fue en días buenos parece estrella. Por eso cada registro calcula su `promCuadrilla` (Σ cubetas+proceso ÷ trabajadores de ese día) y cada trabajador acumula `esperado` += ese promedio.
-
-**Ajuste por pocos días:** índice = `(cubetas + ref) / (esperado + ref) × 100`, con `ref = RFR_TRAB_DIAS_REF × (cubetas totales / jornadas totales)`. Es un promedio bayesiano: suma 10 días "de cuadrilla" a cada quien, así un trabajador de 1 o 2 días queda cerca de 100 en vez de en los extremos, y uno de 197 días casi no se mueve. Sin el ajuste, el índice crudo pinta en rojo a gente con 15-19 días que con él queda amarilla (Daniel 87→92, Nicolás 84→90 en 2025-2026).
-
-**Como a todos se les paga el mismo jornal** (dicho por el usuario), el índice es también el inverso del costo por cubeta de cada trabajador: no hace falta capturar sueldos por persona. Si algún día el sueldo varía por persona, ese supuesto se cae.
-
-Semáforo: `RFR_CORTES_INDICE_TRAB=[110,90]` vía `rfrColIndiceTrab()` — verde ≥110, amarillo [90,110), rojo <90, con los colores de `RFR_SEM_COLS`. **Parámetro del usuario, igual que las otras metas: no tocarlo solo.** Línea punteada en 100 (`RFR_LINEA_NEUTRA`). El tooltip lleva índice, promedio real, promedio de la cuadrilla en sus días y días trabajados. Orden: índice desc, empate por más días.
-
-La cuadrilla y el `ref` se calculan **con los registros que recibe la función**: el ciclo en Por ciclo, la cosecha elegida en Por cosecha. Verificado contra SQL en 2025-2026: Pepe 122, Tere 118, Bere 66.
+**Se probó y se descartó** un índice contra la cuadrilla del mismo día con ajuste bayesiano por pocos días: el usuario prefirió el promedio simple. No volver a proponerlo por iniciativa propia. Si se vuelve a pedir, está en el commit `751cf30`.
 
 ### Pestaña "Por cosecha" (cuarta pestaña de Frambuesa → Cosecha)
 
