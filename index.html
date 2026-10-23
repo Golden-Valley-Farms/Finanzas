@@ -588,27 +588,41 @@ body.rpt-abierto{overflow:hidden}
 .rpt-head-h1{font-size:28px;font-weight:600;letter-spacing:-.02em;margin-top:2px}
 .rpt-head-h1 span{color:var(--fram)}
 .rpt-head-meta{text-align:right;font-size:11.5px;color:var(--text2);line-height:1.7;font-family:var(--mono)}
-.rpt-sec{display:flex;align-items:baseline;gap:10px;margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border);break-after:avoid}
-.rpt-sec h2{font-size:17px;font-weight:600;color:var(--fram);letter-spacing:-.01em}
-.rpt-sec span{font-size:11px;color:var(--text3)}
+/* Secciones numeradas: el reporte se lee como un solo documento, no como pantallas sueltas */
+.rpt-sec{margin:0 0 12px;padding-bottom:7px;border-bottom:1px solid var(--border);break-after:avoid}
+.rpt-sec h2{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:600;color:var(--text);letter-spacing:-.01em}
+.rpt-sec h2 b{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--fram);color:#fff;font-size:12.5px;font-weight:600}
 .rpt-salto{break-before:page}
-#rpt .kpi-grid{grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:12px;break-inside:avoid}
-#rpt .kpi-card,#rpt .dash-card{box-shadow:none;break-inside:avoid}
+/* Un solo estilo de cifra en todo el reporte: franjas conectadas (una caja con
+   divisiones) y el color del semaforo como raya arriba de cada dato. */
+#rpt .kpi-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0;margin-bottom:10px;
+  border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface);break-inside:avoid}
+#rpt .kpi-card{border:none;border-radius:0;border-left:1px solid var(--border);box-shadow:none;padding:13px 12px 11px}
+#rpt .kpi-card:first-child{border-left:none}
 #rpt .kpi-card.span2{grid-column:span 1}
-#rpt .kpi-val{font-size:26px}
+#rpt .kpi-accent{width:100%;height:3px}
+#rpt .kpi-lbl,#rpt .kpi-val,#rpt .kpi-split-lbl{text-align:center}
+#rpt .kpi-val{font-size:24px}
+#rpt .dash-card{border:1px solid var(--border);border-radius:12px;box-shadow:none;padding:13px 16px;break-inside:avoid}
+#rpt .dash-card-title{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+#rpt .dash-card-sub{font-size:10.5px}
 #rpt .fin-charts-grid{display:block}
-#rpt .ffin-grid2{grid-template-columns:repeat(2,1fr)}
-#rpt .ffin-grid4{grid-template-columns:repeat(4,1fr)}
-#rpt .ffin-grid2 .kpi-val,#rpt .ffin-grid4 .kpi-val{font-size:22px}
-#rpt .fintab-wrap{height:auto;overflow:visible;border-radius:10px}
-#rpt .fintab{font-size:12px}
-#rpt .fintab th{font-size:10.5px;position:static}
-#rpt .fintab th,#rpt .fintab td{padding:5px 9px}
-#rpt .fintab .fintab-sub,#rpt .fintab td.txt div{font-size:10px!important}
-#rpt .fintab tr{break-inside:avoid}
-/* El tfoot se repetiria al pie de cada hoja: el Total va solo al final */
-#rpt .fintab tfoot{display:table-row-group}
-#rpt-prod .kpi-lbl,#rpt-prod .kpi-val,#rpt-prod .kpi-split-lbl{text-align:center}
+#rpt .fin-charts-grid .dash-card{margin:0;height:100%}
+/* Resultados: la grafica de gastos y la facturacion lado a lado. Las tarjetas propias
+   del estado de resultados se ocultan: sus cifras van en la franja de arriba. */
+#rpt-edr .kpi-grid{display:none}
+.rpt-res-grid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:12px;align-items:stretch;break-inside:avoid}
+.rpt-res-grid>div{min-width:0}
+#rpt-fac .rpt-fact{margin:0;height:100%;display:flex;flex-direction:column}
+.rpt-fact-fila{display:grid;grid-template-columns:1fr auto 44px;align-items:baseline;gap:10px;padding:7px 2px;border-bottom:1px solid var(--surface2);font-size:13px;color:var(--text2)}
+.rpt-fact-fila b{font-family:var(--mono);font-weight:500;color:var(--text)}
+.rpt-fact-fila i{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--text3);text-align:right}
+.rpt-fact-tot{font-weight:600;color:var(--text);border-bottom:1px solid var(--border)}
+.rpt-fact-tot b{font-weight:700;font-size:15px}
+.rpt-fact-pag{border-top:2px solid var(--text);border-bottom:none;margin-top:2px}
+.rpt-fact-pag b{color:var(--fram)}
+.rpt-fact-deuda{margin-top:auto;display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:10px 12px;border-radius:8px;background:var(--surface2);font-size:12px;color:var(--text2)}
+.rpt-fact-deuda b{font-family:var(--mono);font-size:14px;color:var(--text)}
 #rpt .rfr-cajas-row{display:flex;align-items:center;gap:28px}
 #rpt .rfr-cajas-row>.rfr-cajas-total{flex:0 0 34%}
 #rpt .rfr-cajas-row>.kpi-split{flex:1;margin-top:0;padding-left:28px;border-left:1px solid var(--border)}
@@ -616,7 +630,8 @@ body.rpt-abierto{overflow:hidden}
 #rpt .rfr-dia-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin:0 0 12px;align-items:stretch}
 #rpt .rfr-dia-grid .dash-card{margin:0}
 #rpt .rfr-card-ancha{grid-column:1/-1}
-#rpt .rfr-card-trab{height:340px;min-height:0!important}
+#rpt .rfr-card-trab{height:262px;min-height:0!important}
+#rpt .rfr-card-trab>div:last-child{min-height:0!important}
 #rpt .rfr-card-linea{height:315px;min-height:0!important}
 @media screen{ #rpt .rpt-salto{margin-top:40px} }
 @media print{
@@ -5000,12 +5015,12 @@ function rfrFinMoney(v){
   return '$'+(v||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 
-// opts (opcional): contId = contenedor destino; totales = agrega el renglon de totales
-// al pie de la tabla (lo usa el reporte final de ciclo).
+// opts (opcional): soloTotales = no pinta nada, solo devuelve los totales del ciclo.
+// Lo usa el reporte final de ciclo, para no repetir aqui las formulas de facturacion.
 function renderRfrFinanzas(filtroCiclo, opts){
   opts=opts||{};
-  var cont=document.getElementById(opts.contId||'rfr-fac-detalle');
-  if(!cont) return;
+  var cont=opts.soloTotales ? null : document.getElementById('rfr-fac-detalle');
+  if(!cont && !opts.soloTotales) return;
 
   var data=(framFinanzas||[]).filter(function(f){
     return filtroCiclo==='todos' || f.ciclo===filtroCiclo;
@@ -5014,8 +5029,8 @@ function renderRfrFinanzas(filtroCiclo, opts){
   });
 
   if(!data.length){
-    cont.innerHTML='<div class="empty"><div class="empty-icon">\ud83d\udcb0</div><div class="empty-text">Sin registros de finanzas para este filtro.</div></div>';
-    return;
+    if(cont) cont.innerHTML='<div class="empty"><div class="empty-icon">\ud83d\udcb0</div><div class="empty-text">Sin registros de finanzas para este filtro.</div></div>';
+    return null;
   }
 
   var COLS=[
@@ -5051,6 +5066,7 @@ function renderRfrFinanzas(filtroCiclo, opts){
     tot.facturado+=r.facturado; tot.pagado+=r.pagado;
     COLS.forEach(function(c){ tot[c.key]+=r.d[c.key]; });
   });
+  if(opts.soloTotales) return tot;
 
   function celda(v, extra, sub){
     var cls='num'+(extra?' '+extra:'')+(v?'':' cero');
@@ -5102,16 +5118,7 @@ function renderRfrFinanzas(filtroCiclo, opts){
         celda(r.pagado,'pag',r.subPag)+
       '</tr>';
     }).join('')+
-    '</tbody>'+
-    (opts.totales ? (function(){
-      var pctT=function(v){ return tot.facturado ? Math.round(v/tot.facturado*100)+'%' : ''; };
-      return '<tfoot><tr><td class="txt">Total</td>'+
-        celda(tot.facturado,'',tot.facturado?'DESCUENTOS '+pctT(tot.facturado-tot.pagado):'')+
-        COLS.map(function(c){ return celda(tot[c.key],'',tot[c.key]?pctT(tot[c.key]):''); }).join('')+
-        celda(tot.pagado,'pag',pctT(tot.pagado))+
-      '</tr></tfoot>';
-    })() : '')+
-    '</table></div>';
+    '</tbody></table></div>';
 
   cont.innerHTML=html;
 
@@ -5256,6 +5263,8 @@ function framBarraH(id, lbls, vals, cols, colorTxt, xMax, yAncho){
 
 // altoFila (opcional): px por categoria en la grafica de gastos; el reporte final pasa
 // uno mas bajo para que el estado de resultados quepa en la primera hoja.
+// Devuelve {ingresos, gastos, utilidad}: el reporte final arma con eso su propia franja
+// de resultados (y oculta las tarjetas de aqui), sin repetir las formulas.
 function renderRfrEDR(filtroCiclo, contId, altoFila){
   var cont=document.getElementById(contId||'rfr-edr-detalle');
   if(!cont) return;
@@ -5276,9 +5285,10 @@ function renderRfrEDR(filtroCiclo, contId, altoFila){
   var gastosTot=catFram.total;
   var utilidad=ingresos-gastosTot;
 
+  var res={ingresos:ingresos, gastos:gastosTot, utilidad:utilidad};
   if(!ingresos && !gastosTot){
     cont.innerHTML='<div style="text-align:center;padding:60px 0;color:var(--text3);font-size:13px">Sin registros financieros para este ciclo</div>';
-    return;
+    return res;
   }
 
   var colUtil = utilidad>=0 ? 'var(--green)' : '#D64545';
@@ -5312,6 +5322,7 @@ function renderRfrEDR(filtroCiclo, contId, altoFila){
   var ejeXMax = maxEjeXCat([catFram.vals]);
   var ejeYAncho = ejeYAnchoCat([catFram.lbls]);
   if(catFram.lbls.length) framBarraH('rfr-edr-cat-chart', catFram.lbls, catFram.vals, catFram.cols, '#D6336C', ejeXMax, ejeYAncho);
+  return res;
 }
 
 // ─── POR DÍA ───────────────────────────────────────────────
@@ -6184,6 +6195,10 @@ function renderRfrSemDetalle(){
 var RFR_SEM_COLS={bien:'#1baf7a', vigilar:'#eda100', preocupa:'#ec835a', problema:'#d03b3b', sinDato:'#c3c2b7'};
 var RFR_LINEA_NEUTRA='#898781';
 var RFR_LINEA_NEUTRA_BG='rgba(137,135,129,0.10)';
+// Lineas de "Kg cosechados vs. Kg de proceso" (Por ciclo, Por cosecha y reporte final):
+// azul y violeta, fuera de la paleta del semaforo de los puntos (verde/amarillo/naranja/rojo/gris).
+var RFR_COL_LINEA_KG='#2a78d6';
+var RFR_COL_LINEA_PROCESO='#8e4ec6';
 // Meta real del negocio para % de merma (mas alto es peor):
 // verde <=3, amarillo (3,7), naranja [7,10), rojo >=10.
 // No pasa por rfrPuntoCol porque ese corta con <= en las tres bandas y dejaria
@@ -6649,8 +6664,8 @@ function renderRfrResumen(data, opts){
       '<div class="dash-card'+clsLinea+'" style="margin-bottom:0;display:flex;flex-direction:column">'+
         '<div class="dash-card-title">Kg cosechados vs. Kg de proceso</div>'+
         '<div style="display:flex;gap:14px;margin:8px 0;font-size:11px;color:var(--text3)">'+
-          '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:var(--fram);vertical-align:middle"></span>Kg cosechados</span>'+
-          '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:#e34948;vertical-align:middle"></span>Kg de proceso</span>'+
+          '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:'+RFR_COL_LINEA_KG+';vertical-align:middle"></span>Kg cosechados</span>'+
+          '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:'+RFR_COL_LINEA_PROCESO+';vertical-align:middle"></span>Kg de proceso</span>'+
         '</div>'+
         '<div style="display:flex;width:100%;flex:1;min-height:260px">'+
           '<div style="width:70px;flex-shrink:0;display:flex;align-items:stretch;gap:4px">'+
@@ -6916,8 +6931,8 @@ function renderRfrResumen(data, opts){
           // Las dos líneas conservan su color (es lo que distingue las series en la leyenda).
           // Cada serie lleva su PROPIO semáforo, contra su propia mediana histórica:
           // en cosechados más kg es mejor; en proceso más kg es peor.
-          {label:'Kg cosechados',data:semKgVals,borderColor:'#D6336C',backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(semKgVals,rfrCortesDesde(refs.kg,true),true),pointBorderColor:rfrPuntoCols(semKgVals,rfrCortesDesde(refs.kg,true),true),fill:true,tension:0.3,spanGaps:true},
-          {label:'Kg de proceso',data:semMermaVals,borderColor:'#e34948',backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(semMermaVals,rfrCortesDesde(refs.proceso,false),false),pointBorderColor:rfrPuntoCols(semMermaVals,rfrCortesDesde(refs.proceso,false),false),fill:true,tension:0.3,spanGaps:true}
+          {label:'Kg cosechados',data:semKgVals,borderColor:RFR_COL_LINEA_KG,backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(semKgVals,rfrCortesDesde(refs.kg,true),true),pointBorderColor:rfrPuntoCols(semKgVals,rfrCortesDesde(refs.kg,true),true),fill:true,tension:0.3,spanGaps:true},
+          {label:'Kg de proceso',data:semMermaVals,borderColor:RFR_COL_LINEA_PROCESO,backgroundColor:RFR_LINEA_NEUTRA_BG,borderWidth:2,pointRadius:3,pointBackgroundColor:rfrPuntoCols(semMermaVals,rfrCortesDesde(refs.proceso,false),false),pointBorderColor:rfrPuntoCols(semMermaVals,rfrCortesDesde(refs.proceso,false),false),fill:true,tension:0.3,spanGaps:true}
         ]
       },
       options:{
@@ -7082,10 +7097,10 @@ function renderRfrResumen(data, opts){
 // ============================================================
 // ---- REPORTE FINAL DE CICLO (FRAMBUESA) ----
 // ============================================================
-// Vista de impresion con tres reportes: General (estado de resultados + facturacion +
-// Por ciclo completo) y uno por cosecha (Por cosecha sin las graficas de linea). No
-// calcula nada propio: llama a renderRfrEDR / renderRfrFinanzas / renderRfrResumen, asi
-// que sus cifras no pueden diferir de las pantallas. El PDF sale del dialogo de
+// Vista de impresion con tres reportes: General (resultados del ciclo con facturacion +
+// Por ciclo completo) y uno por cosecha (Por cosecha). No calcula nada propio: toma las
+// cifras de renderRfrEDR / renderRfrFinanzas / renderRfrResumen, asi que no pueden
+// diferir de las pantallas. El PDF sale del dialogo de
 // impresion del navegador (hoja carta horizontal, ver @page en el CSS).
 var rptActivo=false, rptTipoSel='gen', rptCiclo='', rptDprPrevio=null, rptAnimPrevia=null;
 var RPT_TITULOS={gen:'Reporte general', c1:'Cosecha 1', c2:'Cosecha 2'};
@@ -7143,8 +7158,46 @@ function rptFecha(f){
   return new Date(f+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'});
 }
 
-function rptSeccion(titulo, sub, salto){
-  return '<div class="rpt-sec'+(salto?' rpt-salto':'')+'"><h2>'+titulo+'</h2>'+(sub?'<span>'+sub+'</span>':'')+'</div>';
+function rptSeccion(num, titulo, salto){
+  return '<div class="rpt-sec'+(salto?' rpt-salto':'')+'"><h2><b>'+num+'</b>'+titulo+'</h2></div>';
+}
+
+// Franja de resultados: mismas clases que las tarjetas de produccion, para que en el
+// reporte todo comparta un solo estilo de cifra.
+function rptFranjaResultados(r){
+  var colUtil=r.utilidad>=0?'var(--green)':'#D64545';
+  var margen=r.ingresos?Math.round(r.utilidad/r.ingresos*1000)/10:null;
+  function celda(lbl, val, col){
+    return '<div class="kpi-card"><div class="kpi-accent" style="background:'+col+'"></div>'+
+      '<div class="kpi-lbl">'+lbl+'</div><div class="kpi-val" style="color:'+col+'">'+val+'</div></div>';
+  }
+  return '<div class="kpi-grid rpt-franja">'+
+    celda('Ingresos', fmt(r.ingresos), 'var(--green)')+
+    celda('Gastos', fmt(r.gastos), 'var(--fram)')+
+    celda('Utilidad', fmt(r.utilidad), colUtil)+
+    celda('Margen', margen===null?'—':margen.toFixed(1)+'<span style="font-size:14px;font-weight:400;color:var(--text3)">%</span>', colUtil)+
+  '</div>';
+}
+
+// Facturacion como estado: facturado, menos cada descuento, igual a pagado.
+function rptFacturacionHtml(t){
+  if(!t) return '<div class="dash-card rpt-fact"><div class="dash-card-title">Facturación</div>'+
+    '<div style="text-align:center;padding:40px 0;color:var(--text3);font-size:13px">Sin facturación capturada</div></div>';
+  function pct(v){ return t.facturado?Math.round(v/t.facturado*100)+'%':''; }
+  function fila(lbl, v, cls){
+    return '<div class="rpt-fact-fila'+(cls?' '+cls:'')+'"><span>'+lbl+'</span><b>'+fmt(v)+'</b><i>'+pct(v)+'</i></div>';
+  }
+  return '<div class="dash-card rpt-fact">'+
+    '<div class="dash-card-title">Facturación</div>'+
+    fila('Total facturado', t.facturado, 'rpt-fact-tot')+
+    fila('− Préstamo', t.prestamo)+
+    fila('− Intereses', t.intereses)+
+    fila('− Planta', t.planta)+
+    fila('− Inocuidad', t.inocuidad)+
+    fila('− Material', t.material)+
+    fila('Total pagado', t.pagado, 'rpt-fact-tot rpt-fact-pag')+
+    '<div class="rpt-fact-deuda"><span>Deuda restante del préstamo</span><b>'+fmt(framDeudaRestante())+'</b></div>'+
+  '</div>';
 }
 
 function renderReporteCiclo(){
@@ -7189,13 +7242,12 @@ function renderReporteCiclo(){
         '</div>'+
       '</div>'+
       (tipo==='gen' ?
-        rptSeccion('Estado de resultados')+
-        '<div id="rpt-edr"></div>'+
-        rptSeccion('Facturación','',true)+
-        '<div id="rpt-fac"></div>'+
-        rptSeccion('Producción y calidad','',true)
+        rptSeccion(1,'Resultados del ciclo')+
+        '<div id="rpt-franja"></div>'+
+        '<div class="rpt-res-grid"><div id="rpt-edr"></div><div id="rpt-fac"></div></div>'+
+        rptSeccion(2,'Producción y calidad',true)
       :
-        rptSeccion('Producción y calidad')
+        rptSeccion(1,'Producción y calidad')
       )+
       '<div id="rpt-prod"></div>'+
     '</div></div>';
@@ -7204,19 +7256,21 @@ function renderReporteCiclo(){
 
   if(tipo==='gen'){
     // La grafica de gastos tiene que caber en la primera hoja junto al encabezado y
-    // las tarjetas (~420px libres): el alto por categoria se ajusta a cuantas haya.
+    // la franja de resultados (~400px libres): el alto por categoria se ajusta a cuantas haya.
     var nCats={};
     gastos.forEach(function(g){
       if(g.cultivo==='fram' && ['jal','nay'].indexOf(g.loc)>=0 && framEnCiclo(g, ciclo)) nCats[g.cat||'Sin categoría']=1;
     });
     var n=Object.keys(nCats).length||1;
-    renderRfrEDR(ciclo, 'rpt-edr', Math.max(16, Math.min(28, Math.floor(420/n))));
-    renderRfrFinanzas(ciclo, {contId:'rpt-fac', totales:true});
+    var res=renderRfrEDR(ciclo, 'rpt-edr', Math.max(14, Math.min(28, Math.floor(400/n))));
+    document.getElementById('rpt-franja').innerHTML = res ? rptFranjaResultados(res) : '';
+    document.getElementById('rpt-fac').innerHTML = rptFacturacionHtml(renderRfrFinanzas(ciclo, {soloTotales:true}));
   }
+  var nSec = tipo==='gen' ? 3 : 2;
   renderRfrResumen(datos, {
-    contId:'rpt-prod', impresion:true, sinLineas:tipo!=='gen',
+    contId:'rpt-prod', impresion:true,
     metaCajasGrupo: tipo==='gen'?9000:4500,
-    antesLineas: rptSeccion('Tendencia semanal'),
+    antesLineas: rptSeccion(nSec,'Tendencia semanal'),
     vacioMsg:'Sin registros de cosecha en este periodo'
   });
 }

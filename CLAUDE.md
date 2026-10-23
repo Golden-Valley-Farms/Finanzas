@@ -681,17 +681,27 @@ Ojo con el orden en el markup: la insignia tiene que ir **antes** del `.kpi-lbl`
 
 ### Reporte final de ciclo (oct-2026)
 
-Botón **📄 Reporte final** junto al selector de Ciclo de Reportes → Frambuesa. `abrirReporteCiclo()` monta una vista de impresión a pantalla completa (`#rpt-wrap`, creado y borrado por JS, no vive en el markup) con tres reportes que se alternan en su barra (`rptTab()`): **General** (estado de resultados + facturación + Por ciclo completo) y **Cosecha 1 / Cosecha 2** (Por cosecha **sin** las gráficas de línea, a pedido del usuario). Se guarda como PDF con el diálogo de impresión del navegador (`imprimirReporteCiclo()`, que además pone `document.title` para que el archivo salga nombrado).
+Botón **📄 Reporte final** junto al selector de Ciclo de Reportes → Frambuesa. `abrirReporteCiclo()` monta una vista de impresión a pantalla completa (`#rpt-wrap`, creado y borrado por JS, no vive en el markup) con tres reportes que se alternan en su barra (`rptTab()`): **General** y **Cosecha 1 / Cosecha 2**. Se guarda como PDF con el diálogo de impresión del navegador (`imprimirReporteCiclo()`, que además pone `document.title` para que el archivo salga nombrado).
 
-**No calcula nada propio**: `renderReporteCiclo()` llama a `renderRfrEDR`, `renderRfrFinanzas` y `renderRfrResumen` con contenedores propios (`rpt-edr`, `rpt-fac`, `rpt-prod`). Para eso se les agregaron parámetros opcionales que **sin pasarlos dejan todo como antes**: `renderRfrEDR(ciclo, contId, altoFila)`, `renderRfrFinanzas(ciclo, {contId, totales})` (renglón de Total al pie) y en `renderRfrResumen` las opciones `impresion`, `sinLineas` y `antesLineas`.
+**Se lee como un solo documento, no como pantallas pegadas** (lo pidió así el usuario en la segunda vuelta). Secciones numeradas (`rptSeccion(num, titulo, salto)`):
 
-`impresion` en `renderRfrResumen`: quita el `min-width` de scroll (`anchoMin()`), pasa el % de merma al bloque de líneas, pinta las tarjetas de línea a ancho completo (`clsLinea`) y alterna las etiquetas de valor arriba/abajo del punto (`lblY()`), con formatos cortos (kg enteros, `$25.3`, `136k`). Con 39 semanas en 988px los puntos quedan a ~23px y sin eso se enciman.
+- General: **1 Resultados del ciclo** (franja Ingresos · Gastos · Utilidad · Margen, y abajo la gráfica de gastos por categoría junto a la facturación como estado: facturado − cada descuento = pagado, más la deuda restante del préstamo) · **2 Producción y calidad** · **3 Tendencia semanal**.
+- Cosecha 1/2: **1 Producción y calidad** · **2 Tendencia semanal** (las de línea sí van, también a pedido).
+- **Sin el detalle semanal de facturación**: el usuario dijo que el resumen basta.
+
+En `#rpt` todas las cifras comparten un estilo: franjas conectadas (una caja con divisiones), el color del semáforo como raya arriba de cada dato, y los títulos de tarjeta en versalitas.
+
+**No calcula nada propio.** `renderRfrEDR()` ahora **devuelve** `{ingresos, gastos, utilidad}` (el reporte oculta sus tarjetas con `#rpt-edr .kpi-grid` y arma la franja con `rptFranjaResultados()`), y `renderRfrFinanzas(ciclo, {soloTotales:true})` devuelve los totales sin pintar nada (`rptFacturacionHtml()` los acomoda). `renderRfrResumen` recibe las opciones `impresion`, `sinLineas` y `antesLineas`. Sin esos parámetros las tres funciones se comportan igual que antes.
+
+`impresion` en `renderRfrResumen`: quita el `min-width` de scroll (`anchoMin()`), pasa el % de merma al bloque de líneas, pinta las tarjetas de línea a ancho completo (`clsLinea`), quita el título repetido del eje y alterna las etiquetas de valor arriba/abajo del punto (`lblY()`), con formatos cortos (kg enteros, `$25.3`, `136k`). Con 39 semanas en 988px los puntos quedan a ~23px y sin eso se enciman.
+
+**Kg cosechados vs. Kg de proceso** (Por ciclo, Por cosecha y reporte) va en azul `RFR_COL_LINEA_KG` y violeta `RFR_COL_LINEA_PROCESO`: los puntos llevan el semáforo (verde/amarillo/naranja/rojo/gris) y las líneas no pueden confundirse con él. La gráfica equivalente de Por semana conserva sus colores.
 
 - **Ancho fijo de 988px** en pantalla y en papel (carta horizontal, márgenes de 0.35in; ver `@page`). Así Chart.js no redimensiona al imprimir. El pie con número de página sale de los `@bottom-*` de `@page`.
 - **Mismos ids de canvas que Reportes y Finanzas**: al abrir se vacían `rfr-res-detalle`, `rfr-coh-detalle` y `rslt-edr-content`, y al cerrar se destruyen las gráficas del reporte y se repinta `renderRepFram()`. Misma trampa que la de Por ciclo / Por cosecha.
-- Mientras está abierto: `rptActivo=true` fuerza tema claro (`rfrTemaOscuro()`, que ahora usan `rfrGridCol`/`rfrLabelInk`/`rfrTintaPunto`, más las variables CSS redefinidas en `#rpt-wrap`), `Chart.defaults.devicePixelRatio=3` (el canvas es imagen en el PDF) y `Chart.defaults.animation=false` (imprimir a media animación saca las gráficas aplastadas). Los tres se restauran al cerrar.
-- Los altos están calculados para que cada bloque quepa en una hoja de 739px útiles: la gráfica de gastos ajusta su alto por categoría (`floor(420/n)`) para entrar en la primera hoja, y las tarjetas de línea miden 315px (dos por hoja). Si se agrega contenido, revisar la paginación imprimiendo.
-- Con datos de prueba el General sale en 9 hojas y cada cosecha en 2.
+- Mientras está abierto: `rptActivo=true` fuerza tema claro (`rfrTemaOscuro()`, que usan `rfrGridCol`/`rfrLabelInk`/`rfrTintaPunto`, más las variables CSS redefinidas en `#rpt-wrap`), `Chart.defaults.devicePixelRatio=3` (el canvas es imagen en el PDF) y `Chart.defaults.animation=false` (imprimir a media animación saca las gráficas aplastadas). Los tres se restauran al cerrar.
+- Los altos están medidos para una hoja de 739px útiles: la gráfica de gastos ajusta su alto por categoría (`floor(400/n)`) para entrar en la primera hoja, la de trabajadores mide 262px (así cabe con las tarjetas en la primera hoja de cada cosecha) y las de línea 315px (dos por hoja). Si se agrega contenido, revisar la paginación imprimiendo.
+- Con datos de prueba el General sale en 6 hojas y cada cosecha en 5.
 
 ### Promedio de cubetas por trabajador en Por ciclo y Por cosecha (oct-2026)
 
