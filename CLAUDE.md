@@ -679,6 +679,20 @@ Ojo con el orden en el markup: la insignia tiene que ir **antes** del `.kpi-lbl`
 
 **Trampa en la que ya se cayó una vez:** los colores/insignias de Por semana se calculan usando `precioCajaSem`/`totalFacturadoSem`/`costoCubetaGeneral`/etc., variables `var` que la función declara **más abajo**, junto al `finRegSem`. Por hoisting no truena, pero si el bloque de colores se pone *antes* de esa declaración quedan todas `undefined` y el semáforo sale "sin dato" aunque sí haya cifra en pantalla (pasó con "Precio por caja": mostraba $77.16 pero en gris). El bloque de colores/insignias de Por semana tiene que ir **después** de que `finRegSem`/`precioCajaSem`/`totalFacturadoSem` ya estén asignados.
 
+### Reporte final de ciclo (oct-2026)
+
+Botón **📄 Reporte final** junto al selector de Ciclo de Reportes → Frambuesa. `abrirReporteCiclo()` monta una vista de impresión a pantalla completa (`#rpt-wrap`, creado y borrado por JS, no vive en el markup) con tres reportes que se alternan en su barra (`rptTab()`): **General** (estado de resultados + facturación + Por ciclo completo) y **Cosecha 1 / Cosecha 2** (Por cosecha **sin** las gráficas de línea, a pedido del usuario). Se guarda como PDF con el diálogo de impresión del navegador (`imprimirReporteCiclo()`, que además pone `document.title` para que el archivo salga nombrado).
+
+**No calcula nada propio**: `renderReporteCiclo()` llama a `renderRfrEDR`, `renderRfrFinanzas` y `renderRfrResumen` con contenedores propios (`rpt-edr`, `rpt-fac`, `rpt-prod`). Para eso se les agregaron parámetros opcionales que **sin pasarlos dejan todo como antes**: `renderRfrEDR(ciclo, contId, altoFila)`, `renderRfrFinanzas(ciclo, {contId, totales})` (renglón de Total al pie) y en `renderRfrResumen` las opciones `impresion`, `sinLineas` y `antesLineas`.
+
+`impresion` en `renderRfrResumen`: quita el `min-width` de scroll (`anchoMin()`), pasa el % de merma al bloque de líneas, pinta las tarjetas de línea a ancho completo (`clsLinea`) y alterna las etiquetas de valor arriba/abajo del punto (`lblY()`), con formatos cortos (kg enteros, `$25.3`, `136k`). Con 39 semanas en 988px los puntos quedan a ~23px y sin eso se enciman.
+
+- **Ancho fijo de 988px** en pantalla y en papel (carta horizontal, márgenes de 0.35in; ver `@page`). Así Chart.js no redimensiona al imprimir. El pie con número de página sale de los `@bottom-*` de `@page`.
+- **Mismos ids de canvas que Reportes y Finanzas**: al abrir se vacían `rfr-res-detalle`, `rfr-coh-detalle` y `rslt-edr-content`, y al cerrar se destruyen las gráficas del reporte y se repinta `renderRepFram()`. Misma trampa que la de Por ciclo / Por cosecha.
+- Mientras está abierto: `rptActivo=true` fuerza tema claro (`rfrTemaOscuro()`, que ahora usan `rfrGridCol`/`rfrLabelInk`/`rfrTintaPunto`, más las variables CSS redefinidas en `#rpt-wrap`), `Chart.defaults.devicePixelRatio=3` (el canvas es imagen en el PDF) y `Chart.defaults.animation=false` (imprimir a media animación saca las gráficas aplastadas). Los tres se restauran al cerrar.
+- Los altos están calculados para que cada bloque quepa en una hoja de 739px útiles: la gráfica de gastos ajusta su alto por categoría (`floor(420/n)`) para entrar en la primera hoja, y las tarjetas de línea miden 315px (dos por hoja). Si se agrega contenido, revisar la paginación imprimiendo.
+- Con datos de prueba el General sale en 9 hojas y cada cosecha en 2.
+
 ### Promedio de cubetas por trabajador en Por ciclo y Por cosecha (oct-2026)
 
 La gráfica de trabajadores de `renderRfrResumen()` (canvas `rfr-res-trab-chart`) muestra **cubetas totales (incluido proceso) ÷ días trabajados**, ordenada de mejor a peor, con el mismo semáforo de Por semana (verde ≥25, amarillo ≥20, rojo abajo, líneas de meta y mínimo). Un día trabajado = un registro donde aparece (hay un registro por fecha).

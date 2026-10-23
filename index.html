@@ -557,6 +557,75 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .rfr-cajas-leg{display:inline-grid;grid-template-columns:max-content max-content max-content max-content;
   column-gap:5px;row-gap:2px;font-size:11px;color:var(--text3);line-height:1.4;font-family:var(--mono)}
 .rfr-cajas-leg .rfr-cajas-oz,.rfr-cajas-leg .rfr-cajas-num{text-align:right}
+/* ---- Reporte final de ciclo (Frambuesa) ----
+   Hoja carta horizontal: 11in - 2x0.35in de margen = 988px de ancho util. El reporte
+   se dibuja a ESE ancho en pantalla y en papel, asi Chart.js no redimensiona nada al
+   imprimir. Siempre en tema claro (va a papel), aunque el sistema este en oscuro. */
+@page{size:letter landscape;margin:.35in .35in .45in;
+  @bottom-left{content:"Golden Valley Farms \00B7  Reporte final de ciclo";font-family:sans-serif;font-size:9px;color:#9E9890}
+  @bottom-right{content:"P\00E1gina " counter(page) " de " counter(pages);font-family:sans-serif;font-size:9px;color:#9E9890}}
+#rpt-wrap{position:fixed;inset:0;z-index:300;overflow:auto;background:#d9d5ce;color-scheme:light;
+  --bg:#F7F4EF;--surface:#FFFFFF;--surface2:#F0EDE7;--border:#E2DDD6;
+  --text:#1A1714;--text2:#6B6560;--text3:#9E9890;
+  --fram:#B03A6A;--fram-bg:#FCEEF4;--fram-border:#EDAACB;
+  --green:#1A7A57;--green-bg:#E6F5EF;--green-border:#7FCDB0;
+  --rojo:#D64545;--rojo-bg:#FBE9E9;--rojo2:#8F2222;--shadow:none;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact}
+body.rpt-abierto{overflow:hidden}
+.rpt-bar{position:sticky;top:0;z-index:2;background:#1A1714}
+.rpt-bar-in{width:1052px;max-width:100%;margin:0 auto;display:flex;align-items:center;gap:10px;padding:10px 16px}
+.rpt-bar button{font-family:var(--font);font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;padding:8px 14px;border:1px solid rgba(255,255,255,.25);background:transparent;color:#fff;white-space:nowrap}
+.rpt-bar .rpt-tabs{flex:1;display:flex;justify-content:center;gap:4px}
+.rpt-bar .rpt-tabs button.active{background:#fff;color:#1A1714;border-color:#fff}
+.rpt-bar .rpt-tabs button:disabled{opacity:.35;cursor:default}
+.rpt-bar .rpt-print{background:#B03A6A;border-color:#B03A6A}
+.rpt-papel{width:1052px;margin:24px auto 40px;background:#fff;padding:32px;box-shadow:0 4px 24px rgba(0,0,0,.18)}
+#rpt{width:988px;background:#fff;color:var(--text);font-family:var(--font)}
+.rpt-head{display:flex;align-items:center;gap:18px;padding-bottom:16px;border-bottom:3px solid var(--fram);margin-bottom:22px}
+.rpt-head img{width:64px;height:64px;object-fit:contain}
+.rpt-head-tit{flex:1}
+.rpt-head-emp{font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em}
+.rpt-head-h1{font-size:28px;font-weight:600;letter-spacing:-.02em;margin-top:2px}
+.rpt-head-h1 span{color:var(--fram)}
+.rpt-head-meta{text-align:right;font-size:11.5px;color:var(--text2);line-height:1.7;font-family:var(--mono)}
+.rpt-sec{display:flex;align-items:baseline;gap:10px;margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border);break-after:avoid}
+.rpt-sec h2{font-size:17px;font-weight:600;color:var(--fram);letter-spacing:-.01em}
+.rpt-sec span{font-size:11px;color:var(--text3)}
+.rpt-salto{break-before:page}
+#rpt .kpi-grid{grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:12px;break-inside:avoid}
+#rpt .kpi-card,#rpt .dash-card{box-shadow:none;break-inside:avoid}
+#rpt .kpi-card.span2{grid-column:span 1}
+#rpt .kpi-val{font-size:26px}
+#rpt .fin-charts-grid{display:block}
+#rpt .ffin-grid2{grid-template-columns:repeat(2,1fr)}
+#rpt .ffin-grid4{grid-template-columns:repeat(4,1fr)}
+#rpt .ffin-grid2 .kpi-val,#rpt .ffin-grid4 .kpi-val{font-size:22px}
+#rpt .fintab-wrap{height:auto;overflow:visible;border-radius:10px}
+#rpt .fintab{font-size:12px}
+#rpt .fintab th{font-size:10.5px;position:static}
+#rpt .fintab th,#rpt .fintab td{padding:5px 9px}
+#rpt .fintab .fintab-sub,#rpt .fintab td.txt div{font-size:10px!important}
+#rpt .fintab tr{break-inside:avoid}
+/* El tfoot se repetiria al pie de cada hoja: el Total va solo al final */
+#rpt .fintab tfoot{display:table-row-group}
+#rpt-prod .kpi-lbl,#rpt-prod .kpi-val,#rpt-prod .kpi-split-lbl{text-align:center}
+#rpt .rfr-cajas-row{display:flex;align-items:center;gap:28px}
+#rpt .rfr-cajas-row>.rfr-cajas-total{flex:0 0 34%}
+#rpt .rfr-cajas-row>.kpi-split{flex:1;margin-top:0;padding-left:28px;border-left:1px solid var(--border)}
+#rpt .kpi-split-lbl{font-size:11px}
+#rpt .rfr-dia-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin:0 0 12px;align-items:stretch}
+#rpt .rfr-dia-grid .dash-card{margin:0}
+#rpt .rfr-card-ancha{grid-column:1/-1}
+#rpt .rfr-card-trab{height:340px;min-height:0!important}
+#rpt .rfr-card-linea{height:315px;min-height:0!important}
+@media screen{ #rpt .rpt-salto{margin-top:40px} }
+@media print{
+  body.rpt-abierto{background:#fff;padding:0;overflow:visible}
+  body.rpt-abierto>*:not(#rpt-wrap){display:none!important}
+  #rpt-wrap{position:static;overflow:visible;background:#fff}
+  .rpt-bar{display:none}
+  .rpt-papel{width:auto;margin:0;padding:0;box-shadow:none}
+}
 /* ---- Financiero: full-width breakout en pantallas grandes ---- */
 @media (min-width: 700px){
   /* Resumen: mismo breakout de ancho que las secciones de Reportes.
@@ -1261,6 +1330,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </select>
       
         <button type="button" class="fin-sem-nav" id="rfr-ciclo-next" onclick="cicloStep('rfr-ciclo',1)" aria-label="Ciclo siguiente">&rsaquo;</button>
+        <button type="button" onclick="abrirReporteCiclo()" style="margin-left:6px;padding:9px 14px;border-radius:var(--radius);border:1px solid var(--fram-border);background:var(--fram-bg);color:var(--fram);font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap">📄 Reporte final</button>
       </div>
 
       <!-- Pestañas principales: Cosecha / Finanzas -->
@@ -4802,9 +4872,11 @@ function mkRfrChart(id, cfg){
   return ch;
 }
 
-function rfrGridCol(){ return window.matchMedia('(prefers-color-scheme:dark)').matches?'#2c2c2a':'#e1e0d9'; }
+// Con el reporte final abierto todo va en tema claro: se imprime sobre papel blanco.
+function rfrTemaOscuro(){ return !rptActivo && window.matchMedia('(prefers-color-scheme:dark)').matches; }
+function rfrGridCol(){ return rfrTemaOscuro()?'#2c2c2a':'#e1e0d9'; }
 // Tinta neutra de respaldo, para etiquetas sin punto de color asociado.
-function rfrLabelInk(){ return window.matchMedia('(prefers-color-scheme:dark)').matches?'#D8D2C8':'#3a352e'; }
+function rfrLabelInk(){ return rfrTemaOscuro()?'#D8D2C8':'#3a352e'; }
 // La etiqueta de valor toma el color de su propio punto. En tema claro los tonos
 // saturados del semáforo no alcanzan contraste como texto sobre fondo blanco
 // (el amarillo queda casi invisible), así que se cambian por el paso oscuro del
@@ -4812,7 +4884,7 @@ function rfrLabelInk(){ return window.matchMedia('(prefers-color-scheme:dark)').
 var RFR_SEM_COLS_TXT={'#1baf7a':'#0f7a55','#eda100':'#8a6000','#ec835a':'#b8552b','#d03b3b':'#b02a2a','#c3c2b7':'#8a8378'};
 function rfrTintaPunto(col){
   if(!col) return rfrLabelInk();
-  return window.matchMedia('(prefers-color-scheme:dark)').matches ? col : (RFR_SEM_COLS_TXT[col]||col);
+  return rfrTemaOscuro() ? col : (RFR_SEM_COLS_TXT[col]||col);
 }
 
 // Pestaña principal: Cosecha (dia/sem/res) o Finanzas (fac/edr).
@@ -4928,8 +5000,11 @@ function rfrFinMoney(v){
   return '$'+(v||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 
-function renderRfrFinanzas(filtroCiclo){
-  var cont=document.getElementById('rfr-fac-detalle');
+// opts (opcional): contId = contenedor destino; totales = agrega el renglon de totales
+// al pie de la tabla (lo usa el reporte final de ciclo).
+function renderRfrFinanzas(filtroCiclo, opts){
+  opts=opts||{};
+  var cont=document.getElementById(opts.contId||'rfr-fac-detalle');
   if(!cont) return;
 
   var data=(framFinanzas||[]).filter(function(f){
@@ -5027,7 +5102,16 @@ function renderRfrFinanzas(filtroCiclo){
         celda(r.pagado,'pag',r.subPag)+
       '</tr>';
     }).join('')+
-    '</tbody></table></div>';
+    '</tbody>'+
+    (opts.totales ? (function(){
+      var pctT=function(v){ return tot.facturado ? Math.round(v/tot.facturado*100)+'%' : ''; };
+      return '<tfoot><tr><td class="txt">Total</td>'+
+        celda(tot.facturado,'',tot.facturado?'DESCUENTOS '+pctT(tot.facturado-tot.pagado):'')+
+        COLS.map(function(c){ return celda(tot[c.key],'',tot[c.key]?pctT(tot[c.key]):''); }).join('')+
+        celda(tot.pagado,'pag',pctT(tot.pagado))+
+      '</tr></tfoot>';
+    })() : '')+
+    '</table></div>';
 
   cont.innerHTML=html;
 
@@ -5170,7 +5254,9 @@ function framBarraH(id, lbls, vals, cols, colorTxt, xMax, yAncho){
   });
 }
 
-function renderRfrEDR(filtroCiclo, contId){
+// altoFila (opcional): px por categoria en la grafica de gastos; el reporte final pasa
+// uno mas bajo para que el estado de resultados quepa en la primera hoja.
+function renderRfrEDR(filtroCiclo, contId, altoFila){
   var cont=document.getElementById(contId||'rfr-edr-detalle');
   if(!cont) return;
 
@@ -5219,7 +5305,7 @@ function renderRfrEDR(filtroCiclo, contId){
       (catFram.lbls.length ?
         '<div class="dash-card fin-chart-full">'+
           '<div class="dash-card-title">Gastos x Categoría</div>'+
-          '<div style="position:relative;height:'+Math.max(200, catFram.lbls.length*46)+'px;margin-top:8px"><canvas id="rfr-edr-cat-chart"></canvas></div>'+
+          '<div style="position:relative;height:'+Math.max(200, catFram.lbls.length*(altoFila||46))+'px;margin-top:8px"><canvas id="rfr-edr-cat-chart"></canvas></div>'+
         '</div>' : '')+
     '</div>';
 
@@ -6263,8 +6349,22 @@ function guardarCorteCosecha(){
 //   metaCajasGrupo meta de cajas por par de sectores (default 9,000; el total va
 //                  contra el doble). Por cosecha pasa 4,500.
 //   vacioMsg       texto del estado vacio
+//   impresion      reporte final de ciclo: graficas al ancho del contenedor (sin scroll
+//                  horizontal), % de merma junto a las demas de linea y etiquetas de
+//                  valor alternadas arriba/abajo para que no se encimen
+//   sinLineas      omite las graficas de linea (reporte por cosecha)
+//   antesLineas    html que se pinta antes del bloque de graficas de linea
 function renderRfrResumen(data, opts){
   opts=opts||{};
+  var IMP=!!opts.impresion;
+  function anchoMin(px){ return IMP?0:px; }
+  // Etiqueta de valor sobre su punto. En impresion las semanas quedan a ~23px unas de
+  // otras, asi que los indices nones van DEBAJO del punto: dos vecinas nunca chocan.
+  function lblY(ctx, pt, i, off){
+    if(IMP && i%2===1){ ctx.textBaseline='top'; return pt.y+off; }
+    ctx.textBaseline='bottom'; return pt.y-off;
+  }
+  var fontLbl=IMP?'bold 10px monospace':'bold 11px monospace';
   var cont=document.getElementById(opts.contId||'rfr-res-detalle'); if(!cont) return;
   if(!data.length){ cont.innerHTML='<div style="text-align:center;padding:40px 0;color:var(--text3);font-size:13px">'+(opts.vacioMsg||'Sin registros para este ciclo')+'</div>'; return; }
 
@@ -6425,6 +6525,26 @@ function renderRfrResumen(data, opts){
   var colPrecioCaja=rfrPuntoCol(precioCajaPonderado,RFR_CORTES_PRECIO_CAJA,true);
   var colFacturado=rfrPuntoCol(facturadoPonderado,rfrCortesDesde(refs.facturado,true),true);
 
+  // En impresion las graficas de linea van una por renglon, a todo lo ancho de la hoja.
+  var clsLinea=IMP?' rfr-card-ancha rfr-card-linea':'';
+  // En pantalla el % de merma acompaña a sector y calidad; en impresion encabeza las de linea.
+  var cardMerma=
+      '<div class="dash-card'+clsLinea+'" style="margin-bottom:0;display:flex;flex-direction:column;min-height:355px">'+
+        '<div class="dash-card-title">% de merma por semana</div>'+
+        '<div style="display:flex;width:100%;flex:1;min-height:230px;margin-top:8px">'+
+          '<div style="width:70px;flex-shrink:0;display:flex;align-items:stretch;gap:4px">'+
+            '<div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:10px;color:var(--text3);white-space:nowrap;display:flex;align-items:center;justify-content:center;padding:0 2px">% merma</div>'+
+            '<div style="position:relative;flex:1"><canvas id="rfr-res-merma-pct-chart-axis"></canvas></div>'+
+          '</div>'+
+          '<div id="rfr-res-merma-pct-chart-wrap" style="position:relative;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden">'+
+            '<div style="position:relative;height:100%;min-width:'+anchoMin(Math.max(500,semKeys.length*60))+'px">'+
+              '<canvas id="rfr-res-merma-pct-chart" role="img" aria-label="Porcentaje de merma por semana">Merma por semana.</canvas>'+
+            '</div>'+
+          '</div>'+
+        '</div>'+
+        '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
+      '</div>';
+
   cont.innerHTML=
     // ── Fila 1: Total cajas en fila completa, con avance contra la meta del ciclo ──
     '<div class="kpi-grid rfr-dia-kpis" style="grid-template-columns:1fr">'+
@@ -6494,11 +6614,11 @@ function renderRfrResumen(data, opts){
     '</div>'+
     // ── Fila 2: tarjetas independientes (trabajador ocupa las 2 filas a la izquierda) ──
     '<div class="rfr-dia-grid">'+
-      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column;min-width:0;min-height:320px">'+
+      '<div class="dash-card'+(IMP?' rfr-card-ancha rfr-card-trab':'')+'" style="margin-bottom:0;display:flex;flex-direction:column;min-width:0;min-height:320px">'+
         '<div class="dash-card-title">Promedio de cubetas por trabajador</div>'+
         '<div class="dash-card-sub">'+trabArr.length+' trabajadores \u00b7 promedio por d\u00eda</div>'+
         '<div style="position:relative;width:100%;flex:1;min-height:230px;min-width:0;overflow-x:auto;overflow-y:hidden">'+
-          '<div style="position:absolute;top:0;left:0;right:0;bottom:0;min-width:'+Math.max(700,trabArr.length*42)+'px">'+
+          '<div style="position:absolute;top:0;left:0;right:0;bottom:0;min-width:'+anchoMin(Math.max(700,trabArr.length*42))+'px">'+
             '<canvas id="rfr-res-trab-chart" role="img" aria-label="Promedio de cubetas por trabajador">Trabajadores.</canvas>'+
           '</div>'+
         '</div>'+
@@ -6520,25 +6640,13 @@ function renderRfrResumen(data, opts){
         '<div style="position:relative;width:100%;flex:1;min-height:230px;margin-top:8px"><canvas id="rfr-res-sec-chart" role="img" aria-label="Cajas por sector">Sectores.</canvas></div>'+
         '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Sectores</div>'+
       '</div>'+
-      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column;min-height:355px">'+
-        '<div class="dash-card-title">% de merma por semana</div>'+
-        '<div style="display:flex;width:100%;flex:1;min-height:230px;margin-top:8px">'+
-          '<div style="width:70px;flex-shrink:0;display:flex;align-items:stretch;gap:4px">'+
-            '<div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:10px;color:var(--text3);white-space:nowrap;display:flex;align-items:center;justify-content:center;padding:0 2px">% merma</div>'+
-            '<div style="position:relative;flex:1"><canvas id="rfr-res-merma-pct-chart-axis"></canvas></div>'+
-          '</div>'+
-          '<div id="rfr-res-merma-pct-chart-wrap" style="position:relative;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden">'+
-            '<div style="position:relative;height:100%;min-width:'+Math.max(500,semKeys.length*60)+'px">'+
-              '<canvas id="rfr-res-merma-pct-chart" role="img" aria-label="Porcentaje de merma por semana">Merma por semana.</canvas>'+
-            '</div>'+
-          '</div>'+
-        '</div>'+
-        '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
-      '</div>'+
+      (IMP?'':cardMerma)+
     '</div>'+
     // ── Filas 3-7: gráficas de línea, 2 por fila, con eje Y fijo ──
+    (opts.sinLineas ? '' : (opts.antesLineas||'')+
     '<div class="rfr-dia-grid" style="margin-top:10px">'+
-      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
+      (IMP?cardMerma:'')+
+      '<div class="dash-card'+clsLinea+'" style="margin-bottom:0;display:flex;flex-direction:column">'+
         '<div class="dash-card-title">Kg cosechados vs. Kg de proceso</div>'+
         '<div style="display:flex;gap:14px;margin:8px 0;font-size:11px;color:var(--text3)">'+
           '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:2px;background:var(--fram);vertical-align:middle"></span>Kg cosechados</span>'+
@@ -6550,14 +6658,14 @@ function renderRfrResumen(data, opts){
             '<div style="position:relative;flex:1"><canvas id="rfr-res-linea-chart-axis"></canvas></div>'+
           '</div>'+
           '<div id="rfr-res-linea-chart-wrap" style="position:relative;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden">'+
-            '<div style="position:relative;height:100%;min-width:'+Math.max(500,semKeys.length*60)+'px">'+
+            '<div style="position:relative;height:100%;min-width:'+anchoMin(Math.max(500,semKeys.length*60))+'px">'+
               '<canvas id="rfr-res-linea-chart" role="img" aria-label="Kg cosechados vs kg de proceso por semana">L\u00ednea semanal.</canvas>'+
             '</div>'+
           '</div>'+
         '</div>'+
         '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
       '</div>'+
-      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column">'+
+      '<div class="dash-card'+clsLinea+'" style="margin-bottom:0;display:flex;flex-direction:column">'+
         '<div class="dash-card-title">Cajas por semana</div>'+
         '<div style="display:flex;width:100%;flex:1;min-height:220px;margin-top:8px">'+
           '<div style="width:70px;flex-shrink:0;display:flex;align-items:stretch;gap:4px">'+
@@ -6565,14 +6673,14 @@ function renderRfrResumen(data, opts){
             '<div style="position:relative;flex:1"><canvas id="rfr-res-cajas-semana-chart-axis"></canvas></div>'+
           '</div>'+
           '<div id="rfr-res-cajas-semana-chart-wrap" style="position:relative;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden">'+
-            '<div style="position:relative;height:100%;min-width:'+Math.max(500,semKeys.length*60)+'px">'+
+            '<div style="position:relative;height:100%;min-width:'+anchoMin(Math.max(500,semKeys.length*60))+'px">'+
               '<canvas id="rfr-res-cajas-semana-chart" role="img" aria-label="Cajas por semana">Cajas por semana.</canvas>'+
             '</div>'+
           '</div>'+
         '</div>'+
         '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
       '</div>'+
-      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column;min-height:355px">'+
+      '<div class="dash-card'+clsLinea+'" style="margin-bottom:0;display:flex;flex-direction:column;min-height:355px">'+
         '<div class="dash-card-title">Costo por cubeta \u2014 general</div>'+
         '<div style="display:flex;width:100%;flex:1;min-height:220px;margin-top:8px">'+
           '<div style="width:78px;flex-shrink:0;display:flex;align-items:stretch;gap:4px">'+
@@ -6580,14 +6688,14 @@ function renderRfrResumen(data, opts){
             '<div style="position:relative;flex:1"><canvas id="rfr-res-costo-general-chart-axis"></canvas></div>'+
           '</div>'+
           '<div id="rfr-res-costo-general-chart-wrap" style="position:relative;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden">'+
-            '<div style="position:relative;height:100%;min-width:'+Math.max(500,semKeys.length*60)+'px">'+
+            '<div style="position:relative;height:100%;min-width:'+anchoMin(Math.max(500,semKeys.length*60))+'px">'+
               '<canvas id="rfr-res-costo-general-chart" role="img" aria-label="Costo por cubeta general por semana">Costo por cubeta general.</canvas>'+
             '</div>'+
           '</div>'+
         '</div>'+
         '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
       '</div>'+
-      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column;min-height:355px">'+
+      '<div class="dash-card'+clsLinea+'" style="margin-bottom:0;display:flex;flex-direction:column;min-height:355px">'+
         '<div class="dash-card-title">Costo por cubeta \u2014 cosechadores</div>'+
         '<div style="display:flex;width:100%;flex:1;min-height:220px;margin-top:8px">'+
           '<div style="width:78px;flex-shrink:0;display:flex;align-items:stretch;gap:4px">'+
@@ -6595,14 +6703,14 @@ function renderRfrResumen(data, opts){
             '<div style="position:relative;flex:1"><canvas id="rfr-res-costo-cosechadores-chart-axis"></canvas></div>'+
           '</div>'+
           '<div id="rfr-res-costo-cosechadores-chart-wrap" style="position:relative;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden">'+
-            '<div style="position:relative;height:100%;min-width:'+Math.max(500,semKeys.length*60)+'px">'+
+            '<div style="position:relative;height:100%;min-width:'+anchoMin(Math.max(500,semKeys.length*60))+'px">'+
               '<canvas id="rfr-res-costo-cosechadores-chart" role="img" aria-label="Costo por cubeta cosechadores por semana">Costo por cubeta cosechadores.</canvas>'+
             '</div>'+
           '</div>'+
         '</div>'+
         '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
       '</div>'+
-      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column;min-height:355px">'+
+      '<div class="dash-card'+clsLinea+'" style="margin-bottom:0;display:flex;flex-direction:column;min-height:355px">'+
         '<div class="dash-card-title">Precio por caja</div>'+
         '<div style="display:flex;width:100%;flex:1;min-height:220px;margin-top:8px">'+
           '<div style="width:78px;flex-shrink:0;display:flex;align-items:stretch;gap:4px">'+
@@ -6610,14 +6718,14 @@ function renderRfrResumen(data, opts){
             '<div style="position:relative;flex:1"><canvas id="rfr-res-precio-chart-axis"></canvas></div>'+
           '</div>'+
           '<div id="rfr-res-precio-chart-wrap" style="position:relative;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden">'+
-            '<div style="position:relative;height:100%;min-width:'+Math.max(500,semKeys.length*60)+'px">'+
+            '<div style="position:relative;height:100%;min-width:'+anchoMin(Math.max(500,semKeys.length*60))+'px">'+
               '<canvas id="rfr-res-precio-chart" role="img" aria-label="Precio por caja por semana">Precio por caja.</canvas>'+
             '</div>'+
           '</div>'+
         '</div>'+
         '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
       '</div>'+
-      '<div class="dash-card" style="margin-bottom:0;display:flex;flex-direction:column;min-height:355px">'+
+      '<div class="dash-card'+clsLinea+'" style="margin-bottom:0;display:flex;flex-direction:column;min-height:355px">'+
         '<div class="dash-card-title">Total facturado</div>'+
         '<div style="display:flex;width:100%;flex:1;min-height:220px;margin-top:8px">'+
           '<div style="width:96px;flex-shrink:0;display:flex;align-items:stretch;gap:4px">'+
@@ -6625,14 +6733,14 @@ function renderRfrResumen(data, opts){
             '<div style="position:relative;flex:1"><canvas id="rfr-res-facturado-chart-axis"></canvas></div>'+
           '</div>'+
           '<div id="rfr-res-facturado-chart-wrap" style="position:relative;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden">'+
-            '<div style="position:relative;height:100%;min-width:'+Math.max(500,semKeys.length*90)+'px">'+
+            '<div style="position:relative;height:100%;min-width:'+anchoMin(Math.max(500,semKeys.length*90))+'px">'+
               '<canvas id="rfr-res-facturado-chart" role="img" aria-label="Total facturado por semana">Total facturado.</canvas>'+
             '</div>'+
           '</div>'+
         '</div>'+
         '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.03em">Semana</div>'+
       '</div>'+
-    '</div>';
+    '</div>');
 
   var gridCol=rfrGridCol(); var textMuted='#898781';
 
@@ -6643,7 +6751,7 @@ function renderRfrResumen(data, opts){
         var ctx=chart.ctx; var ds=chart.data.datasets[0]; var meta=chart.getDatasetMeta(0);
         meta.data.forEach(function(bar,i){
           var v=ds.data[i]; if(!v) return;
-          ctx.save(); ctx.fillStyle=rfrTintaPunto(ds.backgroundColor[i]); ctx.font='bold 11px monospace';
+          ctx.save(); ctx.fillStyle=rfrTintaPunto(ds.backgroundColor[i]); ctx.font=IMP?'bold 9px monospace':'bold 11px monospace';
           ctx.textAlign='center'; ctx.textBaseline='bottom';
           ctx.fillText(v.toLocaleString('es-MX'), bar.x, bar.y-4); ctx.restore();
         });
@@ -6717,8 +6825,8 @@ function renderRfrResumen(data, opts){
             var v=ds.data[i]; if(v===null||v===undefined||!pt) return;
             ctx.save();
             ctx.fillStyle=rfrTintaPunto(ds.pointBackgroundColor&&ds.pointBackgroundColor[i]); ctx.font='bold 10px monospace';
-            ctx.textAlign='center'; ctx.textBaseline='bottom';
-            ctx.fillText(v, pt.x, pt.y-6);
+            ctx.textAlign='center';
+            ctx.fillText(IMP?Math.round(v):v, pt.x, lblY(ctx,pt,i+dsIdx,6));
             ctx.restore();
           });
         });
@@ -6730,6 +6838,9 @@ function renderRfrResumen(data, opts){
       cfg.options.scales.y.ticks = Object.assign({}, cfg.options.scales.y.ticks, {display:false});
       cfg.options.scales.y.border = {display:false};
       cfg.options.scales.y.ticks.padding = 0;
+      // Sin scroll (impresion) el titulo del eje quedaria pegado al rotulo vertical fijo
+      // y se leeria dos veces.
+      if(IMP && cfg.options.scales.y.title) cfg.options.scales.y.title.display = false;
       // El padding derecho deja aire para la etiqueta del ultimo punto, que se dibuja
       // centrada sobre el: con el area de trazo pegada al borde salia cortada a la mitad.
       if(!cfg.options.layout) cfg.options.layout={padding:{left:0,right:40,top:8,bottom:0}};
@@ -6769,9 +6880,9 @@ function renderRfrResumen(data, opts){
         var ctx=chart.ctx; var ds=chart.data.datasets[0]; var meta=chart.getDatasetMeta(0);
         meta.data.forEach(function(pt,i){
           var v=ds.data[i]; if(v===null||v===undefined||!pt) return;
-          ctx.save(); ctx.fillStyle=rfrTintaPunto(ds.pointBackgroundColor&&ds.pointBackgroundColor[i]); ctx.font='bold 11px monospace';
-          ctx.textAlign='center'; ctx.textBaseline='bottom';
-          ctx.fillText(v.toLocaleString('es-MX')+'%', pt.x, pt.y-8);
+          ctx.save(); ctx.fillStyle=rfrTintaPunto(ds.pointBackgroundColor&&ds.pointBackgroundColor[i]); ctx.font=fontLbl;
+          ctx.textAlign='center';
+          ctx.fillText(v.toLocaleString('es-MX')+'%', pt.x, lblY(ctx,pt,i,8));
           ctx.restore();
         });
       }
@@ -6828,9 +6939,9 @@ function renderRfrResumen(data, opts){
         var ctx=chart.ctx; var ds=chart.data.datasets[0]; var meta=chart.getDatasetMeta(0);
         meta.data.forEach(function(pt,i){
           var v=ds.data[i]; if(v===null||v===undefined||!pt) return;
-          ctx.save(); ctx.fillStyle=rfrTintaPunto(ds.pointBackgroundColor&&ds.pointBackgroundColor[i]); ctx.font='bold 11px monospace';
-          ctx.textAlign='center'; ctx.textBaseline='bottom';
-          ctx.fillText(v, pt.x, pt.y-8);
+          ctx.save(); ctx.fillStyle=rfrTintaPunto(ds.pointBackgroundColor&&ds.pointBackgroundColor[i]); ctx.font=fontLbl;
+          ctx.textAlign='center';
+          ctx.fillText(v, pt.x, lblY(ctx,pt,i,8));
           ctx.restore();
         });
       }
@@ -6861,9 +6972,11 @@ function renderRfrResumen(data, opts){
         var ctx=chart.ctx; var ds=chart.data.datasets[0]; var meta=chart.getDatasetMeta(0);
         meta.data.forEach(function(pt,i){
           var v=ds.data[i]; if(v===null||v===undefined||!pt) return;
-          ctx.save(); ctx.fillStyle=rfrTintaPunto(ds.pointBackgroundColor&&ds.pointBackgroundColor[i]); ctx.font='bold 11px monospace';
-          ctx.textAlign='center'; ctx.textBaseline='bottom';
-          ctx.fillText('$'+v.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}), pt.x, pt.y-8);
+          ctx.save(); ctx.fillStyle=rfrTintaPunto(ds.pointBackgroundColor&&ds.pointBackgroundColor[i]); ctx.font=fontLbl;
+          ctx.textAlign='center';
+          // En impresion, maximo 5 caracteres ($25.3 / $216): mas anchas se enciman.
+          var txt=IMP ? '$'+(v>=100?Math.round(v):v.toFixed(1)) : '$'+v.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+          ctx.fillText(txt, pt.x, lblY(ctx,pt,i,8));
           ctx.restore();
         });
       }
@@ -6936,9 +7049,9 @@ function renderRfrResumen(data, opts){
         meta.data.forEach(function(pt,i){
           var v=ds.data[i]; if(v===null||v===undefined||!pt) return;
           ctx.save();
-          ctx.fillStyle=rfrTintaPunto(ds.pointBackgroundColor&&ds.pointBackgroundColor[i]); ctx.font='bold 11px monospace';
-          ctx.textAlign='center'; ctx.textBaseline='bottom';
-          ctx.fillText('$'+v.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}), pt.x, pt.y-8);
+          ctx.fillStyle=rfrTintaPunto(ds.pointBackgroundColor&&ds.pointBackgroundColor[i]); ctx.font=fontLbl;
+          ctx.textAlign='center';
+          ctx.fillText(IMP ? Math.round(v/1000)+'k' : '$'+v.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}), pt.x, lblY(ctx,pt,i,8));
           ctx.restore();
         });
       }
@@ -6964,6 +7077,148 @@ function renderRfrResumen(data, opts){
     }, 28);
   },30);
   setTimeout(function(){ window.dispatchEvent(new Event('resize')); },150);
+}
+
+// ============================================================
+// ---- REPORTE FINAL DE CICLO (FRAMBUESA) ----
+// ============================================================
+// Vista de impresion con tres reportes: General (estado de resultados + facturacion +
+// Por ciclo completo) y uno por cosecha (Por cosecha sin las graficas de linea). No
+// calcula nada propio: llama a renderRfrEDR / renderRfrFinanzas / renderRfrResumen, asi
+// que sus cifras no pueden diferir de las pantallas. El PDF sale del dialogo de
+// impresion del navegador (hoja carta horizontal, ver @page en el CSS).
+var rptActivo=false, rptTipoSel='gen', rptCiclo='', rptDprPrevio=null, rptAnimPrevia=null;
+var RPT_TITULOS={gen:'Reporte general', c1:'Cosecha 1', c2:'Cosecha 2'};
+
+function abrirReporteCiclo(){
+  var cicloSel=document.getElementById('rfr-ciclo');
+  var ciclo=cicloSel?cicloSel.value:'';
+  if(!ciclo){ showToast('Selecciona un ciclo'); return; }
+  rptCiclo=ciclo; rptTipoSel='gen';
+  // Estas pantallas generan los MISMOS ids de canvas que el reporte; si quedan
+  // pintadas, getElementById encontraria las de ellas y no las del reporte.
+  ['rfr-res-detalle','rfr-coh-detalle','rslt-edr-content'].forEach(function(id){
+    var c=document.getElementById(id); if(c) c.innerHTML='';
+  });
+  var w=document.getElementById('rpt-wrap');
+  if(!w){ w=document.createElement('div'); w.id='rpt-wrap'; document.body.appendChild(w); }
+  rptActivo=true;
+  // Graficas a 3x de resolucion: en el PDF el canvas es imagen y a 1x se ve borroso.
+  rptDprPrevio=Chart.defaults.devicePixelRatio;
+  Chart.defaults.devicePixelRatio=3;
+  // Sin animacion: si se imprime antes de que termine, la grafica sale a medio dibujar.
+  rptAnimPrevia=Chart.defaults.animation;
+  Chart.defaults.animation=false;
+  document.body.classList.add('rpt-abierto');
+  renderReporteCiclo();
+}
+
+function cerrarReporteCiclo(){
+  var w=document.getElementById('rpt-wrap');
+  if(w){
+    Object.keys(rfrCharts).forEach(function(id){
+      var ch=rfrCharts[id];
+      if(ch && ch.canvas && w.contains(ch.canvas)){ ch.destroy(); delete rfrCharts[id]; }
+    });
+    w.parentNode.removeChild(w);
+  }
+  rptActivo=false;
+  Chart.defaults.devicePixelRatio=rptDprPrevio;
+  Chart.defaults.animation=rptAnimPrevia;
+  document.body.classList.remove('rpt-abierto');
+  renderRepFram();
+}
+
+function rptTab(t){ rptTipoSel=t; renderReporteCiclo(); }
+
+function imprimirReporteCiclo(){
+  // El titulo del documento es el nombre que el navegador propone para el PDF.
+  var prev=document.title;
+  document.title='Frambuesa '+rptCiclo+' - '+RPT_TITULOS[rptTipoSel];
+  window.print();
+  setTimeout(function(){ document.title=prev; }, 1000);
+}
+
+function rptFecha(f){
+  return new Date(f+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'});
+}
+
+function rptSeccion(titulo, sub, salto){
+  return '<div class="rpt-sec'+(salto?' rpt-salto':'')+'"><h2>'+titulo+'</h2>'+(sub?'<span>'+sub+'</span>':'')+'</div>';
+}
+
+function renderReporteCiclo(){
+  var w=document.getElementById('rpt-wrap'); if(!w) return;
+  var ciclo=rptCiclo, tipo=rptTipoSel;
+  var data=(framRegistros||[]).filter(function(r){ return r.ciclo===ciclo; })
+    .slice().sort(function(a,b){ return a.fecha<b.fecha?-1:1; });
+  var corte=framCorteDe(ciclo);
+  if(!corte && tipo!=='gen') tipo=rptTipoSel='gen';
+  var datos = tipo==='gen' ? data : data.filter(function(r){
+    return tipo==='c1' ? r.fecha<corte : r.fecha>=corte;
+  });
+
+  var semanas={};
+  datos.forEach(function(r){ semanas[rfrSemanaKey(r.fecha)]=1; });
+  var periodo = datos.length ? rptFecha(datos[0].fecha)+' – '+rptFecha(datos[datos.length-1].fecha) : 'Sin registros';
+  var hoy=new Date().toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'});
+  var logoEl=document.querySelector('.header-logo img');
+
+  var tabs=['gen','c1','c2'].map(function(t){
+    return '<button type="button" class="'+(t===tipo?'active':'')+'"'+(t!=='gen'&&!corte?' disabled title="Captura la fecha de corte en Por cosecha"':'')+
+      ' onclick="rptTab(\''+t+'\')">'+(t==='gen'?'General':RPT_TITULOS[t])+'</button>';
+  }).join('');
+
+  var html=
+    '<div class="rpt-bar"><div class="rpt-bar-in">'+
+      '<button type="button" onclick="cerrarReporteCiclo()">‹ Volver</button>'+
+      '<div class="rpt-tabs">'+tabs+'</div>'+
+      '<button type="button" class="rpt-print" onclick="imprimirReporteCiclo()">Guardar PDF</button>'+
+    '</div></div>'+
+    '<div class="rpt-papel"><div id="rpt">'+
+      '<div class="rpt-head">'+
+        (logoEl?'<img src="'+logoEl.src+'" alt="">':'')+
+        '<div class="rpt-head-tit">'+
+          '<div class="rpt-head-emp">Golden Valley Farms · Frambuesa</div>'+
+          '<div class="rpt-head-h1">Reporte final de ciclo <span>'+ciclo+'</span>'+(tipo!=='gen'?' · '+RPT_TITULOS[tipo]:'')+'</div>'+
+        '</div>'+
+        '<div class="rpt-head-meta">'+
+          'Periodo: '+periodo+'<br>'+
+          datos.length+' días de cosecha · '+Object.keys(semanas).length+' semanas<br>'+
+          'Generado el '+hoy+
+        '</div>'+
+      '</div>'+
+      (tipo==='gen' ?
+        rptSeccion('Estado de resultados')+
+        '<div id="rpt-edr"></div>'+
+        rptSeccion('Facturación','',true)+
+        '<div id="rpt-fac"></div>'+
+        rptSeccion('Producción y calidad','',true)
+      :
+        rptSeccion('Producción y calidad')
+      )+
+      '<div id="rpt-prod"></div>'+
+    '</div></div>';
+  w.innerHTML=html;
+  w.scrollTop=0;
+
+  if(tipo==='gen'){
+    // La grafica de gastos tiene que caber en la primera hoja junto al encabezado y
+    // las tarjetas (~420px libres): el alto por categoria se ajusta a cuantas haya.
+    var nCats={};
+    gastos.forEach(function(g){
+      if(g.cultivo==='fram' && ['jal','nay'].indexOf(g.loc)>=0 && framEnCiclo(g, ciclo)) nCats[g.cat||'Sin categoría']=1;
+    });
+    var n=Object.keys(nCats).length||1;
+    renderRfrEDR(ciclo, 'rpt-edr', Math.max(16, Math.min(28, Math.floor(420/n))));
+    renderRfrFinanzas(ciclo, {contId:'rpt-fac', totales:true});
+  }
+  renderRfrResumen(datos, {
+    contId:'rpt-prod', impresion:true, sinLineas:tipo!=='gen',
+    metaCajasGrupo: tipo==='gen'?9000:4500,
+    antesLineas: rptSeccion('Tendencia semanal'),
+    vacioMsg:'Sin registros de cosecha en este periodo'
+  });
 }
 
 // ============================================================
