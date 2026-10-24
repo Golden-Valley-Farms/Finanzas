@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grupo BMA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&amp;family=DM+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F7F4EF;--surface:#FFFFFF;--surface2:#F0EDE7;--border:#E2DDD6;
+  --text:#1A1714;--text2:#6B6560;--text3:#9E9890;
+  /* Un color por empresa: chips del selector y, mas adelante, etiquetas de registros. */
+  --sunl:#C0392B;--sunl-bg:#FBEAE8;
+  --alzator:#B8860B;--alzator-bg:#FBF3D9;
+  --pastito:#2C7A5A;--pastito-bg:#E6F5EF;
+  --rocket:#1A5FA8;--rocket-bg:#E8F1FB;
+  --melamina:#8B4513;--melamina-bg:#FDF0E6;
+  --radius:10px;--radius-lg:16px;
+  --shadow:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
+  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#141210;--surface:#1E1C19;--surface2:#262320;--border:#32302C;
+  --text:#F0ECE6;--text2:#9E9688;--text3:#6A6460;
+  --sunl:#E8746A;--sunl-bg:#2A100E;
+  --alzator:#E0B84A;--alzator-bg:#231D06;
+  --pastito:#3CB87A;--pastito-bg:#0A1F15;
+  --rocket:#5BA3E0;--rocket-bg:#0A1525;
+  --melamina:#D4894A;--melamina-bg:#251508;
+}}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;padding:0 0 80px}
+button{font-family:var(--font);cursor:pointer}
+
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px}
+.head-in{max-width:1100px;margin:0 auto}
+h1{font-size:20px;font-weight:600}
+.sub{font-size:13px;color:var(--text2);margin-top:2px}
+
+.empresas{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.chip{border:1px solid var(--border);background:var(--surface);color:var(--text2);border-radius:999px;padding:6px 14px;font-size:13px;font-weight:500}
+.chip.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+.chip[data-emp="sunl"].on{background:var(--sunl);border-color:var(--sunl);color:#fff}
+.chip[data-emp="alzator"].on{background:var(--alzator);border-color:var(--alzator);color:#fff}
+.chip[data-emp="pastito"].on{background:var(--pastito);border-color:var(--pastito);color:#fff}
+.chip[data-emp="rocket"].on{background:var(--rocket);border-color:var(--rocket);color:#fff}
+.chip[data-emp="melamina"].on{background:var(--melamina);border-color:var(--melamina);color:#fff}
+
+nav.tabs{max-width:1100px;margin:16px auto 0;padding:0 16px;display:flex;gap:4px;border-bottom:1px solid var(--border);overflow-x:auto}
+.tab{background:none;border:none;border-bottom:2px solid transparent;padding:10px 14px;font-size:14px;font-weight:500;color:var(--text2);white-space:nowrap}
+.tab.on{color:var(--text);border-bottom-color:var(--text)}
+
+main{max-width:1100px;margin:0 auto;padding:16px}
+.modulo{display:none}
+.modulo.on{display:block}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:24px}
+.card h2{font-size:16px;font-weight:600;margin-bottom:6px}
+.card p{font-size:14px;color:var(--text2);line-height:1.5}
+.pendiente{display:inline-block;margin-top:12px;font-size:12px;font-family:var(--mono);color:var(--text3)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-in">
+    <h1>Grupo BMA</h1>
+    <div class="sub">Inventario, cuentas y gastos de las empresas del grupo</div>
+    <div class="empresas" id="empresas"></div>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab on" data-mod="inventario" onclick="selModulo('inventario')">Inventario</button>
+  <button class="tab" data-mod="cuentas" onclick="selModulo('cuentas')">Cuentas por cobrar y pagar</button>
+  <button class="tab" data-mod="gastos" onclick="selModulo('gastos')">Gastos</button>
+</nav>
+
+<main>
+  <section class="modulo on" id="mod-inventario">
+    <div class="card">
+      <h2>Inventario</h2>
+      <p>Existencias de cada empresa: motos, maquinaria, follaje, canchas y melamina.</p>
+      <span class="pendiente">En construcción</span>
+    </div>
+  </section>
+  <section class="modulo" id="mod-cuentas">
+    <div class="card">
+      <h2>Cuentas por cobrar y pagar</h2>
+      <p>Lo que nos deben los clientes y lo que le debemos a proveedores y prestamistas.</p>
+      <span class="pendiente">En construcción</span>
+    </div>
+  </section>
+  <section class="modulo" id="mod-gastos">
+    <div class="card">
+      <h2>Gastos</h2>
+      <p>Gastos normales y pagos a deudas, por separado para no contar dos veces lo mismo.</p>
+      <span class="pendiente">En construcción</span>
+    </div>
+  </section>
+</main>
+
+<script>
+// Catalogo fijo de empresas. La clave es la que se guardara en los registros.
+var EMPRESAS = [
+  {key:'sunl',     nombre:'SUNL'},
+  {key:'alzator',  nombre:'Alzator'},
+  {key:'pastito',  nombre:'Pastito'},
+  {key:'rocket',   nombre:'Rocket'},
+  {key:'melamina', nombre:'Melamina'}
+];
+
+var empresaSel = 'todas';
+var moduloSel = 'inventario';
+
+function renderEmpresas(){
+  var html = '<button class="chip' + (empresaSel==='todas'?' on':'') + '" onclick="selEmpresa(\'todas\')">Todas</button>';
+  EMPRESAS.forEach(function(e){
+    html += '<button class="chip' + (empresaSel===e.key?' on':'') + '" data-emp="' + e.key + '" onclick="selEmpresa(\'' + e.key + '\')">' + e.nombre + '</button>';
+  });
+  document.getElementById('empresas').innerHTML = html;
+}
+
+function selEmpresa(key){
+  empresaSel = key;
+  renderEmpresas();
+}
+
+function selModulo(mod){
+  moduloSel = mod;
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.toggle('on', t.dataset.mod===mod); });
+  document.querySelectorAll('.modulo').forEach(function(m){ m.classList.toggle('on', m.id==='mod-'+mod); });
+}
+
+renderEmpresas();
+</script>
+</body>
+</html>
