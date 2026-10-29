@@ -11924,6 +11924,7 @@ function docLineasVenta(d){
       if(kg<=0 && pr<=0) return;
       var cajas=parseInt(p.cajas,10)||0;
       out.push({concepto:'Camote '+(p.variedad||''), bruto:parseFloat(p.pesoBruto)||kg, cajas:cajas,
+        tara:cajas>0?(parseFloat(pesoCajasPartida(p))||0):0,
         kg:kg, precio:pr, monto:Math.round(kg*pr*100)/100});
     });
     var fl=parseFloat(e.flete)||0;
@@ -11999,11 +12000,11 @@ function docNotaEnvio(deudaId){
   // queda exactamente como antes. Con cajas se ensancha y las columnas de la
   // derecha conservan la misma separación entre sí.
   var hayCajas=lineas.some(function(l){ return (l.cajas||0)>0; });
-  var W=hayCajas?680:520;
-  var xBruto=DOC_PAD+250, xCajas=DOC_PAD+320;
-  var xKg=hayCajas?(DOC_PAD+410):(DOC_PAD+250), xPr=xKg+90, xTot=W-DOC_PAD;
-  var totKg=0, totMonto=0, totBruto=0, totCajas=0;
-  lineas.forEach(function(l){ totKg+=l.kg; totMonto+=l.monto; totBruto+=(l.bruto||0); totCajas+=(l.cajas||0); });
+  var W=hayCajas?770:520;
+  var xBruto=DOC_PAD+250, xCajas=DOC_PAD+320, xTara=DOC_PAD+410;
+  var xKg=hayCajas?(DOC_PAD+500):(DOC_PAD+250), xPr=xKg+90, xTot=W-DOC_PAD;
+  var totKg=0, totMonto=0, totBruto=0, totCajas=0, totTara=0;
+  lineas.forEach(function(l){ totKg+=l.kg; totMonto+=l.monto; totBruto+=(l.bruto||0); totCajas+=(l.cajas||0); totTara+=(l.tara||0); });
   var bloques=[docHead('Nota de envío', d.folioExterno||'—', '', DOC_ACCENT.cobrar)];
   bloques.push({h:30, draw:function(ctx,y,W){
     docTxt(ctx,docFechaLarga(d.fecha),W/2,y+16,docFS(600,12),DOC_TEXTO2,'center');
@@ -12013,6 +12014,7 @@ function docNotaEnvio(deudaId){
     if(hayCajas){
       docTxt(ctx,'PESO BRUTO',xBruto,y+12,docFS(600,10),DOC_TENUE,'right');
       docTxt(ctx,'CAJAS',xCajas,y+12,docFS(600,10),DOC_TENUE,'right');
+      docTxt(ctx,'PESO CAJAS',xTara,y+12,docFS(600,10),DOC_TENUE,'right');
     }
     docTxt(ctx,'PESO NETO (KG)',xKg,y+12,docFS(600,10),DOC_TENUE,'right');
     docTxt(ctx,'PRECIO',xPr,y+12,docFS(600,10),DOC_TENUE,'right');
@@ -12024,6 +12026,7 @@ function docNotaEnvio(deudaId){
       docTxt(ctx,docCorta(ctx,l.concepto,hayCajas?175:220,docFS(500,12.5)),DOC_PAD,y+17,docFS(500,12.5),DOC_TINTA);
       if(hayCajas && l.bruto>0) docTxt(ctx,docKg(l.bruto,2),xBruto,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
       if(hayCajas && l.cajas>0) docTxt(ctx,docKg(l.cajas,0),xCajas,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
+      if(hayCajas && l.tara>0) docTxt(ctx,docKg(l.tara,2),xTara,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
       if(l.kg>0) docTxt(ctx,docKg(l.kg,2),xKg,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
       if(l.precio>0) docTxt(ctx,docMonCta(l.precio,mon),xPr,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
       docTxt(ctx,docMonCta(l.monto,mon),xTot,y+17,docFM(500,12.5),DOC_TINTA,'right');
@@ -12036,6 +12039,7 @@ function docNotaEnvio(deudaId){
     if(hayCajas){
       docTxt(ctx,docKg(totBruto,2),xBruto,y+22,docFM(700,13),DOC_TINTA,'right');
       docTxt(ctx,docKg(totCajas,0),xCajas,y+22,docFM(700,13),DOC_TINTA,'right');
+      docTxt(ctx,docKg(totTara,2),xTara,y+22,docFM(700,13),DOC_TINTA,'right');
     }
     docTxt(ctx,docKg(totKg,2),xKg,y+22,docFM(700,13),DOC_TINTA,'right');
     docTxt(ctx,docMonCta(totMonto,mon),xTot,y+22,docFM(700,14),DOC_TINTA,'right');

@@ -522,7 +522,7 @@ La tarjeta de cada variedad del envío jal/nay (`renderPartidas()`) va en cuatro
 
 `pesoBruto`, `cajas` y `pesoCaja` viven **dentro del jsonb `partidas`** de `envios`, que viaja entero en `sbSaveEnvio()`/`cargarDesdeSB()`: no hubo columna nueva. Todo lo demás (reportes, deudas, almacén) sigue leyendo `pesoNeto`, que conserva su significado. Los envíos de antes no traen bruto: `editarEnvio()` y `guardarEnvio()` caen a `pesoBruto = pesoNeto`, así que reeditarlos no les cambia el neto.
 
-**La nota de envío** (`docNotaEnvio()`) agrega las columnas Peso bruto y Cajas —y se ensancha de 520 a 680px— **solo si alguna partida trae cajas**; sin cajas sale idéntica a antes.
+**La nota de envío** (`docNotaEnvio()`) agrega las columnas Peso bruto · Cajas · Peso cajas antes del Peso neto —y se ensancha de 520 a 770px— **solo si alguna partida trae cajas**; sin cajas sale idéntica a antes.
 
 ## Convenciones del código
 
