@@ -9158,7 +9158,7 @@ function addPartidaDesdeSelect(){
   var sel = document.getElementById('vf-var-select');
   var v = sel ? sel.value : '';
   if(!v){ showToast('Selecciona una variedad'); return; }
-  partidasTemp.push({variedad:v, sector:'', hectareas:'', pesoBruto:'', cajas:'', pesoNeto:'', toneladas:'', precio:''});
+  partidasTemp.push({variedad:v, sector:'', hectareas:'', cajas:'', pesoCaja:KG_POR_CAJA_CAMOTE, pesoBruto:'', pesoNeto:'', toneladas:'', precio:''});
   if(sel) sel.value = '';
   renderPartidas();
 }
@@ -9223,6 +9223,7 @@ function editarEnvio(e){
       hectareas:p.hectareas||'',
       // Los envíos de antes de las cajas no traen peso bruto: su bruto es el neto.
       pesoBruto:p.pesoBruto||p.pesoNeto||'', cajas:p.cajas||'',
+      pesoCaja:(p.pesoCaja!=null && p.pesoCaja!=='') ? p.pesoCaja : KG_POR_CAJA_CAMOTE,
       pesoNeto:p.pesoNeto||'', toneladas:p.toneladas||'',
       precio:p.precio||''
     };
@@ -9346,8 +9347,12 @@ function renderPartidas(){
         '<div><label>Hectáreas</label><input type="number" placeholder="0.00" min="0" step="0.01" value="'+p.hectareas+'" onchange="partidasTemp['+idx+'].hectareas=this.value"></div>'+
       '</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">'+
-        '<div><label>Peso Bruto (kg)</label><input type="number" placeholder="0" min="0" value="'+(p.pesoBruto||'')+'" onchange="partidasTemp['+idx+'].pesoBruto=this.value;autoCalc('+idx+')"></div>'+
         '<div><label>Cajas</label><input type="number" placeholder="0" min="0" step="1" value="'+(p.cajas||'')+'" onchange="partidasTemp['+idx+'].cajas=this.value;autoCalc('+idx+')"></div>'+
+        '<div><label>Peso por caja (kg)</label><input type="number" placeholder="'+KG_POR_CAJA_CAMOTE+'" min="0" step="0.01" value="'+(p.pesoCaja||'')+'" onchange="partidasTemp['+idx+'].pesoCaja=this.value;autoCalc('+idx+')"></div>'+
+        '<div><label>Peso cajas (kg)</label><input type="number" id="ppc-'+idx+'" placeholder="0" value="'+pesoCajasPartida(p)+'" readonly style="background:var(--surface2);color:var(--text3)"></div>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'+
+        '<div><label>Peso Bruto (kg)</label><input type="number" placeholder="0" min="0" value="'+(p.pesoBruto||'')+'" onchange="partidasTemp['+idx+'].pesoBruto=this.value;autoCalc('+idx+')"></div>'+
         '<div><label>Peso Neto (kg)</label><input type="number" id="ppn-'+idx+'" placeholder="0" min="0" value="'+p.pesoNeto+'" readonly style="background:var(--surface2);color:var(--text3)"></div>'+
       '</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">'+
@@ -9367,14 +9372,27 @@ function renderPartidas(){
 // que es la caja de frambuesa.
 var KG_POR_CAJA_CAMOTE=1.5;
 
+// Peso por caja de la partida: el capturado, o 1.5 si se dejó vacío.
+function pesoCajaPartida(p){
+  var v=parseFloat(p.pesoCaja);
+  return (isNaN(v) || p.pesoCaja==='' || p.pesoCaja==null) ? KG_POR_CAJA_CAMOTE : v;
+}
+// Peso total de las cajas (cajas x peso por caja), redondeado a centésimas de kg
+// para no arrastrar basura de punto flotante. Vacío si no hay cajas.
+function pesoCajasPartida(p){
+  var cajas=parseFloat(p.cajas)||0;
+  if(cajas<=0) return '';
+  return Math.round(cajas*pesoCajaPartida(p)*100)/100;
+}
+
 function autoCalc(idx){
   var p=partidasTemp[idx];
-  // peso neto = peso bruto - cajas x 1.5 (redondeado a centavos de kg para no
-  // arrastrar basura de punto flotante)
+  // peso neto = peso bruto - cajas x peso por caja
   var bruto=parseFloat(p.pesoBruto)||0;
-  var cajas=parseFloat(p.cajas)||0;
-  var neto=Math.max(0, Math.round((bruto-cajas*KG_POR_CAJA_CAMOTE)*100)/100);
+  var tara=parseFloat(pesoCajasPartida(p))||0;
+  var neto=Math.max(0, Math.round((bruto-tara)*100)/100);
   p.pesoNeto=bruto>0?String(neto):'';
+  var pc=document.getElementById('ppc-'+idx); if(pc) pc.value=pesoCajasPartida(p);
   var pn=document.getElementById('ppn-'+idx); if(pn) pn.value=p.pesoNeto;
   var pb=parseFloat(p.pesoNeto)||0;
   // toneladas = peso neto / 1000
@@ -9445,6 +9463,7 @@ function guardarEnvio(){
       hectareas:parseFloat(p.hectareas)||0,
       pesoBruto:parseFloat(p.pesoBruto)||parseFloat(p.pesoNeto)||0,
       cajas:parseInt(p.cajas,10)||0,
+      pesoCaja:pesoCajaPartida(p),
       pesoNeto:parseFloat(p.pesoNeto)||0,
       toneladas:parseFloat(p.toneladas)||0,
       precio:parseFloat(p.precio)||0,
