@@ -514,6 +514,16 @@ Ese selector (`#vf-tipo-envio`, etiqueta "Negocio") vive en su **propia tarjeta 
 
 **Comercializadora ganó su propio campo Factura** (`#cf-factura`), que no existía antes de la fusión. No hizo falta tocar el esquema: `factura` ya era columna de `envios` y ya viajaba en `sbSaveEnvio()`/`cargarDesdeSB()` porque la usa el formulario de envío normal — solo hubo que sumar el input y cablearlo en `initComerForm()` (limpia), `editarOperacionComer()` (puebla desde `e.factura`) y `guardarOperacionComer()` (lo mete en `envioObj.factura`).
 
+### Partidas de camote: peso bruto y cajas (oct-2026)
+
+La tarjeta de cada variedad del envío jal/nay (`renderPartidas()`) va en tres filas: **Sector · Hectáreas** / **Peso bruto · Cajas · Peso neto** / **Toneladas · Precio x kg · Total**. El peso neto ya **no se captura**: lo calcula `autoCalc()` como `pesoBruto − cajas × KG_POR_CAJA_CAMOTE` (1.5 kg), y va `readonly` igual que Toneladas. Se pidió para la cosecha de Jalisco, pero el formulario es el mismo para Nayarit; ahí basta dejar Cajas vacío.
+
+**No confundir `KG_POR_CAJA_CAMOTE` (1.5) con `KG_POR_CAJA` (2.4)**, que es la caja de frambuesa.
+
+`pesoBruto` y `cajas` viven **dentro del jsonb `partidas`** de `envios`, que viaja entero en `sbSaveEnvio()`/`cargarDesdeSB()`: no hubo columna nueva. Todo lo demás (reportes, deudas, almacén) sigue leyendo `pesoNeto`, que conserva su significado. Los envíos de antes no traen bruto: `editarEnvio()` y `guardarEnvio()` caen a `pesoBruto = pesoNeto`, así que reeditarlos no les cambia el neto.
+
+**La nota de envío** (`docNotaEnvio()`) agrega las columnas Peso bruto y Cajas —y se ensancha de 520 a 680px— **solo si alguna partida trae cajas**; sin cajas sale idéntica a antes.
+
 ## Convenciones del código
 
 - **ES5 puro**: `var`, `function`, callbacks. Nada de `let`/`const`/arrow/clases/módulos. Mantener el estilo.

@@ -9158,7 +9158,7 @@ function addPartidaDesdeSelect(){
   var sel = document.getElementById('vf-var-select');
   var v = sel ? sel.value : '';
   if(!v){ showToast('Selecciona una variedad'); return; }
-  partidasTemp.push({variedad:v, sector:'', hectareas:'', pesoNeto:'', toneladas:'', precio:''});
+  partidasTemp.push({variedad:v, sector:'', hectareas:'', pesoBruto:'', cajas:'', pesoNeto:'', toneladas:'', precio:''});
   if(sel) sel.value = '';
   renderPartidas();
 }
@@ -9221,6 +9221,8 @@ function editarEnvio(e){
     return {
       variedad:p.variedad, sector:p.sector||'',
       hectareas:p.hectareas||'',
+      // Los envíos de antes de las cajas no traen peso bruto: su bruto es el neto.
+      pesoBruto:p.pesoBruto||p.pesoNeto||'', cajas:p.cajas||'',
       pesoNeto:p.pesoNeto||'', toneladas:p.toneladas||'',
       precio:p.precio||''
     };
@@ -9339,10 +9341,14 @@ function renderPartidas(){
         '<span style="font-size:13px;font-weight:600;color:'+varColor+'">'+p.variedad+'</span>'+
         '<button onclick="removePartida('+idx+')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;padding:2px 6px;border-radius:6px" title="Quitar variedad">×</button>'+
       '</div>'+
-      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'+
         '<div><label>Sector</label><select onchange="partidasTemp['+idx+'].sector=this.value">'+secOpts+'</select></div>'+
         '<div><label>Hectáreas</label><input type="number" placeholder="0.00" min="0" step="0.01" value="'+p.hectareas+'" onchange="partidasTemp['+idx+'].hectareas=this.value"></div>'+
-        '<div><label>Peso Neto (kg)</label><input type="number" id="ppn-'+idx+'" placeholder="0" min="0" value="'+p.pesoNeto+'" onchange="partidasTemp['+idx+'].pesoNeto=this.value;autoCalc('+idx+')"></div>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">'+
+        '<div><label>Peso Bruto (kg)</label><input type="number" placeholder="0" min="0" value="'+(p.pesoBruto||'')+'" onchange="partidasTemp['+idx+'].pesoBruto=this.value;autoCalc('+idx+')"></div>'+
+        '<div><label>Cajas</label><input type="number" placeholder="0" min="0" step="1" value="'+(p.cajas||'')+'" onchange="partidasTemp['+idx+'].cajas=this.value;autoCalc('+idx+')"></div>'+
+        '<div><label>Peso Neto (kg)</label><input type="number" id="ppn-'+idx+'" placeholder="0" min="0" value="'+p.pesoNeto+'" readonly style="background:var(--surface2);color:var(--text3)"></div>'+
       '</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">'+
         '<div><label>Toneladas</label><input type="number" id="ptn-'+idx+'" placeholder="0.000" min="0" step="0.001" value="'+p.toneladas+'" readonly style="background:var(--surface2);color:var(--text3)"></div>'+
@@ -9357,8 +9363,19 @@ function renderPartidas(){
   recalcEnvioResumen();
 }
 
+// Peso de cada caja de cosecha de camote. No confundir con KG_POR_CAJA (2.4),
+// que es la caja de frambuesa.
+var KG_POR_CAJA_CAMOTE=1.5;
+
 function autoCalc(idx){
   var p=partidasTemp[idx];
+  // peso neto = peso bruto - cajas x 1.5 (redondeado a centavos de kg para no
+  // arrastrar basura de punto flotante)
+  var bruto=parseFloat(p.pesoBruto)||0;
+  var cajas=parseFloat(p.cajas)||0;
+  var neto=Math.max(0, Math.round((bruto-cajas*KG_POR_CAJA_CAMOTE)*100)/100);
+  p.pesoNeto=bruto>0?String(neto):'';
+  var pn=document.getElementById('ppn-'+idx); if(pn) pn.value=p.pesoNeto;
   var pb=parseFloat(p.pesoNeto)||0;
   // toneladas = peso neto / 1000
   p.toneladas=pb>0?(pb/1000).toFixed(3):'';
@@ -9426,6 +9443,8 @@ function guardarEnvio(){
       variedad:p.variedad,
       sector: p.sector || '',
       hectareas:parseFloat(p.hectareas)||0,
+      pesoBruto:parseFloat(p.pesoBruto)||parseFloat(p.pesoNeto)||0,
+      cajas:parseInt(p.cajas,10)||0,
       pesoNeto:parseFloat(p.pesoNeto)||0,
       toneladas:parseFloat(p.toneladas)||0,
       precio:parseFloat(p.precio)||0,
@@ -11884,7 +11903,9 @@ function docLineasVenta(d){
       var kg=parseFloat(p.pesoNeto)||parseFloat(p.kgRecibidos)||0;
       var pr=parseFloat(p.precio)||parseFloat(p.precioVenta)||0;
       if(kg<=0 && pr<=0) return;
-      out.push({concepto:'Camote '+(p.variedad||''), kg:kg, precio:pr, monto:Math.round(kg*pr*100)/100});
+      var cajas=parseInt(p.cajas,10)||0;
+      out.push({concepto:'Camote '+(p.variedad||''), bruto:parseFloat(p.pesoBruto)||kg, cajas:cajas,
+        kg:kg, precio:pr, monto:Math.round(kg*pr*100)/100});
     });
     var fl=parseFloat(e.flete)||0;
     if(fl>0) out.push({concepto:'Fletes', kg:0, precio:0, monto:fl});
@@ -11954,16 +11975,26 @@ function docNotaEnvio(deudaId){
   for(var i=0;i<deudas.length;i++){ if(String(deudas[i].id)===String(deudaId)){ d=deudas[i]; break; } }
   if(!d) return null;
   var mon=((getContraparte(d.contraparte)||{}).moneda==='USD')?'USD':'MXN';
-  var lineas=docLineasVenta(d), W=520;
-  var xKg=DOC_PAD+250, xPr=DOC_PAD+340, xTot=W-DOC_PAD;
-  var totKg=0, totMonto=0;
-  lineas.forEach(function(l){ totKg+=l.kg; totMonto+=l.monto; });
+  var lineas=docLineasVenta(d);
+  // Peso bruto y cajas solo se pintan si el envío trae cajas; sin ellas la nota
+  // queda exactamente como antes. Con cajas se ensancha y las columnas de la
+  // derecha conservan la misma separación entre sí.
+  var hayCajas=lineas.some(function(l){ return (l.cajas||0)>0; });
+  var W=hayCajas?680:520;
+  var xBruto=DOC_PAD+250, xCajas=DOC_PAD+320;
+  var xKg=hayCajas?(DOC_PAD+410):(DOC_PAD+250), xPr=xKg+90, xTot=W-DOC_PAD;
+  var totKg=0, totMonto=0, totBruto=0, totCajas=0;
+  lineas.forEach(function(l){ totKg+=l.kg; totMonto+=l.monto; totBruto+=(l.bruto||0); totCajas+=(l.cajas||0); });
   var bloques=[docHead('Nota de envío', d.folioExterno||'—', '', DOC_ACCENT.cobrar)];
   bloques.push({h:30, draw:function(ctx,y,W){
     docTxt(ctx,docFechaLarga(d.fecha),W/2,y+16,docFS(600,12),DOC_TEXTO2,'center');
   }});
   bloques.push({h:24, draw:function(ctx,y,W){
     docTxt(ctx,'VARIEDAD',DOC_PAD,y+12,docFS(600,10),DOC_TENUE);
+    if(hayCajas){
+      docTxt(ctx,'PESO BRUTO',xBruto,y+12,docFS(600,10),DOC_TENUE,'right');
+      docTxt(ctx,'CAJAS',xCajas,y+12,docFS(600,10),DOC_TENUE,'right');
+    }
     docTxt(ctx,'PESO NETO (KG)',xKg,y+12,docFS(600,10),DOC_TENUE,'right');
     docTxt(ctx,'PRECIO',xPr,y+12,docFS(600,10),DOC_TENUE,'right');
     docTxt(ctx,'TOTAL',xTot,y+12,docFS(600,10),DOC_TENUE,'right');
@@ -11971,7 +12002,9 @@ function docNotaEnvio(deudaId){
   }});
   lineas.forEach(function(l){
     bloques.push({h:26, draw:function(ctx,y,W){
-      docTxt(ctx,docCorta(ctx,l.concepto,220,docFS(500,12.5)),DOC_PAD,y+17,docFS(500,12.5),DOC_TINTA);
+      docTxt(ctx,docCorta(ctx,l.concepto,hayCajas?175:220,docFS(500,12.5)),DOC_PAD,y+17,docFS(500,12.5),DOC_TINTA);
+      if(hayCajas && l.bruto>0) docTxt(ctx,docKg(l.bruto,2),xBruto,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
+      if(hayCajas && l.cajas>0) docTxt(ctx,docKg(l.cajas,0),xCajas,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
       if(l.kg>0) docTxt(ctx,docKg(l.kg,2),xKg,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
       if(l.precio>0) docTxt(ctx,docMonCta(l.precio,mon),xPr,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
       docTxt(ctx,docMonCta(l.monto,mon),xTot,y+17,docFM(500,12.5),DOC_TINTA,'right');
@@ -11981,6 +12014,10 @@ function docNotaEnvio(deudaId){
   bloques.push({h:38, draw:function(ctx,y,W){
     ctx.fillStyle=DOC_RESALTE; ctx.fillRect(xPr-6,y+2,xTot-xPr+12,30);
     docTxt(ctx,'TOTAL',DOC_PAD,y+22,docFS(700,13),DOC_TINTA);
+    if(hayCajas){
+      docTxt(ctx,docKg(totBruto,2),xBruto,y+22,docFM(700,13),DOC_TINTA,'right');
+      docTxt(ctx,docKg(totCajas,0),xCajas,y+22,docFM(700,13),DOC_TINTA,'right');
+    }
     docTxt(ctx,docKg(totKg,2),xKg,y+22,docFM(700,13),DOC_TINTA,'right');
     docTxt(ctx,docMonCta(totMonto,mon),xTot,y+22,docFM(700,14),DOC_TINTA,'right');
   }});
