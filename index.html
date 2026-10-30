@@ -12271,7 +12271,9 @@ function docHistorial(tipo, nombre, anio){
 // ── Entrega ─────────────────────────────────────────────────────
 // Espera a que la fuente termine de cargar: si se dibuja antes, el canvas sale
 // con el fallback sans-serif del sistema (sin error, solo se ve distinto).
-function docCompartir(fabrica, archivo, titulo){
+// `texto` es el mensaje que acompaña a la imagen (opcional; sin él va el título).
+// Donde no se puede compartir, se copia al portapapeles para pegarlo a mano.
+function docCompartir(fabrica, archivo, titulo, texto){
   var listo=(document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
   listo.then(function(){
     var canvas;
@@ -12283,10 +12285,16 @@ function docCompartir(fabrica, archivo, titulo){
       var f;
       try{ f=new File([blob],archivo+'.png',{type:'image/png'}); }catch(e){}
       if(f && navigator.canShare && navigator.canShare({files:[f]})){
-        navigator.share({files:[f], title:titulo, text:titulo}).catch(function(){});
+        navigator.share({files:[f], title:titulo, text:texto||titulo}).catch(function(){});
       } else {
         window.open(URL.createObjectURL(blob),'_blank');
-        showToast('Imagen lista — guárdala o compártela desde ahí');
+        if(texto && navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(texto).then(function(){
+            showToast('Imagen lista — el mensaje quedó copiado para pegarlo');
+          }, function(){ showToast('Imagen lista — guárdala o compártela desde ahí'); });
+        } else {
+          showToast('Imagen lista — guárdala o compártela desde ahí');
+        }
       }
     }, 'image/png');
   });
@@ -12308,7 +12316,22 @@ function docCompartirHistorial(){
 }
 function docCompartirNota(deudaId){
   closeModal();
-  docCompartir(function(){ return docNotaEnvio(deudaId); }, 'Nota de envío', 'Nota de envío');
+  docCompartir(function(){ return docNotaEnvio(deudaId); }, 'Nota de envío', 'Nota de envío', docTextoNota(deudaId));
+}
+// Mensaje que acompaña a la nota: "Adjunto la nota de envío del día 29 de octubre
+// de 2026 correspondiente al Folio: B&M/2026/028". Sin Folio Cliente se omite esa parte.
+function docTextoNota(deudaId){
+  var d=null;
+  for(var i=0;i<deudas.length;i++){ if(String(deudas[i].id)===String(deudaId)){ d=deudas[i]; break; } }
+  if(!d) return '';
+  var fecha='';
+  if(d.fecha){
+    try{ fecha=new Date(d.fecha+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'}); }
+    catch(e){ fecha=d.fecha; }
+  }
+  var txt='Adjunto la nota de envío'+(fecha?' del día '+fecha:'');
+  if(d.folioExterno) txt+=' correspondiente al Folio: '+d.folioExterno;
+  return txt;
 }
 // Menú de documentos de la cuenta. Solo ofrece los que aplican a esa dirección:
 // una cuenta por cobrar no puede generar un documento de proveedor.

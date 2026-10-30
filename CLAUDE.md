@@ -334,6 +334,8 @@ Siguen valiendo las dos reglas de antes: **`<canvas>`, nunca `html-to-image`** (
 
 **El plazo va con el signo del Excel del usuario**: `-33` es "33 días vencido", `12` es "faltan 12". `deudaDiasVencido()` devuelve **positivo** cuando está vencido, así que `docPlazo()` pinta el negado. Es fácil equivocarse de signo.
 
+**La nota de envío se manda con mensaje** (oct-2026): `docTextoNota(deudaId)` arma *"Adjunto la nota de envío del día <fecha del cargo> correspondiente al Folio: <Folio Cliente>"* y `docCompartir()` lo pasa como `text` del menú de compartir (su cuarto parámetro, opcional; los demás documentos siguen mandando solo el título). Sin Folio Cliente se omite esa parte. En computadora, donde no hay menú de compartir, el mensaje se copia al portapapeles.
+
 El historial filtra por **año calendario** (los folios son `B&M/2026/028`), no por ciclo agrícola; su resumen del pie es **global**, para que siempre cuadre con el saldo que muestra la cuenta.
 
 ### Posición del negocio: `rdTotales`/`rdCuentasDe`/`cpCategoria`
