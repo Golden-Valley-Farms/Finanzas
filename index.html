@@ -12329,8 +12329,9 @@ function docTextoNota(deudaId){
     try{ fecha=new Date(d.fecha+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'}); }
     catch(e){ fecha=d.fecha; }
   }
-  var txt='Adjunto la nota de envío'+(fecha?' del día '+fecha:'');
-  if(d.folioExterno) txt+=' correspondiente al Folio: '+d.folioExterno;
+  // Fecha y folio entre asteriscos: WhatsApp los pinta en negritas.
+  var txt='Adjunto la nota de envío'+(fecha?' del día *'+fecha+'*':'');
+  if(d.folioExterno) txt+=' correspondiente al Folio: *'+d.folioExterno+'*';
   return txt;
 }
 // Menú de documentos de la cuenta. Solo ofrece los que aplican a esa dirección:
