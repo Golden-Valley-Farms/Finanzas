@@ -12000,9 +12000,9 @@ function docNotaEnvio(deudaId){
   // queda exactamente como antes. Con cajas se ensancha y las columnas de la
   // derecha conservan la misma separación entre sí.
   var hayCajas=lineas.some(function(l){ return (l.cajas||0)>0; });
-  var W=hayCajas?770:520;
-  var xBruto=DOC_PAD+250, xCajas=DOC_PAD+320, xTara=DOC_PAD+410;
-  var xKg=hayCajas?(DOC_PAD+500):(DOC_PAD+250), xPr=xKg+90, xTot=W-DOC_PAD;
+  var W=hayCajas?800:520;
+  var xBruto=DOC_PAD+250, xCajas=DOC_PAD+320, xTara=DOC_PAD+430;
+  var xKg=hayCajas?(DOC_PAD+530):(DOC_PAD+250), xPr=xKg+90, xTot=W-DOC_PAD;
   var totKg=0, totMonto=0, totBruto=0, totCajas=0, totTara=0;
   lineas.forEach(function(l){ totKg+=l.kg; totMonto+=l.monto; totBruto+=(l.bruto||0); totCajas+=(l.cajas||0); totTara+=(l.tara||0); });
   var bloques=[docHead('Nota de envío', d.folioExterno||'—', '', DOC_ACCENT.cobrar)];
@@ -12012,9 +12012,9 @@ function docNotaEnvio(deudaId){
   bloques.push({h:24, draw:function(ctx,y,W){
     docTxt(ctx,'VARIEDAD',DOC_PAD,y+12,docFS(600,10),DOC_TENUE);
     if(hayCajas){
-      docTxt(ctx,'PESO BRUTO',xBruto,y+12,docFS(600,10),DOC_TENUE,'right');
+      docTxt(ctx,'PESO BRUTO (KG)',xBruto,y+12,docFS(600,10),DOC_TENUE,'right');
       docTxt(ctx,'CAJAS',xCajas,y+12,docFS(600,10),DOC_TENUE,'right');
-      docTxt(ctx,'PESO CAJAS',xTara,y+12,docFS(600,10),DOC_TENUE,'right');
+      docTxt(ctx,'PESO CAJAS (KG)',xTara,y+12,docFS(600,10),DOC_TENUE,'right');
     }
     docTxt(ctx,'PESO NETO (KG)',xKg,y+12,docFS(600,10),DOC_TENUE,'right');
     docTxt(ctx,'PRECIO',xPr,y+12,docFS(600,10),DOC_TENUE,'right');
