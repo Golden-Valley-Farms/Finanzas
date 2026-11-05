@@ -12022,15 +12022,12 @@ function docNotaEnvio(deudaId){
   lineas.forEach(function(l){ totKg+=l.kg; totMonto+=l.monto; totBruto+=(l.bruto||0); totTara+=(l.tara||0); totIda+=(l.ida||0); totReg+=(l.regreso||0); });
   // Peso por caja del detalle: si todas las partidas usan el mismo, ese; si no, guion.
   var pcUnico=conCajas.length && conCajas.every(function(l){ return l.pesoCaja===conCajas[0].pesoCaja; }) ? conCajas[0].pesoCaja : null;
-  // El peso de cajas se pinta como AJUSTE al peso bruto, con signo y palabra, para
-  // que el cliente lea bruto ± ajuste = neto sin pensar: "−120.00 en contra" se
-  // descuenta; "+57.00 a favor" (regresaron más cajas de las que se fueron) se suma.
+  // El peso de cajas se pinta como AJUSTE al peso bruto, con signo, para que el
+  // cliente lea bruto ± ajuste = neto: "−120.00" se descuenta; "+57.00" en verde
+  // (regresaron más cajas de las que se fueron) se suma.
   function pintaAjuste(ctx, tara, x, y, peso, size, colBase){
     var a=-tara, fav=a>0;
-    var lbl=fav?'a favor':'en contra', col=fav?DOC_VERDE:colBase;
-    var fL=docFS(600,10); ctx.font=fL; var wl=ctx.measureText(lbl).width;
-    docTxt(ctx,lbl,x,y,fL,fav?DOC_VERDE:DOC_TENUE,'right');
-    docTxt(ctx,(fav?'+':'−')+docKg(Math.abs(a),2),x-wl-6,y,docFM(peso,size),col,'right');
+    docTxt(ctx,(fav?'+':'−')+docKg(Math.abs(a),2),x,y,docFM(peso,size),fav?DOC_VERDE:colBase,'right');
   }
   var bloques=[docHead('Nota de envío', d.folioExterno||'—', '', DOC_ACCENT.cobrar)];
   bloques.push({h:30, draw:function(ctx,y,W){

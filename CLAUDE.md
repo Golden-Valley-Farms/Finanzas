@@ -528,7 +528,7 @@ La tarjeta de cada variedad del envío jal/nay (`renderPartidas()`) va en cuatro
 
 **La nota de envío** (`docNotaEnvio()`), **solo si alguna partida trae cajas**, se ensancha de 520 a 800px y lleva **dos tablas**: primero **Detalle de cajas** — un solo renglón con el total del envío, **sin variedad** (a pedido): Cajas de ida · Cajas de regreso · Diferencia · Peso por caja (guion si las partidas usan pesos distintos) · Peso cajas — y debajo **Peso** (Peso bruto · Peso cajas · Peso neto · Precio · Total). Sin cajas sale idéntica a antes.
 
-**El peso de cajas en la nota va como ajuste al bruto, con signo invertido respecto del dato** (`pintaAjuste()`, local a `docNotaEnvio()`): `pesoCajasPartida()` = 120 se pinta "−120.00 en contra" y −57 se pinta "+57.00 a favor" en verde. Así el cliente lee bruto ± ajuste = neto sin confundirse con un "−57" que en realidad suma. En el formulario el campo sigue mostrando el dato crudo.
+**El peso de cajas en la nota va como ajuste al bruto, con signo invertido respecto del dato** (`pintaAjuste()`, local a `docNotaEnvio()`): `pesoCajasPartida()` = 120 se pinta "−120.00" y −57 se pinta "+57.00" en verde. Así el cliente lee bruto ± ajuste = neto sin confundirse con un "−57" que en realidad suma. Llevó las palabras "a favor"/"en contra" junto al número y el usuario pidió quitarlas: no volver a ponerlas. En el formulario el campo sigue mostrando el dato crudo.
 
 ## Convenciones del código
 
