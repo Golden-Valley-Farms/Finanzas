@@ -12028,7 +12028,7 @@ function docNotaEnvio(deudaId){
   // verde (regresaron más cajas de las que se fueron) se suma.
   function pintaAjuste(ctx, a, x, y, peso, size, colBase){
     var fav=a>0;
-    docTxt(ctx,(fav?'+':'−')+docKg(Math.abs(a),2),x,y,docFM(peso,size),fav?DOC_VERDE:colBase,'right');
+    docTxt(ctx,(fav?'+':'−')+docKg(Math.abs(a),2),x,y,docFM(peso,size),fav?DOC_VERDE:(a<0?DOC_ROJO:colBase),'right');
   }
   var bloques=[docHead('Nota de envío', d.folioExterno||'—', '', DOC_ACCENT.cobrar)];
   bloques.push({h:30, draw:function(ctx,y,W){
@@ -12052,7 +12052,7 @@ function docNotaEnvio(deudaId){
       docTxt(ctx,docKg(totReg,0),xReg,y+20,docFM(700,13),DOC_TINTA,'right');
       // Diferencia = regreso − ida, con signo: + va a favor del camote (en verde).
       var dif=totReg-totIda;
-      docTxt(ctx,(dif>0?'+':(dif<0?'−':''))+docKg(Math.abs(dif),0),xDif,y+20,docFM(700,13),dif>0?DOC_VERDE:DOC_TINTA,'right');
+      docTxt(ctx,(dif>0?'+':(dif<0?'−':''))+docKg(Math.abs(dif),0),xDif,y+20,docFM(700,13),dif>0?DOC_VERDE:(dif<0?DOC_ROJO:DOC_TINTA),'right');
       docTxt(ctx,pcUnico!=null?docKg(pcUnico,2):'—',xPc,y+20,docFM(700,13),DOC_TINTA,'right');
       pintaAjuste(ctx,totTara,xTc,y+20,700,13,DOC_TINTA);
     }});
