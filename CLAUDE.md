@@ -526,7 +526,9 @@ La tarjeta de cada variedad del envío jal/nay (`renderPartidas()`) va en cuatro
 
 `pesoBruto`, `cajas` y `pesoCaja` viven **dentro del jsonb `partidas`** de `envios`, que viaja entero en `sbSaveEnvio()`/`cargarDesdeSB()`: no hubo columna nueva. Todo lo demás (reportes, deudas, almacén) sigue leyendo `pesoNeto`, que conserva su significado. Los envíos de antes no traen bruto: `editarEnvio()` y `guardarEnvio()` caen a `pesoBruto = pesoNeto`, así que reeditarlos no les cambia el neto.
 
-**La nota de envío** (`docNotaEnvio()`), **solo si alguna partida trae cajas**, se ensancha de 520 a 800px y lleva **dos tablas**: primero **Detalle de cajas** (Cajas de ida · Cajas de regreso · Diferencia · Peso por caja · Peso cajas, con su total) y debajo **Peso** (Peso bruto · Peso cajas · Peso neto · Precio · Total). Un peso de cajas negativo se pinta en verde. Sin cajas sale idéntica a antes.
+**La nota de envío** (`docNotaEnvio()`), **solo si alguna partida trae cajas**, se ensancha de 520 a 800px y lleva **dos tablas**: primero **Detalle de cajas** — un solo renglón con el total del envío, **sin variedad** (a pedido): Cajas de ida · Cajas de regreso · Diferencia · Peso por caja (guion si las partidas usan pesos distintos) · Peso cajas — y debajo **Peso** (Peso bruto · Peso cajas · Peso neto · Precio · Total). Sin cajas sale idéntica a antes.
+
+**El peso de cajas en la nota va como ajuste al bruto, con signo invertido respecto del dato** (`pintaAjuste()`, local a `docNotaEnvio()`): `pesoCajasPartida()` = 120 se pinta "−120.00 en contra" y −57 se pinta "+57.00 a favor" en verde. Así el cliente lee bruto ± ajuste = neto sin confundirse con un "−57" que en realidad suma. En el formulario el campo sigue mostrando el dato crudo.
 
 ## Convenciones del código
 

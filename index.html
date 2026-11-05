@@ -12015,13 +12015,23 @@ function docNotaEnvio(deudaId){
   var conCajas=lineas.filter(function(l){ return (l.ida||0)>0 || (l.regreso||0)>0; });
   var hayCajas=conCajas.length>0;
   var W=hayCajas?800:520;
-  var xIda=DOC_PAD+280, xReg=DOC_PAD+410, xDif=DOC_PAD+500, xPc=DOC_PAD+624, xTc=W-DOC_PAD;
-  var xBruto=DOC_PAD+290, xTara=DOC_PAD+410;
+  var xIda=DOC_PAD+120, xReg=DOC_PAD+270, xDif=DOC_PAD+400, xPc=DOC_PAD+550, xTc=W-DOC_PAD;
+  var xBruto=DOC_PAD+260, xTara=DOC_PAD+410;
   var xKg=hayCajas?(DOC_PAD+520):(DOC_PAD+250), xPr=xKg+90, xTot=W-DOC_PAD;
   var totKg=0, totMonto=0, totBruto=0, totTara=0, totIda=0, totReg=0;
   lineas.forEach(function(l){ totKg+=l.kg; totMonto+=l.monto; totBruto+=(l.bruto||0); totTara+=(l.tara||0); totIda+=(l.ida||0); totReg+=(l.regreso||0); });
-  // Peso de cajas negativo = regresaron más cajas de las que se fueron: va a favor del camote.
-  function colTara(n){ return n<0?DOC_VERDE:DOC_TEXTO2; }
+  // Peso por caja del detalle: si todas las partidas usan el mismo, ese; si no, guion.
+  var pcUnico=conCajas.length && conCajas.every(function(l){ return l.pesoCaja===conCajas[0].pesoCaja; }) ? conCajas[0].pesoCaja : null;
+  // El peso de cajas se pinta como AJUSTE al peso bruto, con signo y palabra, para
+  // que el cliente lea bruto ± ajuste = neto sin pensar: "−120.00 en contra" se
+  // descuenta; "+57.00 a favor" (regresaron más cajas de las que se fueron) se suma.
+  function pintaAjuste(ctx, tara, x, y, peso, size, colBase){
+    var a=-tara, fav=a>0;
+    var lbl=fav?'a favor':'en contra', col=fav?DOC_VERDE:colBase;
+    var fL=docFS(600,10); ctx.font=fL; var wl=ctx.measureText(lbl).width;
+    docTxt(ctx,lbl,x,y,fL,fav?DOC_VERDE:DOC_TENUE,'right');
+    docTxt(ctx,(fav?'+':'−')+docKg(Math.abs(a),2),x-wl-6,y,docFM(peso,size),col,'right');
+  }
   var bloques=[docHead('Nota de envío', d.folioExterno||'—', '', DOC_ACCENT.cobrar)];
   bloques.push({h:30, draw:function(ctx,y,W){
     docTxt(ctx,docFechaLarga(d.fecha),W/2,y+16,docFS(600,12),DOC_TEXTO2,'center');
@@ -12031,7 +12041,6 @@ function docNotaEnvio(deudaId){
       docTxt(ctx,'DETALLE DE CAJAS',DOC_PAD,y+14,docFS(700,11),DOC_TINTA);
     }});
     bloques.push({h:24, draw:function(ctx,y,W){
-      docTxt(ctx,'VARIEDAD',DOC_PAD,y+12,docFS(600,10),DOC_TENUE);
       docTxt(ctx,'CAJAS DE IDA',xIda,y+12,docFS(600,10),DOC_TENUE,'right');
       docTxt(ctx,'CAJAS DE REGRESO',xReg,y+12,docFS(600,10),DOC_TENUE,'right');
       docTxt(ctx,'DIFERENCIA',xDif,y+12,docFS(600,10),DOC_TENUE,'right');
@@ -12039,23 +12048,13 @@ function docNotaEnvio(deudaId){
       docTxt(ctx,'PESO CAJAS (KG)',xTc,y+12,docFS(600,10),DOC_TENUE,'right');
       docRegla(ctx,y+18,DOC_PAD,W-DOC_PAD,DOC_LINEA,1);
     }});
-    conCajas.forEach(function(l){
-      bloques.push({h:26, draw:function(ctx,y,W){
-        docTxt(ctx,docCorta(ctx,l.concepto,190,docFS(500,12.5)),DOC_PAD,y+17,docFS(500,12.5),DOC_TINTA);
-        docTxt(ctx,docKg(l.ida,0),xIda,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
-        docTxt(ctx,docKg(l.regreso,0),xReg,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
-        docTxt(ctx,docKg(l.ida-l.regreso,0),xDif,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
-        docTxt(ctx,docKg(l.pesoCaja,2),xPc,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
-        docTxt(ctx,docKg(l.tara,2),xTc,y+17,docFM(500,12.5),colTara(l.tara),'right');
-        docRegla(ctx,y+25,DOC_PAD,W-DOC_PAD,DOC_LINEA,1);
-      }});
-    });
+    // Un solo renglón con el total del envío: sin variedad, a pedido del usuario.
     bloques.push({h:34, draw:function(ctx,y,W){
-      docTxt(ctx,'TOTAL',DOC_PAD,y+20,docFS(700,13),DOC_TINTA);
       docTxt(ctx,docKg(totIda,0),xIda,y+20,docFM(700,13),DOC_TINTA,'right');
       docTxt(ctx,docKg(totReg,0),xReg,y+20,docFM(700,13),DOC_TINTA,'right');
       docTxt(ctx,docKg(totIda-totReg,0),xDif,y+20,docFM(700,13),DOC_TINTA,'right');
-      docTxt(ctx,docKg(totTara,2),xTc,y+20,docFM(700,13),totTara<0?DOC_VERDE:DOC_TINTA,'right');
+      docTxt(ctx,pcUnico!=null?docKg(pcUnico,2):'—',xPc,y+20,docFM(700,13),DOC_TINTA,'right');
+      pintaAjuste(ctx,totTara,xTc,y+20,700,13,DOC_TINTA);
     }});
     bloques.push({h:34, draw:function(ctx,y,W){
       docTxt(ctx,'PESO',DOC_PAD,y+22,docFS(700,11),DOC_TINTA);
@@ -12074,9 +12073,9 @@ function docNotaEnvio(deudaId){
   }});
   lineas.forEach(function(l){
     bloques.push({h:26, draw:function(ctx,y,W){
-      docTxt(ctx,docCorta(ctx,l.concepto,hayCajas?175:220,docFS(500,12.5)),DOC_PAD,y+17,docFS(500,12.5),DOC_TINTA);
+      docTxt(ctx,docCorta(ctx,l.concepto,hayCajas?155:220,docFS(500,12.5)),DOC_PAD,y+17,docFS(500,12.5),DOC_TINTA);
       if(hayCajas && l.bruto>0) docTxt(ctx,docKg(l.bruto,2),xBruto,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
-      if(hayCajas && (l.tara||0)!==0) docTxt(ctx,docKg(l.tara,2),xTara,y+17,docFM(400,12.5),colTara(l.tara),'right');
+      if(hayCajas && (l.tara||0)!==0) pintaAjuste(ctx,l.tara,xTara,y+17,400,12.5,DOC_TEXTO2);
       if(l.kg>0) docTxt(ctx,docKg(l.kg,2),xKg,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
       if(l.precio>0) docTxt(ctx,docMonCta(l.precio,mon),xPr,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
       docTxt(ctx,docMonCta(l.monto,mon),xTot,y+17,docFM(500,12.5),DOC_TINTA,'right');
@@ -12088,7 +12087,7 @@ function docNotaEnvio(deudaId){
     docTxt(ctx,'TOTAL',DOC_PAD,y+22,docFS(700,13),DOC_TINTA);
     if(hayCajas){
       docTxt(ctx,docKg(totBruto,2),xBruto,y+22,docFM(700,13),DOC_TINTA,'right');
-      docTxt(ctx,docKg(totTara,2),xTara,y+22,docFM(700,13),totTara<0?DOC_VERDE:DOC_TINTA,'right');
+      if(totTara!==0) pintaAjuste(ctx,totTara,xTara,y+22,700,13,DOC_TINTA);
     }
     docTxt(ctx,docKg(totKg,2),xKg,y+22,docFM(700,13),DOC_TINTA,'right');
     docTxt(ctx,docMonCta(totMonto,mon),xTot,y+22,docFM(700,14),DOC_TINTA,'right');
