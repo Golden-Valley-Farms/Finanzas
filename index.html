@@ -9158,7 +9158,7 @@ function addPartidaDesdeSelect(){
   var sel = document.getElementById('vf-var-select');
   var v = sel ? sel.value : '';
   if(!v){ showToast('Selecciona una variedad'); return; }
-  partidasTemp.push({variedad:v, sector:'', hectareas:'', cajas:'', pesoCaja:KG_POR_CAJA_CAMOTE, pesoBruto:'', pesoNeto:'', toneladas:'', precio:''});
+  partidasTemp.push({variedad:v, sector:'', hectareas:'', cajasIda:'', cajasRegreso:'', pesoCaja:KG_POR_CAJA_CAMOTE, pesoBruto:'', pesoNeto:'', toneladas:'', precio:''});
   if(sel) sel.value = '';
   renderPartidas();
 }
@@ -9222,7 +9222,9 @@ function editarEnvio(e){
       variedad:p.variedad, sector:p.sector||'',
       hectareas:p.hectareas||'',
       // Los envíos de antes de las cajas no traen peso bruto: su bruto es el neto.
-      pesoBruto:p.pesoBruto||p.pesoNeto||'', cajas:p.cajas||'',
+      // Los envíos de antes de ida/regreso guardaban un solo "cajas": eran las de ida.
+      pesoBruto:p.pesoBruto||p.pesoNeto||'',
+      cajasIda:(p.cajasIda!=null ? p.cajasIda : p.cajas)||'', cajasRegreso:p.cajasRegreso||'',
       pesoCaja:(p.pesoCaja!=null && p.pesoCaja!=='') ? p.pesoCaja : KG_POR_CAJA_CAMOTE,
       pesoNeto:p.pesoNeto||'', toneladas:p.toneladas||'',
       precio:p.precio||''
@@ -9346,8 +9348,9 @@ function renderPartidas(){
         '<div><label>Sector</label><select onchange="partidasTemp['+idx+'].sector=this.value">'+secOpts+'</select></div>'+
         '<div><label>Hectáreas</label><input type="number" placeholder="0.00" min="0" step="0.01" value="'+p.hectareas+'" onchange="partidasTemp['+idx+'].hectareas=this.value"></div>'+
       '</div>'+
-      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">'+
-        '<div><label>Cajas</label><input type="number" placeholder="0" min="0" step="1" value="'+(p.cajas||'')+'" onchange="partidasTemp['+idx+'].cajas=this.value;autoCalc('+idx+')"></div>'+
+      '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px;align-items:end">'+
+        '<div><label>Cajas de ida</label><input type="number" placeholder="0" min="0" step="1" value="'+(p.cajasIda||'')+'" onchange="partidasTemp['+idx+'].cajasIda=this.value;autoCalc('+idx+')"></div>'+
+        '<div><label>Cajas de regreso</label><input type="number" placeholder="0" min="0" step="1" value="'+(p.cajasRegreso||'')+'" onchange="partidasTemp['+idx+'].cajasRegreso=this.value;autoCalc('+idx+')"></div>'+
         '<div><label>Peso por caja (kg)</label><input type="number" placeholder="'+KG_POR_CAJA_CAMOTE+'" min="0" step="0.01" value="'+(p.pesoCaja||'')+'" onchange="partidasTemp['+idx+'].pesoCaja=this.value;autoCalc('+idx+')"></div>'+
         '<div><label>Peso cajas (kg)</label><input type="number" id="ppc-'+idx+'" placeholder="0" value="'+pesoCajasPartida(p)+'" readonly style="background:var(--surface2);color:var(--text3)"></div>'+
       '</div>'+
@@ -9377,17 +9380,25 @@ function pesoCajaPartida(p){
   var v=parseFloat(p.pesoCaja);
   return (isNaN(v) || p.pesoCaja==='' || p.pesoCaja==null) ? KG_POR_CAJA_CAMOTE : v;
 }
-// Peso total de las cajas (cajas x peso por caja), redondeado a centésimas de kg
-// para no arrastrar basura de punto flotante. Vacío si no hay cajas.
+// Cajas de ida y de regreso. Los envíos de antes guardaban un solo "cajas",
+// que eran las de ida (sin regreso).
+function cajasIdaPartida(p){
+  var v=(p.cajasIda!=null && p.cajasIda!=='') ? p.cajasIda : p.cajas;
+  return parseInt(v,10)||0;
+}
+function cajasRegresoPartida(p){ return parseInt(p.cajasRegreso,10)||0; }
+// Peso de las cajas = (ida − regreso) × peso por caja, redondeado a centésimas
+// de kg. Puede ser NEGATIVO: si regresaron más cajas de las que se fueron, la
+// diferencia se suma al camote (neto = bruto − negativo). Vacío si no hay cajas.
 function pesoCajasPartida(p){
-  var cajas=parseFloat(p.cajas)||0;
-  if(cajas<=0) return '';
-  return Math.round(cajas*pesoCajaPartida(p)*100)/100;
+  var ida=cajasIdaPartida(p), reg=cajasRegresoPartida(p);
+  if(ida<=0 && reg<=0) return '';
+  return Math.round((ida-reg)*pesoCajaPartida(p)*100)/100;
 }
 
 function autoCalc(idx){
   var p=partidasTemp[idx];
-  // peso neto = peso bruto - cajas x peso por caja
+  // peso neto = peso bruto - (cajas de ida - cajas de regreso) x peso por caja
   var bruto=parseFloat(p.pesoBruto)||0;
   var tara=parseFloat(pesoCajasPartida(p))||0;
   var neto=Math.max(0, Math.round((bruto-tara)*100)/100);
@@ -9462,7 +9473,8 @@ function guardarEnvio(){
       sector: p.sector || '',
       hectareas:parseFloat(p.hectareas)||0,
       pesoBruto:parseFloat(p.pesoBruto)||parseFloat(p.pesoNeto)||0,
-      cajas:parseInt(p.cajas,10)||0,
+      cajasIda:cajasIdaPartida(p),
+      cajasRegreso:cajasRegresoPartida(p),
       pesoCaja:pesoCajaPartida(p),
       pesoNeto:parseFloat(p.pesoNeto)||0,
       toneladas:parseFloat(p.toneladas)||0,
@@ -11922,9 +11934,10 @@ function docLineasVenta(d){
       var kg=parseFloat(p.pesoNeto)||parseFloat(p.kgRecibidos)||0;
       var pr=parseFloat(p.precio)||parseFloat(p.precioVenta)||0;
       if(kg<=0 && pr<=0) return;
-      var cajas=parseInt(p.cajas,10)||0;
-      out.push({concepto:'Camote '+(p.variedad||''), bruto:parseFloat(p.pesoBruto)||kg, cajas:cajas,
-        tara:cajas>0?(parseFloat(pesoCajasPartida(p))||0):0,
+      var ida=cajasIdaPartida(p), reg=cajasRegresoPartida(p);
+      out.push({concepto:'Camote '+(p.variedad||''), bruto:parseFloat(p.pesoBruto)||kg,
+        ida:ida, regreso:reg, pesoCaja:pesoCajaPartida(p),
+        tara:parseFloat(pesoCajasPartida(p))||0,
         kg:kg, precio:pr, monto:Math.round(kg*pr*100)/100});
     });
     var fl=parseFloat(e.flete)||0;
@@ -11996,24 +12009,62 @@ function docNotaEnvio(deudaId){
   if(!d) return null;
   var mon=((getContraparte(d.contraparte)||{}).moneda==='USD')?'USD':'MXN';
   var lineas=docLineasVenta(d);
-  // Peso bruto y cajas solo se pintan si el envío trae cajas; sin ellas la nota
-  // queda exactamente como antes. Con cajas se ensancha y las columnas de la
-  // derecha conservan la misma separación entre sí.
-  var hayCajas=lineas.some(function(l){ return (l.cajas||0)>0; });
+  // Sin cajas la nota queda exactamente como antes. Con cajas lleva primero la
+  // tabla del detalle de cajas (ida, regreso, diferencia, peso) y debajo la del
+  // peso: bruto − peso cajas = neto, precio y total.
+  var conCajas=lineas.filter(function(l){ return (l.ida||0)>0 || (l.regreso||0)>0; });
+  var hayCajas=conCajas.length>0;
   var W=hayCajas?800:520;
-  var xBruto=DOC_PAD+250, xCajas=DOC_PAD+320, xTara=DOC_PAD+430;
-  var xKg=hayCajas?(DOC_PAD+530):(DOC_PAD+250), xPr=xKg+90, xTot=W-DOC_PAD;
-  var totKg=0, totMonto=0, totBruto=0, totCajas=0, totTara=0;
-  lineas.forEach(function(l){ totKg+=l.kg; totMonto+=l.monto; totBruto+=(l.bruto||0); totCajas+=(l.cajas||0); totTara+=(l.tara||0); });
+  var xIda=DOC_PAD+280, xReg=DOC_PAD+410, xDif=DOC_PAD+500, xPc=DOC_PAD+624, xTc=W-DOC_PAD;
+  var xBruto=DOC_PAD+290, xTara=DOC_PAD+410;
+  var xKg=hayCajas?(DOC_PAD+520):(DOC_PAD+250), xPr=xKg+90, xTot=W-DOC_PAD;
+  var totKg=0, totMonto=0, totBruto=0, totTara=0, totIda=0, totReg=0;
+  lineas.forEach(function(l){ totKg+=l.kg; totMonto+=l.monto; totBruto+=(l.bruto||0); totTara+=(l.tara||0); totIda+=(l.ida||0); totReg+=(l.regreso||0); });
+  // Peso de cajas negativo = regresaron más cajas de las que se fueron: va a favor del camote.
+  function colTara(n){ return n<0?DOC_VERDE:DOC_TEXTO2; }
   var bloques=[docHead('Nota de envío', d.folioExterno||'—', '', DOC_ACCENT.cobrar)];
   bloques.push({h:30, draw:function(ctx,y,W){
     docTxt(ctx,docFechaLarga(d.fecha),W/2,y+16,docFS(600,12),DOC_TEXTO2,'center');
   }});
+  if(hayCajas){
+    bloques.push({h:26, draw:function(ctx,y,W){
+      docTxt(ctx,'DETALLE DE CAJAS',DOC_PAD,y+14,docFS(700,11),DOC_TINTA);
+    }});
+    bloques.push({h:24, draw:function(ctx,y,W){
+      docTxt(ctx,'VARIEDAD',DOC_PAD,y+12,docFS(600,10),DOC_TENUE);
+      docTxt(ctx,'CAJAS DE IDA',xIda,y+12,docFS(600,10),DOC_TENUE,'right');
+      docTxt(ctx,'CAJAS DE REGRESO',xReg,y+12,docFS(600,10),DOC_TENUE,'right');
+      docTxt(ctx,'DIFERENCIA',xDif,y+12,docFS(600,10),DOC_TENUE,'right');
+      docTxt(ctx,'PESO POR CAJA (KG)',xPc,y+12,docFS(600,10),DOC_TENUE,'right');
+      docTxt(ctx,'PESO CAJAS (KG)',xTc,y+12,docFS(600,10),DOC_TENUE,'right');
+      docRegla(ctx,y+18,DOC_PAD,W-DOC_PAD,DOC_LINEA,1);
+    }});
+    conCajas.forEach(function(l){
+      bloques.push({h:26, draw:function(ctx,y,W){
+        docTxt(ctx,docCorta(ctx,l.concepto,190,docFS(500,12.5)),DOC_PAD,y+17,docFS(500,12.5),DOC_TINTA);
+        docTxt(ctx,docKg(l.ida,0),xIda,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
+        docTxt(ctx,docKg(l.regreso,0),xReg,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
+        docTxt(ctx,docKg(l.ida-l.regreso,0),xDif,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
+        docTxt(ctx,docKg(l.pesoCaja,2),xPc,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
+        docTxt(ctx,docKg(l.tara,2),xTc,y+17,docFM(500,12.5),colTara(l.tara),'right');
+        docRegla(ctx,y+25,DOC_PAD,W-DOC_PAD,DOC_LINEA,1);
+      }});
+    });
+    bloques.push({h:34, draw:function(ctx,y,W){
+      docTxt(ctx,'TOTAL',DOC_PAD,y+20,docFS(700,13),DOC_TINTA);
+      docTxt(ctx,docKg(totIda,0),xIda,y+20,docFM(700,13),DOC_TINTA,'right');
+      docTxt(ctx,docKg(totReg,0),xReg,y+20,docFM(700,13),DOC_TINTA,'right');
+      docTxt(ctx,docKg(totIda-totReg,0),xDif,y+20,docFM(700,13),DOC_TINTA,'right');
+      docTxt(ctx,docKg(totTara,2),xTc,y+20,docFM(700,13),totTara<0?DOC_VERDE:DOC_TINTA,'right');
+    }});
+    bloques.push({h:34, draw:function(ctx,y,W){
+      docTxt(ctx,'PESO',DOC_PAD,y+22,docFS(700,11),DOC_TINTA);
+    }});
+  }
   bloques.push({h:24, draw:function(ctx,y,W){
     docTxt(ctx,'VARIEDAD',DOC_PAD,y+12,docFS(600,10),DOC_TENUE);
     if(hayCajas){
       docTxt(ctx,'PESO BRUTO (KG)',xBruto,y+12,docFS(600,10),DOC_TENUE,'right');
-      docTxt(ctx,'CAJAS',xCajas,y+12,docFS(600,10),DOC_TENUE,'right');
       docTxt(ctx,'PESO CAJAS (KG)',xTara,y+12,docFS(600,10),DOC_TENUE,'right');
     }
     docTxt(ctx,'PESO NETO (KG)',xKg,y+12,docFS(600,10),DOC_TENUE,'right');
@@ -12025,8 +12076,7 @@ function docNotaEnvio(deudaId){
     bloques.push({h:26, draw:function(ctx,y,W){
       docTxt(ctx,docCorta(ctx,l.concepto,hayCajas?175:220,docFS(500,12.5)),DOC_PAD,y+17,docFS(500,12.5),DOC_TINTA);
       if(hayCajas && l.bruto>0) docTxt(ctx,docKg(l.bruto,2),xBruto,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
-      if(hayCajas && l.cajas>0) docTxt(ctx,docKg(l.cajas,0),xCajas,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
-      if(hayCajas && l.tara>0) docTxt(ctx,docKg(l.tara,2),xTara,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
+      if(hayCajas && (l.tara||0)!==0) docTxt(ctx,docKg(l.tara,2),xTara,y+17,docFM(400,12.5),colTara(l.tara),'right');
       if(l.kg>0) docTxt(ctx,docKg(l.kg,2),xKg,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
       if(l.precio>0) docTxt(ctx,docMonCta(l.precio,mon),xPr,y+17,docFM(400,12.5),DOC_TEXTO2,'right');
       docTxt(ctx,docMonCta(l.monto,mon),xTot,y+17,docFM(500,12.5),DOC_TINTA,'right');
@@ -12038,8 +12088,7 @@ function docNotaEnvio(deudaId){
     docTxt(ctx,'TOTAL',DOC_PAD,y+22,docFS(700,13),DOC_TINTA);
     if(hayCajas){
       docTxt(ctx,docKg(totBruto,2),xBruto,y+22,docFM(700,13),DOC_TINTA,'right');
-      docTxt(ctx,docKg(totCajas,0),xCajas,y+22,docFM(700,13),DOC_TINTA,'right');
-      docTxt(ctx,docKg(totTara,2),xTara,y+22,docFM(700,13),DOC_TINTA,'right');
+      docTxt(ctx,docKg(totTara,2),xTara,y+22,docFM(700,13),totTara<0?DOC_VERDE:DOC_TINTA,'right');
     }
     docTxt(ctx,docKg(totKg,2),xKg,y+22,docFM(700,13),DOC_TINTA,'right');
     docTxt(ctx,docMonCta(totMonto,mon),xTot,y+22,docFM(700,14),DOC_TINTA,'right');

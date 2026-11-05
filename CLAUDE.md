@@ -518,13 +518,15 @@ Ese selector (`#vf-tipo-envio`, etiqueta "Negocio") vive en su **propia tarjeta 
 
 ### Partidas de camote: peso bruto y cajas (oct-2026)
 
-La tarjeta de cada variedad del envío jal/nay (`renderPartidas()`) va en cuatro filas: **Sector · Hectáreas** / **Cajas · Peso por caja · Peso cajas** / **Peso bruto · Peso neto** / **Toneladas · Precio x kg · Total**. Peso cajas y Peso neto **no se capturan**: los calcula `autoCalc()` —`pesoCajasPartida(p)` = cajas × peso por caja, y neto = bruto − eso— y van `readonly` igual que Toneladas. Se pidió para la cosecha de Jalisco, pero el formulario es el mismo para Nayarit; ahí basta dejar Cajas vacío.
+La tarjeta de cada variedad del envío jal/nay (`renderPartidas()`) va en cuatro filas: **Sector · Hectáreas** / **Cajas de ida · Cajas de regreso · Peso por caja · Peso cajas** / **Peso bruto · Peso neto** / **Toneladas · Precio x kg · Total**. Peso cajas y Peso neto **no se capturan**: los calcula `autoCalc()` —`pesoCajasPartida(p)` = (ida − regreso) × peso por caja, y neto = bruto − eso— y van `readonly` igual que Toneladas. El formulario es el mismo para Jalisco y Nayarit; sin cajas basta dejarlas vacías.
+
+**Cajas de ida y de regreso** (nov-2026): reemplazaron al campo único `cajas`. **Peso cajas puede salir negativo** cuando regresan más cajas de las que se fueron, y entonces **suma** al camote (neto > bruto): es a propósito, "a favor del camote". Los envíos guardados antes traen solo `cajas`, que eran las de ida: `cajasIdaPartida(p)` cae a `p.cajas` si no hay `cajasIda`, y `editarEnvio()` lo convierte, así que al reguardarlos se guardan ya con `cajasIda`/`cajasRegreso` (y sin `cajas`). Leer siempre por `cajasIdaPartida()`/`cajasRegresoPartida()`, no `p.cajas` directo.
 
 **El peso por caja es editable por partida** (`pesoCaja`) y arranca en `KG_POR_CAJA_CAMOTE` = 1.5; si se deja vacío, `pesoCajaPartida(p)` usa ese default. **No confundir `KG_POR_CAJA_CAMOTE` (1.5) con `KG_POR_CAJA` (2.4)**, que es la caja de frambuesa.
 
 `pesoBruto`, `cajas` y `pesoCaja` viven **dentro del jsonb `partidas`** de `envios`, que viaja entero en `sbSaveEnvio()`/`cargarDesdeSB()`: no hubo columna nueva. Todo lo demás (reportes, deudas, almacén) sigue leyendo `pesoNeto`, que conserva su significado. Los envíos de antes no traen bruto: `editarEnvio()` y `guardarEnvio()` caen a `pesoBruto = pesoNeto`, así que reeditarlos no les cambia el neto.
 
-**La nota de envío** (`docNotaEnvio()`) agrega las columnas Peso bruto · Cajas · Peso cajas antes del Peso neto —todas con "(KG)" salvo Cajas, y se ensancha de 520 a 800px— **solo si alguna partida trae cajas**; sin cajas sale idéntica a antes.
+**La nota de envío** (`docNotaEnvio()`), **solo si alguna partida trae cajas**, se ensancha de 520 a 800px y lleva **dos tablas**: primero **Detalle de cajas** (Cajas de ida · Cajas de regreso · Diferencia · Peso por caja · Peso cajas, con su total) y debajo **Peso** (Peso bruto · Peso cajas · Peso neto · Precio · Total). Un peso de cajas negativo se pinta en verde. Sin cajas sale idéntica a antes.
 
 ## Convenciones del código
 
