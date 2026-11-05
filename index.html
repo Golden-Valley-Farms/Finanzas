@@ -9387,21 +9387,22 @@ function cajasIdaPartida(p){
   return parseInt(v,10)||0;
 }
 function cajasRegresoPartida(p){ return parseInt(p.cajasRegreso,10)||0; }
-// Peso de las cajas = (ida − regreso) × peso por caja, redondeado a centésimas
-// de kg. Puede ser NEGATIVO: si regresaron más cajas de las que se fueron, la
-// diferencia se suma al camote (neto = bruto − negativo). Vacío si no hay cajas.
+// Peso de las cajas = (regreso − ida) × peso por caja, redondeado a centésimas
+// de kg, y se SUMA al bruto (neto = bruto + peso cajas). Lo normal es negativo
+// (se fueron más cajas de las que regresaron: se descuenta); positivo = regresaron
+// más de las que se fueron y va a favor del camote. Vacío si no hay cajas.
 function pesoCajasPartida(p){
   var ida=cajasIdaPartida(p), reg=cajasRegresoPartida(p);
   if(ida<=0 && reg<=0) return '';
-  return Math.round((ida-reg)*pesoCajaPartida(p)*100)/100;
+  return Math.round((reg-ida)*pesoCajaPartida(p)*100)/100;
 }
 
 function autoCalc(idx){
   var p=partidasTemp[idx];
-  // peso neto = peso bruto - (cajas de ida - cajas de regreso) x peso por caja
+  // peso neto = peso bruto + (cajas de regreso - cajas de ida) x peso por caja
   var bruto=parseFloat(p.pesoBruto)||0;
-  var tara=parseFloat(pesoCajasPartida(p))||0;
-  var neto=Math.max(0, Math.round((bruto-tara)*100)/100);
+  var ajuste=parseFloat(pesoCajasPartida(p))||0;
+  var neto=Math.max(0, Math.round((bruto+ajuste)*100)/100);
   p.pesoNeto=bruto>0?String(neto):'';
   var pc=document.getElementById('ppc-'+idx); if(pc) pc.value=pesoCajasPartida(p);
   var pn=document.getElementById('ppn-'+idx); if(pn) pn.value=p.pesoNeto;
@@ -12022,11 +12023,11 @@ function docNotaEnvio(deudaId){
   lineas.forEach(function(l){ totKg+=l.kg; totMonto+=l.monto; totBruto+=(l.bruto||0); totTara+=(l.tara||0); totIda+=(l.ida||0); totReg+=(l.regreso||0); });
   // Peso por caja del detalle: si todas las partidas usan el mismo, ese; si no, guion.
   var pcUnico=conCajas.length && conCajas.every(function(l){ return l.pesoCaja===conCajas[0].pesoCaja; }) ? conCajas[0].pesoCaja : null;
-  // El peso de cajas se pinta como AJUSTE al peso bruto, con signo, para que el
-  // cliente lea bruto ± ajuste = neto: "−120.00" se descuenta; "+57.00" en verde
-  // (regresaron más cajas de las que se fueron) se suma.
-  function pintaAjuste(ctx, tara, x, y, peso, size, colBase){
-    var a=-tara, fav=a>0;
+  // El peso de cajas ya viene como ajuste al bruto (regreso − ida), así que se pinta
+  // tal cual con signo: bruto ± ajuste = neto. "−120.00" se descuenta; "+57.00" en
+  // verde (regresaron más cajas de las que se fueron) se suma.
+  function pintaAjuste(ctx, a, x, y, peso, size, colBase){
+    var fav=a>0;
     docTxt(ctx,(fav?'+':'−')+docKg(Math.abs(a),2),x,y,docFM(peso,size),fav?DOC_VERDE:colBase,'right');
   }
   var bloques=[docHead('Nota de envío', d.folioExterno||'—', '', DOC_ACCENT.cobrar)];
@@ -12049,7 +12050,9 @@ function docNotaEnvio(deudaId){
     bloques.push({h:34, draw:function(ctx,y,W){
       docTxt(ctx,docKg(totIda,0),xIda,y+20,docFM(700,13),DOC_TINTA,'right');
       docTxt(ctx,docKg(totReg,0),xReg,y+20,docFM(700,13),DOC_TINTA,'right');
-      docTxt(ctx,docKg(totIda-totReg,0),xDif,y+20,docFM(700,13),DOC_TINTA,'right');
+      // Diferencia = regreso − ida, con signo: + va a favor del camote (en verde).
+      var dif=totReg-totIda;
+      docTxt(ctx,(dif>0?'+':(dif<0?'−':''))+docKg(Math.abs(dif),0),xDif,y+20,docFM(700,13),dif>0?DOC_VERDE:DOC_TINTA,'right');
       docTxt(ctx,pcUnico!=null?docKg(pcUnico,2):'—',xPc,y+20,docFM(700,13),DOC_TINTA,'right');
       pintaAjuste(ctx,totTara,xTc,y+20,700,13,DOC_TINTA);
     }});
