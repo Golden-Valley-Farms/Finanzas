@@ -16010,7 +16010,7 @@ function abrirDespachoGeneral(preselectLoteId){
         '<input type="date" id="dg-fecha-picker" onchange="document.getElementById(\'dg-fecha\').value=isoToDisplay(this.value)" style="padding:8px 6px;border-radius:var(--radius);border:1.5px solid var(--green-border);background:var(--green-bg);cursor:pointer;flex-shrink:0;width:36px;color:transparent;color-scheme:dark light">'+
       '</div></div>'+
     '<div class="field" style="margin-bottom:10px"><label>Cliente</label>'+
-      '<input type="text" id="dg-cliente" placeholder="Nombre del cliente" style="width:100%"></div>'+
+      '<select id="dg-cliente" style="width:100%">'+dgClienteOpciones()+'</select></div>'+
     '<div class="field" style="margin-bottom:10px"><label>Folio Cliente</label>'+
       '<input type="text" id="dg-folio" placeholder="B&amp;M/2026/017" style="width:100%">'+
       '<div class="sector-hint">Si la venta sale de lotes de varios negocios se crea un envío por negocio; este folio es el mismo en todos y es lo que los amarra como una sola venta.</div>'+
@@ -16364,6 +16364,21 @@ function confirmDelLote(loteId){
     btn.dataset.confirm='1'; btn.textContent='⚠️ Confirmar eliminación';
     setTimeout(function(){if(btn){btn.dataset.confirm='';btn.textContent='🗑 Eliminar';}},2500);
   }
+}
+
+// Opciones del cliente del despacho: el catalogo de clientes de camote
+// (clientes) mas los de comercializadora (clientesComer), sin repetir.
+function dgClienteOpciones(){
+  var vistos={}, lista=[];
+  clientes.concat(clientesComer).forEach(function(c){
+    var n=(typeof c==='string'?c:(c&&c.nombre)||'').trim();
+    if(n && !vistos[n.toLowerCase()]){ vistos[n.toLowerCase()]=1; lista.push(n); }
+  });
+  lista.sort(function(a,b){return a.localeCompare(b,'es');});
+  return '<option value="">— Elige cliente —</option>'+lista.map(function(n){
+    var v=n.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+    return '<option value="'+v+'">'+v+'</option>';
+  }).join('');
 }
 
 // ==== MERMA DE ALMACEN ====
