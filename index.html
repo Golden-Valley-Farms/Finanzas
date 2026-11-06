@@ -2808,7 +2808,7 @@ async function cargarDesdeSB(){
         compraId:l.compra_id||null, kgPagar:parseFloat(l.kg_pagar||0),
         descPct:parseFloat(l.desc_pct||0), origenEnvioId:l.origen_envio_id||null,
         folioCompra:l.folio_compra||'',
-        despachos:l.despachos||[], cerrado:l.cerrado||false};
+        despachos:l.despachos||[], mermas:l.mermas||[], cerrado:l.cerrado||false};
     });
     saveAlmLotes();
   }
@@ -9781,7 +9781,7 @@ function maLoteConDespacho(e, variedad){
   var out=null;
   almLotes.forEach(function(l){
     if(String(l.origenEnvioId||'')===String(e.id) && (l.variedad||'')===variedad &&
-       (l.despachos||[]).length) out=l;
+       almTieneSalidas(l)) out=l;
   });
   return out;
 }
@@ -9919,7 +9919,7 @@ function confirmarMandarAlmacen(){
   // Se rehace desde cero: los lotes sin despachos de este envio se borran y se
   // recrean con lo elegido, asi quitar una variedad devuelve sus kg a la venta.
   almLotes=almLotes.filter(function(l){
-    if(String(l.origenEnvioId||'')===String(e.id) && !(l.despachos||[]).length){
+    if(String(l.origenEnvioId||'')===String(e.id) && !almTieneSalidas(l)){
       sbDeleteAlmLote(l.id); return false;
     }
     return true;
@@ -10141,9 +10141,9 @@ function delEnvio(id){
   // Lotes que este envio mando al almacen. Los que ya se despacharon no se pueden
   // soltar: esa mercancia ya se vendio y borrar su origen dejaria el rastro roto.
   var lotesOrigen=almLotes.filter(function(l){return String(l.origenEnvioId||'')===String(id);});
-  var yaDespachado=lotesOrigen.filter(function(l){return (l.despachos||[]).length;})[0];
+  var yaDespachado=lotesOrigen.filter(function(l){return almTieneSalidas(l);})[0];
   if(yaDespachado){
-    showToast('«'+(yaDespachado.variedad||'')+'» ya se despachó del almacén: no se puede eliminar el envío');
+    showToast('«'+(yaDespachado.variedad||'')+'» ya tiene salidas del almacén: no se puede eliminar el envío');
     return;
   }
   if(lotesOrigen.length){
@@ -15471,7 +15471,7 @@ async function sbSaveAlmLote(l){
     compra_id:l.compraId||null, kg_pagar:l.kgPagar||0, desc_pct:l.descPct||0,
     origen_envio_id:l.origenEnvioId||null,
     folio_compra:l.folioCompra||'',
-    despachos:l.despachos||[], cerrado:l.cerrado||false
+    despachos:l.despachos||[], mermas:l.mermas||[], cerrado:l.cerrado||false
   });
 }
 async function sbDeleteAlmLote(id){
@@ -15497,7 +15497,18 @@ async function migrarAlmLotesASupabase(){
 function almKgDespachados(lote){
   return (lote.despachos||[]).reduce(function(a,d){return a+parseFloat(d.kg||0);},0);
 }
-function almKgDisponibles(lote){ return Math.max(0, parseFloat(lote.kgTotal||0) - almKgDespachados(lote)); }
+// Merma: kg que salen del lote como perdida, sin venta. No crea envio, folio,
+// cuenta por cobrar ni gasto: el costo ya esta entero en la compra o el envio
+// de origen, asi que la perdida se refleja sola en su margen.
+function almKgMerma(lote){
+  return (lote.mermas||[]).reduce(function(a,m){return a+parseFloat(m.kg||0);},0);
+}
+// Un lote con despachos O con merma ya tuvo salidas: se bloquea igual que antes
+// se bloqueaba con despachos (no rehacer, no borrar su envio, no quitar la variedad).
+function almTieneSalidas(lote){
+  return !!((lote.despachos||[]).length || (lote.mermas||[]).length);
+}
+function almKgDisponibles(lote){ return Math.max(0, parseFloat(lote.kgTotal||0) - almKgDespachados(lote) - almKgMerma(lote)); }
 function almValorStock(lote){ return almKgDisponibles(lote) * parseFloat(lote.precioEst||0); }
 function almTotalVendido(lote){
   return (lote.despachos||[]).reduce(function(a,d){return a+parseFloat(d.kg||0)*parseFloat(d.precio||0);},0);
@@ -15550,7 +15561,7 @@ function editarLote(loteId){
         descPct:(l.descPct?l.descPct:''),
         precioCompra:(l.precioCompra||''),
         precioEst:(l.precioEst||''),
-        despachos:(l.despachos||[]).length};
+        despachos:((l.despachos||[]).length+(l.mermas||[]).length)};
     });
     renderAlmPartidas();
   } else {
@@ -15603,7 +15614,8 @@ function renderAlmLotes(){
       '</div>'+
       '<div class="alm-progress-wrap"><div class="alm-progress-bar" style="width:'+pct+'%"></div></div>'+
       '<div class="alm-progress-lbl">'+
-        '<span>'+kgDesp.toLocaleString('es-MX')+' kg despachados</span>'+
+        '<span>'+kgDesp.toLocaleString('es-MX')+' kg despachados'+
+          (almKgMerma(lote)>0?' · <span style="color:var(--rojo)">'+almKgMerma(lote).toLocaleString('es-MX')+' kg merma</span>':'')+'</span>'+
         '<span>'+kgTotal.toLocaleString('es-MX')+' kg total</span>'+
       '</div>'+
       (lote.notas?'<div style="font-size:11px;color:var(--text3);margin-top:6px">📝 '+lote.notas+'</div>':'')+
@@ -15893,7 +15905,7 @@ function guardarCompraAlm(fechaISO,fechaLbl,cicloV,notas){
   // la mercancia salio del almacen: borrarla descuadraria el stock y el envio.
   var bloqueado=null;
   almLotes.forEach(function(l){
-    if(l.loc==='com' && loteCompraId(l)===compraId && conservados.indexOf(l.id)<0 && (l.despachos||[]).length)
+    if(l.loc==='com' && loteCompraId(l)===compraId && conservados.indexOf(l.id)<0 && almTieneSalidas(l))
       bloqueado=l.variedad;
   });
   if(bloqueado){showToast('«'+bloqueado+'» ya tiene despachos: no se puede quitar');return;}
@@ -16284,8 +16296,21 @@ function verLote(loteId){
   var kgTotal=parseFloat(lote.kgTotal||0);
   var kgDisp=almKgDisponibles(lote);
   var kgDesp=almKgDespachados(lote);
+  var kgMerma=almKgMerma(lote);
   var pct=kgTotal>0?Math.round((kgDesp/kgTotal)*100):0;
   var locLbl=almLocLbl(lote.loc);
+  var mermaRows=(lote.mermas||[]).map(function(m){
+    return '<div class="alm-despacho-item" style="background:var(--rojo-bg);border-color:transparent">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:3px">'+
+        '<span style="font-weight:600;color:var(--rojo)">Merma</span>'+
+        '<span style="display:flex;align-items:center;gap:10px">'+
+          '<span style="font-family:var(--mono);font-weight:600;color:var(--rojo)">'+parseFloat(m.kg||0).toLocaleString('es-MX')+' kg</span>'+
+          '<button onclick="borrarMermaLote('+lote.id+','+m.id+')" style="padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--font)">Quitar</button>'+
+        '</span>'+
+      '</div>'+
+      '<div style="color:var(--text3)">'+fmtFechaCorta(m.fecha)+(m.motivo?' · '+m.motivo:'')+'</div>'+
+    '</div>';
+  }).join('');
   var despRows=(lote.despachos||[]).map(function(d){
     return '<div class="alm-despacho-item">'+
       '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'+
@@ -16303,13 +16328,16 @@ function verLote(loteId){
     '<div class="modal-row"><span class="modal-key">Kg totales</span><span class="modal-val" style="font-family:var(--mono)">'+kgTotal.toLocaleString('es-MX')+' kg</span></div>'+
     '<div class="modal-row"><span class="modal-key">Kg disponibles</span><span class="modal-val" style="font-family:var(--mono);color:var(--green);font-weight:600">'+kgDisp.toLocaleString('es-MX')+' kg</span></div>'+
     '<div class="modal-row"><span class="modal-key">Kg despachados</span><span class="modal-val" style="font-family:var(--mono)">'+kgDesp.toLocaleString('es-MX')+' kg ('+pct+'%)</span></div>'+
+    (kgMerma>0?'<div class="modal-row"><span class="modal-key">Kg merma</span><span class="modal-val" style="font-family:var(--mono);color:var(--rojo)">'+kgMerma.toLocaleString('es-MX')+' kg ('+(kgTotal>0?Math.round(kgMerma/kgTotal*100):0)+'%)</span></div>':'')+
     '<div class="modal-row"><span class="modal-key">Precio estimado</span><span class="modal-val" style="font-family:var(--mono)">$'+lote.precioEst+'/kg</span></div>'+
     '<div class="modal-row"><span class="modal-key">Valor stock</span><span class="modal-val" style="font-family:var(--mono);color:var(--green)">'+fmt(almValorStock(lote))+'</span></div>'+
     '<div class="modal-row"><span class="modal-key">Total vendido</span><span class="modal-val" style="font-family:var(--mono)">'+fmt(almTotalVendido(lote))+'</span></div>'+
     (lote.notas?'<div class="modal-row"><span class="modal-key">Notas</span><span class="modal-val">'+lote.notas+'</span></div>':'')+
     (despRows?'<div style="margin:14px 0 6px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Despachos ('+lote.despachos.length+')</div>'+despRows:
       '<div style="margin-top:14px;text-align:center;font-size:13px;color:var(--text3)">Sin despachos aún</div>')+
-    '<div style="display:flex;gap:8px;margin-top:14px">'+
+    (mermaRows?'<div style="margin:14px 0 6px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Merma ('+lote.mermas.length+')</div>'+mermaRows:'')+
+    (kgDisp>0.009?'<button onclick="abrirMermaLote('+lote.id+')" style="width:100%;margin-top:14px;padding:10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Registrar merma</button>':'')+
+    '<div style="display:flex;gap:8px;margin-top:8px">'+
       (!lote.cerrado?'<button onclick="closeModal();editarLote('+lote.id+')" style="flex:1;padding:10px;border-radius:var(--radius);border:1.5px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">✏️ Editar</button>':'') +
       '<button onclick="confirmDelLote('+lote.id+')" style="flex:1;padding:10px;border-radius:var(--radius);border:1px solid var(--fram-border);background:none;color:var(--fram);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">🗑 Eliminar</button>'+
     '</div>';
@@ -16336,6 +16364,65 @@ function confirmDelLote(loteId){
     btn.dataset.confirm='1'; btn.textContent='⚠️ Confirmar eliminación';
     setTimeout(function(){if(btn){btn.dataset.confirm='';btn.textContent='🗑 Eliminar';}},2500);
   }
+}
+
+// ==== MERMA DE ALMACEN ====
+// Salida de kg de un lote sin venta (perdida). Vive en lote.mermas
+// [{id,kg,fecha,motivo}] (columna alm_lotes.mermas). No genera envio, folio,
+// deuda ni gasto: el costo ya quedo en la compra o en el envio de origen.
+function abrirMermaLote(loteId){
+  var lote=almLotes.find(function(l){return l.id===loteId;});
+  if(!lote) return;
+  var disp=almKgDisponibles(lote);
+  var t=new Date(), hoy=t.getFullYear()+'-'+('0'+(t.getMonth()+1)).slice(-2)+'-'+('0'+t.getDate()).slice(-2);
+  document.getElementById('mo-title').innerHTML='Merma · '+lote.variedad;
+  document.getElementById('mo-body').innerHTML=
+    '<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Disponibles: '+disp.toLocaleString('es-MX')+' kg</div>'+
+    '<div class="field" style="margin-bottom:12px"><label>Kg de merma</label>'+
+    '<input type="text" inputmode="decimal" id="mm-kg" value="'+disp.toLocaleString('es-MX')+'" style="'+_dsInput+'"></div>'+
+    '<div class="field" style="margin-bottom:12px"><label>Fecha</label>'+
+    '<input type="date" id="mm-fecha" value="'+hoy+'" style="'+_dsInput+'"></div>'+
+    '<div class="field" style="margin-bottom:14px"><label>Motivo</label>'+
+    '<input type="text" id="mm-motivo" placeholder="Ej. podrido en almacén" style="'+_dsInput+'"></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+      '<button onclick="verLote('+lote.id+')" style="padding:11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Cancelar</button>'+
+      '<button class="btn-main" style="margin:0" onclick="confirmarMermaLote('+lote.id+')">Registrar merma</button>'+
+    '</div>';
+  document.getElementById('overlay').classList.add('open');
+}
+function confirmarMermaLote(loteId){
+  var lote=almLotes.find(function(l){return l.id===loteId;});
+  if(!lote) return;
+  var kg=parseFloat(String(document.getElementById('mm-kg').value||'').replace(/[,\s]/g,''))||0;
+  var fecha=document.getElementById('mm-fecha').value||'';
+  var motivo=(document.getElementById('mm-motivo').value||'').trim();
+  var disp=almKgDisponibles(lote);
+  if(!(kg>0)){ showToast('Captura los kg de merma'); return; }
+  if(kg>disp+0.01){ showToast('Solo hay '+disp.toLocaleString('es-MX')+' kg disponibles'); return; }
+  if(!fecha){ showToast('Captura la fecha'); return; }
+  if(!lote.mermas) lote.mermas=[];
+  lote.mermas.push({id:Date.now(), kg:kg, fecha:fecha, motivo:motivo});
+  if(almKgDisponibles(lote)<=0.01) lote.cerrado=true;
+  saveAlmLotes(); sbSaveAlmLote(lote);
+  renderAlmLotes();
+  verLote(lote.id);
+  showToast('Merma registrada');
+}
+function borrarMermaLote(loteId, mermaId){
+  var btn=event.target;
+  if(btn.dataset.confirm!=='1'){
+    btn.dataset.confirm='1'; btn.textContent='¿Quitar?';
+    setTimeout(function(){if(btn){btn.dataset.confirm='';btn.textContent='Quitar';}},2500);
+    return;
+  }
+  var lote=almLotes.find(function(l){return l.id===loteId;});
+  if(!lote) return;
+  lote.mermas=(lote.mermas||[]).filter(function(m){return m.id!==mermaId;});
+  if(almKgDisponibles(lote)>0.01) lote.cerrado=false;
+  saveAlmLotes(); sbSaveAlmLote(lote);
+  renderAlmLotes();
+  verLote(lote.id);
+  showToast('Merma quitada');
 }
 // ============================================================
 

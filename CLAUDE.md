@@ -818,6 +818,8 @@ Persistencia completa (los cuatro lugares): `framCosechas` `[{ciclo, corte}]` ·
 
   `maSetKg()` solo repinta el resumen (`maPintaResumen`), no la lista: repintar por tecla le quitaría el foco al input, la misma trampa de `dgSetKg()`. `envioAlmacenHtml(e)` es el espejo de `envioOrigenHtml(e)` y pinta el desglose en el detalle.
 
+  **Merma de almacén** (nov-2026). Botón **Registrar merma** en el detalle del lote (`verLote`): kg, fecha y motivo, guardados en `lote.mermas` `[{id,kg,fecha,motivo}]` (columna `alm_lotes.mermas` jsonb, cuatro capas cableadas). Es una salida **sin venta**: no crea envío, folio, deuda ni gasto, porque el costo ya está entero en la compra o en el envío de origen y la pérdida se refleja sola en su margen. `almKgMerma()` la suma y `almKgDisponibles()` la resta; si el lote queda en cero se cierra, y quitar una merma (`borrarMermaLote`, dos toques) lo reabre. **`almTieneSalidas(l)` (despachos o merma) sustituyó a `(l.despachos||[]).length` en los candados** —rehacer «Mandar a almacén», borrar el envío de origen, quitar una variedad de una compra—: un lote con merma ya tuvo salidas igual que uno despachado. La trazabilidad compra → venta/almacén → merma se pidió **fuera de la app** (imagen aparte); no meterla a la app sin que se pida.
+
   Cancelar un envío **no toca sus lotes**, igual que no toca el almacén en el resto de los casos: la mercancía guardada sigue siendo real.
 
 - **Frambuesa: registros → nómina → finanzas.** `framFinanzas` guarda en `gastoIds` las referencias a los gastos que generó, para el mismo ciclo de vida que arriba.
