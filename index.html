@@ -10525,6 +10525,8 @@ function calcSaldoCuenta(tipo, nombre){
 }
 function fmtUSD(n){ n=parseFloat(n)||0; return 'US$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function fmtMon(n, moneda){ return moneda==='USD'?fmtUSD(n):fmt(n); }
+// Movimientos reales de Deudas (cargos, abonos, saldos): siempre con centavos.
+function fmtMon2(n, moneda){ return moneda==='USD'?fmtUSD(n):fmt2(n); }
 
 function generarFolioPago(tipo, contraparte, fecha){
   var prefijo=(tipo==='cobrar')?'PAGO':'ABONO';
@@ -10841,7 +10843,7 @@ function renderClientesCatalogo(){
       var b=document.createElement('button');
       b.style.cssText='background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 12px;cursor:pointer;text-align:left;font-family:var(--font);min-width:110px';
       b.innerHTML='<div style="font-size:9.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.03em">'+lbl+'</div>'+
-        '<div style="font-family:var(--mono);font-weight:700;color:'+col+'">'+(hay?fmtMon(r.saldo,r.moneda):'—')+'</div>';
+        '<div style="font-family:var(--mono);font-weight:700;color:'+col+'">'+(hay?fmtMon2(r.saldo,r.moneda):'—')+'</div>';
       if(hay) b.onclick=function(){ abrirDeudaContraparte(tipo, c.nombre); };
       else b.disabled=true, b.style.cursor='default', b.style.opacity='.6';
       return b;
@@ -11633,18 +11635,18 @@ function renderDeudas(){
   var cartera=agingCartera(tipo);
   var esCobrar=(tipo==='cobrar');
   document.getElementById('deuda-total-lbl').textContent=esCobrar?'Total por cobrar':'Total por pagar';
-  var tv=document.getElementById('deuda-total-val'); tv.textContent=fmt(totalSaldo); tv.style.color=accent;
+  var tv=document.getElementById('deuda-total-val'); tv.textContent=fmt2(totalSaldo); tv.style.color=accent;
   document.getElementById('deuda-total-ac').style.background=accent;
   var abiertas=lista.filter(function(x){return x.saldo>0.5 || x.aFavor>0.5;});
   var saldadas=lista.filter(function(x){return x.saldo<=0.5 && x.aFavor<=0.5;});
   document.getElementById('deuda-count-val').textContent=abiertas.length+(abiertas.length===1?' cuenta abierta':' cuentas abiertas');
 
   // ── Vencido / por vencer ──
-  document.getElementById('deuda-venc-val').textContent=fmt(cartera.vencido);
+  document.getElementById('deuda-venc-val').textContent=fmt2(cartera.vencido);
   document.getElementById('deuda-venc-sub').innerHTML=(cartera.total>0.5 && cartera.vencido>0.5)
     ? Math.round(cartera.vencido/cartera.total*100)+'% de la cartera'
     : (cartera.total>0.5?'nada vencido':'&nbsp;');
-  document.getElementById('deuda-sem-val').textContent=fmt(cartera.semana);
+  document.getElementById('deuda-sem-val').textContent=fmt2(cartera.semana);
   document.getElementById('deuda-sem-sub').innerHTML=(cartera.semana>0.5)?'vence en los próximos 7 días':'&nbsp;';
 
   var cont=document.getElementById('deuda-list');
@@ -11690,12 +11692,12 @@ function renderDeudas(){
     card.onclick=function(){ abrirDeudaContraparte(tipo, x.nombre); };
     var ag=x.aging||agingVacio();
     var sub=esHist?(x.n+' movimiento'+(x.n!==1?'s':'')):(ag.nPend+' pendiente'+(ag.nPend===1?'':'s')+' de '+x.n+' mov.');
-    if(x.aFavor>0.5) sub+=' · a su favor '+fmtMon(x.aFavor,x.moneda);
-    var saldoTxt=fmtMon(x.saldo,x.moneda);
-    var eqMxn=(x.moneda==='USD'&&x.tc&&x.saldo>0.5)?'<div style="font-size:10px;color:var(--text3);font-family:var(--mono)">≈ '+fmt(x.saldo*x.tc)+'</div>':'';
+    if(x.aFavor>0.5) sub+=' · a su favor '+fmtMon2(x.aFavor,x.moneda);
+    var saldoTxt=fmtMon2(x.saldo,x.moneda);
+    var eqMxn=(x.moneda==='USD'&&x.tc&&x.saldo>0.5)?'<div style="font-size:10px;color:var(--text3);font-family:var(--mono)">≈ '+fmt2(x.saldo*x.tc)+'</div>':'';
     // El vencido va debajo del saldo: es el número que decide a quién marcarle primero.
     var vencidoTxt=(!esHist&&ag.vencido>0.5)
-      ? '<div style="font-size:11px;font-weight:700;font-family:var(--mono);color:var(--rojo)">'+fmtMon(ag.vencido,x.moneda)+' vencido</div>'
+      ? '<div style="font-size:11px;font-weight:700;font-family:var(--mono);color:var(--rojo)">'+fmtMon2(ag.vencido,x.moneda)+' vencido</div>'
       : '';
     card.innerHTML=
       '<div style="flex:1;min-width:0">'+
@@ -11717,14 +11719,14 @@ function renderDeudas(){
     tr.style.cursor='pointer';
     tr.onclick=function(){ abrirDeudaContraparte(tipo, x.nombre); };
     var ag=x.aging||agingVacio();
-    var saldoTxt=fmtMon(x.saldo,x.moneda);
+    var saldoTxt=fmtMon2(x.saldo,x.moneda);
     var vencidoHay=(!esHist&&ag.vencido>0.5);
-    var vencTxt=vencidoHay?fmtMon(ag.vencido,x.moneda):'—';
+    var vencTxt=vencidoHay?fmtMon2(ag.vencido,x.moneda):'—';
     tr.innerHTML=
       '<td class="txt mono" style="color:var(--text3)">'+(x.clave||'—')+'</td>'+
       '<td class="txt">'+x.nombre+
         (x.moneda==='USD'?' <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:var(--green-bg);color:var(--green)">USD</span>':'')+
-        (x.aFavor>0.5?'<div style="font-size:11px;color:var(--jal)">a su favor '+fmtMon(x.aFavor,x.moneda)+'</div>':'')+'</td>'+
+        (x.aFavor>0.5?'<div style="font-size:11px;color:var(--jal)">a su favor '+fmtMon2(x.aFavor,x.moneda)+'</div>':'')+'</td>'+
       '<td class="num" style="font-size:14px;font-weight:700;color:'+(esHist?'var(--text3)':accent)+'">'+saldoTxt+'</td>'+
       '<td class="num" style="font-weight:'+(vencidoHay?'700':'400')+';color:'+(vencidoHay?'var(--rojo)':'var(--text3)')+'">'+vencTxt+'</td>';
     tbody.appendChild(tr);
@@ -12441,9 +12443,9 @@ function dctaHeadHtml(tipo, nombre, esCorriente){
   h+='<div style="font-size:11px;color:var(--text3);margin-top:2px">'+
       (esCorriente?'Cargos y abonos (cuenta corriente)':'Facturas con abonos')+' · plazo '+cpDiasCredito(nombre)+' días</div>';
   h+='<div class="dcta-stats">'+
-      '<div><div class="kpi-lbl">'+lblSaldo+'</div><div class="dcta-stat-val" style="color:'+colSaldo+'">'+fmtMon(Math.abs(saldo),mon)+'</div>'+
-        ((mon==='USD'&&c.tipoCambio)?'<div style="font-size:11px;color:var(--text3)">≈ '+fmt(Math.abs(saldo)*c.tipoCambio)+' MXN</div>':'')+'</div>'+
-      (ag.vencido>0.5?'<div><div class="kpi-lbl">Vencido</div><div class="dcta-stat-val" style="color:var(--rojo)">'+fmtMon(ag.vencido,mon)+'</div></div>':'')+
+      '<div><div class="kpi-lbl">'+lblSaldo+'</div><div class="dcta-stat-val" style="color:'+colSaldo+'">'+fmtMon2(Math.abs(saldo),mon)+'</div>'+
+        ((mon==='USD'&&c.tipoCambio)?'<div style="font-size:11px;color:var(--text3)">≈ '+fmt2(Math.abs(saldo)*c.tipoCambio)+' MXN</div>':'')+'</div>'+
+      (ag.vencido>0.5?'<div><div class="kpi-lbl">Vencido</div><div class="dcta-stat-val" style="color:var(--rojo)">'+fmtMon2(ag.vencido,mon)+'</div></div>':'')+
       '<div><div class="kpi-lbl">Pendientes</div><div class="dcta-stat-val">'+ag.nPend+'</div></div>'+
     '</div>';
   h+='</div>';
@@ -12497,9 +12499,9 @@ function dctaBodyFifo(tipo, nombre){
       '<td class="txt num" style="color:var(--text3)">'+(deudaFolioNegocio(d)||'—')+'</td>'+
       '<td class="txt" style="color:var(--text3)">'+fmtFechaCorta(d.fecha)+'</td>'+
       '<td class="txt">'+(s.liquidada?'<span style="color:var(--text3)">—</span>':fmtFechaCorta(deudaVence(d)))+'</td>'+
-      '<td class="num">'+fmt(d.monto)+'</td>'+
-      '<td class="num" style="color:'+(s.aplicado>0.005?'var(--green)':'var(--text3)')+'">'+(s.aplicado>0.005?fmt(s.aplicado):'—')+'</td>'+
-      '<td class="num" style="font-weight:700;color:'+(s.liquidada?'var(--text3)':accent)+'">'+fmt(Math.max(0,s.saldo))+'</td>'+
+      '<td class="num">'+fmt2(d.monto)+'</td>'+
+      '<td class="num" style="color:'+(s.aplicado>0.005?'var(--green)':'var(--text3)')+'">'+(s.aplicado>0.005?fmt2(s.aplicado):'—')+'</td>'+
+      '<td class="num" style="font-weight:700;color:'+(s.liquidada?'var(--text3)':accent)+'">'+fmt2(Math.max(0,s.saldo))+'</td>'+
       '<td class="num">'+(s.liquidada
         ? '<span class="deuda-estatus" style="background:var(--green-bg);color:var(--green)">Liquidado</span>'
         : (diasDeudaBadge(d)||'<span class="deuda-estatus" style="background:var(--fram-bg);color:var(--fram)">Pendiente</span>'))+'</td>'+
@@ -12508,10 +12510,10 @@ function dctaBodyFifo(tipo, nombre){
   });
   h+='</tbody><tfoot><tr>'+
     '<td class="txt" colspan="6" style="font-weight:700">'+filas.length+' cargo'+(filas.length===1?'':'s')+'</td>'+
-    '<td class="num" style="font-weight:700;font-size:15px;color:'+accent+'">'+fmt(sumSaldo)+'</td>'+
-    '<td class="num">'+(sumVenc>0.5?'<span class="deuda-estatus" style="background:var(--rojo-bg);color:var(--rojo)">'+fmt(sumVenc)+' vencido</span>':'')+'</td>'+
+    '<td class="num" style="font-weight:700;font-size:15px;color:'+accent+'">'+fmt2(sumSaldo)+'</td>'+
+    '<td class="num">'+(sumVenc>0.5?'<span class="deuda-estatus" style="background:var(--rojo-bg);color:var(--rojo)">'+fmt2(sumVenc)+' vencido</span>':'')+'</td>'+
     '</tr></tfoot></table></div>';
-  if(r.saldoAFavor>0.5) h+='<div style="font-size:12px;color:var(--jal);margin-top:10px">Saldo a favor: '+fmt(r.saldoAFavor)+'</div>';
+  if(r.saldoAFavor>0.5) h+='<div style="font-size:12px;color:var(--jal);margin-top:10px">Saldo a favor: '+fmt2(r.saldoAFavor)+'</div>';
   return h;
 }
 function dctaChipHtml(k, lbl, n, tipo){
@@ -12524,11 +12526,11 @@ function dctaDetalleHtml(s, palabraPago){
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px">';
   h+='<div><div class="kpi-lbl">Partidas</div>';
   (d.items||[]).forEach(function(it){
-    h+='<div style="display:flex;justify-content:space-between;gap:12px;padding:3px 0"><span style="color:var(--text2)">'+it.concepto+'</span><span style="font-family:var(--mono)">'+fmt(it.monto)+'</span></div>';
+    h+='<div style="display:flex;justify-content:space-between;gap:12px;padding:3px 0"><span style="color:var(--text2)">'+it.concepto+'</span><span style="font-family:var(--mono)">'+fmt2(it.monto)+'</span></div>';
   });
-  if(d.interes>0) h+='<div style="display:flex;justify-content:space-between;gap:12px;padding:3px 0"><span style="color:var(--text2)">Interés</span><span style="font-family:var(--mono)">'+fmt(d.interes)+'</span></div>';
-  if(d.nc>0) h+='<div style="display:flex;justify-content:space-between;gap:12px;padding:3px 0"><span style="color:var(--text2)">Nota de crédito</span><span style="font-family:var(--mono)">−'+fmt(d.nc)+'</span></div>';
-  h+='<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0 0;margin-top:4px;border-top:0.5px solid var(--border);font-weight:700"><span style="color:var(--text3)">Total</span><span style="font-family:var(--mono)">'+fmt(d.monto)+'</span></div>';
+  if(d.interes>0) h+='<div style="display:flex;justify-content:space-between;gap:12px;padding:3px 0"><span style="color:var(--text2)">Interés</span><span style="font-family:var(--mono)">'+fmt2(d.interes)+'</span></div>';
+  if(d.nc>0) h+='<div style="display:flex;justify-content:space-between;gap:12px;padding:3px 0"><span style="color:var(--text2)">Nota de crédito</span><span style="font-family:var(--mono)">−'+fmt2(d.nc)+'</span></div>';
+  h+='<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0 0;margin-top:4px;border-top:0.5px solid var(--border);font-weight:700"><span style="color:var(--text3)">Total</span><span style="font-family:var(--mono)">'+fmt2(d.monto)+'</span></div>';
   if(d.factura) h+='<div style="color:var(--text3);margin-top:6px">Factura '+d.factura+'</div>';
   h+='</div>';
   h+='<div><div class="kpi-lbl">'+palabraPago+' aplicados</div>';
@@ -12538,7 +12540,7 @@ function dctaDetalleHtml(s, palabraPago){
         '<span><span style="font-family:var(--mono)">'+pp.pago.folio+'</span>'+
         (pp.dirigido?' <span title="Aplicado a este cargo a propósito, no por antigüedad" style="font-size:9px;color:var(--green)">dirigido</span>':'')+
         ' <span style="color:var(--text3)">'+fmtFechaCorta(pp.pago.fecha)+'</span></span>'+
-        '<span style="font-family:var(--mono);color:var(--green)">−'+fmt(pp.monto)+'</span></div>';
+        '<span style="font-family:var(--mono);color:var(--green)">−'+fmt2(pp.monto)+'</span></div>';
     });
   } else h+='<div style="color:var(--text3);padding:3px 0">Sin abonos todavía</div>';
   h+='</div></div>';
@@ -12567,7 +12569,7 @@ function dctaMovsHtml(pagos, palabraPago){
       '<td class="txt" style="color:var(--text3)">'+fmtFechaCorta(p.fecha)+'</td>'+
       '<td class="txt" style="color:var(--text2)">'+(p.desc||'—')+'</td>'+
       '<td class="txt" style="color:var(--text3)">'+dir+'</td>'+
-      '<td class="num" style="font-weight:700;color:var(--green)">'+fmt(p.monto)+'</td>'+
+      '<td class="num" style="font-weight:700;color:var(--green)">'+fmt2(p.monto)+'</td>'+
       '<td class="num"><button onclick="borrarPagoDesdeModal('+p.id+')" title="Deshacer" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;line-height:1">×</button></td>'+
       '</tr>';
   });
@@ -12595,10 +12597,10 @@ function dctaBodyCorriente(tipo, nombre){
         (fn?' <span style="color:var(--text3);font-family:var(--mono);font-size:11px">'+fn+'</span>':'')+
         (esAuto?' <span style="font-size:10px;color:var(--text3)">auto · envío</span>':'')+
         (m.esCargo?'':'<button onclick="borrarPagoDesdeModal('+m.obj.id+')" title="Deshacer" style="background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;line-height:1;margin-left:6px">×</button>')+'</td>'+
-      '<td class="num" style="color:'+(m.esCargo?'var(--fram)':'var(--text3)')+'">'+(m.esCargo?fmtMon(m.cargo,mon):'')+'</td>'+
-      (tieneInteres?'<td class="num" style="color:var(--text3)">'+(m.interes>0?fmtMon(m.interes,mon):'')+'</td>':'')+
-      '<td class="num" style="color:'+(!m.esCargo?'var(--green)':'var(--text3)')+'">'+(!m.esCargo?fmtMon(m.abono,mon):'')+'</td>'+
-      '<td class="num" style="font-weight:700">'+fmtMon(m.saldoDespues,mon)+'</td>'+
+      '<td class="num" style="color:'+(m.esCargo?'var(--fram)':'var(--text3)')+'">'+(m.esCargo?fmtMon2(m.cargo,mon):'')+'</td>'+
+      (tieneInteres?'<td class="num" style="color:var(--text3)">'+(m.interes>0?fmtMon2(m.interes,mon):'')+'</td>':'')+
+      '<td class="num" style="color:'+(!m.esCargo?'var(--green)':'var(--text3)')+'">'+(!m.esCargo?fmtMon2(m.abono,mon):'')+'</td>'+
+      '<td class="num" style="font-weight:700">'+fmtMon2(m.saldoDespues,mon)+'</td>'+
       '</tr>';
   });
   h+='</tbody></table></div>';
@@ -12642,7 +12644,7 @@ function dpAplicarASelect(tipo, nombre){
     var etq=d.folioExterno||deudaFolioNegocio(d)||(d.origen==='manual'?'Manual':d.origen)||'Cargo';
     var fn=deudaFolioNegocio(d);
     if(fn && fn!==etq) etq+=' · '+fn;
-    opts+='<option value="'+d.id+'">'+etq+' — '+fmtFechaCorta(d.fecha)+' — resta '+fmt(s.saldo)+'</option>';
+    opts+='<option value="'+d.id+'">'+etq+' — '+fmtFechaCorta(d.fecha)+' — resta '+fmt2(s.saldo)+'</option>';
   });
   return '<div class="field" style="margin-bottom:10px"><label>Aplicar a</label>'+
     '<select id="dp-dirigido" style="width:100%" onchange="dpPreview()">'+opts+'</select>'+
@@ -12697,12 +12699,12 @@ function dpPreview(){
       '<span style="font-family:var(--mono)">'+etq+'</span>'+
       (x.dirigido?' <span style="font-size:9px;color:var(--green)">dirigido</span>':'')+
       ' <span style="color:var(--text3)">'+(x.liquida?'liquida':'parcial')+'</span></span>'+
-      '<span style="font-family:var(--mono);color:var(--green)">'+fmt(x.aplica)+'</span></div>';
+      '<span style="font-family:var(--mono);color:var(--green)">'+fmt2(x.aplica)+'</span></div>';
   });
   h+='<div class="dp-prev-row" style="font-weight:700;padding-top:7px">'+
     '<span>'+(sim.sobrante>0.005?'Queda a favor':'Liquida '+nLiq+' cargo'+(nLiq===1?'':'s'))+'</span>'+
     '<span style="font-family:var(--mono);color:'+(sim.sobrante>0.005?'var(--jal)':'var(--text3)')+'">'+
-      (sim.sobrante>0.005?fmt(sim.sobrante):'')+'</span></div>';
+      (sim.sobrante>0.005?fmt2(sim.sobrante):'')+'</span></div>';
   h+='</div>';
   cont.innerHTML=h;
 }

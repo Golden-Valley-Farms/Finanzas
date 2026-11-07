@@ -186,6 +186,8 @@ Dos candados que **no hay que quitar**, porque un caché viejo de `localStorage`
 
 `calcSaldoCuenta()` despacha por modo y es lo que usan las tarjetas (`renderDeudas`), que muestran clave, insignia USD, mini-barra de antigüedad, el vencido bajo el saldo y una sección "Historial (saldadas)" al fondo. `abrirDeudaContraparte()` es el dispatcher del modal; `abrirEditarContraparte()` (⚙️ en el título) edita clave/modo/moneda/tipo de cambio.
 
+**Centavos en movimientos reales** (nov-2026, a pedido): cartera (tarjetas, tabla y KPIs), catálogo de Clientes y toda la pantalla de la cuenta (`dcta*`, "Aplicar a", vista previa del pago) pintan con `fmt2()` / `fmtMon2()` —siempre 2 decimales—, no con `fmt()`/`fmtMon()`. El **Flujo** (paneles, semanas, cajas de captura) se quedó con `fmt()` sin centavos: son proyecciones, no movimientos. Los documentos compartibles ya usaban `docMon()` con 2 decimales.
+
 **Moneda.** Cuentas USD (Bioterra): movimientos y saldo en dólares (`fmtMon`/`fmtUSD`); el equivalente MXN es informativo con `contraparte.tipoCambio` editable. Los KPIs convierten USD→MXN con ese tipo de cambio.
 
 **Regla de negocio (fletes):** el flete de **compra** NO se carga a la cuenta por pagar del proveedor (se paga aparte); `sincronizarDeudasEnvio()` no lo incluye. El flete de **venta** SÍ se le carga siempre al cliente, en los tres negocios de camote — jal, nay y com por igual.
