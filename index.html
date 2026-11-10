@@ -27,7 +27,7 @@
   --green:#1A7A57;--green-bg:#E6F5EF;--green-border:#7FCDB0;
   /* Antiguedad de saldos (cobranza): del tramo al corriente al mas vencido. */
   --rojo:#D64545;--rojo-bg:#FBE9E9;--rojo2:#8F2222;
-  --radius:10px;--radius-lg:14px;
+  --radius:10px;--radius-lg:16px;
   /* Elevacion: las superficies en reposo se separan solo por borde; la sombra es
      para lo que flota (ventanas, listas desplegables, avisos). */
   --shadow:none;
@@ -996,6 +996,44 @@ input::placeholder,textarea::placeholder{color:var(--text3);opacity:1}
 }
 .toast{box-shadow:var(--shadow-pop);padding:10px 18px}
 
+/* ── Marco unico (segunda vuelta, nov-2026) ──
+   Antes Finanzas, Deudas y Reportes "rompian" a 100vw mientras Gastos y Cosechas se
+   quedaban en la columna de 480px. Ahora todas las pantallas viven en el mismo
+   marco: desde 700px .app se abre a 1360px y los breakouts se neutralizan; desde
+   1024px la barra inferior pasa a ser un riel a la izquierda, y los formularios
+   (.form-cols) y las listas se acomodan en columnas. En el celular no cambia nada. */
+.nav-item::before{display:none}
+.nav-item{padding:7px 2px 8px}
+.nav-item svg{box-sizing:content-box;padding:4px 18px;border-radius:999px;transition:background-color .2s var(--ease),color .2s var(--ease)}
+.nav-item.active svg{background:var(--green-bg)}
+@media (min-width:700px){
+  .app{max-width:1360px;padding:0 24px}
+  #sc-resultados,#sc-deudas,#sc-deudacta,#rep-fin-sec,#rep-fram-sec,#rep-cam-sec,#rep-maiz-sec{width:auto;left:auto;margin-left:0;padding-left:0;padding-right:0}
+  #sc-resultados,#sc-deudas,#sc-deudacta{padding-top:12px}
+  .fram-subnav,#maiz-maintabs,.maiz-form-wrap #maiz-form-sec{max-width:none}
+  .fram-subnav-sub,#maiz-subtabs-cosecha{max-width:420px}
+  #maiz-hist-sec{max-width:none!important}
+  /* Listas: tarjetas en rejilla en vez de una sola columna larga */
+  #ven-lista,#alm-lista,#fram-hist-list,#fram-finhist-list,#fram-nominahist-list,#maiz-hist-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:12px;align-items:start}
+  #ven-lista>*,#alm-lista>*,#fram-hist-list>*,#fram-finhist-list>*,#fram-nominahist-list>*,#maiz-hist-list>*{margin-bottom:0!important}
+  #ven-lista>.empty,#alm-lista>.empty,#fram-hist-list>.empty,#fram-finhist-list>.empty,#fram-nominahist-list>.empty,#maiz-hist-list>.empty{grid-column:1/-1}
+  .week-block{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));column-gap:10px;align-items:start}
+  .week-block>.week-header{grid-column:1/-1}
+}
+@media (min-width:1024px){
+  :root{--rail:88px}
+  body{padding:0 0 32px var(--rail)}
+  .app{padding:0 32px}
+  .header{padding:22px 0 14px}
+  .bottom-nav{top:0;bottom:0;right:auto;width:var(--rail);flex-direction:column;justify-content:flex-start;gap:6px;padding:96px 8px 16px;border-top:none;border-right:1px solid var(--border)}
+  .nav-item{flex:0 0 auto;padding:6px 0;font-size:11.5px;gap:5px;border-radius:12px}
+  @media (hover:hover){ .nav-item:not(.active):hover{color:var(--text)} .nav-item:not(.active):hover svg{background:var(--surface2)} }
+  .bulk-bar{bottom:16px}
+  /* Formularios: dos columnas (seleccion a la izquierda, captura a la derecha) */
+  .form-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 28px;align-items:start}
+  .form-col>.step-label:first-child{margin-top:4px}
+}
+
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
@@ -1209,6 +1247,7 @@ input::placeholder,textarea::placeholder{color:var(--text3);opacity:1}
 
   <div id="sc-reg" class="screen">
 
+    <div class="form-cols"><div class="form-col">
     <div class="step-label" id="step-regtipo-lbl">1. Tipo</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
       <button class="tipo-btn gasto sel" id="rt-gasto" onclick="selRegTipo('gasto')">
@@ -1273,6 +1312,7 @@ input::placeholder,textarea::placeholder{color:var(--text3);opacity:1}
     </div>
 
     <!-- Detalle -->
+    </div><div class="form-col">
     <div class="step-label" id="step-detalle-lbl">3. Detalle</div>
     <div class="card">
       <div class="field-row">
@@ -1329,6 +1369,7 @@ input::placeholder,textarea::placeholder{color:var(--text3);opacity:1}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"></path></svg>
       Registrar gasto
     </button>
+    </div></div>
   </div>
 
   <!-- HISTORIAL -->
@@ -1668,6 +1709,7 @@ input::placeholder,textarea::placeholder{color:var(--text3);opacity:1}
 
     <!-- Formulario nuevo envio -->
     <div id="ven-form-sec" style="display:none">
+      <div class="form-cols"><div class="form-col">
       <div class="step-label">Encabezado del envio</div>
       <div class="card" style="margin-bottom:12px">
         <div class="field-row">
@@ -1755,6 +1797,7 @@ input::placeholder,textarea::placeholder{color:var(--text3);opacity:1}
         <div style="font-size:11px;color:var(--text3);margin-top:4px;line-height:1.4">El flete de compra, cosecha, arado y desvarada se prorratean por sector según las hectáreas de cada partida y se registran automáticamente en Historial de gastos. No afectan el total del envío.</div>
       </div>
 
+      </div><div class="form-col">
       <div class="step-label">Partidas de variedad</div>
       <div id="vf-partidas"></div>
 
@@ -1782,12 +1825,14 @@ input::placeholder,textarea::placeholder{color:var(--text3);opacity:1}
       </div>
 
       <button class="btn-main" style="margin-top:12px" id="btn-ven-guardar" onclick="guardarEnvio()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"></path></svg> Guardar envio</button>
+      </div></div>
     </div>
 
     <!-- OPERACION COMERCIALIZADORA -->
     <!-- Sin padding horizontal propio: .app ya lo pone, y así alinea con la tarjeta
          del selector y con el formulario de envío, ahora que comparten pestaña. -->
     <div id="comer-form-sec" style="display:none;padding:0 0 100px">
+      <div class="form-cols"><div class="form-col">
       <div class="step-label">Encabezado</div>
       <div class="card" style="margin-bottom:12px">
         <div class="field-row">
@@ -1834,6 +1879,7 @@ input::placeholder,textarea::placeholder{color:var(--text3);opacity:1}
           <input type="text" id="cf-factura" placeholder="Numero de factura">
         </div>
       </div>
+      </div><div class="form-col">
       <div class="step-label">Compra — por variedad</div>
       <div id="cf-partidas-compra"></div>
       <div id="cf-add-var-wrap" style="margin-bottom:12px">
@@ -1877,6 +1923,7 @@ input::placeholder,textarea::placeholder{color:var(--text3);opacity:1}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"></path></svg>
         Guardar operación
       </button>
+      </div></div>
     </div>
 
     <!-- ALMACÉN FRÍO -->
@@ -2053,6 +2100,7 @@ input::placeholder,textarea::placeholder{color:var(--text3);opacity:1}
     <!-- FORMULARIO NUEVO REGISTRO -->
     <div id="fram-form-sec">
       <!-- Fecha y Sector -->
+      <div class="form-cols"><div class="form-col">
       <div class="step-label">1. Fecha y Sector</div>
       <div class="card" style="margin-bottom:12px">
         <div class="field-row">
@@ -2107,6 +2155,7 @@ input::placeholder,textarea::placeholder{color:var(--text3);opacity:1}
       </div>
 
       <!-- Clasificación: cajas -->
+      </div><div class="form-col">
       <div class="step-label">3. Cajas</div>
       <div class="card" style="margin-bottom:12px">
         <!-- Cabecera de columnas -->
@@ -2216,10 +2265,12 @@ input::placeholder,textarea::placeholder{color:var(--text3);opacity:1}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"></path></svg>
         Guardar registro
       </button>
+      </div></div>
     </div>
 
     <!-- FORMULARIO REGISTRO FINANZAS -->
     <div id="fram-fin-sec" style="display:none">
+      <div class="form-cols"><div class="form-col">
       <div class="step-label">1. Ciclo y semana</div>
       <div class="card" style="margin-bottom:12px">
         <div class="field-row">
@@ -2261,6 +2312,7 @@ input::placeholder,textarea::placeholder{color:var(--text3);opacity:1}
         </div>
       </div>
 
+      </div><div class="form-col">
       <div class="step-label">3. Descuentos</div>
       <div class="card" style="margin-bottom:12px">
         <div class="field-row">
@@ -2305,10 +2357,12 @@ input::placeholder,textarea::placeholder{color:var(--text3);opacity:1}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"></path></svg>
         Guardar registro
       </button>
+      </div></div>
     </div>
 
     <!-- NÓMINA COSECHADORES -->
     <div id="fram-nomina-sec" style="display:none">
+      <div class="form-cols"><div class="form-col">
       <div class="step-label">1. Ciclo y semana</div>
       <div class="card" style="margin-bottom:12px">
         <div class="field-row">
@@ -2325,6 +2379,7 @@ input::placeholder,textarea::placeholder{color:var(--text3);opacity:1}
         </div>
       </div>
 
+      </div><div class="form-col">
       <div class="step-label">2. Cosechadores y sueldo semanal</div>
       <div class="card" style="margin-bottom:12px">
         <div style="display:grid;grid-template-columns:1fr 110px 28px;gap:8px;margin-bottom:6px;padding:0 2px">
@@ -2354,6 +2409,7 @@ input::placeholder,textarea::placeholder{color:var(--text3);opacity:1}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M12 5v14M5 12h14"></path></svg>
         Guardar nomina de la semana
       </button>
+      </div></div>
     </div>
 
     <!-- HISTORIAL NOMINA -->
@@ -2411,6 +2467,7 @@ input::placeholder,textarea::placeholder{color:var(--text3);opacity:1}
     <!-- FORMULARIO DE REGISTRO -->
     <div class="maiz-form-wrap">
     <div id="maiz-form-sec">
+      <div class="form-cols"><div class="form-col">
       <div class="step-label">1. Datos del envío</div>
       <div class="card" style="margin-bottom:12px">
         <div class="field-row">
@@ -2464,6 +2521,7 @@ input::placeholder,textarea::placeholder{color:var(--text3);opacity:1}
         </div>
       </div>
 
+      </div><div class="form-col">
       <div class="step-label">2. Partidas por variedad</div>
       <div id="mz-partidas"></div>
       <div class="card" style="margin-bottom:12px" id="mz-add-variedad-wrap">
@@ -2495,6 +2553,7 @@ input::placeholder,textarea::placeholder{color:var(--text3);opacity:1}
       </div>
 
       <button class="btn-main" id="mz-guardar-btn" onclick="guardarMaiz()">Guardar registro</button>
+      </div></div>
     </div>
     </div>
 

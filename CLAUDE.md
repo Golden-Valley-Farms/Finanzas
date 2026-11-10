@@ -557,6 +557,13 @@ A pedido del usuario ("que todos los módulos se vean iguales, limpio y profesio
 - **Celular:** campos a 16px (menos de eso el teléfono acerca la pantalla al tocar), estados `:hover` solo en dispositivos con puntero, presión con `scale(.97)` en botones. Todo respeta `prefers-reduced-motion`.
 - En oscuro, `.btn-main` lleva texto casi negro: el verde del tema oscuro (`#3CB87A`) es claro y el blanco no se leía.
 
+**Marco único (segunda vuelta, nov-2026).** Antes Finanzas, Deudas y Reportes "rompían" a `100vw` (las reglas `width:100vw;left:50%;margin-left:-50vw`) mientras Gastos y Cosechas se quedaban en la columna de 480px, y eso era lo que hacía ver la app dispareja. Ahora:
+
+- **Desde 700px `.app` se abre a 1360px** y esos breakouts se neutralizan al final de la hoja (`width:auto;left:auto;margin-left:0`). Las reglas viejas siguen arriba; si se agrega una sección nueva **no** hay que darle breakout, ya vive en el marco ancho.
+- **Desde 1024px la barra inferior es un riel a la izquierda** (`--rail` = 88px, `body` con `padding-left`). Es el mismo `.bottom-nav`, solo restilado: `goSc()` no cambió. La pestaña activa lleva una píldora de fondo detrás del ícono, en celular y en escritorio.
+- **Formularios en dos columnas en escritorio**: Registrar gasto, envío jal/nay, operación comer, registro/finanzas/nómina de Frambuesa y registro de Maíz están envueltos en `.form-cols > .form-col ×2`. En celular los envoltorios son bloques normales. El formulario de lote de almacén y el de cargo manual de Deudas se dejaron en una columna.
+- **Listas en rejilla** (`auto-fill, minmax(380px,1fr)`): envíos, lotes, historiales de Frambuesa y Maíz, y los días del Historial de gastos (`.week-block`).
+
 ## Chart.js
 
 Tres registros separados de instancias — `finCharts`, `rfrCharts`, `rcmCharts` — con sus helpers `mkFinChart()`, `mkRfrChart()`, `mkRcmChart()`. **Siempre crear gráficas por esos helpers**: destruyen la instancia previa del mismo id antes de crear la nueva. Instanciar `new Chart()` directo deja canvas huérfanos que fugan memoria y provocan tooltips fantasma.
