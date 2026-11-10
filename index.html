@@ -1149,6 +1149,33 @@ input:focus,select:focus,textarea:focus,.login-campo input:focus{background-colo
 .envio-item .ven-modal-table th:nth-child(5){width:12%}
 .envio-item .ven-modal-table th:nth-child(6){width:18%}
 .envio-item .ven-modal-table td:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Estado de cuenta tipo Excel (dctaExcelHtml): un bloque por cargo con su
+   folio, variedades, subtotal, pagos con saldo corrido y estatus a la derecha */
+.dx-wrap{background:var(--surface);border-radius:18px;overflow-x:auto;margin-top:12px}
+table.dx{width:100%;border-collapse:collapse;min-width:940px;font-size:14.5px}
+.dx th{font-size:13px;font-weight:700;color:var(--text2);text-align:right;padding:14px 12px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+.dx td{padding:9px 12px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border)}
+.dx .l{text-align:left}.dx th.c{text-align:center}
+.dx tr.folio td{background:var(--track);font-weight:800;font-size:15px;padding:10px 12px;border-bottom:0}
+.dx tr.folio small{font-weight:600;font-size:12.5px;color:var(--text3);margin-left:10px}
+.dx tr.folio .acc{float:right;display:inline-flex;gap:14px}
+.dx tr.folio .acc button{border:0;background:none;padding:0;font:600 12.5px var(--font);color:var(--green);cursor:pointer}
+.dx tr.folio .acc button.del{color:var(--rojo)}
+.dx tr.pago td.l:first-child{font-weight:600;color:var(--text2);white-space:normal;max-width:190px;font-size:13px;word-break:break-word}
+.dx td.l:nth-child(3){white-space:normal;min-width:150px}
+.dx tr.pago small{font-size:11.5px;color:var(--green);font-weight:700}
+.dx td.saldo{font-weight:700}
+.dx .neg{color:var(--rojo)}.dx .pos{color:var(--green)}
+.dx td.est{text-align:center;vertical-align:middle;font-weight:800;font-size:15px;border-left:1px solid var(--border);white-space:normal;width:140px}
+.dx td.est.ok{background:var(--green-bg);color:var(--green)}
+.dx td.est.pend{background:rgba(216,169,21,.16);color:var(--maiz)}
+.dx td.est small{display:block;font-size:12.5px;font-weight:700;margin-top:4px;color:var(--text2)}
+.dx td.est small.venc{color:var(--rojo)}
+.dx tbody tr:last-child td{border-bottom:0}
+.dx-tot{display:flex;justify-content:flex-end;gap:12px;margin-top:14px;flex-wrap:wrap}
+.dx-tot>div{background:var(--surface);border-radius:18px;padding:16px 20px;min-width:240px;display:flex;justify-content:space-between;align-items:baseline;gap:20px}
+.dx-tot span{color:var(--text2);font-weight:600}
+.dx-tot b{font-size:22px;font-weight:800}.dx-tot b.neg{color:var(--rojo)}
 /* Filtros de Envios y Almacen: listas desplegables en una fila */
 .ven-filtros{display:flex;gap:8px;margin-bottom:14px}
 .ven-filtros>select,.ven-filtros>.ssel-wrap{flex:1;min-width:0}
@@ -12188,7 +12215,8 @@ function deudaFolioNegocio(d){
 // pago, deshacer) siguen llamando aquí, así que cierra el overlay al entrar.
 function abrirDeudaContraparte(tipo, nombre){
   deudaModalTipo=tipo; deudaModalNombre=nombre;
-  dctaFiltro='pend'; dctaAbierto={};
+  // Abre con todos los cargos, como la hoja de Excel del usuario (nov-2026).
+  dctaFiltro='todos'; dctaAbierto={};
   closeModal();
   goSc('deudacta');
 }
@@ -12916,7 +12944,75 @@ function dctaBodyFifo(tipo, nombre){
     var dv=deudaDiasVencido(s.deuda);
     if(!s.liquidada && dv!==null && dv>0) sumVenc+=s.saldo;
   });
-
+  // Estado de cuenta tipo Excel (nov-2026, a pedido: "así llevo el registro en
+  // Excel"). Reemplaza la tabla de abajo, que se conserva intacta en
+  // dctaTablaFifoVieja() por si hay que volver.
+  return h+dctaExcelHtml(tipo, nombre, filas, r, sumSaldo, sumVenc);
+}
+// Un bloque por cargo, como la hoja del usuario: franja con el folio, renglones
+// por variedad (peso bruto, desc., peso neto, precio, monto), subtotal en rojo,
+// los pagos que se le aplicaron con el saldo bajando y el estatus a la derecha
+// abarcando todo el bloque. Las partidas salen de docLineasCompra/docLineasVenta,
+// las mismas que usan los documentos compartibles, así que tabla y documento
+// nunca dicen cosas distintas. Los pagos y saldos salen de calcContraparte().
+function dctaExcelHtml(tipo, nombre, filas, r, sumSaldo, sumVenc){
+  var c=getContraparte(nombre)||{};
+  var mon=(c.moneda==='USD')?'USD':'MXN';
+  var kg=function(n){ return n?(parseFloat(n)||0).toLocaleString('es-MX',{minimumFractionDigits:1,maximumFractionDigits:1}):''; };
+  var h='<div class="dx-wrap"><table class="dx"><thead><tr>'+
+    '<th class="l">Folio</th><th class="l">Fecha</th><th class="l">Concepto</th><th>Peso bruto</th><th>Desc.</th>'+
+    '<th>Peso neto</th><th>Precio/kg</th><th>Monto</th><th>Saldo</th><th class="c">Estatus</th></tr></thead><tbody>';
+  filas.forEach(function(s){
+    var d=s.deuda;
+    var lineas=(tipo==='pagar')?docLineasCompra(d):docLineasVenta(d);
+    var fn=deudaFolioNegocio(d);
+    var folio=d.folioExterno||fn||(d.origen==='manual'?'Cargo manual':'Cargo');
+    var nFilas=1+lineas.length+1+s.pagos.length;
+    var dv=deudaDiasVencido(d);
+    var est;
+    if(s.liquidada) est='<td class="est ok" rowspan="'+nFilas+'">Liquidado</td>';
+    else est='<td class="est pend" rowspan="'+nFilas+'">Pendiente'+
+      (dv!==null?'<small class="'+(dv>0?'venc':'')+'">'+(dv>0?dv+' días vencido':(dv===0?'vence hoy':'vence en '+(-dv)+' días'))+'</small>':'')+'</td>';
+    // Acciones del cargo en la franja del folio (antes vivían en la fila desplegable)
+    var acc=((d.tipo==='cobrar'&&docEnvioDe(d))?'<button onclick="docCompartirNota('+d.id+')">Nota de envío</button>':'')+
+      '<button onclick="abrirEditarPlazoDeuda('+d.id+')">Plazo '+deudaPlazo(d)+' d</button>'+
+      (d.origen==='manual'?'<button class="del" onclick="borrarDeudaDesdeModal('+d.id+')">Eliminar</button>':'');
+    h+='<tr class="folio"><td class="l" colspan="9"><span>'+folio+'</span>'+
+      (fn&&fn!==folio?'<small>'+fn+'</small>':'')+
+      (d.factura?'<small>Factura '+d.factura+'</small>':'')+
+      '<span class="acc">'+acc+'</span></td>'+est+'</tr>';
+    lineas.forEach(function(x){
+      var bruto=x.bruto||0, neto=(x.neto!=null?x.neto:x.kg)||0;
+      h+='<tr><td class="l"></td><td class="l">'+fmtFechaCorta(d.fecha)+'</td><td class="l">'+x.concepto+'</td>'+
+        '<td>'+kg(bruto)+'</td><td>'+(x.desc?Math.round(x.desc)+'%':'')+'</td><td>'+kg(neto)+'</td>'+
+        '<td>'+(x.precio?fmtMon2(x.precio,mon):'')+'</td><td>'+fmtMon2(x.monto,mon)+'</td><td></td></tr>';
+    });
+    var extra='';
+    if(parseFloat(d.interes)>0) extra+='Interés '+fmtMon2(d.interes,mon)+' ';
+    if(parseFloat(d.nc)>0) extra+='Nota de crédito −'+fmtMon2(d.nc,mon);
+    h+='<tr class="sub"><td class="l"></td><td class="l"></td><td class="l">'+extra+'</td><td></td><td></td><td></td><td></td><td></td>'+
+      '<td class="saldo neg">'+fmtMon2(d.monto,mon)+'</td></tr>';
+    s.pagos.forEach(function(pp,i){
+      var sd=Math.max(0,pp.saldoDespues);
+      h+='<tr class="pago'+(i===s.pagos.length-1?' fin':'')+'"><td class="l">'+(pp.pago.folio||'')+'</td>'+
+        '<td class="l">'+fmtFechaCorta(pp.pago.fecha)+'</td>'+
+        '<td class="l">'+(pp.pago.desc||((tipo==='cobrar')?'Pago':'Pago GVF'))+(pp.dirigido?' <small>dirigido</small>':'')+'</td>'+
+        '<td></td><td></td><td></td><td></td><td class="pos">'+fmtMon2(pp.monto,mon)+'</td>'+
+        '<td class="saldo '+(sd<=0.005?'pos':'neg')+'">'+fmtMon2(sd,mon)+'</td></tr>';
+    });
+  });
+  h+='</tbody></table></div>';
+  h+='<div class="dx-tot">'+
+    '<div><span>Total vencido</span><b class="neg">'+fmtMon2(sumVenc,mon)+'</b></div>'+
+    '<div><span>'+(tipo==='cobrar'?'Total por cobrar':'Total a pagar')+'</span><b>'+fmtMon2(sumSaldo,mon)+'</b></div>'+
+    '</div>';
+  if(r.saldoAFavor>0.5) h+='<div style="font-size:13px;color:var(--jal);margin-top:10px;text-align:right">Saldo a favor: '+fmtMon2(r.saldoAFavor,mon)+'</div>';
+  return h;
+}
+// Tabla anterior del estado de cuenta (una fila por cargo, detalle al hacer
+// clic). Sin uso desde nov-2026; se conserva por si se pide volver.
+function dctaTablaFifoVieja(tipo, nombre, filas, r, sumSaldo, sumVenc, accent, palabraPago){
+  var h='';
   h+='<div class="fintab-wrap auto"><table class="fintab"><thead><tr>'+
     '<th class="txt">Folio cliente</th><th class="txt">Folio negocio</th><th class="txt">Fecha</th><th class="txt">Vence</th>'+
     '<th>Cargo</th><th>Abonado</th><th>Saldo</th><th>Estado</th></tr></thead><tbody>';
