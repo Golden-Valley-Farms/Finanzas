@@ -1115,9 +1115,8 @@ input:focus,select:focus,textarea:focus,.login-campo input:focus{background-colo
 .loc-row,.neg-row{display:flex;flex-wrap:wrap;gap:8px}
 .loc-btn{width:auto;display:inline-flex;align-items:center;gap:8px;padding:10px 15px;
   border-radius:999px;border:0;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border)}
-.loc-emoji{font-size:0;width:9px;height:9px;border-radius:50%;margin:0;background:var(--text3);flex:none}
-.loc-btn.jal .loc-emoji{background:var(--jal)}.loc-btn.nay .loc-emoji{background:var(--nay)}.loc-btn.ofic .loc-emoji{background:var(--ofic)}
-.loc-btn.com .loc-emoji{background:var(--com)}.loc-btn.maiz .loc-emoji{background:var(--maiz)}.loc-btn.fram .loc-emoji{background:var(--fram)}
+/* El icono de cada negocio se queda (a pedido: se ve mejor que el punto de color) */
+.loc-emoji{font-size:17px;line-height:1;margin:0;flex:none}
 .loc-label{font-size:14.5px;font-weight:600;color:var(--text)!important}
 .loc-sub{display:none}
 /* La elegida en verde suave con contorno verde: se distingue sin deslumbrar
@@ -1205,6 +1204,8 @@ input:focus,select:focus,textarea:focus,.login-campo input:focus{background-colo
   #ven-lista,#alm-lista,#fram-hist-list,#fram-finhist-list,#fram-nominahist-list,#maiz-hist-list,.week-block{display:block}
   #ven-lista>*,#alm-lista>*,#fram-hist-list>*,#fram-finhist-list>*,#fram-nominahist-list>*,#maiz-hist-list>*{margin-bottom:6px!important}
   #sc-reg>*,#ven-form-sec,#comer-form-sec,.maiz-form-wrap #maiz-form-sec{max-width:720px;margin-left:auto;margin-right:auto}
+  /* Cosechas (Camote, Frambuesa, Maiz) al mismo ancho que Gastos, a pedido */
+  #sc-ven>*,#sc-fram>*,#sc-maiz>*{max-width:720px;margin-left:auto;margin-right:auto}
   .fram-subnav{max-width:620px}
   .fram-subnav-sub{max-width:360px}
   #maiz-maintabs,#maiz-subtabs-cosecha{max-width:448px}
