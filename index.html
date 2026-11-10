@@ -1205,7 +1205,9 @@ body #sc-deudas #deuda-list{display:block}
 @media (max-width:699px){ .dcta-nom{font-size:22px} .dcta-acc{width:100%} .dcta-btn{flex:1} }
 /* Ventana fija del estado de cuenta: alto fijo, scroll propio y encabezados que
    se quedan arriba. Abre en lo más reciente (renderCuentaDeuda la baja al fondo). */
-.dcta-scroll,.fintab-wrap.auto.dcta-scroll{max-height:max(320px,calc(100vh - 355px));overflow:auto!important;overscroll-behavior:contain}
+.dcta-scroll,.fintab-wrap.auto.dcta-scroll{max-height:max(320px,calc(100vh - 355px));}
+@media (min-width:1024px){ .dcta-scroll,.fintab-wrap.auto.dcta-scroll{max-height:max(320px,calc(100vh - 272px))} }
+.dcta-scroll,.fintab-wrap.auto.dcta-scroll{overflow:auto!important;overscroll-behavior:contain}
 .dcta-scroll thead th{position:sticky;top:0;z-index:2;background:var(--surface)}
 .dcta-scroll .fintab thead th{background:var(--surface2)}
 table.dx{width:100%;border-collapse:collapse;min-width:940px;font-size:14.5px}
@@ -1313,8 +1315,18 @@ table.dx{width:100%;border-collapse:collapse;min-width:940px;font-size:14.5px}
   .nav-item.active{background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.08)}
   .nav-item.active svg{background:var(--green)}
   @media (hover:hover){ .nav-item:not(.active):hover{background:rgba(0,0,0,.04);color:var(--text)} .nav-item:not(.active):hover svg{background:var(--text2)} }
-  .header{padding-top:28px}
-  .header-name{font-size:30px}
+  /* Logo y nombre arriba del menu lateral, y Salir al fondo de esa columna
+     (nov-2026, a pedido): el contenido de cada pantalla sube hasta arriba.
+     Solo estilo: .header y #btn-salir siguen siendo los mismos nodos. */
+  .header{position:fixed;top:0;left:0;width:var(--rail);z-index:60;padding:22px 16px 0;display:block}
+  .header-brand{gap:10px}
+  .header-logo{width:42px;height:42px;border-radius:10px}
+  .header-name{font-size:16px;font-weight:800;line-height:1.2}
+  .header-date{font-size:12px}
+  .header-total{display:none}
+  #btn-salir{position:fixed;top:auto;bottom:18px;left:12px;right:auto;transform:none;width:calc(var(--rail) - 24px);padding:10px 12px;font-size:14px;font-weight:600;text-align:left;border-radius:10px}
+  .bottom-nav{padding-top:104px;padding-bottom:70px}
+  .app{padding-top:22px}
 }
 @media (min-width:1024px) and (prefers-color-scheme:dark){ .bottom-nav{background:#141815} }
 
