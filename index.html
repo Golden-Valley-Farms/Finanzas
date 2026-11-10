@@ -12891,17 +12891,9 @@ function docEstadoFifo(tipo, nombre, completo){
     docTxt(ctx,esCliente?'TOTAL POR COBRAR':'TOTAL A PAGAR',xMonto-34,y+20,docFS(700,13),DOC_TINTA,'right');
     docTxt(ctx,docMonCta(r.saldoTotal,mon),xSaldo,y+20,docFM(700,16),DOC_TINTA,'right');
   }});
-  var res=docResumenCuenta(tipo,nombre);
-  bloques.push({h:56, draw:function(ctx,y,W){
-    docRegla(ctx,y+8,DOC_PAD,W-DOC_PAD,DOC_LINEA,1);
-    var cols=[['Facturado',res.facturado],['Pagado',res.pagado],['Saldo pendiente',res.saldo]];
-    var ancho=(W-DOC_PAD*2)/3;
-    cols.forEach(function(c,i){
-      var cx=DOC_PAD+ancho*i+ancho/2;
-      docTxt(ctx,c[0].toUpperCase(),cx,y+28,docFS(600,9.5),DOC_TENUE,'center');
-      docTxt(ctx,docMonCta(c[1],mon),cx,y+46,docFM(700,13),i===2?DOC_TINTA:DOC_TEXTO2,'center');
-    });
-  }});
+  // Sin el resumen Facturado · Pagado · Saldo pendiente (nov-2026, a pedido):
+  // el total a pagar/por cobrar de arriba ya dice lo que importa.
+  bloques.push({h:10});
   bloques.push(docPie());
   return docPintar(bloques,W);
 }
