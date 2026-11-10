@@ -12773,7 +12773,7 @@ function docEstadoFifo(tipo, nombre, completo){
   var mon=((getContraparte(nombre)||{}).moneda==='USD')?'USD':'MXN';
   var accent=DOC_ACCENT[tipo];
   var r=calcContraparte(tipo,nombre);
-  var porFecha=function(a,b){return (a.deuda.fecha||'')<(b.deuda.fecha||'')?-1:1;};
+  var porFecha=function(a,b){ return docOrdenFolio(a.deuda,b.deuda); };
   var pend=r.items.filter(function(s){return !s.liquidada;}).sort(porFecha);
   var lista=completo?r.items.slice().sort(porFecha):pend;
   // El de proveedor va más ancho porque lleva cuatro columnas más (bruto,
@@ -12938,14 +12938,24 @@ function docEstadoCorriente(tipo, nombre){
 // Solo si la contraparte lo pide. Filtra por año calendario (los folios son
 // B&M/2026/028), no por ciclo agrícola. El resumen del pie es global, para que
 // siempre cuadre con el saldo que muestra la cuenta.
+// Orden de los documentos: por fecha y, el mismo día, por número de folio
+// (B&M/2026/037 antes que /038), con el id como último desempate. Antes solo se
+// comparaba la fecha y el comparador nunca devolvía 0, así que dos cargos del
+// mismo día salían en cualquier orden (pasó con 037 y 038 de B&M).
+function docOrdenFolio(a,b){
+  var fa=a.fecha||'', fb=b.fecha||'';
+  if(fa!==fb) return fa<fb?-1:1;
+  var c=String(a.folioExterno||a.folio||'').localeCompare(String(b.folioExterno||b.folio||''),'es',{numeric:true});
+  return c || ((parseFloat(a.id)||0)-(parseFloat(b.id)||0));
+}
 function docHistorial(tipo, nombre, anio){
   var mon=((getContraparte(nombre)||{}).moneda==='USD')?'USD':'MXN';
   var accent=DOC_ACCENT[tipo];
   var esCliente=(tipo==='cobrar');
   var cargos=deudas.filter(function(d){return d.tipo===tipo && d.contraparte===nombre && docAnio(d.fecha)===anio;})
-    .sort(function(a,b){return (a.fecha||'')<(b.fecha||'')?-1:1;});
+    .sort(docOrdenFolio);
   var pagos=pagosDeuda.filter(function(p){return p.tipo===tipo && p.contraparte===nombre && docAnio(p.fecha)===anio;})
-    .sort(function(a,b){return (a.fecha||'')<(b.fecha||'')?-1:1;});
+    .sort(docOrdenFolio);
   var n=Math.max(cargos.length,pagos.length);
   var W=700, mitad=W/2, gap=12;
   var izqX=DOC_PAD, izqFin=mitad-gap/2, derX=mitad+gap/2, derFin=W-DOC_PAD;
