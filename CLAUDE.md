@@ -564,6 +564,19 @@ A pedido del usuario ("que todos los módulos se vean iguales, limpio y profesio
 - **Formularios en dos columnas en escritorio**: Registrar gasto, envío jal/nay, operación comer, registro/finanzas/nómina de Frambuesa y registro de Maíz están envueltos en `.form-cols > .form-col ×2`. En celular los envoltorios son bloques normales. El formulario de lote de almacén y el de cargo manual de Deudas se dejaron en una columna.
 - **Listas en rejilla** (`auto-fill, minmax(380px,1fr)`): envíos, lotes, historiales de Frambuesa y Maíz, y los días del Historial de gastos (`.week-block`).
 
+**Estilo Bolsillo (tercera vuelta, 10-nov-2026) — manda sobre las dos de arriba.** El usuario vio 10 propuestas (maquetas A-G y la app real H-J, en `propuestas-rediseno/`, carpeta excluida de git con `.git/info/exclude`) y eligió la **J**: la app con el estilo de la maqueta C, "Bolsillo", tipo app nativa de iPhone. Vive en un bloque **`ESTILO BOLSILLO`** al final del `<style>`, después de los dos anteriores, y redefine sus variables y piezas. Lo que cambió respecto de lo escrito arriba:
+
+- **Letra Figtree** (`--font`, y `--mono` también vale Figtree). Chart.js la toma por `Chart.defaults.font.family`. DM Sans y DM Mono **se siguen cargando** porque los documentos compartibles las usan en el canvas (`docFS()`/`docFM()`).
+- **Paleta:** fondo `#F2F3F0`, tarjetas blancas, verde `#0B6E4F`, pista de pestañas `--track`. Los colores de negocio no cambiaron. Modo oscuro propio dentro del mismo bloque.
+- **Tarjetas sin borde, radio 18**, y las de listas radio 16. **`.kpi-accent` va oculta** (el semáforo sigue en la cifra, que se tiñe por estilo inline); **dentro de `#rpt-wrap` se vuelve a mostrar**, para que el reporte impreso conserve su raya.
+- **Rótulos en tipo oración**, ya no en mayúsculas.
+- **Pestañas tipo iPhone:** pista gris sin borde y la activa en blanco con sombra suave, en los dos niveles.
+- **Negocio como píldoras** (`.loc-row`/`.neg-row` pasan a `flex`, el emoji se oculta y queda un punto de color) y **la opción elegida en oscuro** en negocio, tipo, actividad, ciclo y sector. El fondo de `.loc-btn.sel` lleva `!important` porque las reglas viejas `.loc-btn.jal.sel` tienen más especificidad.
+- **Campos rellenos de gris, sin borde**, verdes al enfocar. Botón principal verde de 52px y radio 14.
+- **Ventanas**: hoja gris con renglones agrupados en blanco; centradas en escritorio.
+- **Navegación:** en celular, barra translúcida con la activa en verde (sin píldora). **Desde 1024px el riel pasa a menú lateral de 240px con ícono en casilla y nombre** (`--rail:240px`; el `padding-left` del `body` lo sigue leyendo de ahí).
+- **Deshace dos piezas del "Marco único", a pedido** ("una sola tarjeta por fila", como en la J): las **listas vuelven a una columna** (envíos, lotes, historiales, `.week-block`) y los **formularios `.form-cols` vuelven a una columna**, centrados a 720px. El marco baja a 1240px. Las pestañas de Frambuesa (620px) y Maíz (448px) recuperan su ancho de antes. Los envoltorios `.form-cols`/`.form-col` siguen en el markup, solo que en bloque.
+
 ## Chart.js
 
 Tres registros separados de instancias — `finCharts`, `rfrCharts`, `rcmCharts` — con sus helpers `mkFinChart()`, `mkRfrChart()`, `mkRcmChart()`. **Siempre crear gráficas por esos helpers**: destruyen la instancia previa del mismo id antes de crear la nueva. Instanciar `new Chart()` directo deja canvas huérfanos que fugan memoria y provocan tooltips fantasma.

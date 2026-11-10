@@ -4,14 +4,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
     <script>
     // Las graficas usan la misma letra que el resto de la app.
-    if(window.Chart){ Chart.defaults.font.family="'DM Sans',sans-serif"; }
+    if(window.Chart){ Chart.defaults.font.family="'Figtree',sans-serif"; }
     </script>
   
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Golden Valley Farms</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&amp;family=DM+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&amp;family=DM+Sans:opsz,wght@9..40,400..700&amp;family=DM+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -1033,6 +1033,161 @@ input::placeholder,textarea::placeholder{color:var(--text3);opacity:1}
   .form-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 28px;align-items:start}
   .form-col>.step-label:first-child{margin-top:4px}
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   ESTILO BOLSILLO (nov-2026, propuesta J elegida por el usuario)
+   Figtree · fondo gris claro · tarjetas blancas sin borde y muy redondeadas
+   · titulos y cifras gruesos · segmentado tipo iPhone · negocios como pildoras
+   · campos rellenos · boton verde grande · barra translucida en el celular y
+   menu lateral con nombre en escritorio. Solo estilo: va al final para mandar
+   sobre las capas de arriba, sin tocar ids, clases del JS ni comportamiento.
+   ════════════════════════════════════════════════════════════════════ */
+:root{
+  --bg:#F2F3F0;--surface:#FFFFFF;--surface2:#F2F3F0;--border:#E6E8E4;--track:#E3E6E1;
+  --text:#111915;--text2:#5B6660;--text3:#8E9892;
+  --green:#0B6E4F;--green-bg:#DDEFE6;--green-border:#9FD3BD;
+  --rojo:#D2452B;--rojo-bg:#FCE9E4;
+  --font:'Figtree',system-ui,sans-serif;--mono:var(--font);
+  --radius:12px;--radius-lg:18px;--shadow:none;
+  --focus:0 0 0 3px var(--green-bg);
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0E1210;--surface:#1A1F1C;--surface2:#232925;--border:#2A312D;--track:#262C28;
+  --text:#EEF2EF;--text2:#A5B0AA;--text3:#7A857F;
+  --green:#3FBF8A;--green-bg:#10291F;--rojo:#F07257;--rojo-bg:#2E1611;
+}}
+body{font-family:var(--font);font-size:15.5px}
+
+/* Encabezado */
+.header-name{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.header-total-val{font-weight:800;color:var(--green)}
+.header-date,.header-total-lbl{font-size:12.5px;font-weight:600;color:var(--text3)}
+
+/* Rotulos en tipo oracion, como los encabezados de lista */
+label,.step-label,.section-hd,.week-title,.ctl-lbl,.kpi-lbl,.stat-lbl,.fx-grp,.fx-title,.kpi-split-lbl,.login-lbl,.fintab th,.ven-modal-table th{
+  text-transform:none!important;letter-spacing:0!important}
+label,.step-label,.login-lbl{font-size:13px;font-weight:600;color:var(--text2)}
+.step-label,.section-hd,.week-title{margin-left:4px}
+.section-hd,.week-title,.ctl-lbl,.fx-title{font-size:13.5px;font-weight:600;color:var(--text2)}
+.kpi-lbl,.stat-lbl{font-size:13.5px;font-weight:600;color:var(--text2)}
+.kpi-split-lbl{font-size:12px!important;font-weight:600}
+.dash-card-title{font-size:15.5px;font-weight:700}
+.kpi-val,.stat-val,.fx-tot,.fx-bal-val,.dcta-stat-val{font-weight:800!important;letter-spacing:-.025em}
+.gasto-monto,.envio-total,.deuda-saldo{font-weight:700}
+.gasto-cat,.envio-num,.deuda-nom{font-weight:600}
+.gasto-desc,.envio-meta,.deuda-sub{color:var(--text3)}
+
+/* Tarjetas: blancas, sin borde ni sombra, radio 18 */
+.card,.dash-card,.kpi-card,.stat-card,.report-block,.fx-panel,.aging-card,.dcta-head,.fintab-wrap,.rfr-chart-box,
+.envio-item,.alm-lote,.gasto-item,.deuda-card,.partida-card,.login-card,.fram-hist-item,.rcm-neg-card{
+  background:var(--surface);border:0!important;border-radius:18px!important;box-shadow:none!important}
+.partida-card{background:var(--bg)!important}
+.card,.dash-card{padding:18px}
+.kpi-card{padding:16px 18px}
+.kpi-accent{display:none}
+#rpt-wrap .kpi-accent{display:block}
+/* Listas apretadas, como grupos de iPhone */
+.envio-item,.alm-lote,.gasto-item,.deuda-card,.fram-hist-item{border-radius:16px!important}
+.gasto-item{align-items:center}
+.gasto-dot{width:32px;height:32px;border-radius:9px;margin-top:0}
+@media (hover:hover){ .envio-item:hover,.alm-lote:hover,.gasto-item:hover,.deuda-card:hover{background:#FAFBF9} }
+.gasto-item.selected{background:var(--fram-bg)!important;box-shadow:inset 0 0 0 1px var(--fram-border)!important}
+.rcm-neg-card{box-shadow:inset 0 0 0 1px var(--border)!important}
+.rcm-neg-card.active{box-shadow:inset 0 0 0 1.5px var(--camote)!important}
+
+/* Campos rellenos, sin borde; al escribir se iluminan en verde */
+input[type=number],input[type=text],input[type=date],input[type=email],input[type=password],select,textarea,.login-campo input{
+  background-color:var(--bg);border:1px solid transparent;border-radius:12px;min-height:44px;font-weight:500}
+@media (hover:hover){ input[type=number]:hover,input[type=text]:hover,input[type=date]:hover,select:hover,textarea:hover{border-color:var(--border)} }
+input:focus,select:focus,textarea:focus,.login-campo input:focus{background-color:var(--surface);border-color:var(--green);box-shadow:var(--focus)}
+.ssel-panel{border:0;border-radius:14px}
+
+/* Pestanas: segmentado tipo iPhone en toda la app */
+.seg,.ven-subnav,.fram-subnav,.rep-subnav,#rep-maintabs-wrap .rep-subnav{background:var(--track);border:0;border-radius:11px;padding:2px;gap:0}
+.ven-tab,.fram-tab,.rep-tab{border:0!important;border-radius:9px;min-height:34px;font-size:13.5px;font-weight:600;color:var(--text)}
+#rfr-main-tabs .ven-tab,#rslt-subtabs .ven-tab,#rep-maintabs-wrap .rep-tab{min-height:38px;font-size:15px;font-weight:600}
+.ven-tab.active,.fram-tab.active,.rep-tab.active{background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.12),0 1px 1px rgba(0,0,0,.04)}
+.fram-subnav-sub{background:var(--track);border-radius:11px;padding:2px;gap:0}
+.fram-subnav-sub .fram-tab{color:var(--text)}
+.fram-subnav-sub .fram-tab.active{background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+
+/* Negocio como pildoras con su punto de color; la elegida en oscuro */
+.loc-row,.neg-row{display:flex;flex-wrap:wrap;gap:8px}
+.loc-btn{width:auto;display:inline-flex;align-items:center;gap:8px;padding:10px 15px;
+  border-radius:999px;border:0;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border)}
+.loc-emoji{font-size:0;width:9px;height:9px;border-radius:50%;margin:0;background:var(--text3);flex:none}
+.loc-btn.jal .loc-emoji{background:var(--jal)}.loc-btn.nay .loc-emoji{background:var(--nay)}.loc-btn.ofic .loc-emoji{background:var(--ofic)}
+.loc-btn.com .loc-emoji{background:var(--com)}.loc-btn.maiz .loc-emoji{background:var(--maiz)}.loc-btn.fram .loc-emoji{background:var(--fram)}
+.loc-label{font-size:14.5px;font-weight:600;color:var(--text)!important}
+.loc-sub{display:none}
+.loc-btn.sel{background:var(--text)!important;box-shadow:none}
+.loc-btn.sel .loc-label{color:var(--surface)!important}
+/* Tipo, actividad, ciclo y sector: la misma regla (blanco con contorno; la elegida en oscuro) */
+.tipo-btn,.ciclo-btn,.cultivo-btn,.sector-btn{border:0;border-radius:14px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border)}
+.sector-btn{border-radius:999px}
+.tipo-btn.sel,.ciclo-btn.sel,.cultivo-btn.sel,.sector-btn.sel{background:var(--text)!important;box-shadow:none}
+.tipo-btn.sel .tipo-label,.tipo-btn.sel .tipo-sub,.ciclo-btn.sel .ciclo-lbl,.ciclo-btn.sel .ciclo-sub,.cultivo-btn.sel,.sector-btn.sel{color:var(--surface)!important}
+
+/* Botones */
+.btn-main,#login-btn{background:var(--green);color:#fff;min-height:52px;border-radius:14px;font-size:17px;font-weight:700}
+@media (prefers-color-scheme:dark){ .btn-main,#login-btn{color:#06170F} }
+.modal-close,.ven-del-btn,.his-sel-toggle,.his-sel-all{border:0;background:var(--track);border-radius:12px;font-weight:600;color:var(--text)}
+.modal-close,.ven-del-btn{min-height:44px}
+.ven-del-btn{color:var(--rojo)}
+.ven-add-btn{border:0;background:var(--surface);color:var(--green);border-radius:14px;font-weight:700;min-height:46px}
+#btn-salir{border:0;background:var(--track);color:var(--text2)}
+.chip{border:0!important;border-radius:999px;font-weight:600}
+
+/* Ventanas: hoja gris con renglones agrupados */
+.overlay{background:rgba(0,0,0,.35)}
+.modal{border-radius:22px 22px 0 0;background:var(--bg);border:0;padding:10px 20px calc(24px + env(safe-area-inset-bottom))}
+.modal-handle{width:38px;height:5px;background:#C7CCC8;margin:4px auto 14px}
+.modal-title{font-size:22px;font-weight:800;letter-spacing:-.01em}
+.modal-row{background:var(--surface);padding:13px 14px;border-bottom:1px solid var(--border)}
+.modal-row:first-of-type{border-radius:14px 14px 0 0}
+.modal-row:last-of-type{border-radius:0 0 14px 14px}
+.modal-key{font-size:15px;color:var(--text)}.modal-val{font-size:15px;color:var(--text2)}
+.toast{border-radius:14px;font-weight:600}
+
+/* Barra de abajo translucida, la seccion activa en verde */
+.bottom-nav{background:rgba(248,249,247,.86);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-top:1px solid var(--border)}
+.nav-item{font-size:10.5px;font-weight:600;color:var(--text3)}
+.nav-item svg{box-sizing:content-box;padding:2px 0;width:25px;height:25px;border-radius:0}
+.nav-item.active{color:var(--green)}
+.nav-item.active svg{background:none}
+@media (prefers-color-scheme:dark){
+  .bottom-nav{background:rgba(26,31,28,.86)}
+  .modal-handle{background:#3A423D}
+  @media (hover:hover){ .envio-item:hover,.alm-lote:hover,.gasto-item:hover,.deuda-card:hover{background:var(--surface2)} }
+}
+
+/* Escritorio: menu lateral con nombre y ventanas centradas */
+@media (min-width:700px){
+  .modal{border-radius:22px;max-width:520px}
+  /* Como la propuesta J: una tarjeta por fila, formularios en una columna centrada */
+  .app{max-width:1240px;padding:0 32px}
+  #ven-lista,#alm-lista,#fram-hist-list,#fram-finhist-list,#fram-nominahist-list,#maiz-hist-list,.week-block{display:block}
+  #ven-lista>*,#alm-lista>*,#fram-hist-list>*,#fram-finhist-list>*,#fram-nominahist-list>*,#maiz-hist-list>*{margin-bottom:6px!important}
+  #sc-reg>*,#ven-form-sec,#comer-form-sec,.maiz-form-wrap #maiz-form-sec{max-width:720px;margin-left:auto;margin-right:auto}
+  .fram-subnav{max-width:620px}
+  .fram-subnav-sub{max-width:360px}
+  #maiz-maintabs,#maiz-subtabs-cosecha{max-width:448px}
+}
+@media (min-width:1024px){
+  .form-cols{display:block}
+}
+@media (min-width:1024px){
+  :root{--rail:240px}
+  .bottom-nav{width:var(--rail);gap:2px;padding:100px 12px 20px;background:#E8EBE7;-webkit-backdrop-filter:none;backdrop-filter:none}
+  .nav-item{flex-direction:row;justify-content:flex-start;gap:11px;padding:8px 10px;border-radius:10px;font-size:15px;font-weight:600;color:var(--text)}
+  .nav-item svg{box-sizing:border-box;width:28px;height:28px;padding:6px;border-radius:8px;background:var(--text3);stroke:#fff;color:#fff;flex:none}
+  .nav-item.active{background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .nav-item.active svg{background:var(--green)}
+  @media (hover:hover){ .nav-item:not(.active):hover{background:rgba(0,0,0,.04);color:var(--text)} .nav-item:not(.active):hover svg{background:var(--text2)} }
+  .header{padding-top:28px}
+  .header-name{font-size:30px}
+}
+@media (min-width:1024px) and (prefers-color-scheme:dark){ .bottom-nav{background:#141815} }
 
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
