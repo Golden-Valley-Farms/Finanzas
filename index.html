@@ -12776,12 +12776,15 @@ function docEstadoFifo(tipo, nombre){
   // columnas ocultas.
   // Nov-2026: más ancho y columnas más separadas (a pedido, "se ve encimada"):
   // con 48px entre Bruto y Desc. un 13,250.0 junto a un descuento chocaban.
-  var W=esCliente?700:900;
+  // El plazo lleva su propia columna a la derecha (nov-2026, a pedido, como el
+  // Excel del usuario); antes iba sobre la franja del folio, encima de Saldo.
+  var W=esCliente?770:1000;
   var xCon=DOC_PAD+(esCliente?140:150);
   var xBruto=DOC_PAD+430, xDesc=DOC_PAD+490, xNeto=DOC_PAD+580, xPrecio=DOC_PAD+650;
   var xKgCli=DOC_PAD+420;
   var xMonto=esCliente?(DOC_PAD+545):(DOC_PAD+765);
-  var xSaldo=W-DOC_PAD;
+  var xPlazo=W-DOC_PAD;
+  var xSaldo=xPlazo-80;
   var anchoCon=esCliente?(xKgCli-xCon-80):(xBruto-xCon-80);
   var totVencido=0;
   pend.forEach(function(s){
@@ -12803,6 +12806,7 @@ function docEstadoFifo(tipo, nombre){
     }
     docTxt(ctx,'MONTO',xMonto,y+12,docFS(600,10),DOC_TENUE,'right');
     docTxt(ctx,'SALDO',xSaldo,y+12,docFS(600,10),DOC_TENUE,'right');
+    docTxt(ctx,'PLAZO',xPlazo,y+12,docFS(600,10),DOC_TENUE,'right');
     docRegla(ctx,y+18,DOC_PAD,W-DOC_PAD,DOC_TINTA,1.5);
   }});
 
@@ -12819,7 +12823,7 @@ function docEstadoFifo(tipo, nombre){
       ctx.fillStyle=DOC_GRUPO; ctx.fillRect(DOC_PAD,y+3,W-DOC_PAD*2,24);
       docTxt(ctx,etq,DOC_PAD+8,y+19,docFM(700,12),DOC_TINTA);
       docTxt(ctx,'PENDIENTE',xMonto,y+19,docFS(700,10),DOC_TEXTO2,'right');
-      if(pl) docTxt(ctx,pl.txt,xSaldo-6,y+19,docFM(700,12),pl.col,'right');
+      if(pl) docTxt(ctx,pl.txt,xPlazo-8,y+19,docFM(700,13),pl.col,'right');
     }});
     lineas.forEach(function(l){
       bloques.push({h:26, draw:function(ctx,y,W){
