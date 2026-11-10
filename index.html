@@ -3,19 +3,20 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.13/html-to-image.min.js" integrity="sha512-iZ2ORl595Wx6miw+GuadDet4WQbdSWS3JLMoNfY8cRGoEFy6oT3G9IbcrBeL6AfkgpA51ETt/faX6yLV+/gFJg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
     <script>
-
+    // Las graficas usan la misma letra que el resto de la app.
+    if(window.Chart){ Chart.defaults.font.family="'DM Sans',sans-serif"; }
     </script>
   
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Golden Valley Farms</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&amp;family=DM+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&amp;family=DM+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#F7F4EF;--surface:#FFFFFF;--surface2:#F0EDE7;--border:#E2DDD6;
-  --text:#1A1714;--text2:#6B6560;--text3:#9E9890;
+  --bg:#F6F4EF;--surface:#FFFFFF;--surface2:#F2EFE9;--border:#E5E0D8;
+  --text:#1A1714;--text2:#5C5650;--text3:#7D766E;
   --jal:#1A5FA8;--jal-bg:#E8F1FB;--jal-border:#8DBCE8;
   --nay:#7B3DAE;--nay-bg:#F3EDFB;--nay-border:#C49EE0;
   --ofic:#2C7A5A;--ofic-bg:#E6F5EF;--ofic-border:#7FCDB0;
@@ -26,13 +27,24 @@
   --green:#1A7A57;--green-bg:#E6F5EF;--green-border:#7FCDB0;
   /* Antiguedad de saldos (cobranza): del tramo al corriente al mas vencido. */
   --rojo:#D64545;--rojo-bg:#FBE9E9;--rojo2:#8F2222;
-  --radius:10px;--radius-lg:16px;
-  --shadow:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
-  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+  --radius:10px;--radius-lg:14px;
+  /* Elevacion: las superficies en reposo se separan solo por borde; la sombra es
+     para lo que flota (ventanas, listas desplegables, avisos). */
+  --shadow:none;
+  --shadow-pop:0 16px 40px -12px rgba(26,23,20,.22),0 2px 8px rgba(26,23,20,.06);
+  --shadow-tab:0 1px 2px rgba(26,23,20,.08);
+  --focus:0 0 0 3px rgba(26,122,87,.16);
+  --ease:cubic-bezier(.23,1,.32,1);
+  /* Cifras en la misma letra que el texto, con digitos de ancho fijo
+     (font-variant-numeric:tabular-nums en body) para que alineen en columnas. */
+  --font:'DM Sans',sans-serif;--mono:'DM Sans',sans-serif;
 }
 @media(prefers-color-scheme:dark){:root{
-  --bg:#141210;--surface:#1E1C19;--surface2:#262320;--border:#32302C;
-  --text:#F0ECE6;--text2:#9E9688;--text3:#6A6460;
+  --bg:#121110;--surface:#1C1A18;--surface2:#252320;--border:#33302C;
+  --text:#F0ECE6;--text2:#ABA398;--text3:#948C82;
+  --shadow-pop:0 18px 44px -12px rgba(0,0,0,.6),0 2px 8px rgba(0,0,0,.3);
+  --shadow-tab:0 1px 2px rgba(0,0,0,.35);
+  --focus:0 0 0 3px rgba(60,184,122,.22);
   --jal:#5BA3E0;--jal-bg:#0A1525;--jal-border:#1A3A5C;
   --nay:#B07AE0;--nay-bg:#1A0F25;--nay-border:#3D1F5C;
   --ofic:#3CB87A;--ofic-bg:#0A1F15;--ofic-border:#1A5C38;
@@ -837,6 +849,156 @@ body.rpt-abierto{overflow:hidden}
   border:1px solid var(--border);color:var(--text3);border-radius:999px;
   padding:5px 11px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font)}
 #btn-salir:hover{color:var(--text);border-color:var(--text3)}
+
+/* ════════════════════════════════════════════════════════════════════
+   SISTEMA VISUAL UNIFICADO (nov-2026)
+   Una sola capa al final de la hoja: cada pieza (pestanas, tarjetas, rotulos,
+   campos, botones, ventanas) se ve igual en todos los modulos. Solo estilo:
+   no cambia ningun id, clase que use el JS ni comportamiento. Las reglas de
+   arriba siguen siendo la base; esto las empareja.
+   ════════════════════════════════════════════════════════════════════ */
+html{-webkit-text-size-adjust:100%}
+body{font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;line-height:1.45}
+::selection{background:rgba(26,122,87,.2)}
+*{scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+button,.envio-item,.gasto-item,.alm-lote,.deuda-card,.loc-btn,.tipo-btn,.ciclo-btn,.rcm-neg-card{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.screen{padding-top:12px}
+
+/* Encabezado */
+.header{padding:16px 0 8px;align-items:center}
+.header-logo{width:52px;height:52px}
+.header-name{font-size:18px;font-weight:650;letter-spacing:-.02em}
+.header-date{font-family:var(--font);font-size:12px;margin-top:1px}
+#btn-salir{top:50%;transform:translateY(-50%);padding:6px 12px;font-size:12px;font-weight:500;transition:color .15s,border-color .15s}
+
+/* Barra inferior */
+.bottom-nav{background:var(--surface)}
+.nav-item{position:relative;padding:9px 4px 8px;font-size:11px;font-weight:500;gap:4px}
+.loc-sub,.tipo-sub,.ciclo-btn .ciclo-sub{font-size:11px}
+.nav-item.active{font-weight:600}
+.nav-item::before{content:'';position:absolute;top:0;left:50%;width:28px;height:2px;margin-left:-14px;border-radius:0 0 2px 2px;background:var(--green);transform:scaleX(0);transition:transform .25s var(--ease)}
+.nav-item.active::before{transform:scaleX(1)}
+
+/* Pestanas: un solo control segmentado en toda la app.
+   Nivel 1 = pista con borde y pestana activa en blanco; nivel 2 (.fram-subnav-sub)
+   = sin pista, la activa en tono. */
+.seg,.ven-subnav,.fram-subnav,.rep-subnav{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:3px;gap:3px}
+.ven-tab,.fram-tab,.rep-tab{border:1px solid transparent;border-radius:9px;padding:8px 12px;min-height:36px;font-size:13.5px;font-weight:500;color:var(--text2);line-height:1.25;transition:background-color .18s var(--ease),color .18s var(--ease),box-shadow .18s var(--ease)}
+.ven-tab.active,.fram-tab.active,.rep-tab.active{background:var(--surface);color:var(--text);border:1px solid var(--border);box-shadow:var(--shadow-tab);font-weight:600}
+@media (hover:hover){
+  .ven-tab:not(.active):hover,.fram-tab:not(.active):hover,.rep-tab:not(.active):hover{color:var(--text)}
+}
+/* Pestanas principales: mas aire, misma forma (antes 16px y alturas sueltas). */
+#rfr-main-tabs .ven-tab,#rslt-subtabs .ven-tab,
+#rep-maintabs-wrap .rep-tab{padding:10px 14px;min-height:42px;font-size:14.5px;font-weight:600;border-radius:9px}
+#rep-maintabs-wrap .rep-subnav{gap:3px;padding:3px}
+.fram-subnav-sub{background:transparent;border:none;padding:0;gap:4px}
+.fram-subnav-sub .fram-tab{min-height:32px;padding:6px 12px;font-size:13px;color:var(--text3)}
+.fram-subnav-sub .fram-tab.active{background:var(--surface2);border-color:transparent;box-shadow:none;color:var(--text)}
+
+/* Rotulos: misma escala en todas las pantallas */
+.step-label,.section-hd,.week-title,.ctl-lbl{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
+.step-label{margin:20px 0 8px}
+.screen>.step-label:first-child,.step-label:first-child{margin-top:4px}
+.section-hd{margin:6px 0 10px}
+.ctl-lbl{font-size:12px;white-space:nowrap}
+label{font-size:11.5px;font-weight:600;letter-spacing:.05em;margin-bottom:6px}
+.kpi-lbl,.stat-lbl,.fx-grp,.kpi-split-lbl{letter-spacing:.06em}
+.dash-card-title{font-size:14px;font-weight:600;letter-spacing:-.01em;margin-bottom:6px}
+.dash-card-sub{margin-bottom:12px}
+
+/* Campos */
+input[type=number],input[type=text],input[type=date],input[type=email],input[type=password],select,textarea{min-height:40px;border-radius:var(--radius);transition:border-color .15s,box-shadow .15s,background-color .15s}
+@media (hover:hover){
+  input[type=number]:hover,input[type=text]:hover,input[type=date]:hover,select:hover,textarea:hover{border-color:var(--text3)}
+}
+input:focus,select:focus,textarea:focus,.login-campo input:focus{border-color:var(--green);box-shadow:var(--focus)}
+input::placeholder,textarea::placeholder{color:var(--text3);opacity:1}
+/* En el celular, una letra menor a 16px hace que el telefono acerque la pantalla al tocar el campo. */
+@media (max-width:699px){
+  input[type=number],input[type=text],input[type=date],input[type=email],input[type=password],select,textarea{font-size:16px!important}
+}
+/* Selector de ciclo (y la caja con buscador que lo sustituye en pantalla) */
+.ciclo-sel,.ssel-wrap:has(>.ciclo-sel) .ssel-input{min-width:150px;padding:8px 32px 8px 16px;font-size:16px;font-weight:650;text-align:center;text-align-last:center;color:var(--text)}
+.ssel-wrap:has(>.ciclo-sel){flex:0 1 170px;min-width:132px}
+.rfr-topbar:has(.ciclo-sel){flex-wrap:wrap;row-gap:8px}
+.ssel-wrap:has(>.ciclo-sel) .ssel-input{min-width:0;width:100%}
+@media (max-width:699px){
+  .ciclo-sel,.ssel-wrap:has(>.ciclo-sel) .ssel-input{padding:8px 28px 8px 12px}
+  #rslt-subtabs .ven-tab,#rfr-main-tabs .ven-tab{font-size:13px;padding:8px 6px;min-height:40px}
+}
+.fin-sem-nav,.rfr-navbtn{background:var(--surface);border:1px solid var(--border);color:var(--text2);font-weight:500;border-radius:var(--radius);transition:background-color .15s,color .15s,border-color .15s,transform .16s var(--ease)}
+.fin-sem-nav{width:36px;height:38px;font-size:20px}
+@media (hover:hover){
+  .fin-sem-nav:hover:not(:disabled),.rfr-navbtn:hover:not(:disabled){background:var(--surface2);color:var(--text);border-color:var(--text3)}
+}
+.fin-sem-nav:active:not(:disabled),.rfr-navbtn:active:not(:disabled){transform:scale(.94)}
+.ssel-panel{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-pop);margin-top:4px;padding:4px}
+.ssel-opt{border-radius:7px}
+
+/* Tarjetas: un radio, un borde, sin sombra en reposo */
+.card,.dash-card,.kpi-card,.stat-card,.report-block,.fx-panel,.aging-card,.dcta-head,
+.envio-item,.alm-lote,.gasto-item,.deuda-card,.partida-card,.login-card,.fram-hist-item,.rcm-neg-card{border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:none}
+.card,.dash-card{padding:16px}
+.envio-item,.alm-lote,.gasto-item,.deuda-card,.fram-hist-item{transition:background-color .15s,border-color .15s}
+@media (hover:hover){
+  .envio-item:hover,.alm-lote:hover,.gasto-item:hover,.deuda-card:hover{background:var(--surface);border-color:var(--text3)}
+}
+@media (hover:none){
+  .envio-item:hover,.alm-lote:hover,.gasto-item:hover{background:var(--surface)}
+  .envio-item:active,.alm-lote:active,.gasto-item:active,.deuda-card:active{background:var(--surface2)}
+}
+.gasto-item.selected{background:var(--fram-bg);border-color:var(--fram-border)}
+/* KPI: el color de la tarjeta va como raya arriba (igual que el reporte impreso),
+   no como franja gruesa a la izquierda. */
+.kpi-card{padding:16px 16px 14px}
+.kpi-accent{top:0;left:0;width:100%;height:3px}
+.kpi-lbl{margin-bottom:6px}
+.kpi-val,.stat-val,.fx-tot,.fx-bal-val,.dcta-stat-val,.header-total-val{letter-spacing:-.025em;line-height:1.12}
+.kpi-val{font-weight:700}
+.fx-title{font-size:12px;letter-spacing:.06em;padding:16px 16px 0}
+.fx-line{border-bottom-width:1px}
+/* Selector de negocio en Reportes > Camote */
+.rcm-neg-card{padding:11px 10px;border-width:1px;transition:background-color .15s,border-color .15s,transform .16s var(--ease)}
+.rcm-neg-card-title{font-size:13.5px}
+@media (hover:hover){ .rcm-neg-card:not(.active):hover{border-color:var(--text3)} }
+
+/* Botones */
+.btn-main{border-radius:var(--radius);min-height:46px;letter-spacing:-.005em;transition:transform .16s var(--ease),filter .15s,opacity .15s}
+@media (hover:hover){ .btn-main:hover{filter:brightness(.94)} }
+/* En oscuro el verde es claro: el texto blanco no se lee, va casi negro. */
+@media (prefers-color-scheme:dark){ .btn-main,#login-btn{color:#0B1A12} .btn-main.success{color:#fff} }
+.btn-main:active,.loc-btn:active,.tipo-btn:active,.ciclo-btn:active,.rcm-neg-card:active{transform:scale(.97)}
+.loc-btn,.tipo-btn,.ciclo-btn{transition:background-color .15s,border-color .15s,transform .16s var(--ease)}
+.modal-close,.ven-del-btn,.ven-add-btn{border-radius:var(--radius)}
+.ven-add-btn{border-width:1px}
+.wf-btn,.dcta-chip,.his-sel-toggle,.his-sel-all{padding:6px 13px;font-size:12.5px;font-weight:500;transition:background-color .15s,color .15s,border-color .15s}
+.dash-toggle-btn{border-radius:8px;padding:6px 12px;font-size:12px}
+#login-btn{min-height:44px}
+
+/* Tablas */
+.fintab-wrap{border-radius:var(--radius-lg)}
+.fintab th{font-weight:600;letter-spacing:.04em}
+
+/* Ventanas: hoja desde abajo en el celular, ventana centrada en escritorio */
+.overlay{background:rgba(18,15,12,.45)}
+.modal{box-shadow:var(--shadow-pop);padding:20px 20px calc(20px + env(safe-area-inset-bottom))}
+.modal-title{font-size:16px;letter-spacing:-.01em}
+.overlay.open .modal{animation:gvf-hoja .32s var(--ease)}
+@keyframes gvf-hoja{from{transform:translateY(28px);opacity:.4}to{transform:none;opacity:1}}
+@media (min-width:700px){
+  .overlay{align-items:center;padding:24px}
+  .modal{border-radius:18px;border:1px solid var(--border);max-height:86vh}
+  .modal-handle{display:none}
+  .overlay.open .modal{animation:gvf-ventana .22s var(--ease)}
+  @keyframes gvf-ventana{from{transform:scale(.97);opacity:0}to{transform:none;opacity:1}}
+}
+.toast{box-shadow:var(--shadow-pop);padding:10px 18px}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
 </style>
 </head>
 <body id="artifacts-component-root-html">
@@ -891,7 +1053,7 @@ body.rpt-abierto{overflow:hidden}
   <!-- ══════════ RESULTADOS ══════════ -->
   <div id="sc-resultados" class="screen active">
     <!-- Sub-pestañas -->
-    <div class="rfr-topbar" id="rslt-subtabs" style="display:flex;gap:4px;margin-bottom:10px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
+    <div class="rfr-topbar seg" id="rslt-subtabs" style="display:flex;gap:4px;margin-bottom:10px">
       <button class="ven-tab active" id="rslt-tab-resumen" onclick="rsltTab('resumen')" style="flex:1">📊 Resumen</button>
       <button class="ven-tab" id="rslt-tab-edr" onclick="rsltTab('edr')" style="flex:1">📄 Estado de Resultados</button>
       <button class="ven-tab" id="rslt-tab-gastos" onclick="rsltTab('gastos')" style="flex:1">💰 Gastos</button>
@@ -899,9 +1061,9 @@ body.rpt-abierto{overflow:hidden}
 
     <!-- Ciclo: compartido por las dos sub-pestañas y por los 5 negocios -->
     <div class="rfr-topbar" id="rslt-ciclo-row" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px">
-      <span style="font-size:14px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Ciclo</span>
+      <span class="ctl-lbl">Ciclo</span>
       <button type="button" class="fin-sem-nav" id="rsm-ciclo-prev" onclick="cicloStep('rsm-ciclo',-1)" aria-label="Ciclo anterior">&lsaquo;</button>
-        <select id="rsm-ciclo" onchange="renderResultados()" style="flex:0 0 auto;min-width:150px;padding:10px 18px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:17px;color:var(--text);font-weight:700;text-align:center;text-align-last:center;outline:none">
+        <select id="rsm-ciclo" onchange="renderResultados()" class="ciclo-sel">
       </select>
     
         <button type="button" class="fin-sem-nav" id="rsm-ciclo-next" onclick="cicloStep('rsm-ciclo',1)" aria-label="Ciclo siguiente">&rsaquo;</button>
@@ -937,13 +1099,13 @@ body.rpt-abierto{overflow:hidden}
 
       <div class="fin-periodo-row" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
         <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:150px">
-          <span style="font-size:13px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap" id="fin-periodo-lbl">Año</span>
+          <span class="ctl-lbl" id="fin-periodo-lbl">Año</span>
           <select id="fin-anio-select" onchange="onFinAnioChange()" style="flex:1;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:15px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
             <option value="todos">Todos los años</option>
           </select>
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex:1.6 1 auto;min-width:250px">
-          <span style="font-size:13px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Semana</span>
+          <span class="ctl-lbl">Semana</span>
           <button type="button" class="fin-sem-nav" id="fin-sem-prev" onclick="finSemStep(-1)" aria-label="Semana anterior">‹</button>
           <select id="fin-sem-select" onchange="onFinSemanaChange()" style="flex:1;min-width:112px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:15px;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9890' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;padding-right:26px">
             <option value="todas">Todas</option>
@@ -1178,7 +1340,7 @@ body.rpt-abierto{overflow:hidden}
         <button onclick="document.getElementById('import-banner').style.display='none'" style="padding:4px 8px;border-radius:50%;border:1px solid var(--jal-border);background:transparent;color:var(--jal);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);line-height:1">✕</button>
       </div>
     </div>
-    <div class="rfr-topbar" id="his-subtabs" style="display:flex;gap:4px;margin-bottom:10px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
+    <div class="rfr-topbar seg" id="his-subtabs" style="display:flex;gap:4px;margin-bottom:10px">
       <button class="ven-tab active" id="his-tab-gastos" onclick="hisTab('gastos')" style="flex:1">💸 Gastos</button>
       <button class="ven-tab" id="his-tab-ingresos" onclick="hisTab('ingresos')" style="flex:1">💵 Ingresos</button>
     </div>
@@ -1339,9 +1501,9 @@ body.rpt-abierto{overflow:hidden}
 
       <!-- Selector de Ciclo: afecta a todas las pestañas -->
       <div class="rfr-topbar" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px">
-        <span style="font-size:14px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Ciclo</span>
+        <span class="ctl-lbl">Ciclo</span>
         <button type="button" class="fin-sem-nav" id="rfr-ciclo-prev" onclick="cicloStep('rfr-ciclo',-1)" aria-label="Ciclo anterior">&lsaquo;</button>
-        <select id="rfr-ciclo" onchange="renderRepFram()" style="flex:0 0 auto;min-width:150px;padding:10px 18px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:17px;color:var(--text);font-weight:700;text-align:center;text-align-last:center;outline:none">
+        <select id="rfr-ciclo" onchange="renderRepFram()" class="ciclo-sel">
         </select>
       
         <button type="button" class="fin-sem-nav" id="rfr-ciclo-next" onclick="cicloStep('rfr-ciclo',1)" aria-label="Ciclo siguiente">&rsaquo;</button>
@@ -1349,17 +1511,17 @@ body.rpt-abierto{overflow:hidden}
       </div>
 
       <!-- Pestañas principales: Cosecha / Finanzas -->
-      <div class="rfr-topbar" id="rfr-main-tabs" style="display:flex;gap:4px;margin-bottom:10px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
+      <div class="rfr-topbar seg" id="rfr-main-tabs" style="display:flex;gap:4px;margin-bottom:10px">
         <button class="ven-tab active" data-main="cos" onclick="rfrMainTab('cos')" style="flex:1">🧺 Cosecha</button>
         <button class="ven-tab" data-main="fin" onclick="rfrMainTab('fin')" style="flex:1">💵 Facturación</button>
       </div>
 
       <!-- Sub-tabs de Cosecha -->
-      <div class="rfr-topbar" id="rfr-subtabs-cos" style="display:flex;gap:4px;margin-bottom:14px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
-        <button class="ven-tab active" id="rfr-tab-dia" onclick="rfrTab('dia')" style="flex:1;font-size:12px">Por día</button>
-        <button class="ven-tab" id="rfr-tab-sem" onclick="rfrTab('sem')" style="flex:1;font-size:12px">Por semana</button>
-        <button class="ven-tab" id="rfr-tab-res" onclick="rfrTab('res')" style="flex:1;font-size:12px">Por ciclo</button>
-        <button class="ven-tab" id="rfr-tab-coh" onclick="rfrTab('coh')" style="flex:1;font-size:12px">Por cosecha</button>
+      <div class="rfr-topbar seg" id="rfr-subtabs-cos" style="display:flex;gap:4px;margin-bottom:14px">
+        <button class="ven-tab active" id="rfr-tab-dia" onclick="rfrTab('dia')" style="flex:1">Por día</button>
+        <button class="ven-tab" id="rfr-tab-sem" onclick="rfrTab('sem')" style="flex:1">Por semana</button>
+        <button class="ven-tab" id="rfr-tab-res" onclick="rfrTab('res')" style="flex:1">Por ciclo</button>
+        <button class="ven-tab" id="rfr-tab-coh" onclick="rfrTab('coh')" style="flex:1">Por cosecha</button>
       </div>
 
       <!-- ── POR DÍA ── -->
@@ -1406,13 +1568,13 @@ body.rpt-abierto{overflow:hidden}
            La fecha vive arriba de las sub-pestañas porque es UNA sola para las dos. -->
       <div id="rfr-sec-coh" style="display:none">
         <div class="rfr-topbar" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px">
-          <span style="font-size:14px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Cosecha 2 inicia el</span>
+          <span class="ctl-lbl">Cosecha 2 inicia el</span>
           <input type="date" id="rfr-coh-corte" style="flex:0 0 auto;width:150px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:15px;color:var(--text);outline:none">
           <button type="button" onclick="guardarCorteCosecha()" style="flex:0 0 auto;padding:10px 18px;background:var(--fram);color:#fff;border:none;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer">Guardar</button>
         </div>
-        <div class="rfr-topbar" id="rfr-coh-subtabs" style="display:flex;gap:4px;align-items:stretch;height:44px;margin-bottom:14px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
-          <button class="ven-tab active" id="rfr-coh-tab-c1" onclick="rfrCohTab('c1')" style="flex:1;font-size:17px;font-weight:700">Cosecha 1</button>
-          <button class="ven-tab" id="rfr-coh-tab-c2" onclick="rfrCohTab('c2')" style="flex:1;font-size:17px;font-weight:700">Cosecha 2</button>
+        <div class="rfr-topbar seg" id="rfr-coh-subtabs" style="display:flex;gap:4px;margin-bottom:14px">
+          <button class="ven-tab active" id="rfr-coh-tab-c1" onclick="rfrCohTab('c1')" style="flex:1">Cosecha 1</button>
+          <button class="ven-tab" id="rfr-coh-tab-c2" onclick="rfrCohTab('c2')" style="flex:1">Cosecha 2</button>
         </div>
         <div id="rfr-coh-detalle"></div>
       </div>
@@ -1430,9 +1592,9 @@ body.rpt-abierto{overflow:hidden}
       <!-- Selector de negocio: 3 tarjetas -->
       <!-- Selector de Ciclo -->
       <div class="rfr-topbar" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px">
-        <span style="font-size:14px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Ciclo</span>
+        <span class="ctl-lbl">Ciclo</span>
         <button type="button" class="fin-sem-nav" id="rcm-ciclo-prev" onclick="cicloStep('rcm-ciclo',-1)" aria-label="Ciclo anterior">&lsaquo;</button>
-        <select id="rcm-ciclo" onchange="renderRepCam()" style="flex:0 0 auto;min-width:150px;padding:10px 18px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:17px;color:var(--text);font-weight:700;text-align:center;text-align-last:center;outline:none">
+        <select id="rcm-ciclo" onchange="renderRepCam()" class="ciclo-sel">
         </select>
       
         <button type="button" class="fin-sem-nav" id="rcm-ciclo-next" onclick="cicloStep('rcm-ciclo',1)" aria-label="Ciclo siguiente">&rsaquo;</button>
@@ -1459,9 +1621,9 @@ body.rpt-abierto{overflow:hidden}
 
       <!-- Selector de Ciclo -->
       <div class="rfr-topbar" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px">
-        <span style="font-size:14px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap">Ciclo</span>
+        <span class="ctl-lbl">Ciclo</span>
         <button type="button" class="fin-sem-nav" id="rmz-ciclo-prev" onclick="cicloStep('rmz-ciclo',-1)" aria-label="Ciclo anterior">&lsaquo;</button>
-        <select id="rmz-ciclo" onchange="renderRepMaiz()" style="flex:0 0 auto;min-width:150px;padding:10px 18px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:17px;color:var(--text);font-weight:700;text-align:center;text-align-last:center;outline:none">
+        <select id="rmz-ciclo" onchange="renderRepMaiz()" class="ciclo-sel">
         </select>
         <button type="button" class="fin-sem-nav" id="rmz-ciclo-next" onclick="cicloStep('rmz-ciclo',1)" aria-label="Ciclo siguiente">&rsaquo;</button>
       </div>
@@ -1721,7 +1883,7 @@ body.rpt-abierto{overflow:hidden}
     <div id="alm-sec" style="display:none">
 
       <!-- Sub-nav lotes / nuevo lote -->
-      <div style="display:flex;gap:6px;margin-bottom:14px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
+      <div class="seg" style="display:flex;gap:6px;margin-bottom:14px">
         <button class="ven-tab active" id="alm-tab-lista" onclick="almTab('lista')" style="flex:1">Lotes</button>
         <button class="ven-tab" id="alm-tab-nuevo" onclick="almTab('nuevo')" style="flex:1">+ Nuevo lote</button>
       </div>
@@ -2345,7 +2507,7 @@ body.rpt-abierto{overflow:hidden}
   </div>
 
   <div id="sc-deudas" class="screen">
-    <div class="rfr-topbar" style="display:flex;gap:4px;margin-bottom:12px;background:var(--surface2);border-radius:var(--radius-lg);padding:4px">
+    <div class="rfr-topbar seg" style="display:flex;gap:4px;margin-bottom:12px">
       <button class="ven-tab active" id="deuda-tab-flujo" onclick="setDeudaTab('flujo')" style="flex:1">Flujo</button>
       <button class="ven-tab" id="deuda-tab-cobrar" onclick="setDeudaTab('cobrar')" style="flex:1">Cobrar</button>
       <button class="ven-tab" id="deuda-tab-pagar" onclick="setDeudaTab('pagar')" style="flex:1">Pagar</button>
