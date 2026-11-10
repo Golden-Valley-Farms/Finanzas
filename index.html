@@ -1192,9 +1192,20 @@ body #sc-deudas #deuda-list{display:block}
 /* Estado de cuenta tipo Excel (dctaExcelHtml): un bloque por cargo con su
    folio, variedades, subtotal, pagos con saldo corrido y estatus a la derecha */
 .dx-wrap{background:var(--surface);border-radius:18px;overflow-x:auto;margin-top:12px}
+/* Encabezado de la cuenta en un solo renglón: cliente a la izquierda, botones a la derecha */
+.dcta-top{display:flex;justify-content:space-between;align-items:center;gap:12px 16px;flex-wrap:wrap;margin:4px 0 14px}
+.dcta-tit{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
+.dcta-clave{font-size:13px;font-weight:600;color:var(--text3)}
+.dcta-nom{font-size:26px;font-weight:800;letter-spacing:-.02em}
+.dcta-gear{border:0;background:none;cursor:pointer;font-size:16px;padding:2px}
+.dcta-acc{display:flex;gap:8px}
+.dcta-btn{border:0;border-radius:12px;padding:11px 18px;font:700 14.5px var(--font);cursor:pointer;background:var(--track);color:var(--text)}
+.dcta-btn.pri{background:var(--green);color:#fff}
+@media (prefers-color-scheme:dark){ .dcta-btn.pri{color:#06170F} }
+@media (max-width:699px){ .dcta-nom{font-size:22px} .dcta-acc{width:100%} .dcta-btn{flex:1} }
 /* Ventana fija del estado de cuenta: alto fijo, scroll propio y encabezados que
    se quedan arriba. Abre en lo más reciente (renderCuentaDeuda la baja al fondo). */
-.dcta-scroll,.fintab-wrap.auto.dcta-scroll{max-height:max(320px,calc(100vh - 470px));overflow:auto!important;overscroll-behavior:contain}
+.dcta-scroll,.fintab-wrap.auto.dcta-scroll{max-height:max(320px,calc(100vh - 355px));overflow:auto!important;overscroll-behavior:contain}
 .dcta-scroll thead th{position:sticky;top:0;z-index:2;background:var(--surface)}
 .dcta-scroll .fintab thead th{background:var(--surface2)}
 table.dx{width:100%;border-collapse:collapse;min-width:940px;font-size:14.5px}
@@ -1206,7 +1217,7 @@ table.dx{width:100%;border-collapse:collapse;min-width:940px;font-size:14.5px}
 .dx tr.folio .acc{float:right;display:inline-flex;gap:14px}
 .dx tr.folio .acc button{border:0;background:none;padding:0;font:600 12.5px var(--font);color:var(--green);cursor:pointer}
 .dx tr.folio .acc button.del{color:var(--rojo)}
-.dx tr.pago td.l:first-child{font-weight:600;color:var(--text2);white-space:normal;max-width:190px;font-size:13px;word-break:break-word}
+.dx tr.pago td.l:first-child{font-weight:600;color:var(--text2);white-space:normal;max-width:190px;min-width:150px;font-size:13px;word-break:break-word}
 .dx td.l:nth-child(3){white-space:normal;min-width:150px}
 .dx tr.pago small{font-size:11.5px;color:var(--green);font-weight:700}
 .dx td.saldo{font-weight:700}
@@ -12390,8 +12401,8 @@ function deudaFolioNegocio(d){
 // pago, deshacer) siguen llamando aquí, así que cierra el overlay al entrar.
 function abrirDeudaContraparte(tipo, nombre){
   deudaModalTipo=tipo; deudaModalNombre=nombre;
-  // Abre con todos los cargos, como la hoja de Excel del usuario (nov-2026).
-  dctaFiltro='todos'; dctaAbierto={};
+  // Abre en Pendientes (nov-2026, a pedido; un rato abrió con todos los cargos).
+  dctaFiltro='pend'; dctaAbierto={};
   closeModal();
   goSc('deudacta');
 }
@@ -13065,6 +13076,39 @@ function dctaHeadHtml(tipo, nombre, esCorriente){
     saldo=calcContraparte(tipo,nombre).saldoTotal;
     lblSaldo='Saldo pendiente';
   }
+  // Nov-2026 (a pedido): sin la tarjeta de saldo —saldo, vencido y totales ya se
+  // ven en las cajas de abajo de la tabla—, para darle el alto a la ventana con
+  // scroll. Queda un solo renglón: el cliente a la izquierda y los botones a la
+  // derecha. La tarjeta anterior sigue en dctaHeadTarjetaHtml() sin uso.
+  return '<button class="dcta-back" onclick="goSc(\'deudas\')">&lsaquo; Cartera</button>'+
+    '<div class="dcta-top">'+
+      '<div class="dcta-tit">'+
+        (c.clave?'<span class="dcta-clave">'+c.clave+'</span>':'')+
+        '<span class="dcta-nom">'+nombre+'</span>'+
+        '<span class="chip '+(tipo==='cobrar'?'jal':'com')+'">'+(tipo==='cobrar'?'Por cobrar':'Por pagar')+'</span>'+
+        (mon==='USD'?'<span class="ca-usd">USD</span>':'')+
+        '<button class="dcta-gear" onclick="abrirEditarContraparte(deudaModalNombre,\'cuenta\',\''+tipo+'\')" title="Editar cliente">⚙️</button>'+
+      '</div>'+
+      '<div class="dcta-acc">'+
+        '<button class="dcta-btn" onclick="abrirDocsCuenta()">Documentos</button>'+
+        '<button class="dcta-btn pri" onclick="abrirRegistrarPago()">'+((tipo==='cobrar')?'Registrar pago':'Registrar abono')+'</button>'+
+      '</div>'+
+    '</div>';
+}
+function dctaHeadTarjetaHtml(tipo, nombre, esCorriente){
+  var c=getContraparte(nombre)||{};
+  var mon=(c.moneda==='USD')?'USD':'MXN';
+  var accent=(tipo==='cobrar')?'var(--green)':'var(--fram)';
+  var ag=agingCuenta(tipo,nombre);
+  var saldo, lblSaldo;
+  if(esCorriente){
+    var rc=calcCorriente(tipo,nombre);
+    saldo=rc.saldoTotal;
+    lblSaldo=(saldo>=0)?((tipo==='cobrar')?'Nos debe':'Le debemos'):'A su favor';
+  } else {
+    saldo=calcContraparte(tipo,nombre).saldoTotal;
+    lblSaldo='Saldo pendiente';
+  }
   var colSaldo=(saldo>=0)?accent:'var(--jal)';
   var h='<button class="dcta-back" onclick="goSc(\'deudas\')">&lsaquo; Cartera</button>';
   h+='<div class="dcta-head">';
@@ -13311,7 +13355,13 @@ function dctaBodyCorriente(tipo, nombre){
       '</tr>';
   });
   h+='</tbody></table></div>';
-  h+='<div style="font-size:11px;color:var(--text3);margin-top:10px">'+r.nMovs+' movimientos</div>';
+  // Mismas cajas de totales que la tabla tipo Excel: sin la tarjeta de arriba,
+  // aquí es donde se ve el saldo de la cuenta.
+  var venc=agingCuenta(tipo,nombre).vencido, s=r.saldoTotal;
+  h+='<div class="dx-tot">'+
+    '<div><span>Total vencido</span><b class="neg">'+fmtMon2(venc,mon)+'</b></div>'+
+    '<div><span>'+(s<0?'A su favor':(tipo==='cobrar'?'Nos debe':'Le debemos'))+'</span><b'+(s<0?' style="color:var(--jal)"':'')+'>'+fmtMon2(Math.abs(s),mon)+'</b></div>'+
+    '</div>';
   return h;
 }
 
