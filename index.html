@@ -1140,6 +1140,29 @@ input:focus,select:focus,textarea:focus,.login-campo input:focus{background-colo
 .envio-item .ven-modal-table,.alm-lote .ven-modal-table{font-size:15px;margin-top:4px}
 .envio-item .ven-modal-table th,.alm-lote .ven-modal-table th{font-size:13px;font-weight:600;color:var(--text3);padding:8px 8px 6px}
 .envio-item .ven-modal-table td,.alm-lote .ven-modal-table td{padding:9px 8px}
+/* Mismas columnas en todas las tarjetas: sin anchos fijos cada tabla se acomoda a su
+   contenido y Sec. / Ha / P.Neto quedan a distinta altura de una tarjeta a otra.
+   Los renglones de Flete y A almacen usan colspan=5 y caen bien sobre estos anchos. */
+.envio-item .ven-modal-table{table-layout:fixed;width:100%}
+.envio-item .ven-modal-table th:nth-child(1){width:34%}
+.envio-item .ven-modal-table th:nth-child(2),.envio-item .ven-modal-table th:nth-child(3){width:10%}
+.envio-item .ven-modal-table th:nth-child(4){width:16%}
+.envio-item .ven-modal-table th:nth-child(5){width:12%}
+.envio-item .ven-modal-table th:nth-child(6){width:18%}
+.envio-item .ven-modal-table td:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Celular: letra un poco menor, la variedad puede bajar de renglon y el total gana espacio */
+@media (max-width:699px){
+  .envio-item,.alm-lote{padding:14px 14px}
+  .envio-item .ven-modal-table{font-size:13.5px}
+  .envio-item .ven-modal-table th{font-size:12px}
+  .envio-item .ven-modal-table th,.envio-item .ven-modal-table td{padding-left:3px;padding-right:3px}
+  .envio-item .ven-modal-table td:first-child{white-space:normal;overflow:visible}
+  .envio-item .ven-modal-table th:nth-child(1){width:29%}
+  .envio-item .ven-modal-table th:nth-child(2),.envio-item .ven-modal-table th:nth-child(3){width:9%}
+  .envio-item .ven-modal-table th:nth-child(4){width:17%}
+  .envio-item .ven-modal-table th:nth-child(5){width:13%}
+  .envio-item .ven-modal-table th:nth-child(6){width:23%}
+}
 
 /* Botones */
 .btn-main,#login-btn{background:var(--green);color:#fff;min-height:52px;border-radius:14px;font-size:17px;font-weight:700}
