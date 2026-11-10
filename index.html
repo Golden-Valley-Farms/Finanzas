@@ -12774,12 +12774,15 @@ function docEstadoFifo(tipo, nombre){
   // El de proveedor va más ancho porque lleva cuatro columnas más (bruto,
   // descuento, neto y precio de compra). Son documentos distintos, no uno con
   // columnas ocultas.
-  var W=esCliente?640:800;
-  var xCon=DOC_PAD+120;
-  var xBruto=DOC_PAD+330, xDesc=DOC_PAD+378, xNeto=DOC_PAD+460, xPrecio=DOC_PAD+530;
-  var xKgCli=DOC_PAD+390;
-  var xMonto=esCliente?(DOC_PAD+490):(DOC_PAD+640);
+  // Nov-2026: más ancho y columnas más separadas (a pedido, "se ve encimada"):
+  // con 48px entre Bruto y Desc. un 13,250.0 junto a un descuento chocaban.
+  var W=esCliente?700:900;
+  var xCon=DOC_PAD+(esCliente?140:150);
+  var xBruto=DOC_PAD+430, xDesc=DOC_PAD+490, xNeto=DOC_PAD+580, xPrecio=DOC_PAD+650;
+  var xKgCli=DOC_PAD+420;
+  var xMonto=esCliente?(DOC_PAD+545):(DOC_PAD+765);
   var xSaldo=W-DOC_PAD;
+  var anchoCon=esCliente?(xKgCli-xCon-80):(xBruto-xCon-80);
   var totVencido=0;
   pend.forEach(function(s){
     var dv=deudaDiasVencido(s.deuda);
@@ -12787,7 +12790,7 @@ function docEstadoFifo(tipo, nombre){
   });
 
   var bloques=[docHead('Estado de cuenta', nombre, docHoy(), accent)];
-  bloques.push({h:24, draw:function(ctx,y,W){
+  bloques.push({h:30, draw:function(ctx,y,W){
     docTxt(ctx,'FOLIO / FECHA',DOC_PAD,y+12,docFS(600,10),DOC_TENUE);
     docTxt(ctx,'CONCEPTO',xCon,y+12,docFS(600,10),DOC_TENUE);
     if(esCliente){
@@ -12812,44 +12815,45 @@ function docEstadoFifo(tipo, nombre){
     var d=s.deuda, pl=docPlazo(d);
     var lineas=esCliente?docLineasVenta(d):docLineasCompra(d);
     var etq=d.folioExterno||(d.origen==='manual'?'Manual':(d.origen||'Cargo'));
-    bloques.push({h:24, draw:function(ctx,y,W){
-      ctx.fillStyle=DOC_GRUPO; ctx.fillRect(DOC_PAD,y+2,W-DOC_PAD*2,20);
-      docTxt(ctx,etq,DOC_PAD+6,y+16,docFM(700,12),DOC_TINTA);
-      docTxt(ctx,'PENDIENTE',xMonto,y+16,docFS(700,10),DOC_TEXTO2,'right');
-      if(pl) docTxt(ctx,pl.txt,xSaldo,y+16,docFM(700,12),pl.col,'right');
+    bloques.push({h:30, draw:function(ctx,y,W){
+      ctx.fillStyle=DOC_GRUPO; ctx.fillRect(DOC_PAD,y+3,W-DOC_PAD*2,24);
+      docTxt(ctx,etq,DOC_PAD+8,y+19,docFM(700,12),DOC_TINTA);
+      docTxt(ctx,'PENDIENTE',xMonto,y+19,docFS(700,10),DOC_TEXTO2,'right');
+      if(pl) docTxt(ctx,pl.txt,xSaldo-6,y+19,docFM(700,12),pl.col,'right');
     }});
     lineas.forEach(function(l){
-      bloques.push({h:22, draw:function(ctx,y,W){
-        docTxt(ctx,fmtFechaCorta(d.fecha),DOC_PAD+6,y+15,docFS(400,10.5),DOC_TENUE);
-        docTxt(ctx,docCorta(ctx,l.concepto,esCliente?250:172,docFS(400,12)),xCon,y+15,docFS(400,12),DOC_TEXTO2);
+      bloques.push({h:26, draw:function(ctx,y,W){
+        docTxt(ctx,fmtFechaCorta(d.fecha),DOC_PAD+8,y+17,docFS(400,10.5),DOC_TENUE);
+        docTxt(ctx,docCorta(ctx,l.concepto,anchoCon,docFS(400,12)),xCon,y+17,docFS(400,12),DOC_TEXTO2);
         if(esCliente){
-          if(l.kg>0) docTxt(ctx,docKg(l.kg,1),xKgCli,y+15,docFM(400,11.5),DOC_TEXTO2,'right');
+          if(l.kg>0) docTxt(ctx,docKg(l.kg,1),xKgCli,y+17,docFM(400,11.5),DOC_TEXTO2,'right');
         } else {
-          if(l.bruto>0) docTxt(ctx,docKg(l.bruto,1),xBruto,y+15,docFM(400,11.5),DOC_TEXTO2,'right');
-          if(l.desc>0) docTxt(ctx,l.desc+'%',xDesc,y+15,docFM(400,11.5),DOC_TEXTO2,'right');
-          if(l.neto>0) docTxt(ctx,docKg(l.neto,1),xNeto,y+15,docFM(400,11.5),DOC_TEXTO2,'right');
-          if(l.precio>0) docTxt(ctx,docMonCta(l.precio,mon),xPrecio,y+15,docFM(400,11.5),DOC_TEXTO2,'right');
+          if(l.bruto>0) docTxt(ctx,docKg(l.bruto,1),xBruto,y+17,docFM(400,11.5),DOC_TEXTO2,'right');
+          // Redondeado a entero, como en la pantalla: con decimales ("42.77628%") se encimaba con el bruto
+          if(l.desc>0) docTxt(ctx,Math.round(l.desc)+'%',xDesc,y+17,docFM(400,11.5),DOC_TEXTO2,'right');
+          if(l.neto>0) docTxt(ctx,docKg(l.neto,1),xNeto,y+17,docFM(400,11.5),DOC_TEXTO2,'right');
+          if(l.precio>0) docTxt(ctx,docMonCta(l.precio,mon),xPrecio,y+17,docFM(400,11.5),DOC_TEXTO2,'right');
         }
-        docTxt(ctx,docMonCta(l.monto,mon),xMonto,y+15,docFM(400,11.5),DOC_TINTA,'right');
+        docTxt(ctx,docMonCta(l.monto,mon),xMonto,y+17,docFM(400,11.5),DOC_TINTA,'right');
       }});
     });
-    bloques.push({h:22, draw:function(ctx,y,W){
-      docRegla(ctx,y+2,xCon,W-DOC_PAD,DOC_LINEA,1);
-      docTxt(ctx,'Cargo',xCon,y+16,docFS(600,11),DOC_TENUE);
-      docTxt(ctx,docMonCta(d.monto,mon),xMonto,y+16,docFM(700,12),DOC_TINTA,'right');
-      if(!s.pagos.length) docTxt(ctx,docMonCta(Math.max(0,s.saldo),mon),xSaldo,y+16,docFM(700,12),accent,'right');
+    bloques.push({h:28, draw:function(ctx,y,W){
+      docRegla(ctx,y+4,xCon,W-DOC_PAD,DOC_LINEA,1);
+      docTxt(ctx,'Cargo',xCon,y+20,docFS(600,11),DOC_TENUE);
+      docTxt(ctx,docMonCta(d.monto,mon),xMonto,y+20,docFM(700,12),DOC_TINTA,'right');
+      if(!s.pagos.length) docTxt(ctx,docMonCta(Math.max(0,s.saldo),mon),xSaldo,y+20,docFM(700,12),accent,'right');
     }});
     s.pagos.forEach(function(pp,idx){
       var ultimo=(idx===s.pagos.length-1);
-      bloques.push({h:22, draw:function(ctx,y,W){
-        docTxt(ctx,docCorta(ctx,pp.pago.folio||'PAGO',xCon-DOC_PAD-16,docFM(500,11)),DOC_PAD+6,y+15,docFM(500,11),DOC_TINTA);
-        docTxt(ctx,fmtFechaCorta(pp.pago.fecha),xCon,y+15,docFS(400,11),DOC_TENUE);
-        docTxt(ctx,'−'+docMonCta(pp.monto,mon),xMonto,y+15,docFM(500,11.5),DOC_VERDE,'right');
-        docTxt(ctx,docMonCta(Math.max(0,pp.saldoDespues),mon),xSaldo,y+15,
+      bloques.push({h:26, draw:function(ctx,y,W){
+        docTxt(ctx,docCorta(ctx,pp.pago.folio||'PAGO',xCon-DOC_PAD-18,docFM(500,11)),DOC_PAD+8,y+17,docFM(500,11),DOC_TINTA);
+        docTxt(ctx,fmtFechaCorta(pp.pago.fecha),xCon,y+17,docFS(400,11),DOC_TENUE);
+        docTxt(ctx,'−'+docMonCta(pp.monto,mon),xMonto,y+17,docFM(500,11.5),DOC_VERDE,'right');
+        docTxt(ctx,docMonCta(Math.max(0,pp.saldoDespues),mon),xSaldo,y+17,
           ultimo?docFM(700,12):docFM(400,11.5), ultimo?accent:DOC_TEXTO2,'right');
       }});
     });
-    bloques.push({h:6});
+    bloques.push({h:14});
   });
 
   bloques.push({h:34, draw:function(ctx,y,W){

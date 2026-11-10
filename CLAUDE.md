@@ -346,6 +346,8 @@ Siguen valiendo las dos reglas de antes: **`<canvas>`, nunca `html-to-image`** (
 
 **La nota de envío se manda con mensaje** (oct-2026): `docTextoNota(deudaId)` arma *"Adjunto la nota de envío del día <fecha del cargo> correspondiente al Folio: <Folio Cliente>"* y `docCompartir()` lo pasa como `text` del menú de compartir (su cuarto parámetro, opcional; los demás documentos siguen mandando solo el título). Sin Folio Cliente se omite esa parte. Fecha y folio van entre asteriscos para que WhatsApp los ponga en negritas (en otras apps se ven los asteriscos tal cual). En computadora, donde no hay menú de compartir, el mensaje se copia al portapapeles.
 
+**El estado de cuenta fifo (`docEstadoFifo`) se ensanchó en nov-2026** porque se veía encimado: 700px el de cliente y 900px el de proveedor (antes 640/800), columnas más separadas (entre Bruto y Desc. había solo 48px), renglones de 26px y 14px entre un cargo y el siguiente. El descuento se pinta **redondeado a entero**: con decimales ("42.77628%") pisaba el peso bruto.
+
 El historial filtra por **año calendario** (los folios son `B&M/2026/028`), no por ciclo agrícola; su resumen del pie es **global**, para que siempre cuadre con el saldo que muestra la cuenta.
 
 ### Posición del negocio: `rdTotales`/`rdCuentasDe`/`cpCategoria`
