@@ -1149,6 +1149,11 @@ input:focus,select:focus,textarea:focus,.login-campo input:focus{background-colo
 .envio-item .ven-modal-table th:nth-child(5){width:12%}
 .envio-item .ven-modal-table th:nth-child(6){width:18%}
 .envio-item .ven-modal-table td:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Pestaña Cuentas: cada lado del cliente se abre por separado */
+.dlado{cursor:pointer;border-radius:6px;padding:2px 4px;margin:-2px -4px}
+@media (hover:hover){ .dlado:hover{background:var(--surface2);text-decoration:underline} }
+.dlados{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+.dlados .deuda-saldo{font-size:15px}
 /* Estado de cuenta tipo Excel (dctaExcelHtml): un bloque por cargo con su
    folio, variedades, subtotal, pagos con saldo corrido y estatus a la derecha */
 .dx-wrap{background:var(--surface);border-radius:18px;overflow-x:auto;margin-top:12px}
@@ -1237,6 +1242,9 @@ table.dx{width:100%;border-collapse:collapse;min-width:940px;font-size:14.5px}
   #ven-lista,#alm-lista,#fram-hist-list,#fram-finhist-list,#fram-nominahist-list,#maiz-hist-list,.week-block{display:block}
   #ven-lista>*,#alm-lista>*,#fram-hist-list>*,#fram-finhist-list>*,#fram-nominahist-list>*,#maiz-hist-list>*{margin-bottom:6px!important}
   #sc-reg>*,#ven-form-sec,#comer-form-sec,.maiz-form-wrap #maiz-form-sec{max-width:720px;margin-left:auto;margin-right:auto}
+  /* Deudas y su estado de cuenta: con margen a los lados (a pedido); sin el,
+     la tabla quedaba pegada al menu lateral */
+  #sc-deudas,#sc-deudacta{padding-left:28px!important;padding-right:28px!important}
   /* Cosechas (Camote, Frambuesa, Maiz) al mismo ancho que Gastos, a pedido */
   #sc-ven>*,#sc-fram>*,#sc-maiz>*{max-width:720px;margin-left:auto;margin-right:auto}
   .fram-subnav{max-width:620px}
@@ -2805,8 +2813,7 @@ table.dx{width:100%;border-collapse:collapse;min-width:940px;font-size:14.5px}
   <div id="sc-deudas" class="screen">
     <div class="rfr-topbar seg" style="display:flex;gap:4px;margin-bottom:12px">
       <button class="ven-tab active" id="deuda-tab-flujo" onclick="setDeudaTab('flujo')" style="flex:1">Flujo</button>
-      <button class="ven-tab" id="deuda-tab-cobrar" onclick="setDeudaTab('cobrar')" style="flex:1">Cobrar</button>
-      <button class="ven-tab" id="deuda-tab-pagar" onclick="setDeudaTab('pagar')" style="flex:1">Pagar</button>
+      <button class="ven-tab" id="deuda-tab-cuentas" onclick="setDeudaTab('cuentas')" style="flex:1">Cuentas</button>
     </div>
     <div id="deuda-flujo-sec" style="display:none"></div>
     <div id="deuda-kpi-row" class="deuda-kpis">
@@ -2818,14 +2825,14 @@ table.dx{width:100%;border-collapse:collapse;min-width:940px;font-size:14.5px}
       </div>
       <div class="kpi-card">
         <div class="kpi-accent" style="background:var(--rojo)"></div>
-        <div class="kpi-lbl">Vencido</div>
+        <div class="kpi-lbl" id="deuda-venc-lbl">Debemos</div>
         <div class="kpi-val" id="deuda-venc-val" style="color:var(--rojo)">$0</div>
         <div class="deuda-kpi-sub" id="deuda-venc-sub">&nbsp;</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-accent" style="background:var(--maiz)"></div>
-        <div class="kpi-lbl">Vence esta semana</div>
-        <div class="kpi-val" id="deuda-sem-val" style="color:var(--maiz)">$0</div>
+        <div class="kpi-lbl" id="deuda-sem-lbl">Diferencia</div>
+        <div class="kpi-val" id="deuda-sem-val">$0</div>
         <div class="deuda-kpi-sub" id="deuda-sem-sub">&nbsp;</div>
       </div>
     </div>
@@ -2846,7 +2853,7 @@ table.dx{width:100%;border-collapse:collapse;min-width:940px;font-size:14.5px}
     <div id="deuda-table-wrap" class="fintab-wrap auto">
       <table class="fintab">
         <thead><tr>
-          <th class="txt">ID</th><th class="txt">Cliente</th><th>Saldo</th><th>Vencido</th>
+          <th class="txt">ID</th><th class="txt">Cliente</th><th>Nos debe</th><th>Vencido</th><th>Le debemos</th><th>Vencido</th>
         </tr></thead>
         <tbody id="deuda-table-body"></tbody>
       </table>
@@ -11177,10 +11184,12 @@ function diasDeudaBadge(d){
 // mostrando información, no un formulario. Resumen se eliminó (sep-2026): su
 // información vive ahora en los paneles de Flujo (ver "Flujo como nuevo resumen").
 function setDeudaTab(t){
+  // Nov-2026: Cobrar y Pagar se fusionaron en una sola pestaña "Cuentas". Los
+  // valores viejos se aceptan y se convierten, por si algo todavía los manda.
+  if(t==='cobrar'||t==='pagar') t='cuentas';
   deudaTabSel=t;
-  var esCartera=(t==='cobrar'||t==='pagar');
-  [['deuda-tab-flujo','flujo'],['deuda-tab-cobrar','cobrar'],
-   ['deuda-tab-pagar','pagar']].forEach(function(p){
+  var esCartera=(t==='cuentas');
+  [['deuda-tab-flujo','flujo'],['deuda-tab-cuentas','cuentas']].forEach(function(p){
     var el=document.getElementById(p[0]); if(el) el.classList.toggle('active', t===p[1]);
   });
   // Todas las secciones son mutuamente excluyentes: solo una se pinta a la vez.
@@ -12059,12 +12068,133 @@ function guardarBancosSaldos(n){
   showToast('Saldos guardados');
 }
 
+// Pestaña Cuentas (nov-2026): cobrar y pagar en una sola lista. Cada cliente es
+// un renglón con las dos direcciones —Nos debe / Le debemos, cada una con su
+// vencido—; el clic en un lado abre el estado de cuenta de ese lado. Reusa los
+// mismos cálculos de antes (calcSaldoCuenta, agingCuenta, agingCartera).
 function renderDeudas(){
+  if(deudaTabSel!=='cuentas') return;
+  function lado(tipo, nom){
+    var r=calcSaldoCuenta(tipo,nom);
+    return {saldo:r.saldo, aFavor:r.aFavor, n:r.n, aging:agingCuenta(tipo,nom)};
+  }
+  var nombres={};
+  deudas.forEach(function(d){ nombres[d.contraparte]=true; });
+  pagosDeuda.forEach(function(p){ nombres[p.contraparte]=true; });
+  var lista=Object.keys(nombres).map(function(nom){
+    var c=getContraparte(nom)||{};
+    var folios=deudas.filter(function(d){return d.contraparte===nom;})
+      .map(function(d){return (d.folioExterno||'')+' '+(d.factura||'');}).join(' ').toLowerCase();
+    return {nombre:nom, clave:c.clave||'', moneda:c.moneda||'MXN', tc:parseFloat(c.tipoCambio)||0,
+      cob:lado('cobrar',nom), pag:lado('pagar',nom), folios:folios};
+  });
+  function eq(x,v){ return x.moneda==='USD'?v*(x.tc||0):v; }
+  function abierta(x){ return x.cob.saldo>0.5||x.cob.aFavor>0.5||x.pag.saldo>0.5||x.pag.aFavor>0.5; }
+  function vencTot(x){ return eq(x,x.cob.aging.vencido)+eq(x,x.pag.aging.vencido); }
+  function saldoTot(x){ return eq(x,x.cob.saldo)+eq(x,x.pag.saldo); }
+
+  // ── Tarjetas: Nos deben · Debemos · Diferencia ──
+  var cc=agingCartera('cobrar'), cp=agingCartera('pagar');
+  var totCob=lista.reduce(function(a,x){return a+eq(x,x.cob.saldo);},0);
+  var totPag=lista.reduce(function(a,x){return a+eq(x,x.pag.saldo);},0);
+  document.getElementById('deuda-total-lbl').textContent='Nos deben';
+  var tv=document.getElementById('deuda-total-val'); tv.textContent=fmt2(totCob); tv.style.color='var(--green)';
+  document.getElementById('deuda-total-ac').style.background='var(--green)';
+  document.getElementById('deuda-count-val').innerHTML=cc.vencido>0.5?'<span style="color:var(--rojo)">'+fmt2(cc.vencido)+' vencido</span>':'nada vencido';
+  document.getElementById('deuda-venc-val').textContent=fmt2(totPag);
+  document.getElementById('deuda-venc-sub').innerHTML=cp.vencido>0.5?'<span style="color:var(--rojo)">'+fmt2(cp.vencido)+' vencido</span>':'nada vencido';
+  var dif=totCob-totPag, sv=document.getElementById('deuda-sem-val');
+  sv.textContent=(dif<0?'−':'+')+fmt2(Math.abs(dif)); sv.style.color=dif<0?'var(--rojo)':'var(--text)';
+  document.getElementById('deuda-sem-sub').innerHTML='&nbsp;';
+
+  var cont=document.getElementById('deuda-list');
+  var tbody=document.getElementById('deuda-table-body');
+  function vacio(msg, ico){
+    cont.innerHTML='<div class="empty" style="padding:44px 20px;text-align:center"><div class="empty-icon" style="font-size:40px">'+ico+'</div><div class="empty-text" style="margin-top:10px">'+msg+'</div></div>';
+    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text3)">'+msg+'</td></tr>';
+  }
+  if(!lista.length){ vacio('Sin cuentas aún.','📒'); return; }
+
+  // ── Buscar, ordenar y filtrar ──
+  var q=(document.getElementById('deuda-search').value||'').trim().toLowerCase();
+  var orden=(document.getElementById('deuda-orden')||{}).value||'vencido';
+  var filtro=(document.getElementById('deuda-filtro')||{}).value||'saldo';
+  var vista=lista.filter(function(x){
+    if(q && x.nombre.toLowerCase().indexOf(q)<0 && x.clave.toLowerCase().indexOf(q)<0 && x.folios.indexOf(q)<0) return false;
+    if(filtro==='saldo') return abierta(x);
+    if(filtro==='vencido') return vencTot(x)>0.5;
+    return true;
+  });
+  vista.sort(function(a,b){
+    if(orden==='vencido') return (vencTot(b)-vencTot(a)) || (saldoTot(b)-saldoTot(a));
+    if(orden==='antiguedad'){
+      var va=Math.max(a.cob.aging.masViejo===null?-1:a.cob.aging.masViejo, a.pag.aging.masViejo===null?-1:a.pag.aging.masViejo);
+      var vb=Math.max(b.cob.aging.masViejo===null?-1:b.cob.aging.masViejo, b.pag.aging.masViejo===null?-1:b.pag.aging.masViejo);
+      return vb-va;
+    }
+    return saldoTot(b)-saldoTot(a);
+  });
+  if(!vista.length){ vacio('Ninguna cuenta coincide con la búsqueda o el filtro.','🔍'); return; }
+  var abiertasV=(filtro==='todas')?vista.filter(abierta):vista;
+  var saldadasV=(filtro==='todas')?vista.filter(function(x){return !abierta(x);}):[];
+
+  cont.innerHTML=''; tbody.innerHTML='';
+  // Lado de un cliente: el monto abre ese estado de cuenta; sin saldo ni
+  // movimientos queda en guion y no se puede abrir.
+  function celdas(x, tipo, l, esHist){
+    var hay=l.saldo>0.5, col=hay&&!esHist?(tipo==='cobrar'?'var(--green)':'var(--fram)'):'var(--text3)';
+    var vh=!esHist&&l.aging.vencido>0.5;
+    return {
+      saldo:(l.n?'<span class="dlado" onclick="event.stopPropagation();abrirDeudaContraparte(\''+tipo+'\','+JSON.stringify(x.nombre).replace(/"/g,'&quot;')+')" style="color:'+col+'">'+(hay?fmtMon2(l.saldo,x.moneda):'$0.00')+'</span>':'<span style="color:var(--text3)">—</span>')+
+        (l.aFavor>0.5?'<div style="font-size:11px;color:var(--jal)">a su favor '+fmtMon2(l.aFavor,x.moneda)+'</div>':''),
+      venc:vh?'<span style="color:var(--rojo);font-weight:700">'+fmtMon2(l.aging.vencido,x.moneda)+'</span>':'<span style="color:var(--text3)">—</span>'
+    };
+  }
+  // El renglón entero abre el lado que tiene saldo (cobrar primero si los dos tienen).
+  function ladoPrincipal(x){
+    if(x.cob.saldo>0.5) return 'cobrar';
+    if(x.pag.saldo>0.5) return 'pagar';
+    return x.cob.n?'cobrar':'pagar';
+  }
+  function pinta(x, esHist){
+    var c=celdas(x,'cobrar',x.cob,esHist), p=celdas(x,'pagar',x.pag,esHist);
+    var usd=(x.moneda==='USD'?' <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:var(--green-bg);color:var(--green)">USD</span>':'');
+    var tr=document.createElement('tr');
+    if(esHist) tr.style.opacity='0.55';
+    tr.style.cursor='pointer';
+    tr.onclick=function(){ abrirDeudaContraparte(ladoPrincipal(x), x.nombre); };
+    tr.innerHTML='<td class="txt mono" style="color:var(--text3)">'+(x.clave||'—')+'</td>'+
+      '<td class="txt">'+x.nombre+usd+'</td>'+
+      '<td class="num" style="font-weight:700">'+c.saldo+'</td><td class="num">'+c.venc+'</td>'+
+      '<td class="num" style="font-weight:700">'+p.saldo+'</td><td class="num">'+p.venc+'</td>';
+    tbody.appendChild(tr);
+    // Celular: tarjeta con los dos lados uno junto al otro
+    var card=document.createElement('div');
+    card.className='deuda-card';
+    if(esHist) card.style.opacity='0.55';
+    card.onclick=function(){ abrirDeudaContraparte(ladoPrincipal(x), x.nombre); };
+    card.innerHTML='<div style="flex:1;min-width:0"><div class="deuda-nom">'+(x.clave?'<span style="font-family:var(--mono);font-size:11px;color:var(--text3)">'+x.clave+'</span> · ':'')+x.nombre+usd+'</div>'+
+      '<div class="dlados"><div><div class="deuda-sub">Nos debe</div><div class="deuda-saldo">'+c.saldo+'</div>'+(x.cob.aging.vencido>0.5&&!esHist?'<div style="font-size:12px">'+c.venc+' vencido</div>':'')+'</div>'+
+      '<div><div class="deuda-sub">Le debemos</div><div class="deuda-saldo">'+p.saldo+'</div>'+(x.pag.aging.vencido>0.5&&!esHist?'<div style="font-size:12px">'+p.venc+' vencido</div>':'')+'</div></div></div>';
+    cont.appendChild(card);
+  }
+  abiertasV.forEach(function(x){ pinta(x,false); });
+  if(saldadasV.length){
+    var hdr=document.createElement('div');
+    hdr.style.cssText='font-size:13px;font-weight:600;color:var(--text3);margin:18px 4px 8px';
+    hdr.textContent='Saldadas';
+    cont.appendChild(hdr);
+    var trh=document.createElement('tr');
+    trh.innerHTML='<td colspan="6" style="background:var(--surface2);font-size:13px;font-weight:600;color:var(--text3);padding:8px 10px">Saldadas</td>';
+    tbody.appendChild(trh);
+    saldadasV.forEach(function(x){ pinta(x,true); });
+  }
+}
+// Cartera por dirección (Cobrar / Pagar como pestañas separadas). Sin uso desde
+// nov-2026, cuando se fusionaron en "Cuentas"; se conserva por si se pide volver.
+function renderDeudasPorDireccion(){
   var tipo=deudaTabSel;
   if(tipo!=='cobrar' && tipo!=='pagar') return;
-  var tc=document.getElementById('deuda-tab-cobrar'), tp=document.getElementById('deuda-tab-pagar');
-  if(tc) tc.classList.toggle('active', tipo==='cobrar');
-  if(tp) tp.classList.toggle('active', tipo==='pagar');
   var accent=(tipo==='cobrar')?'var(--green)':'var(--fram)';
   var nombres={};
   deudas.forEach(function(d){ if(d.tipo===tipo) nombres[d.contraparte]=true; });

@@ -307,9 +307,11 @@ Alta de cliente: `abrirNuevoClienteCatalogo()` / `confirmarNuevoClienteCatalogo(
 
 `initDeudaRegistrarForm()` se simplificó: como Clientes ya no vive dentro de Registrar, ya no hay sub-pestañas ahí (`setDrSubTab`/`setDrClientesTab`/`drSubTabSel`/`drClientesTabSel` **se borraron**) — el formulario de Deuda se muestra directo.
 
-### Estructura de pestañas (sep-2026; Resumen eliminada el 23-sep-2026)
+### Estructura de pestañas (sep-2026; Resumen eliminada el 23-sep-2026; Cobrar y Pagar fusionadas el 10-nov-2026)
 
-**Flujo · Cobrar · Pagar.** El módulo abre en **Flujo** — primera pestaña y default de `deudaTabSel`—, mostrando información, no un formulario.
+**Flujo · Cuentas** (nov-2026). Cobrar y Pagar se fusionaron, a pedido, en una sola pestaña **Cuentas** (`deudaTabSel='cuentas'`). `renderDeudas()` pinta una tabla con **ID · Cliente · Nos debe · Vencido · Le debemos · Vencido**: cada cliente es un renglón con las dos direcciones, y el clic en el monto de un lado (`.dlado`) abre el estado de cuenta de ese lado; el clic en el renglón abre el lado con saldo (cobrar primero). En celular, tarjeta con los dos lados (`.dlados`). Las tres tarjetas de arriba pasaron a **Nos deben · Debemos · Diferencia** (cada una con su vencido debajo). Buscador, orden y filtro siguen igual, ahora sobre las dos direcciones. `setDeudaTab('cobrar'|'pagar')` se convierte solo a `'cuentas'`, por si algo viejo lo llama. La cartera por dirección quedó en `renderDeudasPorDireccion()` sin uso. `#sc-deudas` y `#sc-deudacta` llevan 28px de margen a los lados en escritorio (sin eso la tabla quedaba pegada al menú lateral).
+
+Antes era **Flujo · Cobrar · Pagar.** El módulo abre en **Flujo** — primera pestaña y default de `deudaTabSel`—, mostrando información, no un formulario.
 
 **La pestaña Resumen se eliminó.** No fue una migración de datos: era una pantalla derivada (`renderResumenDeudas()`, `rdCard()`, `rdLista()`, todas borradas), así que no había nada que perder. Su contenido —Nos deben / Debemos / Balance, el desglose por cuenta— quedó cubierto por el panel **Total** de Flujo (ver "Flujo como nuevo resumen"), que es más completo: además suma bancos y cobros esperados del lado a favor. Lo único que no migró fue la tarjeta "Cuánto del cobro es realmente nuestro" (cobrar − proveedores comerciales) y el "al cierre de este mes" proyectado — si se vuelven a pedir, `rdTotales()`/`rdCuentasDe()`/`cpCategoria()` (que siguen vivas) alcanzan para rearmarlos.
 
