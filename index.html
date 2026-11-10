@@ -1120,13 +1120,26 @@ input:focus,select:focus,textarea:focus,.login-campo input:focus{background-colo
 .loc-btn.com .loc-emoji{background:var(--com)}.loc-btn.maiz .loc-emoji{background:var(--maiz)}.loc-btn.fram .loc-emoji{background:var(--fram)}
 .loc-label{font-size:14.5px;font-weight:600;color:var(--text)!important}
 .loc-sub{display:none}
-.loc-btn.sel{background:var(--text)!important;box-shadow:none}
-.loc-btn.sel .loc-label{color:var(--surface)!important}
+/* La elegida en verde suave con contorno verde: se distingue sin deslumbrar
+   (en relleno de color texto brillaba demasiado contra el fondo, en claro y en oscuro). */
+.loc-btn.sel{background:var(--green-bg)!important;box-shadow:inset 0 0 0 1.5px var(--green)}
+.loc-btn.sel .loc-label{color:var(--green)!important}
 /* Tipo, actividad, ciclo y sector: la misma regla (blanco con contorno; la elegida en oscuro) */
 .tipo-btn,.ciclo-btn,.cultivo-btn,.sector-btn{border:0;border-radius:14px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border)}
 .sector-btn{border-radius:999px}
-.tipo-btn.sel,.ciclo-btn.sel,.cultivo-btn.sel,.sector-btn.sel{background:var(--text)!important;box-shadow:none}
-.tipo-btn.sel .tipo-label,.tipo-btn.sel .tipo-sub,.ciclo-btn.sel .ciclo-lbl,.ciclo-btn.sel .ciclo-sub,.cultivo-btn.sel,.sector-btn.sel{color:var(--surface)!important}
+.tipo-btn.sel,.ciclo-btn.sel,.cultivo-btn.sel,.sector-btn.sel{background:var(--green-bg)!important;box-shadow:inset 0 0 0 1.5px var(--green)}
+.tipo-btn.sel .tipo-label,.ciclo-btn.sel .ciclo-lbl,.cultivo-btn.sel,.sector-btn.sel{color:var(--green)!important}
+.tipo-btn.sel .tipo-sub,.ciclo-btn.sel .ciclo-sub{color:var(--text2)!important}
+
+/* Tarjetas de envios y lotes: ahora ocupan todo el ancho, asi que la letra sube */
+.envio-item,.alm-lote{padding:16px 20px}
+.envio-num{font-size:17px;font-weight:700}
+.envio-meta{font-size:14px}
+.envio-total{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.envio-item .tag,.alm-lote .tag{font-size:12.5px;padding:3px 10px;border-radius:999px}
+.envio-item .ven-modal-table,.alm-lote .ven-modal-table{font-size:15px;margin-top:4px}
+.envio-item .ven-modal-table th,.alm-lote .ven-modal-table th{font-size:13px;font-weight:600;color:var(--text3);padding:8px 8px 6px}
+.envio-item .ven-modal-table td,.alm-lote .ven-modal-table td{padding:9px 8px}
 
 /* Botones */
 .btn-main,#login-btn{background:var(--green);color:#fff;min-height:52px;border-radius:14px;font-size:17px;font-weight:700}

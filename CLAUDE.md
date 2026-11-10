@@ -571,7 +571,8 @@ A pedido del usuario ("que todos los módulos se vean iguales, limpio y profesio
 - **Tarjetas sin borde, radio 18**, y las de listas radio 16. **`.kpi-accent` va oculta** (el semáforo sigue en la cifra, que se tiñe por estilo inline); **dentro de `#rpt-wrap` se vuelve a mostrar**, para que el reporte impreso conserve su raya.
 - **Rótulos en tipo oración**, ya no en mayúsculas.
 - **Pestañas tipo iPhone:** pista gris sin borde y la activa en blanco con sombra suave, en los dos niveles.
-- **Negocio como píldoras** (`.loc-row`/`.neg-row` pasan a `flex`, el emoji se oculta y queda un punto de color) y **la opción elegida en oscuro** en negocio, tipo, actividad, ciclo y sector. El fondo de `.loc-btn.sel` lleva `!important` porque las reglas viejas `.loc-btn.jal.sel` tienen más especificidad.
+- **Negocio como píldoras** (`.loc-row`/`.neg-row` pasan a `flex`, el emoji se oculta y queda un punto de color) y **la opción elegida en verde suave (`--green-bg`) con contorno verde** en negocio, tipo, actividad, ciclo y sector. Primero iba rellena del color del texto y el usuario la quitó: casi blanca en oscuro y casi negra en claro, "cansa la vista". El fondo de `.loc-btn.sel` lleva `!important` porque las reglas viejas `.loc-btn.jal.sel` tienen más especificidad.
+- **Tarjetas de envíos y lotes con letra más grande** (folio 17px, total 20px, tabla 15px), porque a una por fila ocupan todo el ancho y la letra de 12-13px se perdía.
 - **Campos rellenos de gris, sin borde**, verdes al enfocar. Botón principal verde de 52px y radio 14.
 - **Ventanas**: hoja gris con renglones agrupados en blanco; centradas en escritorio.
 - **Navegación:** en celular, barra translúcida con la activa en verde (sin píldora). **Desde 1024px el riel pasa a menú lateral de 240px con ícono en casilla y nombre** (`--rail:240px`; el `padding-left` del `body` lo sigue leyendo de ahí).
