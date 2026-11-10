@@ -1152,8 +1152,43 @@ input:focus,select:focus,textarea:focus,.login-campo input:focus{background-colo
 /* Pestaña Cuentas: cada lado del cliente se abre por separado */
 .dlado{cursor:pointer;border-radius:6px;padding:2px 4px;margin:-2px -4px}
 @media (hover:hover){ .dlado:hover{background:var(--surface2);text-decoration:underline} }
-.dlados{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
-.dlados .deuda-saldo{font-size:15px}
+/* Cuentas con el diseño de la propuesta A (nov-2026, a pedido) */
+#deuda-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:0;background:var(--surface);border-radius:18px;padding:16px 0;margin-bottom:16px}
+#deuda-kpi-row .kpi-card{background:none!important;border-radius:0!important;padding:2px 20px!important}
+#deuda-kpi-row .kpi-card+.kpi-card{border-left:1px solid var(--border)!important}
+#deuda-kpi-row .kpi-val{font-size:28px!important}
+#deuda-ctrls{flex-wrap:wrap}
+#deuda-ctrls #deuda-search{flex:1 1 100%;background-color:var(--surface)}
+#deuda-ctrls select,#deuda-ctrls .ssel-input{background-color:var(--surface)!important;font-weight:600}
+#deuda-ctrls .ssel-wrap{flex:1;min-width:150px}
+#deuda-table-wrap{display:none!important}
+body #sc-deudas #deuda-list{display:block}
+.ca-head,.ca-row{display:grid;grid-template-columns:minmax(0,1fr) 180px 180px 18px;gap:14px;align-items:center}
+.ca-head{padding:4px 18px 8px;font-size:13px;font-weight:600;color:var(--text3)}
+.ca-head span:nth-child(2),.ca-head span:nth-child(3){text-align:right}
+.ca-group{background:var(--surface);border-radius:18px;overflow:hidden}
+.ca-group.hist{opacity:.6}
+.ca-row{padding:13px 18px;cursor:pointer}
+.ca-row+.ca-row{border-top:1px solid var(--border)}
+@media (hover:hover){ .ca-row:hover{background:var(--surface2)} }
+.ca-who{display:flex;align-items:center;gap:12px;min-width:0}
+.ca-who b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ca-ini{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;flex:none;background:var(--track);color:var(--text2);font-weight:800;font-size:11.5px;overflow:hidden}
+.ca-usd{font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:var(--green-bg);color:var(--green);vertical-align:middle}
+.ca-c{text-align:right;font-weight:700;font-size:15.5px}
+.ca-c small{display:block;font-size:12.5px;font-weight:600;color:var(--rojo)}
+.ca-c small.ca-favor{color:var(--jal)}
+.ca-in{color:var(--green)}.ca-out{color:var(--rojo)}.ca-zero{color:var(--text3);font-weight:500}
+.ca-chev{color:var(--text3);font-size:20px}
+.ca-hist-lbl{font-size:13.5px;font-weight:600;color:var(--text2);margin:22px 4px 10px}
+@media (max-width:699px){
+  #deuda-kpi-row{grid-template-columns:1fr;padding:12px 0}
+  #deuda-kpi-row .kpi-card+.kpi-card{border-left:0!important;border-top:1px solid var(--border)!important;padding-top:10px!important;margin-top:10px}
+  .ca-head,.ca-row{grid-template-columns:minmax(0,1fr) 96px 96px 10px;gap:8px}
+  .ca-row{padding:12px 12px}.ca-head{padding:4px 12px 8px}
+  .ca-ini{display:none}
+  .ca-c{font-size:14px}.ca-c small{font-size:11.5px}
+}
 /* Estado de cuenta tipo Excel (dctaExcelHtml): un bloque por cargo con su
    folio, variedades, subtotal, pagos con saldo corrido y estatus a la derecha */
 .dx-wrap{background:var(--surface);border-radius:18px;overflow-x:auto;margin-top:12px}
@@ -12156,38 +12191,43 @@ function renderDeudas(){
     if(x.pag.saldo>0.5) return 'pagar';
     return x.cob.n?'cobrar':'pagar';
   }
-  function pinta(x, esHist){
-    var c=celdas(x,'cobrar',x.cob,esHist), p=celdas(x,'pagar',x.pag,esHist);
-    var usd=(x.moneda==='USD'?' <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:var(--green-bg);color:var(--green)">USD</span>':'');
-    var tr=document.createElement('tr');
-    if(esHist) tr.style.opacity='0.55';
-    tr.style.cursor='pointer';
-    tr.onclick=function(){ abrirDeudaContraparte(ladoPrincipal(x), x.nombre); };
-    tr.innerHTML='<td class="txt mono" style="color:var(--text3)">'+(x.clave||'—')+'</td>'+
-      '<td class="txt">'+x.nombre+usd+'</td>'+
-      '<td class="num" style="font-weight:700">'+c.saldo+'</td><td class="num">'+c.venc+'</td>'+
-      '<td class="num" style="font-weight:700">'+p.saldo+'</td><td class="num">'+p.venc+'</td>';
-    tbody.appendChild(tr);
-    // Celular: tarjeta con los dos lados uno junto al otro
-    var card=document.createElement('div');
-    card.className='deuda-card';
-    if(esHist) card.style.opacity='0.55';
-    card.onclick=function(){ abrirDeudaContraparte(ladoPrincipal(x), x.nombre); };
-    card.innerHTML='<div style="flex:1;min-width:0"><div class="deuda-nom">'+(x.clave?'<span style="font-family:var(--mono);font-size:11px;color:var(--text3)">'+x.clave+'</span> · ':'')+x.nombre+usd+'</div>'+
-      '<div class="dlados"><div><div class="deuda-sub">Nos debe</div><div class="deuda-saldo">'+c.saldo+'</div>'+(x.cob.aging.vencido>0.5&&!esHist?'<div style="font-size:12px">'+c.venc+' vencido</div>':'')+'</div>'+
-      '<div><div class="deuda-sub">Le debemos</div><div class="deuda-saldo">'+p.saldo+'</div>'+(x.pag.aging.vencido>0.5&&!esHist?'<div style="font-size:12px">'+p.venc+' vencido</div>':'')+'</div></div></div>';
-    cont.appendChild(card);
+  // Lista de la propuesta A (nov-2026, a pedido): un renglón por cliente con sus
+  // iniciales, el nombre, y dos columnas —Nos debe / Le debemos— con el vencido
+  // en rojo debajo de cada monto. La misma lista sirve en celular y escritorio;
+  // la tabla #deuda-table-wrap quedó oculta.
+  function colA(x, tipo, l, esHist){
+    if(!l.n) return '<div class="ca-c ca-zero">—</div>';
+    var hay=l.saldo>0.5;
+    var cls=esHist||!hay?'ca-zero':(tipo==='cobrar'?'ca-in':'ca-out');
+    var arg=JSON.stringify(x.nombre).replace(/"/g,'&quot;');
+    return '<div class="ca-c '+cls+'"><span class="dlado" onclick="event.stopPropagation();abrirDeudaContraparte(\''+tipo+'\','+arg+')">'+
+      (hay?fmtMon2(l.saldo,x.moneda):'—')+'</span>'+
+      (!esHist&&l.aging.vencido>0.5?'<small>'+fmtMon2(l.aging.vencido,x.moneda)+' vencido</small>':'')+
+      (l.aFavor>0.5?'<small class="ca-favor">a su favor '+fmtMon2(l.aFavor,x.moneda)+'</small>':'')+
+      '</div>';
   }
-  abiertasV.forEach(function(x){ pinta(x,false); });
+  function grupo(lst, esHist){
+    var g=document.createElement('div'); g.className='ca-group'+(esHist?' hist':'');
+    lst.forEach(function(x){
+      var row=document.createElement('div'); row.className='ca-row';
+      row.onclick=function(){ abrirDeudaContraparte(ladoPrincipal(x), x.nombre); };
+      var ini=x.clave||x.nombre.split(/\s+/).map(function(w){return w.charAt(0);}).join('').slice(0,3);
+      row.innerHTML='<div class="ca-who"><span class="ca-ini">'+ini+'</span><b>'+x.nombre+
+          (x.moneda==='USD'?' <span class="ca-usd">USD</span>':'')+'</b></div>'+
+        colA(x,'cobrar',x.cob,esHist)+colA(x,'pagar',x.pag,esHist)+
+        '<span class="ca-chev">›</span>';
+      g.appendChild(row);
+    });
+    return g;
+  }
+  var head=document.createElement('div'); head.className='ca-head';
+  head.innerHTML='<span>Cliente</span><span>Nos debe</span><span>Le debemos</span><span></span>';
+  cont.appendChild(head);
+  cont.appendChild(grupo(abiertasV,false));
   if(saldadasV.length){
-    var hdr=document.createElement('div');
-    hdr.style.cssText='font-size:13px;font-weight:600;color:var(--text3);margin:18px 4px 8px';
-    hdr.textContent='Saldadas';
+    var hdr=document.createElement('div'); hdr.className='ca-hist-lbl'; hdr.textContent='Saldadas';
     cont.appendChild(hdr);
-    var trh=document.createElement('tr');
-    trh.innerHTML='<td colspan="6" style="background:var(--surface2);font-size:13px;font-weight:600;color:var(--text3);padding:8px 10px">Saldadas</td>';
-    tbody.appendChild(trh);
-    saldadasV.forEach(function(x){ pinta(x,true); });
+    cont.appendChild(grupo(saldadasV,true));
   }
 }
 // Cartera por dirección (Cobrar / Pagar como pestañas separadas). Sin uso desde
