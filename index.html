@@ -12828,10 +12828,12 @@ function docEstadoFifo(tipo, nombre, completo){
   lista.forEach(function(s){
     var d=s.deuda, liq=s.liquidada, pl=liq?null:docPlazo(d);
     var lineas=esCliente?docLineasVenta(d):docLineasCompra(d);
+    // Sin partidas que desglosar, un solo renglón con el monto del cargo
+    if(!lineas.length) lineas=[{concepto:docConcepto(d.desc||'Cargo'), monto:parseFloat(d.monto)||0}];
     var etq=d.folioExterno||(d.origen==='manual'?'Manual':(d.origen||'Cargo'));
-    // Alto del bloque completo del cargo (franja + variedades + Cargo + pagos), para
-    // que la caja de Estatus lo abarque entero, igual que la tabla de la app.
-    var hGrupo=30+lineas.length*26+28+s.pagos.length*26;
+    // Alto del bloque completo del cargo (franja + variedades + pagos), para que la
+    // caja de Estatus lo abarque entero, igual que la tabla de la app.
+    var hGrupo=30+lineas.length*26+s.pagos.length*26;
     bloques.push({h:30, draw:function(ctx,y,W){
       ctx.fillStyle=DOC_GRUPO; ctx.fillRect(DOC_PAD,y+3,xEst0-8-DOC_PAD,24);
       docTxt(ctx,etq,DOC_PAD+8,y+19,docFM(700,12),DOC_TINTA);
@@ -12846,8 +12848,12 @@ function docEstadoFifo(tipo, nombre, completo){
           xEst0+ANCHO_EST/2,cy+18,docFS(700,11),dv>0?DOC_ROJO:DOC_TEXTO2,'center');
       }
     }});
-    lineas.forEach(function(l){
+    lineas.forEach(function(l,iL){
+      var ultimaL=(iL===lineas.length-1);
       bloques.push({h:26, draw:function(ctx,y,W){
+        // Sin renglón "Cargo" (nov-2026, a pedido: confundía): el saldo inicial del
+        // cargo va en rojo en el último renglón de sus variedades, como el Excel.
+        if(ultimaL) docTxt(ctx,docMonCta(d.monto,mon),xSaldo,y+17,docFM(700,12),DOC_ROJO,'right');
         docTxt(ctx,fmtFechaCorta(d.fecha),DOC_PAD+8,y+17,docFS(400,10.5),DOC_TENUE);
         docTxt(ctx,docCorta(ctx,l.concepto,anchoCon,docFS(400,12)),xCon,y+17,docFS(400,12),DOC_TEXTO2);
         if(esCliente){
@@ -12862,15 +12868,6 @@ function docEstadoFifo(tipo, nombre, completo){
         docTxt(ctx,docMonCta(l.monto,mon),xMonto,y+17,docFM(400,11.5),DOC_TINTA,'right');
       }});
     });
-    bloques.push({h:28, draw:function(ctx,y,W){
-      docRegla(ctx,y+4,xCon,xEst0-8,DOC_LINEA,1);
-      docTxt(ctx,'Cargo',xCon,y+20,docFS(600,11),DOC_TENUE);
-      docTxt(ctx,docMonCta(d.monto,mon),xMonto,y+20,docFM(700,12),DOC_TINTA,'right');
-      // El saldo arranca en el monto del cargo y va en rojo mientras se deba algo,
-      // igual que la tabla de la app (antes iba en el color de la cuenta y en
-      // cobrar salía verde, que se leía como si fuera a favor).
-      docTxt(ctx,docMonCta(d.monto,mon),xSaldo,y+20,docFM(700,12),DOC_ROJO,'right');
-    }});
     s.pagos.forEach(function(pp,idx){
       var sd=Math.max(0,pp.saldoDespues), pagado=sd<=0.005;
       bloques.push({h:26, draw:function(ctx,y,W){
