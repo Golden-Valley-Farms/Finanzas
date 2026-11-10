@@ -1149,6 +1149,12 @@ input:focus,select:focus,textarea:focus,.login-campo input:focus{background-colo
 .envio-item .ven-modal-table th:nth-child(5){width:12%}
 .envio-item .ven-modal-table th:nth-child(6){width:18%}
 .envio-item .ven-modal-table td:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Filtros de Envios y Almacen: listas desplegables en una fila */
+.ven-filtros{display:flex;gap:8px;margin-bottom:14px}
+.ven-filtros>select,.ven-filtros>.ssel-wrap{flex:1;min-width:0}
+/* Van sobre el fondo de la pagina, no dentro de una tarjeta: el relleno gris de los
+   campos se perderia, asi que llevan el blanco de tarjeta */
+.ven-filtros select,.ven-filtros .ssel-input{background-color:var(--surface)!important;font-weight:600}
 /* Celular: letra un poco menor, la variedad puede bajar de renglon y el total gana espacio */
 @media (max-width:699px){
   .envio-item,.alm-lote{padding:14px 14px}
@@ -1894,8 +1900,18 @@ input:focus,select:focus,textarea:focus,.login-campo input:focus{background-colo
 
     <!-- Lista de envios -->
     <div id="ven-lista-sec" style="display: block;">
-      <div class="week-filter" id="ven-wf-ciclo"></div>
-      <div class="week-filter" id="ven-wf-neg" style="margin-top:4px"><button class="wf-btn active">Todos</button><button class="wf-btn">Jalisco</button><button class="wf-btn">Nayarit</button><button class="wf-btn">Comercial.</button></div>
+      <!-- Filtros en listas desplegables (antes botones sueltos). Se combinan: ciclo Y negocio. -->
+      <div class="ven-filtros">
+        <select id="ven-fil-ciclo" onchange="venFiltroCiclo=this.value;renderEnvios()">
+          <option value="todos">Todos los ciclos</option>
+        </select>
+        <select id="ven-fil-neg" onchange="venFiltroNeg=this.value;renderEnvios()">
+          <option value="todas">Todos los negocios</option>
+          <option value="jal">Jalisco</option>
+          <option value="nay">Nayarit</option>
+          <option value="com">Comercializadora</option>
+        </select>
+      </div>
       <div id="ven-lista"><div class="empty"><div class="empty-icon">🍀</div><div class="empty-text">Sin envios registrados aun.</div></div></div>
     </div>
 
@@ -2130,9 +2146,11 @@ input:focus,select:focus,textarea:focus,.login-campo input:focus{background-colo
       <!-- Lista de lotes -->
       <div id="alm-lista-sec">
         <!-- filtro estado -->
-        <div style="display:flex;gap:6px;margin-bottom:12px">
-          <button class="wf-btn active" id="almf-activo" onclick="almFiltro('activo')">En almacén</button>
-          <button class="wf-btn" id="almf-cerrado" onclick="almFiltro('cerrado')">Cerrados</button>
+        <div class="ven-filtros">
+          <select id="alm-fil-estado" onchange="almFiltro(this.value)">
+            <option value="activo">En almacén</option>
+            <option value="cerrado">Cerrados</option>
+          </select>
         </div>
         <button class="btn-main" onclick="abrirDespachoGeneral()" style="margin-bottom:14px;background:var(--green);border-color:var(--green)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:2"><path d="M16 16l4-4m0 0l-4-4m4 4H4"></path></svg>
@@ -9546,7 +9564,9 @@ try{if(!envios.length && typeof ENVIOS_IMPORTADOS!=='undefined' && ENVIOS_IMPORT
 function saveEnvios(){try{localStorage.setItem('cc_envios',JSON.stringify(envios));}catch(e){}}
 
 var VARIEDADES = ['Blanco Criollo','Amarillo Covington','Morado Criollo','Amarillo Nylon'];
-var venFiltro = 'todas';
+// Filtros de la lista de envios: se combinan (ciclo Y negocio).
+var venFiltroCiclo = 'todos';
+var venFiltroNeg = 'todas';
 
 function initPartidas(){
   return [];
@@ -10034,29 +10054,25 @@ function generarGastosCosechaDesdeEnvio(envioObj, vals, banco, prevIds){
 }
 
 function renderEnvios(){
-  var wfCiclo=document.getElementById('ven-wf-ciclo'); wfCiclo.innerHTML='';
-  var wfNeg=document.getElementById('ven-wf-neg'); wfNeg.innerHTML='';
-
-  function mkBtn(cont,v,l,a){
-    var b=document.createElement('button'); b.className='wf-btn'+(a?' active':''); b.textContent=l;
-    b.onclick=function(){venFiltro=v;renderEnvios();}; cont.appendChild(b);
-  }
-
-  // Fila 1: ciclos
-  CICLOS.forEach(function(c){
-    if(envios.some(function(e){return e.ciclo===c;})) mkBtn(wfCiclo,'ciclo:'+c,c,venFiltro==='ciclo:'+c);
+  // Lista de ciclos: solo los que tienen envios. Se reconstruye conservando la eleccion,
+  // igual que el filtro de ciclo del Historial de Frambuesa.
+  var ciclosConEnvios=CICLOS.filter(function(c){ return envios.some(function(e){return e.ciclo===c;}); });
+  if(venFiltroCiclo!=='todos' && ciclosConEnvios.indexOf(venFiltroCiclo)<0) venFiltroCiclo='todos';
+  var selCiclo=document.getElementById('ven-fil-ciclo');
+  selCiclo.innerHTML='<option value="todos">Todos los ciclos</option>';
+  ciclosConEnvios.forEach(function(c){
+    var o=document.createElement('option'); o.value=c; o.textContent=c;
+    if(c===venFiltroCiclo) o.selected=true;
+    selCiclo.appendChild(o);
   });
-
-  // Fila 2: negocio/ubicacion
-  mkBtn(wfNeg,'todas','Todos',venFiltro==='todas');
-  mkBtn(wfNeg,'jal','Jalisco',venFiltro==='jal');
-  mkBtn(wfNeg,'nay','Nayarit',venFiltro==='nay');
-  mkBtn(wfNeg,'com','Comercial.',venFiltro==='com');
+  document.getElementById('ven-fil-neg').value=venFiltroNeg;
 
   var list=document.getElementById('ven-lista');
-  var data=venFiltro==='todas'?envios:
-    venFiltro.indexOf('ciclo:')===0?envios.filter(function(e){return e.ciclo===venFiltro.replace('ciclo:','');}):
-    envios.filter(function(e){return e.loc===venFiltro;});
+  var data=envios.filter(function(e){
+    if(venFiltroCiclo!=='todos' && e.ciclo!==venFiltroCiclo) return false;
+    if(venFiltroNeg!=='todas' && e.loc!==venFiltroNeg) return false;
+    return true;
+  });
 
   if(!data.length){
     list.innerHTML='<div class="empty"><div class="empty-icon">&#127808;</div><div class="empty-text">Sin envios registrados aun.</div></div>'; return;
@@ -15993,10 +16009,8 @@ function editarLote(loteId){
 
 function almFiltro(f){
   almFiltroActual=f;
-  ['todos','activo','cerrado'].forEach(function(x){
-    var b=document.getElementById('almf-'+x);
-    if(b) b.classList.toggle('active', x===f);
-  });
+  var sel=document.getElementById('alm-fil-estado');
+  if(sel && sel.value!==f) sel.value=f;
   renderAlmLotes();
 }
 
