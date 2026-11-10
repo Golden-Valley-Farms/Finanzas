@@ -350,6 +350,8 @@ Siguen valiendo las dos reglas de antes: **`<canvas>`, nunca `html-to-image`** (
 
 **Orden en los documentos: `docOrdenFolio()`** — por fecha y, el mismo día, por número de folio (`localeCompare` numérico) con el id como último desempate. Lo usan el historial y el estado de cuenta. Antes comparaban solo la fecha con un comparador que nunca devolvía 0, y dos cargos del mismo día salían en cualquier orden (B&M/2026/038 antes que 037, los dos del 6-nov). En pantalla no pasaba: `calcContraparte()` ordena con `_ordenar()` (fecha y luego id).
 
+**El historial de 2026 también lleva 2025** (nov-2026, a pedido: "terminando 2026 hacemos corte"). `docAniosHistorial(anio)` decide qué años abarca —`'2026'` → `['2025','2026']`, cualquier otro año va solo— y `docEtqHistorial()` arma la etiqueta ("2025 y 2026") del título, los totales y el menú; mientras exista 2026, el menú de Documentos no ofrece 2025 por separado. **Es el único lugar de esa regla**: desde 2027 cada año sale solo, sin tocar nada.
+
 El historial filtra por **año calendario** (los folios son `B&M/2026/028`), no por ciclo agrícola; su resumen del pie es **global**, para que siempre cuadre con el saldo que muestra la cuenta.
 
 ### Posición del negocio: `rdTotales`/`rdCuentasDe`/`cpCategoria`

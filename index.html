@@ -12948,13 +12948,18 @@ function docOrdenFolio(a,b){
   var c=String(a.folioExterno||a.folio||'').localeCompare(String(b.folioExterno||b.folio||''),'es',{numeric:true});
   return c || ((parseFloat(a.id)||0)-(parseFloat(b.id)||0));
 }
+// Años que abarca el historial (nov-2026, a pedido): por ahora el de 2026 también
+// lleva 2025; desde 2027 cada año va solo. Es el único lugar de esa regla.
+function docAniosHistorial(anio){ return String(anio)==='2026'?['2025','2026']:[String(anio)]; }
+function docEtqHistorial(anio){ return docAniosHistorial(anio).join(' y '); }
 function docHistorial(tipo, nombre, anio){
   var mon=((getContraparte(nombre)||{}).moneda==='USD')?'USD':'MXN';
   var accent=DOC_ACCENT[tipo];
   var esCliente=(tipo==='cobrar');
-  var cargos=deudas.filter(function(d){return d.tipo===tipo && d.contraparte===nombre && docAnio(d.fecha)===anio;})
+  var anios=docAniosHistorial(anio), etqAnio=docEtqHistorial(anio);
+  var cargos=deudas.filter(function(d){return d.tipo===tipo && d.contraparte===nombre && anios.indexOf(docAnio(d.fecha))>=0;})
     .sort(docOrdenFolio);
-  var pagos=pagosDeuda.filter(function(p){return p.tipo===tipo && p.contraparte===nombre && docAnio(p.fecha)===anio;})
+  var pagos=pagosDeuda.filter(function(p){return p.tipo===tipo && p.contraparte===nombre && anios.indexOf(docAnio(p.fecha))>=0;})
     .sort(docOrdenFolio);
   var n=Math.max(cargos.length,pagos.length);
   var W=700, mitad=W/2, gap=12;
@@ -12971,7 +12976,7 @@ function docHistorial(tipo, nombre, anio){
     docTxt(ctx,docMonCta(monto,mon),x2-4,y+14,docFM(500,10.5),col,'right');
     docRegla(ctx,y+19,x1,x2,DOC_LINEA,1);
   }
-  var bloques=[docHead('Historial '+anio, nombre, docHoy(), accent)];
+  var bloques=[docHead('Historial '+etqAnio, nombre, docHoy(), accent)];
   bloques.push({h:26, draw:function(ctx,y,W){
     cabTabla(ctx,y+2,izqX,izqFin,esCliente?'ENVÍOS':'COMPRAS');
     cabTabla(ctx,y+2,derX,derFin,esCliente?'PAGOS':'ABONOS');
@@ -12989,9 +12994,9 @@ function docHistorial(tipo, nombre, anio){
   bloques.push({h:30, draw:function(ctx,y,W){
     docRegla(ctx,y+2,izqX,izqFin,DOC_TINTA,1.5);
     docRegla(ctx,y+2,derX,derFin,DOC_TINTA,1.5);
-    docTxt(ctx,'Total '+anio,izqX+4,y+20,docFS(700,11),DOC_TINTA);
+    docTxt(ctx,'Total '+etqAnio,izqX+4,y+20,docFS(700,11),DOC_TINTA);
     docTxt(ctx,docMonCta(totCargos,mon),izqFin-4,y+20,docFM(700,12),DOC_TINTA,'right');
-    docTxt(ctx,'Total '+anio,derX+4,y+20,docFS(700,11),DOC_TINTA);
+    docTxt(ctx,'Total '+etqAnio,derX+4,y+20,docFS(700,11),DOC_TINTA);
     docTxt(ctx,docMonCta(totPagos,mon),derFin-4,y+20,docFM(700,12),DOC_VERDE,'right');
   }});
   var res=docResumenCuenta(tipo,nombre);
@@ -13058,7 +13063,7 @@ function docCompartirHistorial(){
   var anio=sel?sel.value:String(new Date().getFullYear());
   closeModal();
   docCompartir(function(){ return docHistorial(tipo,nombre,anio); },
-    'Historial '+anio+' - '+nombre, 'Historial '+anio+' — '+nombre);
+    'Historial '+docEtqHistorial(anio).replace(' y ','-')+' - '+nombre, 'Historial '+docEtqHistorial(anio)+' — '+nombre);
 }
 function docCompartirNota(deudaId){
   closeModal();
@@ -13086,8 +13091,11 @@ function abrirDocsCuenta(){
   var tipo=deudaModalTipo, nombre=deudaModalNombre;
   if(!nombre){ showToast('Abre una cuenta primero'); return; }
   var esCliente=(tipo==='cobrar');
+  // 2025 ya va dentro del historial de 2026 (docAniosHistorial), así que no se
+  // ofrece por separado mientras 2026 esté en la lista.
   var anios=docAniosCuenta(tipo,nombre);
-  var opts=anios.map(function(a){return '<option value="'+a+'">'+a+'</option>';}).join('');
+  if(anios.indexOf('2026')>=0) anios=anios.filter(function(a){return a!=='2025';});
+  var opts=anios.map(function(a){return '<option value="'+a+'">'+docEtqHistorial(a)+'</option>';}).join('');
   var btn='padding:12px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);width:100%;text-align:left';
   document.getElementById('mo-title').innerHTML='Documentos — '+nombre;
   document.getElementById('mo-body').innerHTML=
