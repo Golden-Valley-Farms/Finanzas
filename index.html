@@ -13015,7 +13015,13 @@ function docCompartir(fabrica, archivo, titulo, texto){
       var f;
       try{ f=new File([blob],archivo+'.png',{type:'image/png'}); }catch(e){}
       if(f && navigator.canShare && navigator.canShare({files:[f]})){
-        navigator.share({files:[f], title:titulo, text:texto||titulo}).catch(function(){});
+        // Solo la imagen (nov-2026, a pedido): antes el título se mandaba también
+        // como texto y WhatsApp lo enviaba como un mensaje aparte ("Estado de
+        // cuenta — …"). Solo los documentos que traen su propio mensaje —la nota
+        // de envío— lo acompañan.
+        var datos={files:[f]};
+        if(texto){ datos.title=titulo; datos.text=texto; }
+        navigator.share(datos).catch(function(){});
       } else {
         window.open(URL.createObjectURL(blob),'_blank');
         if(texto && navigator.clipboard && navigator.clipboard.writeText){
