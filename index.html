@@ -1192,6 +1192,11 @@ body #sc-deudas #deuda-list{display:block}
 /* Estado de cuenta tipo Excel (dctaExcelHtml): un bloque por cargo con su
    folio, variedades, subtotal, pagos con saldo corrido y estatus a la derecha */
 .dx-wrap{background:var(--surface);border-radius:18px;overflow-x:auto;margin-top:12px}
+/* Ventana fija del estado de cuenta: alto fijo, scroll propio y encabezados que
+   se quedan arriba. Abre en lo más reciente (renderCuentaDeuda la baja al fondo). */
+.dcta-scroll,.fintab-wrap.auto.dcta-scroll{max-height:max(320px,calc(100vh - 470px));overflow:auto!important;overscroll-behavior:contain}
+.dcta-scroll thead th{position:sticky;top:0;z-index:2;background:var(--surface)}
+.dcta-scroll .fintab thead th{background:var(--surface2)}
 table.dx{width:100%;border-collapse:collapse;min-width:940px;font-size:14.5px}
 .dx th{font-size:13px;font-weight:700;color:var(--text2);text-align:right;padding:14px 12px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
 .dx td{padding:9px 12px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border)}
@@ -12444,6 +12449,11 @@ function renderCuentaDeuda(){
   var esCorriente=(cpModo(nombre)==='corriente');
   cont.innerHTML=dctaHeadHtml(tipo,nombre,esCorriente)+
     (esCorriente?dctaBodyCorriente(tipo,nombre):dctaBodyFifo(tipo,nombre));
+  // Ventana fija (nov-2026, a pedido): la tabla vive en una caja de alto fijo con
+  // su propio scroll y abre ABAJO, en lo más reciente; para ver lo viejo se sube.
+  // El orden sigue siendo cronológico para que el saldo corrido se lea igual.
+  var sc=cont.querySelectorAll('.dcta-scroll');
+  for(var i=0;i<sc.length;i++) sc[i].scrollTop=sc[i].scrollHeight;
 }
 
 // ── Compartir estado de cuenta como imagen (WhatsApp) ───────────
@@ -13129,7 +13139,7 @@ function dctaExcelHtml(tipo, nombre, filas, r, sumSaldo, sumVenc){
   var c=getContraparte(nombre)||{};
   var mon=(c.moneda==='USD')?'USD':'MXN';
   var kg=function(n){ return n?(parseFloat(n)||0).toLocaleString('es-MX',{minimumFractionDigits:1,maximumFractionDigits:1}):''; };
-  var h='<div class="dx-wrap"><table class="dx"><thead><tr>'+
+  var h='<div class="dx-wrap dcta-scroll"><table class="dx"><thead><tr>'+
     '<th class="l">Folio</th><th class="l">Fecha</th><th class="l">Concepto</th><th>Peso bruto</th><th>Desc.</th>'+
     '<th>Peso neto</th><th>Precio/kg</th><th>Monto</th><th>Saldo</th><th class="c">Estatus</th></tr></thead><tbody>';
   filas.forEach(function(s){
@@ -13251,9 +13261,11 @@ function dctaDetalleHtml(s, palabraPago){
 }
 function dctaMovsHtml(pagos, palabraPago){
   if(!pagos.length) return '<div class="empty" style="padding:40px 20px;text-align:center"><div class="empty-text">Sin '+palabraPago.toLowerCase()+' registrados.</div></div>';
-  var h='<div class="fintab-wrap auto"><table class="fintab"><thead><tr>'+
+  var h='<div class="fintab-wrap auto dcta-scroll"><table class="fintab"><thead><tr>'+
     '<th class="txt">Folio</th><th class="txt">Fecha</th><th class="txt">Nota</th><th class="txt">Aplicado a</th><th>Monto</th><th></th></tr></thead><tbody>';
-  pagos.slice().reverse().forEach(function(p){
+  // En orden cronológico, como las otras dos tablas de la cuenta: la ventana abre
+  // abajo (lo más reciente) y se sube con el scroll para ver lo viejo.
+  pagos.forEach(function(p){
     var dir='';
     if(p.dirigidoA){
       for(var i=0;i<deudas.length;i++){ if(String(deudas[i].id)===String(p.dirigidoA)){ dir=deudas[i].folioExterno||'un cargo'; break; } }
@@ -13279,7 +13291,7 @@ function dctaBodyCorriente(tipo, nombre){
   var mon=(c.moneda==='USD')?'USD':'MXN';
   var tieneInteres=r.movs.some(function(m){return m.interes>0;});
   if(!r.movs.length) return '<div class="empty" style="padding:40px 20px;text-align:center"><div class="empty-text">Sin movimientos.</div></div>';
-  var h='<div class="fintab-wrap auto"><table class="fintab"><thead><tr>'+
+  var h='<div class="fintab-wrap auto dcta-scroll"><table class="fintab"><thead><tr>'+
     '<th class="txt">Fecha</th><th class="txt">Concepto</th><th>Cargo</th>'+
     (tieneInteres?'<th>Interés</th>':'')+'<th>Abono</th><th>Saldo</th></tr></thead><tbody>';
   r.movs.forEach(function(m){
