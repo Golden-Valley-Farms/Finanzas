@@ -13415,7 +13415,26 @@ function docCompartirNotaPago(pagoId){
   if(!p){ showToast('No se encontró el pago'); return; }
   closeModal();
   var nom=(p.tipo==='cobrar'?'Nota de pago ':'Nota de abono ')+String(p.folio||'').replace(/\//g,'-');
-  docCompartir(function(){ return docNotaPago(pagoId); }, nom, nom);
+  docCompartir(function(){ return docNotaPago(pagoId); }, nom, nom, docTextoNotaPago(p));
+}
+// Mensaje que acompaña a la nota de pago (nov-2026, a pedido, con la estructura que
+// el usuario mandaba a mano). Asteriscos = negritas en WhatsApp. Montos sin centavos
+// salvo que los tengan, como los escribía él ($58,500 / $115,707.50).
+function docTextoNotaPago(p){
+  var ap=docAplicacionPago(p);
+  var m=function(n){ n=Math.round((parseFloat(n)||0)*100)/100;
+    return '$'+n.toLocaleString('es-MX',{minimumFractionDigits:(n%1)?2:0,maximumFractionDigits:2}); };
+  var txt='Se abonó el pago con el folio '+(p.folio||'')+(ap.corriente?' a la cuenta:':' a los envíos:');
+  ap.filas.forEach(function(f){
+    var liq=f.despues<=0.005;
+    txt+='\n\n* *'+(ap.corriente?p.contraparte:f.folio)+'*\n\n'+
+      'Saldo Anterior: *'+m(f.antes)+'*\n'+
+      'Cantidad Abonada: *'+m(f.abono)+'*\n'+
+      'Saldo Actual: *'+m(Math.max(0,f.despues))+'*\n'+
+      'Estatus: *'+(liq?'LIQUIDADO':'PENDIENTE')+'*';
+  });
+  if(ap.aFavor>0.005) txt+='\n\nSaldo a favor: *'+m(ap.aFavor)+'*';
+  return txt;
 }
 
 // Menú de documentos de la cuenta. Solo ofrece los que aplican a esa dirección:
