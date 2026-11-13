@@ -1227,6 +1227,7 @@ table.dx{width:100%;border-collapse:collapse;min-width:940px;font-size:14.5px}
 .dx td.est{text-align:center;vertical-align:middle;font-weight:800;font-size:15px;border-left:1px solid var(--border);white-space:normal;width:140px}
 .dx td.est.ok{background:var(--green-bg);color:var(--green)}
 .dx td.est.pend{background:rgba(216,169,21,.16);color:var(--maiz)}
+.dx td.est.canc{background:var(--surface2);color:var(--text3)}
 .dx td.est small{display:block;font-size:12.5px;font-weight:700;margin-top:4px;color:var(--text2)}
 .dx td.est small.venc{color:var(--rojo)}
 .dx tbody tr:last-child td{border-bottom:0}
@@ -12843,7 +12844,8 @@ function docEstadoFifo(tipo, nombre, completo){
   var r=calcContraparte(tipo,nombre);
   var porFecha=function(a,b){ return docOrdenFolio(a.deuda,b.deuda); };
   var pend=r.items.filter(function(s){return !s.liquidada;}).sort(porFecha);
-  var lista=completo?r.items.slice().sort(porFecha):pend;
+  // El completo también lleva los envíos cancelados (en gris, sin sumar al saldo).
+  var lista=completo?cuentaConCancelados(r.items,tipo,nombre):pend;
   // El de proveedor va más ancho porque lleva cuatro columnas más (bruto,
   // descuento, neto y precio de compra). Son documentos distintos, no uno con
   // columnas ocultas.
@@ -12894,6 +12896,38 @@ function docEstadoFifo(tipo, nombre, completo){
     }});
   }
   lista.forEach(function(s){
+    if(s.cancelado){
+      var dC=s.deuda, linC=s.lineas.length?s.lineas:[{concepto:'Cargo', monto:dC.monto}];
+      var hC=30+linC.length*26+26;
+      bloques.push({h:30, draw:function(ctx,y,W){
+        ctx.fillStyle=DOC_GRUPO; ctx.fillRect(DOC_PAD,y+3,xEst0-8-DOC_PAD,24);
+        docTxt(ctx,dC.folioExterno||'Cargo',DOC_PAD+8,y+19,docFM(700,12),DOC_TENUE);
+        ctx.fillStyle='#EEEEEC'; ctx.fillRect(xEst0,y+3,ANCHO_EST,hC-6);
+        docTxt(ctx,'Cancelado',xEst0+ANCHO_EST/2,y+3+(hC-6)/2+5,docFS(800,14),DOC_TENUE,'center');
+      }});
+      linC.forEach(function(l){
+        bloques.push({h:26, draw:function(ctx,y,W){
+          docTxt(ctx,fmtFechaCorta(l.fecha||dC.fecha),DOC_PAD+8,y+17,docFS(400,10.5),DOC_TENUE);
+          docTxt(ctx,docCorta(ctx,l.concepto,anchoCon,docFS(400,12)),xCon,y+17,docFS(400,12),DOC_TENUE);
+          if(esCliente){ if(l.kg>0) docTxt(ctx,docKg(l.kg,1),xKgCli,y+17,docFM(400,11.5),DOC_TENUE,'right'); }
+          else {
+            if(l.bruto>0) docTxt(ctx,docKg(l.bruto,1),xBruto,y+17,docFM(400,11.5),DOC_TENUE,'right');
+            if(l.desc>0) docTxt(ctx,Math.round(l.desc)+'%',xDesc,y+17,docFM(400,11.5),DOC_TENUE,'right');
+            if(l.neto>0) docTxt(ctx,docKg(l.neto,1),xNeto,y+17,docFM(400,11.5),DOC_TENUE,'right');
+            if(l.precio>0) docTxt(ctx,docMonCta(l.precio,mon),xPrecio,y+17,docFM(400,11.5),DOC_TENUE,'right');
+          }
+          docTxt(ctx,docMonCta(l.monto,mon),xMonto,y+17,docFM(400,11.5),DOC_TENUE,'right');
+        }});
+      });
+      bloques.push({h:26, draw:function(ctx,y,W){
+        docTxt(ctx,'CANCELACIÓN',DOC_PAD+8,y+17,docFS(600,11),DOC_TENUE);
+        docTxt(ctx,fmtFechaCorta(s.fechaCanc||dC.fecha),xCon,y+17,docFS(400,11),DOC_TENUE);
+        docTxt(ctx,'−'+docMonCta(dC.monto,mon),xMonto,y+17,docFM(500,11.5),DOC_TENUE,'right');
+        docTxt(ctx,docMonCta(0,mon),xSaldo,y+17,docFM(700,12),DOC_TENUE,'right');
+      }});
+      bloques.push({h:14});
+      return;
+    }
     var d=s.deuda, liq=s.liquidada, pl=liq?null:docPlazo(d);
     var lineas=esCliente?docLineasVenta(d):docLineasCompra(d);
     // Sin partidas que desglosar, un solo renglón con el monto del cargo
@@ -13377,6 +13411,33 @@ function dctaHeadTarjetaHtml(tipo, nombre, esCorriente){
 
 // Cuentas fifo: una fila por cargo, con su vencimiento. El detalle (partidas y
 // abonos aplicados) se abre al hacer clic — antes se pintaban los 40 desplegados.
+// Envíos cancelados de esta cuenta, con la forma de un renglón de calcContraparte()
+// (saldo 0, liquidada, sin pagos) para pintarlos junto a los cargos. Cancelar borra
+// el cargo, así que sin esto el folio desaparecía del estado de cuenta y parecía
+// brincado. Solo se muestran en "Todos los cargos" y en el estado completo; no
+// suman a ningún saldo. Cliente: su Folio Cliente; proveedor (comercializadora):
+// su folio de compra.
+function cuentaCancelados(tipo, nombre){
+  var out=[];
+  envios.forEach(function(e){
+    if(!e.cancelado) return;
+    var esCob=(tipo==='cobrar');
+    if(esCob ? e.cliente!==nombre : !(e.esComer && e.proveedor===nombre)) return;
+    var d={id:'canc'+e.id, tipo:tipo, contraparte:nombre, fecha:e.fecha, refId:e.id,
+      refKind:esCob?'cancelado':'com_pagar', origen:'cancelado', items:[],
+      folioExterno:esCob?((e.folio||'').trim()||e.num||''):((e.folioCompra||'').trim()||e.num||'')};
+    var lineas=esCob?docLineasVenta(d):docLineasCompra(d);
+    d.monto=lineas.reduce(function(a,l){ return a+(parseFloat(l.monto)||0); },0);
+    out.push({deuda:d, cancelado:true, fechaCanc:e.fechaCancelacion||'', motivo:e.motivoCancelacion||'',
+      lineas:lineas, aplicado:0, pagos:[], saldo:0, liquidada:true});
+  });
+  return out;
+}
+// Mezcla cargos y cancelados en orden de fecha (y folio el mismo día).
+function cuentaConCancelados(items, tipo, nombre){
+  return items.concat(cuentaCancelados(tipo,nombre)).sort(function(a,b){ return docOrdenFolio(a.deuda,b.deuda); });
+}
+
 function dctaBodyFifo(tipo, nombre){
   var r=calcContraparte(tipo,nombre);
   var accent=(tipo==='cobrar')?'var(--green)':'var(--fram)';
@@ -13387,14 +13448,14 @@ function dctaBodyFifo(tipo, nombre){
 
   var h='<div class="dcta-chips">'+
     dctaChipHtml('pend','Pendientes',pend.length,tipo)+
-    dctaChipHtml('todos','Todos los cargos',r.items.length,tipo)+
+    dctaChipHtml('todos','Todos los cargos',r.items.length+cuentaCancelados(tipo,nombre).length,tipo)+
     dctaChipHtml('venc','Solo vencidos',venc.length,tipo)+
     dctaChipHtml('movs',palabraPago,pagos.length,tipo)+
     '</div>';
 
   if(dctaFiltro==='movs') return h+dctaMovsHtml(pagos, palabraPago);
 
-  var filas=(dctaFiltro==='pend')?pend:(dctaFiltro==='venc'?venc:r.items);
+  var filas=(dctaFiltro==='pend')?pend:(dctaFiltro==='venc'?venc:cuentaConCancelados(r.items,tipo,nombre));
   if(!filas.length){
     return h+'<div class="empty" style="padding:40px 20px;text-align:center"><div class="empty-text">Nada que mostrar con este filtro.</div></div>';
   }
@@ -13424,6 +13485,23 @@ function dctaExcelHtml(tipo, nombre, filas, r, sumSaldo, sumVenc){
     '<th>Peso neto</th><th>Precio/kg</th><th>Monto</th><th>Saldo</th><th class="c">Estatus</th></tr></thead><tbody>';
   filas.forEach(function(s){
     var d=s.deuda;
+    if(s.cancelado){
+      // Envío cancelado: lo que salió, el renglón de cancelación y saldo $0, en gris.
+      var nC=1+s.lineas.length+1;
+      h+='<tr class="folio"><td class="l" colspan="9"><span>'+(d.folioExterno||'Cargo')+'</span></td>'+
+        '<td class="est canc" rowspan="'+nC+'">Cancelado</td></tr>';
+      s.lineas.forEach(function(x){
+        var netoC=(x.neto!=null?x.neto:x.kg)||0;
+        h+='<tr style="color:var(--text3)"><td class="l"></td><td class="l">'+fmtFechaCorta(x.fecha||d.fecha)+'</td><td class="l">'+x.concepto+'</td>'+
+          '<td>'+kg(x.bruto||0)+'</td><td>'+(x.desc?Math.round(x.desc)+'%':'')+'</td><td>'+kg(netoC)+'</td>'+
+          '<td>'+(x.precio?fmtMon2(x.precio,mon):'')+'</td><td>'+fmtMon2(x.monto,mon)+'</td><td></td></tr>';
+      });
+      h+='<tr class="pago fin" style="color:var(--text3)"><td class="l">Cancelación</td>'+
+        '<td class="l">'+fmtFechaCorta(s.fechaCanc||d.fecha)+'</td>'+
+        '<td class="l">'+(s.motivo||'Cancelado')+'</td><td></td><td></td><td></td><td></td>'+
+        '<td>−'+fmtMon2(d.monto,mon)+'</td><td class="saldo">'+fmtMon2(0,mon)+'</td></tr>';
+      return;
+    }
     var lineas=(tipo==='pagar')?docLineasCompra(d):docLineasVenta(d);
     var fn=deudaFolioNegocio(d);
     var folio=d.folioExterno||fn||(d.origen==='manual'?'Cargo manual':'Cargo');
