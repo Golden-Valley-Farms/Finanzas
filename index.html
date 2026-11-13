@@ -13405,12 +13405,8 @@ function docNotaPagoEstado(p, ap){
       docTxt(ctx,docMonCta(ap.aFavor,mon),xMonto,y+19,docFM(600,12),DOC_VERDE,'right');
     }});
   }
-  bloques.push({h:50, draw:function(ctx,y,W){
-    docRegla(ctx,y+6,DOC_PAD,W-DOC_PAD,DOC_TINTA,1.5);
-    var s=ap.saldoCuenta;
-    docTxt(ctx,s<-0.005?'SALDO A FAVOR DE LA CUENTA':'SALDO TOTAL DE LA CUENTA',xMonto,y+34,docFS(700,13),DOC_TINTA,'right');
-    docTxt(ctx,docMonCta(Math.abs(s),mon),xSaldo,y+34,docFM(700,16),(s>0.005)?DOC_ROJO:DOC_VERDE,'right');
-  }});
+  // Sin "Saldo total de la cuenta" (nov-2026, a pedido): eso lo ve en el estado de cuenta.
+  bloques.push({h:10, draw:function(ctx,y,W){ docRegla(ctx,y+4,DOC_PAD,W-DOC_PAD,DOC_TINTA,1.5); }});
   bloques.push(docPie());
   return docPintar(bloques,W);
 }
