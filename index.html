@@ -13424,7 +13424,18 @@ function docTextoNotaPago(p){
   var ap=docAplicacionPago(p);
   var m=function(n){ n=Math.round((parseFloat(n)||0)*100)/100;
     return '$'+n.toLocaleString('es-MX',{minimumFractionDigits:(n%1)?2:0,maximumFractionDigits:2}); };
-  var txt='Se abonó el pago con el folio '+(p.folio||'')+(ap.corriente?' a la cuenta:':' a los envíos:');
+  // "Viernes 30 de Octubre de 2026": día y mes con mayúscula, como lo escribe el usuario.
+  var fecha='';
+  try{
+    var dF=new Date((p.fecha||'')+'T12:00:00');
+    var dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    if(!isNaN(dF)) fecha=dias[dF.getDay()]+' '+dF.getDate()+' de '+meses[dF.getMonth()]+' de '+dF.getFullYear();
+  }catch(e){}
+  // Por cobrar el depósito se recibe; por pagar lo hacemos nosotros.
+  var txt='El día *'+(fecha||p.fecha||'')+'* '+(p.tipo==='cobrar'?'se recibió':'se realizó')+
+    ' un depósito por la cantidad de *'+m(p.monto)+'* correspondiente al folio de pago *'+(p.folio||'')+
+    '* y se abonó '+(ap.corriente?'a la cuenta:':'a los envíos:');
   ap.filas.forEach(function(f){
     var liq=f.despues<=0.005;
     txt+='\n\n* *'+(ap.corriente?p.contraparte:f.folio)+'*\n\n'+
