@@ -12671,9 +12671,13 @@ function docLineasVenta(d){
     var fl=parseFloat(e.flete)||0;
     if(fl>0) out.push({concepto:'Fletes', kg:0, precio:0, monto:fl});
   }
+  // Cargos importados del Excel: un renglón por entrega. Desde nov-2026 cada item
+  // puede traer su `fecha` y sus `kg` (un envío que llegó en varios días); el
+  // precio se deriva de monto/kg. Sin esos campos se ven como antes.
   if(!out.length){
     (d.items||[]).forEach(function(it){
-      out.push({concepto:docConcepto(it.concepto), kg:0, precio:0, monto:parseFloat(it.monto)||0});
+      var kgI=parseFloat(it.kg)||0, mI=parseFloat(it.monto)||0;
+      out.push({concepto:docConcepto(it.concepto), kg:kgI, precio:kgI>0?Math.round(mI/kgI*100)/100:0, monto:mI, fecha:it.fecha||''});
     });
   }
   return out;
@@ -12703,7 +12707,8 @@ function docLineasCompra(d){
   }
   if(!out.length){
     (d.items||[]).forEach(function(it){
-      out.push({concepto:docConcepto(it.concepto), bruto:0, desc:0, neto:0, precio:0, monto:parseFloat(it.monto)||0});
+      var kgI=parseFloat(it.kg)||0, mI=parseFloat(it.monto)||0;
+      out.push({concepto:docConcepto(it.concepto), bruto:0, desc:0, neto:kgI, precio:kgI>0?Math.round(mI/kgI*100)/100:0, monto:mI, fecha:it.fecha||''});
     });
   }
   return out;
@@ -12917,7 +12922,7 @@ function docEstadoFifo(tipo, nombre, completo){
         // Sin renglón "Cargo" (nov-2026, a pedido: confundía): el saldo inicial del
         // cargo va en rojo en el último renglón de sus variedades, como el Excel.
         if(ultimaL) docTxt(ctx,docMonCta(d.monto,mon),xSaldo,y+17,docFM(700,12),DOC_ROJO,'right');
-        docTxt(ctx,fmtFechaCorta(d.fecha),DOC_PAD+8,y+17,docFS(400,10.5),DOC_TENUE);
+        docTxt(ctx,fmtFechaCorta(l.fecha||d.fecha),DOC_PAD+8,y+17,docFS(400,10.5),DOC_TENUE);
         docTxt(ctx,docCorta(ctx,l.concepto,anchoCon,docFS(400,12)),xCon,y+17,docFS(400,12),DOC_TEXTO2);
         if(esCliente){
           if(l.kg>0) docTxt(ctx,docKg(l.kg,1),xKgCli,y+17,docFM(400,11.5),DOC_TEXTO2,'right');
@@ -13438,7 +13443,7 @@ function dctaExcelHtml(tipo, nombre, filas, r, sumSaldo, sumVenc){
       '<span class="acc">'+acc+'</span></td>'+est+'</tr>';
     lineas.forEach(function(x){
       var bruto=x.bruto||0, neto=(x.neto!=null?x.neto:x.kg)||0;
-      h+='<tr><td class="l"></td><td class="l">'+fmtFechaCorta(d.fecha)+'</td><td class="l">'+x.concepto+'</td>'+
+      h+='<tr><td class="l"></td><td class="l">'+fmtFechaCorta(x.fecha||d.fecha)+'</td><td class="l">'+x.concepto+'</td>'+
         '<td>'+kg(bruto)+'</td><td>'+(x.desc?Math.round(x.desc)+'%':'')+'</td><td>'+kg(neto)+'</td>'+
         '<td>'+(x.precio?fmtMon2(x.precio,mon):'')+'</td><td>'+fmtMon2(x.monto,mon)+'</td><td></td></tr>';
     });
