@@ -9984,6 +9984,7 @@ function guardarEnvio(){
   var fechaISO = fechaEnvioToISO(fechaDisplay);
   if(fechaISO) document.getElementById('vf-fecha').value = fechaISO;
   var num=document.getElementById('vf-num').value.trim();
+  folioClienteVf(true);
   var folio=document.getElementById('vf-folio').value.trim();
   var fecha=fechaISO || document.getElementById('vf-fecha').value;
   var cliente=document.getElementById('vf-cliente').value.trim();
@@ -10912,6 +10913,54 @@ function siguienteFolioCompra(proveedor, fechaISO){
 function folioCompraVigente(folioPrevio, proveedor, fechaISO){
   if(folioPrevio && String(folioPrevio).indexOf(folioCompraPrefijo(proveedor, fechaISO))===0) return folioPrevio;
   return siguienteFolioCompra(proveedor, fechaISO);
+}
+
+// ---- Folio Cliente automatico: <ID del cliente>/<año>/<consecutivo> ----
+// Sin palabra "Venta": es el folio que ve el cliente y debe seguir la numeracion
+// que ya traen los envios y cargos existentes (ej. B&M/2026/039).
+function folioClientePrefijo(cliente, fechaStr){
+  var c=getContraparte(cliente);
+  var d=parseFechaEnvio(fechaStr||'');
+  var anio=d?d.getFullYear():new Date().getFullYear();
+  return ((c&&c.clave)?c.clave:cliente)+'/'+anio+'/';
+}
+// El consecutivo es por cliente y año, y sale de todo lo que ya trae ese prefijo:
+// envios (cancelados incluidos, conservan su folio) y cargos por cobrar (importados).
+function siguienteFolioCliente(cliente, fechaStr){
+  var pref=folioClientePrefijo(cliente, fechaStr), max=0;
+  var ver=function(f){
+    f=String(f||'').trim();
+    if(f.indexOf(pref)!==0) return;
+    var n=parseInt(f.substring(pref.length),10);
+    if(n>max) max=n;
+  };
+  envios.forEach(function(e){ ver(e.folio); });
+  deudas.forEach(function(d){ if(d.tipo==='cobrar') ver(d.folioExterno); });
+  return pref+String(max+1).padStart(3,'0');
+}
+// Propone el folio en la caja SOLO si esta vacia o si lo que trae lo puso la propia
+// app (data-auto). Un folio escrito a mano, o el de un envio que se esta reeditando,
+// nunca se pisa.
+function folioClienteProponer(inputId, cliente, fechaStr, soloAuto){
+  var inp=document.getElementById(inputId);
+  cliente=String(cliente||'').trim();
+  if(!inp || !cliente) return;
+  var actual=(inp.value||'').trim();
+  if(actual && actual!==inp.getAttribute('data-auto')) return;
+  // Al guardar solo se refresca uno que puso la app (por si cambio la fecha o el año).
+  if(soloAuto && !actual) return;
+  var f=siguienteFolioCliente(cliente, fechaStr);
+  inp.value=f;
+  inp.setAttribute('data-auto', f);
+}
+function folioClienteVf(soloAuto){
+  folioClienteProponer('vf-folio', document.getElementById('vf-cliente').value, document.getElementById('vf-fecha').value, soloAuto===true);
+}
+function folioClienteCf(soloAuto){
+  folioClienteProponer('cf-folio', document.getElementById('cf-cliente').value, document.getElementById('cf-fecha').value, soloAuto===true);
+}
+function folioClienteDg(soloAuto){
+  folioClienteProponer('dg-folio', document.getElementById('dg-cliente').value, document.getElementById('dg-fecha').value, soloAuto===true);
 }
 
 function sincronizarDeudasEnvio(e){
@@ -14013,7 +14062,7 @@ function renderClienteDropdown(){
     row.onmouseenter=function(){this.style.background='var(--green-bg)';};
     row.onmouseleave=function(){this.style.background='';};
     var name=document.createElement('span'); name.textContent=c; name.style.flex='1';
-    name.onmousedown=function(e){e.preventDefault();document.getElementById('vf-cliente').value=c;hideClienteDropdown();};
+    name.onmousedown=function(e){e.preventDefault();document.getElementById('vf-cliente').value=c;hideClienteDropdown();folioClienteVf();};
     var btn=document.createElement('button');
     btn.textContent='×'; btn.title='Eliminar';
     btn.style.cssText='background:none;border:none;color:var(--text3);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0';
@@ -14055,6 +14104,7 @@ function confirmarNuevoCliente(){
   agregarClienteSiNuevo(nom);
   closeModal();
   document.getElementById('vf-cliente').value = nom;
+  folioClienteVf();
   showToast('Cliente agregado');
 }
 
@@ -14549,7 +14599,7 @@ function renderComerClienteDropdown(){
     row.onmouseenter=function(){this.style.background='var(--green-bg)';};
     row.onmouseleave=function(){this.style.background='';};
     var name=document.createElement('span'); name.textContent=c; name.style.flex='1';
-    name.onmousedown=function(e){e.preventDefault();document.getElementById('cf-cliente').value=c;hideComerClienteDropdown();};
+    name.onmousedown=function(e){e.preventDefault();document.getElementById('cf-cliente').value=c;hideComerClienteDropdown();folioClienteCf();};
     var btn=document.createElement('button');
     btn.textContent='×'; btn.title='Eliminar';
     btn.style.cssText='background:none;border:none;color:var(--text3);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0';
@@ -14588,6 +14638,7 @@ function confirmarNuevoComerCliente(){
   agregarClienteComerSiNuevo(nom);
   closeModal();
   document.getElementById('cf-cliente').value = nom;
+  folioClienteCf();
   showToast('Cliente agregado');
 }
 
@@ -14604,6 +14655,7 @@ function guardarOperacionComer(){
   if(!fecha){showToast('Selecciona una fecha');return;}
   if(!proveedor){showToast('Ingresa el proveedor');return;}
   if(!cliente){showToast('Ingresa el cliente');return;}
+  folioClienteCf(true);
   if(!comerPartidasTemp.length){showToast('Agrega al menos una variedad');return;}
   var totalCompra=0;
   comerPartidasTemp.forEach(function(p){
@@ -16827,7 +16879,7 @@ function abrirDespachoGeneral(preselectLoteId){
         '<input type="date" id="dg-fecha-picker" onchange="document.getElementById(\'dg-fecha\').value=isoToDisplay(this.value)" style="padding:8px 6px;border-radius:var(--radius);border:1.5px solid var(--green-border);background:var(--green-bg);cursor:pointer;flex-shrink:0;width:36px;color:transparent;color-scheme:dark light">'+
       '</div></div>'+
     '<div class="field" style="margin-bottom:10px"><label>Cliente</label>'+
-      '<select id="dg-cliente" style="width:100%">'+dgClienteOpciones()+'</select></div>'+
+      '<select id="dg-cliente" style="width:100%" onchange="folioClienteDg()">'+dgClienteOpciones()+'</select></div>'+
     '<div class="field" style="margin-bottom:10px"><label>Folio Cliente</label>'+
       '<input type="text" id="dg-folio" placeholder="B&amp;M/2026/017" style="width:100%">'+
       '<div class="sector-hint">Si la venta sale de lotes de varios negocios se crea un envío por negocio; este folio es el mismo en todos y es lo que los amarra como una sola venta.</div>'+
@@ -17017,6 +17069,7 @@ function confirmarDespachoGeneral(){
   var fechaDisplay=document.getElementById('dg-fecha').value;
   var fechaISO=fechaEnvioToISO(fechaDisplay);
   var cliente=(document.getElementById('dg-cliente').value||'').trim();
+  folioClienteDg(true);
   var folioCliente=(document.getElementById('dg-folio').value||'').trim();
   var flete=parseFloat(document.getElementById('dg-flete').value)||0;
   if(!fechaISO){showToast('Selecciona la fecha del despacho');return;}

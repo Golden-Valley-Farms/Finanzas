@@ -214,6 +214,14 @@ Ojo (ago-2026): hasta este cambio, la rama `com` de `sincronizarDeudasEnvio()` e
 - El ID es la `clave` de la ficha; **sin clave se usa el nombre** para no dejar la compra sin folio.
 - Los cargos manuales y los importados no se numeran solos.
 
+### Folio Cliente automático (nov-2026)
+
+El **Folio Cliente** de los tres formularios de venta (`vf-folio` jal/nay, `cf-folio` comercializadora, `dg-folio` despacho de almacén) **se propone solo** al elegir el cliente: `<ID del cliente>/<año>/<consecutivo>`, ej. `B&M/2026/039`. **Sin la palabra "Venta"**, a propósito: lo ve el cliente y debe seguir la numeración que ya existe (decisión del usuario, permanente, no solo 2026).
+
+- `folioClientePrefijo()` / `siguienteFolioCliente()` / `folioClienteProponer()` y los atajos `folioClienteVf/Cf/Dg()`, junto a las del folio de compra. Conteo **por cliente y año**; el máximo sale de `envios.folio` (cancelados incluidos) y de los cargos `cobrar` (`deudas.folioExterno`, importados incluidos). ID = `clave` de la ficha, sin clave el nombre.
+- **Solo pisa una caja vacía o una que puso la propia app** (`data-auto` guarda el último valor propuesto). Un folio escrito a mano o el de un envío que se reedita no se toca. Al guardar se refresca solo el automático (`folioCliente*(true)`), por si cambió la fecha o el año.
+- Sin migración: los envíos viejos sin folio no se renumeran.
+
 **Migración de sep-2026:** se numeraron a mano las compras de Pollo (001 = compra de almacén del 10 ago, 002-005 = `Comer/2026/009`-`012`) y de AgrLB. Las de AgrLB del 13 mar, 26 mar y 4 may existían dos veces: como envíos (`Comer/2026/002`-`004`, con proveedor escrito «Los Blancas») y como cargos importados del Excel, **uno por variedad**. Los envíos se renombraron a «Agroproductos los Blancas» y ahora generan su cargo `com_pagar` (001-003); los cinco importados se borraron. Los montos cuadraron al centavo. Las etiquetas de variedad del Excel del 4 may venían cruzadas; mandan las del envío. `Comer/2026/005` y `007` quedaron como 004 y 005. Los envíos viejos de comercializadora sin cuenta por pagar («Los Blancas» 2025, Clemente Duarte, Claudia Guillen) se dejaron **sin folio**: lo reciben la próxima vez que se guarden.
 
 ### El alta espera al borrado (carrera de ids)
