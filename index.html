@@ -12633,6 +12633,18 @@ function docFechaLarga(f){
   catch(e){ return f; }
 }
 function docAnio(f){ return String(f||'').substring(0,4); }
+// "viernes 13 de noviembre de 2026" (nov-2026, a pedido): fecha con el nombre del
+// día en el estado de cuenta, el historial y la nota de pago. Sin coma, en minúscula.
+function docFechaDia(f){
+  if(!f) return '—';
+  var d=new Date(String(f).substring(0,10)+'T12:00:00');
+  if(isNaN(d)) return f;
+  var dias=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+  var meses=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  return dias[d.getDay()]+' '+d.getDate()+' de '+meses[d.getMonth()]+' de '+d.getFullYear();
+}
+// Ancho extra de la columna de fecha en estado de cuenta y nota de pago.
+var DOC_DX_FECHA=80;
 function docHead(sub, dcha1, dcha2, accent){
   return {h:64, draw:function(ctx,y,W){
     docTxt(ctx,'Golden Valley Farms',DOC_PAD,y+14,docFS(700,16),DOC_TINTA);
@@ -12878,11 +12890,14 @@ function docEstadoFifo(tipo, nombre, completo){
   // Columna Estatus al final (nov-2026), como la tabla de la app: un bloque por
   // cargo, Pendiente en amarillo o Liquidado en verde, abarcando todo el cargo.
   var ANCHO_EST=118;
-  var W=esCliente?900:1130;
-  var xCon=DOC_PAD+(esCliente?140:150);
-  var xBruto=DOC_PAD+430, xDesc=DOC_PAD+490, xNeto=DOC_PAD+580, xPrecio=DOC_PAD+650;
-  var xKgCli=DOC_PAD+420;
-  var xMonto=esCliente?(DOC_PAD+545):(DOC_PAD+765);
+  // +DOC_DX_FECHA en todo lo que va después de la fecha: la fecha larga con día
+  // ("miércoles 30 de septiembre de 2026") no cabía en la columna de antes.
+  var DX=DOC_DX_FECHA;
+  var W=(esCliente?900:1130)+DX;
+  var xCon=DOC_PAD+(esCliente?140:150)+DX;
+  var xBruto=DOC_PAD+430+DX, xDesc=DOC_PAD+490+DX, xNeto=DOC_PAD+580+DX, xPrecio=DOC_PAD+650+DX;
+  var xKgCli=DOC_PAD+420+DX;
+  var xMonto=(esCliente?(DOC_PAD+545):(DOC_PAD+765))+DX;
   var xEst0=W-DOC_PAD-ANCHO_EST;
   var xPlazo=xEst0-14;
   var xSaldo=xPlazo-80;
@@ -12929,7 +12944,7 @@ function docEstadoFifo(tipo, nombre, completo){
       }});
       linC.forEach(function(l){
         bloques.push({h:26, draw:function(ctx,y,W){
-          docTxt(ctx,fmtFechaCorta(l.fecha||dC.fecha),DOC_PAD+8,y+17,docFS(400,10.5),DOC_TENUE);
+          docTxt(ctx,docFechaDia(l.fecha||dC.fecha),DOC_PAD+8,y+17,docFS(400,10.5),DOC_TENUE);
           docTxt(ctx,docCorta(ctx,l.concepto,anchoCon,docFS(400,12)),xCon,y+17,docFS(400,12),DOC_TENUE);
           if(esCliente){ if(l.kg>0) docTxt(ctx,docKg(l.kg,1),xKgCli,y+17,docFM(400,11.5),DOC_TENUE,'right'); }
           else {
@@ -12943,7 +12958,7 @@ function docEstadoFifo(tipo, nombre, completo){
       });
       bloques.push({h:26, draw:function(ctx,y,W){
         docTxt(ctx,'CANCELACIÓN',DOC_PAD+8,y+17,docFS(600,11),DOC_TENUE);
-        docTxt(ctx,fmtFechaCorta(s.fechaCanc||dC.fecha),xCon,y+17,docFS(400,11),DOC_TENUE);
+        docTxt(ctx,docFechaDia(s.fechaCanc||dC.fecha),xCon,y+17,docFS(400,11),DOC_TENUE);
         docTxt(ctx,'−'+docMonCta(dC.monto,mon),xMonto,y+17,docFM(500,11.5),DOC_TENUE,'right');
         docTxt(ctx,docMonCta(0,mon),xSaldo,y+17,docFM(700,12),DOC_TENUE,'right');
       }});
@@ -12978,7 +12993,7 @@ function docEstadoFifo(tipo, nombre, completo){
         // Sin renglón "Cargo" (nov-2026, a pedido: confundía): el saldo inicial del
         // cargo va en rojo en el último renglón de sus variedades, como el Excel.
         if(ultimaL) docTxt(ctx,docMonCta(d.monto,mon),xSaldo,y+17,docFM(700,12),DOC_ROJO,'right');
-        docTxt(ctx,fmtFechaCorta(l.fecha||d.fecha),DOC_PAD+8,y+17,docFS(400,10.5),DOC_TENUE);
+        docTxt(ctx,docFechaDia(l.fecha||d.fecha),DOC_PAD+8,y+17,docFS(400,10.5),DOC_TENUE);
         docTxt(ctx,docCorta(ctx,l.concepto,anchoCon,docFS(400,12)),xCon,y+17,docFS(400,12),DOC_TEXTO2);
         if(esCliente){
           if(l.kg>0) docTxt(ctx,docKg(l.kg,1),xKgCli,y+17,docFM(400,11.5),DOC_TEXTO2,'right');
@@ -12996,7 +13011,7 @@ function docEstadoFifo(tipo, nombre, completo){
       var sd=Math.max(0,pp.saldoDespues), pagado=sd<=0.005;
       bloques.push({h:26, draw:function(ctx,y,W){
         docTxt(ctx,docCorta(ctx,pp.pago.folio||'PAGO',xCon-DOC_PAD-18,docFM(500,11)),DOC_PAD+8,y+17,docFM(500,11),DOC_TINTA);
-        docTxt(ctx,fmtFechaCorta(pp.pago.fecha),xCon,y+17,docFS(400,11),DOC_TENUE);
+        docTxt(ctx,docFechaDia(pp.pago.fecha),xCon,y+17,docFS(400,11),DOC_TENUE);
         docTxt(ctx,'−'+docMonCta(pp.monto,mon),xMonto,y+17,docFM(500,11.5),DOC_VERDE,'right');
         docTxt(ctx,docMonCta(sd,mon),xSaldo,y+17,docFM(700,12),pagado?DOC_VERDE:DOC_ROJO,'right');
       }});
@@ -13004,15 +13019,22 @@ function docEstadoFifo(tipo, nombre, completo){
     bloques.push({h:14});
   });
 
+  // Los dos rótulos alineados entre sí y separados del monto más ancho (nov-2026:
+  // antes iban en xMonto-34 y un total de siete cifras quedaba pegado al rótulo).
+  var xLblTot=function(ctx){
+    ctx.font=docFM(700,16); var w=ctx.measureText(docMonCta(r.saldoTotal,mon)).width;
+    ctx.font=docFM(700,14); w=Math.max(w, ctx.measureText(docMonCta(totVencido,mon)).width);
+    return xSaldo-w-32;
+  };
   bloques.push({h:34, draw:function(ctx,y,W){
     docRegla(ctx,y+6,DOC_PAD,W-DOC_PAD,DOC_TINTA,1.5);
     if(totVencido>0.5){
-      docTxt(ctx,'TOTAL VENCIDO',xMonto-34,y+26,docFS(700,12),DOC_TINTA,'right');
+      docTxt(ctx,'TOTAL VENCIDO',xLblTot(ctx),y+26,docFS(700,12),DOC_TINTA,'right');
       docTxt(ctx,docMonCta(totVencido,mon),xSaldo,y+26,docFM(700,14),DOC_ROJO,'right');
     }
   }});
   bloques.push({h:32, draw:function(ctx,y,W){
-    docTxt(ctx,esCliente?'TOTAL POR COBRAR':'TOTAL A PAGAR',xMonto-34,y+20,docFS(700,13),DOC_TINTA,'right');
+    docTxt(ctx,esCliente?'TOTAL POR COBRAR':'TOTAL A PAGAR',xLblTot(ctx),y+20,docFS(700,13),DOC_TINTA,'right');
     docTxt(ctx,docMonCta(r.saldoTotal,mon),xSaldo,y+20,docFM(700,16),DOC_TINTA,'right');
   }});
   // Sin el resumen Facturado · Pagado · Saldo pendiente (nov-2026, a pedido):
@@ -13086,7 +13108,7 @@ function docHistorial(tipo, nombre, anio){
   var pagos=pagosDeuda.filter(function(p){return p.tipo===tipo && p.contraparte===nombre && anios.indexOf(docAnio(p.fecha))>=0;})
     .sort(docOrdenFolio);
   var n=Math.max(cargos.length,pagos.length);
-  var W=700, mitad=W/2, gap=12;
+  var W=1000, mitad=W/2, gap=16;
   var izqX=DOC_PAD, izqFin=mitad-gap/2, derX=mitad+gap/2, derFin=W-DOC_PAD;
   var totCargos=cargos.reduce(function(a,d){return a+(parseFloat(d.monto)||0);},0);
   var totPagos=pagos.reduce(function(a,p){return a+(parseFloat(p.monto)||0);},0);
@@ -13094,9 +13116,11 @@ function docHistorial(tipo, nombre, anio){
     ctx.fillStyle=DOC_GRUPO; ctx.fillRect(x1,y,x2-x1,20);
     docTxt(ctx,titulo,(x1+x2)/2,y+14,docFS(700,11),DOC_TINTA,'center');
   }
+  // Fecha con el día (nov-2026): el documento pasó de 700 a 1000px y el folio
+  // cede espacio (30% de la columna) para que "miércoles 30 de septiembre de 2026" quepa.
   function fila(ctx,y,x1,x2,folio,fecha,monto,col){
-    docTxt(ctx,docCorta(ctx,folio,(x2-x1)*0.42,docFM(500,10.5)),x1+4,y+14,docFM(500,10.5),DOC_TINTA);
-    docTxt(ctx,fmtFechaCorta(fecha),x1+(x2-x1)*0.46,y+14,docFS(400,10),DOC_TENUE);
+    docTxt(ctx,docCorta(ctx,folio,(x2-x1)*0.30,docFM(500,10.5)),x1+4,y+14,docFM(500,10.5),DOC_TINTA);
+    docTxt(ctx,docFechaDia(fecha),x1+(x2-x1)*0.33,y+14,docFS(400,10),DOC_TENUE);
     docTxt(ctx,docMonCta(monto,mon),x2-4,y+14,docFM(500,10.5),col,'right');
     docRegla(ctx,y+19,x1,x2,DOC_LINEA,1);
   }
@@ -13127,7 +13151,7 @@ function docHistorial(tipo, nombre, anio){
   bloques.push({h:74, draw:function(ctx,y,W){
     var bx=W/2-150, bw=300;
     ctx.fillStyle=DOC_GRUPO; ctx.fillRect(bx,y+14,bw,52);
-    var filas=[['Facturado',res.facturado,DOC_TINTA],['Pagado',res.pagado,DOC_VERDE],['Saldo pendiente',res.saldo,accent]];
+    var filas=[['Facturado',res.facturado,DOC_TINTA],['Pagado',res.pagado,DOC_VERDE],['Saldo pendiente',res.saldo,(res.saldo>0.005)?DOC_ROJO:DOC_VERDE]];
     filas.forEach(function(f,k){
       docTxt(ctx,f[0],bx+10,y+30+k*16,docFS(600,10.5),DOC_TEXTO2);
       docTxt(ctx,docMonCta(f[1],mon),bx+bw-10,y+30+k*16,docFM(700,11),f[2],'right');
@@ -13325,12 +13349,12 @@ function docNotaPagoEstado(p, ap){
   var tipo=p.tipo, esCliente=(tipo==='cobrar');
   var mon=((getContraparte(p.contraparte)||{}).moneda==='USD')?'USD':'MXN';
   var accent=DOC_ACCENT[tipo];
-  var ANCHO_EST=118;
-  var W=esCliente?900:1130;
-  var xCon=DOC_PAD+(esCliente?140:150);
-  var xBruto=DOC_PAD+430, xDesc=DOC_PAD+490, xNeto=DOC_PAD+580, xPrecio=DOC_PAD+650;
-  var xKgCli=DOC_PAD+420;
-  var xMonto=esCliente?(DOC_PAD+545):(DOC_PAD+765);
+  var ANCHO_EST=118, DX=DOC_DX_FECHA;
+  var W=(esCliente?900:1130)+DX;
+  var xCon=DOC_PAD+(esCliente?140:150)+DX;
+  var xBruto=DOC_PAD+430+DX, xDesc=DOC_PAD+490+DX, xNeto=DOC_PAD+580+DX, xPrecio=DOC_PAD+650+DX;
+  var xKgCli=DOC_PAD+420+DX;
+  var xMonto=(esCliente?(DOC_PAD+545):(DOC_PAD+765))+DX;
   var xEst0=W-DOC_PAD-ANCHO_EST;
   var xSaldo=xEst0-24;
   var anchoCon=esCliente?(xKgCli-xCon-80):(xBruto-xCon-80);
@@ -13373,7 +13397,7 @@ function docNotaPagoEstado(p, ap){
       var ultimaL=(iL===lineas.length-1);
       bloques.push({h:26, draw:function(ctx,y,W){
         if(ultimaL) docTxt(ctx,docMonCta(d.monto,mon),xSaldo,y+17,docFM(700,12),DOC_ROJO,'right');
-        docTxt(ctx,fmtFechaCorta(l.fecha||d.fecha),DOC_PAD+8,y+17,docFS(400,10.5),DOC_TENUE);
+        docTxt(ctx,docFechaDia(l.fecha||d.fecha),DOC_PAD+8,y+17,docFS(400,10.5),DOC_TENUE);
         docTxt(ctx,docCorta(ctx,l.concepto,anchoCon,docFS(400,12)),xCon,y+17,docFS(400,12),DOC_TEXTO2);
         if(esCliente){
           if(l.kg>0) docTxt(ctx,docKg(l.kg,1),xKgCli,y+17,docFM(400,11.5),DOC_TEXTO2,'right');
@@ -13392,7 +13416,7 @@ function docNotaPagoEstado(p, ap){
         // Este pago resaltado; los anteriores, como en el estado de cuenta.
         if(esEste){ ctx.fillStyle=DOC_RESALTE; ctx.fillRect(DOC_PAD,y+3,xEst0-8-DOC_PAD,22); }
         docTxt(ctx,docCorta(ctx,pp.pago.folio||'PAGO',xCon-DOC_PAD-18,docFM(esEste?700:500,11)),DOC_PAD+8,y+17,docFM(esEste?700:500,11),DOC_TINTA);
-        docTxt(ctx,fmtFechaCorta(pp.pago.fecha),xCon,y+17,docFS(esEste?700:400,11),esEste?DOC_TINTA:DOC_TENUE);
+        docTxt(ctx,docFechaDia(pp.pago.fecha),xCon,y+17,docFS(esEste?700:400,11),esEste?DOC_TINTA:DOC_TENUE);
         docTxt(ctx,'−'+docMonCta(pp.monto,mon),xMonto,y+17,docFM(esEste?700:500,11.5),DOC_VERDE,'right');
         docTxt(ctx,docMonCta(sd,mon),xSaldo,y+17,docFM(700,12),pagado?DOC_VERDE:DOC_ROJO,'right');
       }});
