@@ -3406,7 +3406,8 @@ async function cargarDesdeSB(){
     pagosDeuda = pData.map(function(p){
       return {id:p.id, tipo:p.tipo, contraparte:p.contraparte, fecha:p.fecha||'',
         monto:parseFloat(p.monto||0), folio:p.folio||'', desc:p.descripcion||'',
-        moneda:p.moneda||'MXN', tipoCambio:parseFloat(p.tipo_cambio||0), dirigidoA:p.dirigido_a||''};
+        moneda:p.moneda||'MXN', tipoCambio:parseFloat(p.tipo_cambio||0), dirigidoA:p.dirigido_a||'',
+        aplicaciones:Array.isArray(p.aplicaciones)?p.aplicaciones:[]};
     });
     savePagosDeuda();
   }
@@ -10792,6 +10793,7 @@ async function sbSavePagoDeuda(p){
   };
   var full={}; for(var k in base) full[k]=base[k];
   full.moneda=p.moneda||'MXN'; full.tipo_cambio=parseFloat(p.tipoCambio)||0; full.dirigido_a=p.dirigidoA||'';
+  full.aplicaciones=(p.aplicaciones&&p.aplicaciones.length)?p.aplicaciones:null;
   var r=await sb.from('pagos_deuda').upsert(full);
   if(r && r.error){ await sb.from('pagos_deuda').upsert(base); }
 }
@@ -11039,6 +11041,24 @@ function calcContraparte(tipo, nombre){
   var saldoAFavor=0, di=0;
   ps.forEach(function(p){
     var restante=parseFloat(p.monto)||0;
+    // Reparto guardado (p.aplicaciones = [{deudaId, monto}]): se aplica tal cual,
+    // antes que nada. Solo lo traen pagos históricos cargados a mano para que la
+    // app coincida con los complementos de pago (B&M 2025-2026); la app no lo
+    // genera. Lo que sobre sigue por dirigido/FIFO como cualquier pago.
+    (p.aplicaciones||[]).forEach(function(a){
+      if(restante<=0.005) return;
+      for(var k=0;k<res.length;k++){
+        if(String(res[k].deuda.id)!==String(a.deudaId)) continue;
+        var faltaA=(parseFloat(res[k].deuda.monto)||0)-res[k].aplicado;
+        var aplicaA=Math.min(restante, parseFloat(a.monto)||0, Math.max(0,faltaA));
+        if(aplicaA>0.005){
+          res[k].aplicado+=aplicaA;
+          res[k].pagos.push({pago:p, monto:aplicaA, saldoDespues:(parseFloat(res[k].deuda.monto)||0)-res[k].aplicado});
+          restante-=aplicaA;
+        }
+        break;
+      }
+    });
     // Pago dirigido a una deuda concreta (p.dirigidoA): se aplica primero ahí, sin
     // importar que haya deudas más antiguas. Es lo que permite abonar a un envío
     // específico en vez de dejar que el FIFO lo mande a la compra más vieja.
