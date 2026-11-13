@@ -12843,9 +12843,11 @@ function docEstadoFifo(tipo, nombre, completo){
   var accent=DOC_ACCENT[tipo];
   var r=calcContraparte(tipo,nombre);
   var porFecha=function(a,b){ return docOrdenFolio(a.deuda,b.deuda); };
-  var pend=r.items.filter(function(s){return !s.liquidada;}).sort(porFecha);
-  // El completo también lleva los envíos cancelados (en gris, sin sumar al saldo).
-  var lista=completo?cuentaConCancelados(r.items,tipo,nombre):pend;
+  // El completo también lleva los envíos cancelados (en gris, sin sumar al saldo), y
+  // los cargos con el mismo Folio Cliente van en un solo bloque (agruparPorFolioCliente).
+  var todosG=agruparPorFolioCliente(cuentaConCancelados(r.items,tipo,nombre),tipo);
+  var pend=todosG.filter(function(s){return !s.liquidada;});
+  var lista=completo?todosG:pend;
   // El de proveedor va más ancho porque lleva cuatro columnas más (bruto,
   // descuento, neto y precio de compra). Son documentos distintos, no uno con
   // columnas ocultas.
@@ -12929,7 +12931,7 @@ function docEstadoFifo(tipo, nombre, completo){
       return;
     }
     var d=s.deuda, liq=s.liquidada, pl=liq?null:docPlazo(d);
-    var lineas=esCliente?docLineasVenta(d):docLineasCompra(d);
+    var lineas=s.lineas||(esCliente?docLineasVenta(d):docLineasCompra(d));
     // Sin partidas que desglosar, un solo renglón con el monto del cargo
     if(!lineas.length) lineas=[{concepto:docConcepto(d.desc||'Cargo'), monto:parseFloat(d.monto)||0}];
     var etq=d.folioExterno||(d.origen==='manual'?'Manual':(d.origen||'Cargo'));
@@ -13209,7 +13211,8 @@ function docAplicacionPago(p){
     return out;
   }
   var r=calcContraparte(tipo,nombre), aplicado=0;
-  r.items.forEach(function(s){
+  // Mismo agrupado por Folio Cliente que el estado de cuenta: un renglón por folio.
+  agruparPorFolioCliente(r.items,tipo).forEach(function(s){
     s.pagos.forEach(function(x){
       if(String(x.pago.id)!==String(p.id)) return;
       var d=s.deuda;
@@ -13433,6 +13436,50 @@ function cuentaCancelados(tipo, nombre){
   });
   return out;
 }
+// Cargos por cobrar que comparten Folio Cliente se muestran como UN bloque
+// (nov-2026, a pedido). Pasa cuando una venta se captura como dos operaciones
+// —p. ej. B&M/2026/028 = Comer/2026/009 + 010, compradas a precios distintos—:
+// el proveedor ve cada compra por su folio de compra, el cliente ve una venta.
+// Solo presentación: calcContraparte() sigue aplicando pagos cargo por cargo.
+// El grupo tiene la forma de un renglón de calcContraparte() más `lineas` y
+// `miembros`; los pagos se suman por pago y el saldo se recalcula corrido.
+function agruparPorFolioCliente(filas, tipo){
+  if(tipo!=='cobrar') return filas;
+  var porFolio={}, out=[];
+  filas.forEach(function(s){
+    var f=(s.deuda && !s.cancelado) ? String(s.deuda.folioExterno||'').trim() : '';
+    if(!f){ out.push(s); return; }
+    if(porFolio[f]){ porFolio[f].push(s); return; }
+    porFolio[f]=[s]; out.push({_folio:f});
+  });
+  return out.map(function(x){
+    if(!x._folio) return x;
+    var ms=porFolio[x._folio];
+    if(ms.length===1) return ms[0];
+    ms.sort(function(a,b){ return docOrdenFolio(a.deuda,b.deuda); });
+    var base=ms[0].deuda, total=0, lineas=[], porPago={};
+    // El que vence primero manda en plazo y días de atraso.
+    var pendientes=ms.filter(function(s){ return !s.liquidada; });
+    var ref=(pendientes.length?pendientes:ms)[0].deuda;
+    ms.forEach(function(s){
+      total+=parseFloat(s.deuda.monto)||0;
+      docLineasVenta(s.deuda).forEach(function(l){ if(!l.fecha) l.fecha=s.deuda.fecha; lineas.push(l); });
+      s.pagos.forEach(function(pp){
+        var k=String(pp.pago.id);
+        if(!porPago[k]) porPago[k]={pago:pp.pago, monto:0, dirigido:pp.dirigido};
+        porPago[k].monto+=pp.monto;
+      });
+    });
+    var pagos=Object.keys(porPago).map(function(k){ return porPago[k]; })
+      .sort(function(a,b){ var fa=a.pago.fecha||'', fb=b.pago.fecha||''; return fa<fb?-1:fa>fb?1:((a.pago.id||0)-(b.pago.id||0)); });
+    var acum=0;
+    pagos.forEach(function(pp){ acum+=pp.monto; pp.saldoDespues=total-acum; });
+    var d={}; for(var k in ref) d[k]=ref[k];
+    d.monto=total; d.folioExterno=x._folio; d.id=base.id;
+    return {deuda:d, grupo:true, miembros:ms.map(function(s){ return s.deuda; }), lineas:lineas,
+      pagos:pagos, aplicado:acum, saldo:total-acum, liquidada:pendientes.length===0};
+  });
+}
 // Mezcla cargos y cancelados en orden de fecha (y folio el mismo día).
 function cuentaConCancelados(items, tipo, nombre){
   return items.concat(cuentaCancelados(tipo,nombre)).sort(function(a,b){ return docOrdenFolio(a.deuda,b.deuda); });
@@ -13442,20 +13489,22 @@ function dctaBodyFifo(tipo, nombre){
   var r=calcContraparte(tipo,nombre);
   var accent=(tipo==='cobrar')?'var(--green)':'var(--fram)';
   var palabraPago=(tipo==='cobrar')?'Pagos':'Abonos';
-  var pend=r.items.filter(function(s){ return !s.liquidada; });
+  // Cargos con el mismo Folio Cliente van juntos (agruparPorFolioCliente).
+  var todos=agruparPorFolioCliente(cuentaConCancelados(r.items,tipo,nombre),tipo);
+  var pend=todos.filter(function(s){ return !s.liquidada; });
   var venc=pend.filter(function(s){ var dv=deudaDiasVencido(s.deuda); return dv!==null&&dv>0; });
   var pagos=_ordenar(pagosDeuda.filter(function(p){return p.tipo===tipo && p.contraparte===nombre;}));
 
   var h='<div class="dcta-chips">'+
     dctaChipHtml('pend','Pendientes',pend.length,tipo)+
-    dctaChipHtml('todos','Todos los cargos',r.items.length+cuentaCancelados(tipo,nombre).length,tipo)+
+    dctaChipHtml('todos','Todos los cargos',todos.length,tipo)+
     dctaChipHtml('venc','Solo vencidos',venc.length,tipo)+
     dctaChipHtml('movs',palabraPago,pagos.length,tipo)+
     '</div>';
 
   if(dctaFiltro==='movs') return h+dctaMovsHtml(pagos, palabraPago);
 
-  var filas=(dctaFiltro==='pend')?pend:(dctaFiltro==='venc'?venc:cuentaConCancelados(r.items,tipo,nombre));
+  var filas=(dctaFiltro==='pend')?pend:(dctaFiltro==='venc'?venc:todos);
   if(!filas.length){
     return h+'<div class="empty" style="padding:40px 20px;text-align:center"><div class="empty-text">Nada que mostrar con este filtro.</div></div>';
   }
@@ -13502,8 +13551,8 @@ function dctaExcelHtml(tipo, nombre, filas, r, sumSaldo, sumVenc){
         '<td>−'+fmtMon2(d.monto,mon)+'</td><td class="saldo">'+fmtMon2(0,mon)+'</td></tr>';
       return;
     }
-    var lineas=(tipo==='pagar')?docLineasCompra(d):docLineasVenta(d);
-    var fn=deudaFolioNegocio(d);
+    var lineas=s.lineas||((tipo==='pagar')?docLineasCompra(d):docLineasVenta(d));
+    var fn=s.grupo?s.miembros.map(deudaFolioNegocio).filter(Boolean).join(' + '):deudaFolioNegocio(d);
     var folio=d.folioExterno||fn||(d.origen==='manual'?'Cargo manual':'Cargo');
     var nFilas=1+lineas.length+1+s.pagos.length;
     var dv=deudaDiasVencido(d);
@@ -13512,7 +13561,15 @@ function dctaExcelHtml(tipo, nombre, filas, r, sumSaldo, sumVenc){
     else est='<td class="est pend" rowspan="'+nFilas+'">Pendiente'+
       (dv!==null?'<small class="'+(dv>0?'venc':'')+'">'+(dv>0?dv+' días vencido':(dv===0?'vence hoy':'vence en '+(-dv)+' días'))+'</small>':'')+'</td>';
     // Acciones del cargo en la franja del folio (antes vivían en la fila desplegable)
-    var acc=((d.tipo==='cobrar'&&docEnvioDe(d))?'<button onclick="docCompartirNota('+d.id+')">Nota de envío</button>':'')+
+    var acc;
+    if(s.grupo){
+      // Un grupo por Folio Cliente: nota y plazo de cada operación, rotulados con su folio de negocio.
+      acc=s.miembros.map(function(m){
+        var etqM=deudaFolioNegocio(m)||'';
+        return (docEnvioDe(m)?'<button onclick="docCompartirNota('+m.id+')">Nota '+etqM+'</button>':'')+
+          '<button onclick="abrirEditarPlazoDeuda('+m.id+')">Plazo '+deudaPlazo(m)+' d</button>';
+      }).join('');
+    } else acc=((d.tipo==='cobrar'&&docEnvioDe(d))?'<button onclick="docCompartirNota('+d.id+')">Nota de envío</button>':'')+
       '<button onclick="abrirEditarPlazoDeuda('+d.id+')">Plazo '+deudaPlazo(d)+' d</button>'+
       (d.origen==='manual'?'<button class="del" onclick="borrarDeudaDesdeModal('+d.id+')">Eliminar</button>':'');
     h+='<tr class="folio"><td class="l" colspan="9"><span>'+folio+'</span>'+
