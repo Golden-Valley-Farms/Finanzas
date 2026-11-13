@@ -10949,6 +10949,9 @@ function folioClienteProponer(inputId, cliente, fechaStr, soloAuto){
   if(actual && actual!==inp.getAttribute('data-auto')) return;
   // Al guardar solo se refresca uno que puso la app (por si cambio la fecha o el año).
   if(soloAuto && !actual) return;
+  // Si ya es de este cliente y este año, se conserva: recalcularlo contaria el
+  // propio folio del envio que se esta reeditando y lo subiria de numero.
+  if(soloAuto && actual.indexOf(folioClientePrefijo(cliente, fechaStr))===0) return;
   var f=siguienteFolioCliente(cliente, fechaStr);
   inp.value=f;
   inp.setAttribute('data-auto', f);
