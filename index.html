@@ -12647,8 +12647,10 @@ function docFechaDia(f){
 // Nov-2026 (a pedido): columna propia FOLIO · FECHA · CONCEPTO, para que la fecha
 // del pago no caiga bajo el concepto de las variedades. DOC_X_FECHA es donde arranca
 // la fecha y DOC_DX_FECHA lo que se corre todo lo demás (folio 140 + fecha 200 − 140).
-var DOC_X_FECHA=26+140;
-var DOC_DX_FECHA=200;
+// Columna de folio de 180px (nov-2026): con 140 un folio de pago largo
+// ("ABONO/Pollo/2026/005") se cortaba con "…" y no se veía el consecutivo.
+var DOC_X_FECHA=26+180;
+var DOC_DX_FECHA=240;
 function docHead(sub, dcha1, dcha2, accent){
   return {h:64, draw:function(ctx,y,W){
     docTxt(ctx,'Golden Valley Farms',DOC_PAD,y+14,docFS(700,16),DOC_TINTA);
