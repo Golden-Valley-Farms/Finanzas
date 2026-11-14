@@ -12651,7 +12651,16 @@ function docFechaDia(f){
 // ("ABONO/Pollo/2026/005") se cortaba con "…" y no se veía el consecutivo.
 var DOC_X_FECHA=26+180;
 var DOC_DX_FECHA=240;
-function docHead(sub, dcha1, dcha2, accent){
+// `grande`: el texto de la derecha (el nombre del cliente/proveedor en el estado de
+// cuenta) al doble de tamaño (nov-2026, a pedido), con el encabezado más alto.
+function docHead(sub, dcha1, dcha2, accent, grande){
+  if(grande) return {h:82, draw:function(ctx,y,W){
+    docTxt(ctx,'Golden Valley Farms',DOC_PAD,y+14,docFS(700,16),DOC_TINTA);
+    docTxt(ctx,sub,DOC_PAD,y+30,docFS(400,11),DOC_TENUE);
+    if(dcha1) docTxt(ctx,docCorta(ctx,dcha1,W*0.6,docFS(700,30)),W-DOC_PAD,y+22,docFS(700,30),DOC_TINTA,'right');
+    if(dcha2) docTxt(ctx,dcha2,W-DOC_PAD,y+44,docFM(400,11),DOC_TENUE,'right');
+    docRegla(ctx,y+60,DOC_PAD,W-DOC_PAD,accent,2);
+  }};
   return {h:64, draw:function(ctx,y,W){
     docTxt(ctx,'Golden Valley Farms',DOC_PAD,y+14,docFS(700,16),DOC_TINTA);
     docTxt(ctx,sub,DOC_PAD,y+30,docFS(400,11),DOC_TENUE);
@@ -12914,7 +12923,7 @@ function docEstadoFifo(tipo, nombre, completo){
     if(dv!==null && dv>0) totVencido+=Math.max(0,s.saldo);
   });
 
-  var bloques=[docHead('Estado de cuenta', nombre, docHoy(), accent)];
+  var bloques=[docHead('Estado de cuenta', nombre, docHoy(), accent, true)];
   bloques.push({h:30, draw:function(ctx,y,W){
     docTxt(ctx,'FOLIO',DOC_PAD,y+12,docFS(600,10),DOC_TENUE);
     docTxt(ctx,'FECHA',DOC_X_FECHA,y+12,docFS(600,10),DOC_TENUE);
@@ -13061,7 +13070,7 @@ function docEstadoCorriente(tipo, nombre){
   var rc=calcCorriente(tipo,nombre);
   var movs=rc.movs.slice(-40);
   var W=600, xCon=DOC_PAD+110, xCargo=DOC_PAD+360, xAbono=DOC_PAD+450, xSaldo=W-DOC_PAD;
-  var bloques=[docHead('Estado de cuenta', nombre, docHoy(), accent)];
+  var bloques=[docHead('Estado de cuenta', nombre, docHoy(), accent, true)];
   bloques.push({h:24, draw:function(ctx,y,W){
     docTxt(ctx,'FECHA',DOC_PAD,y+12,docFS(600,10),DOC_TENUE);
     docTxt(ctx,'CONCEPTO',xCon,y+12,docFS(600,10),DOC_TENUE);
@@ -13307,11 +13316,12 @@ function docNotaPago(pagoId){
   var W=760;
   var xAnt=DOC_PAD+340, xAbo=DOC_PAD+460, xAct=DOC_PAD+580, xEst=W-DOC_PAD-96, wEst=96;
   var bloques=[docHead(esCliente?'Nota de pago':'Nota de abono', p.folio||'—', docFechaLarga(p.fecha), accent)];
-  bloques.push({h:58, draw:function(ctx,y,W){
+  // Nombre al doble de tamaño (nov-2026, a pedido: 16 -> 32px).
+  bloques.push({h:74, draw:function(ctx,y,W){
     docTxt(ctx,esCliente?'CLIENTE':'PROVEEDOR',DOC_PAD,y+14,docFS(600,10),DOC_TENUE);
-    docTxt(ctx,docCorta(ctx,p.contraparte,W/2,docFS(700,16)),DOC_PAD,y+36,docFS(700,16),DOC_TINTA);
+    docTxt(ctx,docCorta(ctx,p.contraparte,W*0.6,docFS(700,32)),DOC_PAD,y+50,docFS(700,32),DOC_TINTA);
     docTxt(ctx,esCliente?'MONTO PAGADO':'MONTO ABONADO',W-DOC_PAD,y+14,docFS(600,10),DOC_TENUE,'right');
-    docTxt(ctx,docMonCta(p.monto,mon),W-DOC_PAD,y+38,docFM(700,20),DOC_VERDE,'right');
+    docTxt(ctx,docMonCta(p.monto,mon),W-DOC_PAD,y+48,docFM(700,20),DOC_VERDE,'right');
   }});
   bloques.push({h:30, draw:function(ctx,y,W){
     docTxt(ctx,ap.corriente?'CUENTA':'FOLIO',DOC_PAD,y+18,docFS(600,10),DOC_TENUE);
@@ -13369,11 +13379,12 @@ function docNotaPagoEstado(p, ap){
   var xSaldo=xEst0-24;
   var anchoCon=esCliente?(xKgCli-xCon-80):(xBruto-xCon-80);
   var bloques=[docHead(esCliente?'Nota de pago':'Nota de abono', p.folio||'—', docFechaLarga(p.fecha), accent)];
-  bloques.push({h:58, draw:function(ctx,y,W){
+  // Nombre al doble de tamaño (nov-2026, a pedido: 16 -> 32px).
+  bloques.push({h:74, draw:function(ctx,y,W){
     docTxt(ctx,esCliente?'CLIENTE':'PROVEEDOR',DOC_PAD,y+14,docFS(600,10),DOC_TENUE);
-    docTxt(ctx,docCorta(ctx,p.contraparte,W/2,docFS(700,16)),DOC_PAD,y+36,docFS(700,16),DOC_TINTA);
+    docTxt(ctx,docCorta(ctx,p.contraparte,W*0.6,docFS(700,32)),DOC_PAD,y+50,docFS(700,32),DOC_TINTA);
     docTxt(ctx,esCliente?'MONTO PAGADO':'MONTO ABONADO',W-DOC_PAD,y+14,docFS(600,10),DOC_TENUE,'right');
-    docTxt(ctx,docMonCta(p.monto,mon),W-DOC_PAD,y+38,docFM(700,20),DOC_VERDE,'right');
+    docTxt(ctx,docMonCta(p.monto,mon),W-DOC_PAD,y+48,docFM(700,20),DOC_VERDE,'right');
   }});
   bloques.push({h:30, draw:function(ctx,y,W){
     docTxt(ctx,'FOLIO',DOC_PAD,y+12,docFS(600,10),DOC_TENUE);
