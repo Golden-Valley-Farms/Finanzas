@@ -13029,15 +13029,16 @@ function docEstadoFifo(tipo, nombre, completo){
   // Los dos rótulos alineados entre sí y separados del monto más ancho (nov-2026:
   // antes iban en xMonto-34 y un total de siete cifras quedaba pegado al rótulo).
   var xLblTot=function(ctx){
-    ctx.font=docFM(700,16); var w=ctx.measureText(docMonCta(r.saldoTotal,mon)).width;
-    ctx.font=docFM(700,14); w=Math.max(w, ctx.measureText(docMonCta(totVencido,mon)).width);
+    ctx.font=docFM(700,16);
+    var w=Math.max(ctx.measureText(docMonCta(r.saldoTotal,mon)).width, ctx.measureText(docMonCta(totVencido,mon)).width);
     return xSaldo-w-32;
   };
   bloques.push({h:34, draw:function(ctx,y,W){
     docRegla(ctx,y+6,DOC_PAD,W-DOC_PAD,DOC_TINTA,1.5);
     if(totVencido>0.5){
-      docTxt(ctx,'TOTAL VENCIDO',xLblTot(ctx),y+26,docFS(700,12),DOC_TINTA,'right');
-      docTxt(ctx,docMonCta(totVencido,mon),xSaldo,y+26,docFM(700,14),DOC_ROJO,'right');
+      // Mismo tamaño que el total a pagar/por cobrar (nov-2026, a pedido).
+      docTxt(ctx,'TOTAL VENCIDO',xLblTot(ctx),y+26,docFS(700,13),DOC_TINTA,'right');
+      docTxt(ctx,docMonCta(totVencido,mon),xSaldo,y+26,docFM(700,16),DOC_ROJO,'right');
     }
   }});
   bloques.push({h:32, draw:function(ctx,y,W){
@@ -13389,8 +13390,32 @@ function docNotaPagoEstado(p, ap){
     docTxt(ctx,'ESTATUS',xEst0+ANCHO_EST/2,y+12,docFS(600,10),DOC_TENUE,'center');
     docRegla(ctx,y+18,DOC_PAD,W-DOC_PAD,DOC_TINTA,1.5);
   }});
-  ap.filas.forEach(function(f){
-    var s=f.s, d=s.deuda, liq=f.despues<=0.005;
+  // El resto del estado de cuenta (nov-2026, a pedido): además de los envíos que
+  // tocó el pago, los demás cargos que seguían pendientes en ese momento, y al
+  // final Total vencido y Total a pagar/por cobrar. Todo a la fecha del pago:
+  // cargos hasta ese día y pagos hasta este (mismo orden fecha+id que
+  // calcContraparte), así una nota reenviada después sigue diciendo lo mismo.
+  var fp=p.fecha||'';
+  var hastaEste=function(q){ var qf=q.fecha||''; return qf<fp || (qf===fp && (parseFloat(q.id)||0)<=(parseFloat(p.id)||0)); };
+  var filasNota=ap.filas.map(function(f){ return {folio:f.folio, s:f.s, hasta:f.hasta, saldo:Math.max(0,f.despues), resalta:true}; });
+  agruparPorFolioCliente(calcContraparte(tipo,p.contraparte).items,tipo).forEach(function(s){
+    var d=s.deuda;
+    if(s.pagos.some(function(pp){ return String(pp.pago.id)===String(p.id); })) return;
+    if(String(d.fecha||'')>fp) return;
+    var hasta=s.pagos.filter(function(pp){ return hastaEste(pp.pago); });
+    var saldo=hasta.length?hasta[hasta.length-1].saldoDespues:(parseFloat(d.monto)||0);
+    if(saldo<=0.005) return;
+    filasNota.push({folio:d.folioExterno||deudaFolioNegocio(d)||(d.desc||'Cargo'), s:s, hasta:hasta, saldo:saldo, resalta:false});
+  });
+  filasNota.sort(function(a,b){ return docOrdenFolio(a.s.deuda,b.s.deuda); });
+  var totCuenta=0, totVencido=0;
+  filasNota.forEach(function(f){
+    totCuenta+=f.saldo;
+    var v=deudaVence(f.s.deuda);
+    if(v && v<fp) totVencido+=f.saldo;
+  });
+  filasNota.forEach(function(f){
+    var s=f.s, d=s.deuda, liq=f.saldo<=0.005;
     var lineas=s.lineas||(esCliente?docLineasVenta(d):docLineasCompra(d));
     if(!lineas.length) lineas=[{concepto:docConcepto(d.desc||'Cargo'), monto:parseFloat(d.monto)||0}];
     var hGrupo=30+lineas.length*26+f.hasta.length*26;
@@ -13419,7 +13444,7 @@ function docNotaPagoEstado(p, ap){
       }});
     });
     f.hasta.forEach(function(pp,ix){
-      var esEste=(ix===f.hasta.length-1), sd=Math.max(0,pp.saldoDespues), pagado=sd<=0.005;
+      var esEste=f.resalta && (ix===f.hasta.length-1), sd=Math.max(0,pp.saldoDespues), pagado=sd<=0.005;
       bloques.push({h:26, draw:function(ctx,y,W){
         // Este pago resaltado; los anteriores, como en el estado de cuenta.
         if(esEste){ ctx.fillStyle=DOC_RESALTE; ctx.fillRect(DOC_PAD,y+3,xEst0-8-DOC_PAD,22); }
@@ -13438,8 +13463,24 @@ function docNotaPagoEstado(p, ap){
       docTxt(ctx,docMonCta(ap.aFavor,mon),xMonto,y+19,docFM(600,12),DOC_VERDE,'right');
     }});
   }
-  // Sin "Saldo total de la cuenta" (nov-2026, a pedido): eso lo ve en el estado de cuenta.
-  bloques.push({h:10, draw:function(ctx,y,W){ docRegla(ctx,y+4,DOC_PAD,W-DOC_PAD,DOC_TINTA,1.5); }});
+  // Totales como el estado de cuenta, los dos del mismo tamaño (nov-2026, a pedido).
+  var xLblTot=function(ctx){
+    ctx.font=docFM(700,16);
+    var w=Math.max(ctx.measureText(docMonCta(totCuenta,mon)).width, ctx.measureText(docMonCta(totVencido,mon)).width);
+    return xSaldo-w-32;
+  };
+  bloques.push({h:34, draw:function(ctx,y,W){
+    docRegla(ctx,y+6,DOC_PAD,W-DOC_PAD,DOC_TINTA,1.5);
+    if(totVencido>0.5){
+      docTxt(ctx,'TOTAL VENCIDO',xLblTot(ctx),y+26,docFS(700,13),DOC_TINTA,'right');
+      docTxt(ctx,docMonCta(totVencido,mon),xSaldo,y+26,docFM(700,16),DOC_ROJO,'right');
+    }
+  }});
+  bloques.push({h:32, draw:function(ctx,y,W){
+    docTxt(ctx,esCliente?'TOTAL POR COBRAR':'TOTAL A PAGAR',xLblTot(ctx),y+20,docFS(700,13),DOC_TINTA,'right');
+    docTxt(ctx,docMonCta(totCuenta,mon),xSaldo,y+20,docFM(700,16),DOC_TINTA,'right');
+  }});
+  bloques.push({h:10});
   bloques.push(docPie());
   return docPintar(bloques,W);
 }
