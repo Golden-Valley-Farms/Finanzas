@@ -12626,7 +12626,9 @@ function docCorta(ctx,txt,maxW,font){
 function docMon(n){ n=parseFloat(n)||0; return '$'+n.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function docMonCta(n,mon){ return mon==='USD'?fmtUSD(n):docMon(n); }
 function docKg(n,dec){ n=parseFloat(n)||0; dec=(dec==null)?1:dec; return n.toLocaleString('es-MX',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
-function docHoy(){ return new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}); }
+// Fecha de hoy con el nombre del día (nov-2026, a pedido): "martes 17 de noviembre de 2026".
+function docHoyISO(){ var h=new Date(); return h.getFullYear()+'-'+('0'+(h.getMonth()+1)).slice(-2)+'-'+('0'+h.getDate()).slice(-2); }
+function docHoy(){ return docFechaDia(docHoyISO()); }
 function docFechaLarga(f){
   if(!f) return '';
   try{ return new Date(f+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); }
@@ -13185,7 +13187,28 @@ function docHistorial(tipo, nombre, anio){
 // con el fallback sans-serif del sistema (sin error, solo se ve distinto).
 // `texto` es el mensaje que acompaña a la imagen (opcional; sin él va el título).
 // Donde no se puede compartir, se copia al portapapeles para pegarlo a mano.
+// Antes de mandar un documento que trae mensaje, se pregunta si va con él o solo la
+// imagen (nov-2026, a pedido). El clic en el botón es el gesto que el menú de
+// compartir del teléfono necesita, así que el envío sale desde ahí.
+var docPendiente=null;
 function docCompartir(fabrica, archivo, titulo, texto){
+  if(!texto){ docCompartirYa(fabrica, archivo, titulo, ''); return; }
+  docPendiente={fabrica:fabrica, archivo:archivo, titulo:titulo, texto:texto};
+  var esc=String(texto).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  document.getElementById('mo-title').innerHTML='¿Mandar con este mensaje?';
+  document.getElementById('mo-body').innerHTML=
+    '<div style="white-space:pre-wrap;font-size:13px;line-height:1.45;color:var(--text);background:var(--surface2);border-radius:var(--radius);padding:12px;max-height:45vh;overflow:auto;margin-bottom:14px">'+esc+'</div>'+
+    '<button class="btn-main" style="margin:0 0 8px" onclick="docCompartirPendiente(true)">Sí, con el mensaje</button>'+
+    '<button style="width:100%;padding:12px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)" onclick="docCompartirPendiente(false)">No, solo la imagen</button>';
+  document.getElementById('overlay').classList.add('open');
+}
+function docCompartirPendiente(conTexto){
+  var p=docPendiente; docPendiente=null;
+  closeModal();
+  if(!p) return;
+  docCompartirYa(p.fabrica, p.archivo, p.titulo, conTexto?p.texto:'');
+}
+function docCompartirYa(fabrica, archivo, titulo, texto){
   var listo=(document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
   listo.then(function(){
     var canvas;
@@ -13242,11 +13265,8 @@ function docTextoNota(deudaId){
   var d=null;
   for(var i=0;i<deudas.length;i++){ if(String(deudas[i].id)===String(deudaId)){ d=deudas[i]; break; } }
   if(!d) return '';
-  var fecha='';
-  if(d.fecha){
-    try{ fecha=new Date(d.fecha+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'}); }
-    catch(e){ fecha=d.fecha; }
-  }
+  // Con el nombre del día (nov-2026, a pedido): "martes 17 de noviembre de 2026".
+  var fecha=d.fecha?docFechaDia(d.fecha):'';
   // Fecha y folio entre asteriscos: WhatsApp los pinta en negritas.
   var txt='Adjunto la nota de envío'+(fecha?' del día *'+fecha+'*':'');
   if(d.folioExterno) txt+=' correspondiente al Folio: *'+d.folioExterno+'*';
@@ -13376,7 +13396,9 @@ function docNotaPagoEstado(p, ap){
   var xKgCli=DOC_PAD+420+DX;
   var xMonto=(esCliente?(DOC_PAD+545):(DOC_PAD+765))+DX;
   var xEst0=W-DOC_PAD-ANCHO_EST;
-  var xSaldo=xEst0-24;
+  // Columna Plazo como el estado de cuenta (nov-2026, a pedido).
+  var xPlazo=xEst0-14;
+  var xSaldo=xPlazo-80;
   var anchoCon=esCliente?(xKgCli-xCon-80):(xBruto-xCon-80);
   var bloques=[docHead(esCliente?'Nota de pago':'Nota de abono', p.folio||'—', docFechaLarga(p.fecha), accent)];
   // Nombre al doble de tamaño (nov-2026, a pedido: 16 -> 32px).
@@ -13400,6 +13422,7 @@ function docNotaPagoEstado(p, ap){
     }
     docTxt(ctx,'MONTO',xMonto,y+12,docFS(600,10),DOC_TENUE,'right');
     docTxt(ctx,'SALDO',xSaldo,y+12,docFS(600,10),DOC_TENUE,'right');
+    docTxt(ctx,'PLAZO',xPlazo,y+12,docFS(600,10),DOC_TENUE,'right');
     docTxt(ctx,'ESTATUS',xEst0+ANCHO_EST/2,y+12,docFS(600,10),DOC_TENUE,'center');
     docRegla(ctx,y+18,DOC_PAD,W-DOC_PAD,DOC_TINTA,1.5);
   }});
@@ -13421,20 +13444,24 @@ function docNotaPagoEstado(p, ap){
     filasNota.push({folio:d.folioExterno||deudaFolioNegocio(d)||(d.desc||'Cargo'), s:s, hasta:hasta, saldo:saldo, resalta:false});
   });
   filasNota.sort(function(a,b){ return docOrdenFolio(a.s.deuda,b.s.deuda); });
+  // El vencido se cuenta al día en que se genera la nota (nov-2026, a pedido), no
+  // al día del pago: los saldos siguen siendo los de después de este pago, pero un
+  // cargo que venció entre el pago y hoy ya cuenta como vencido. Igual el Plazo.
   var totCuenta=0, totVencido=0;
   filasNota.forEach(function(f){
     totCuenta+=f.saldo;
-    var v=deudaVence(f.s.deuda);
-    if(v && v<fp) totVencido+=f.saldo;
+    var dv=deudaDiasVencido(f.s.deuda);
+    if(dv!==null && dv>0) totVencido+=f.saldo;
   });
   filasNota.forEach(function(f){
-    var s=f.s, d=s.deuda, liq=f.saldo<=0.005;
+    var s=f.s, d=s.deuda, liq=f.saldo<=0.005, pl=liq?null:docPlazo(d);
     var lineas=s.lineas||(esCliente?docLineasVenta(d):docLineasCompra(d));
     if(!lineas.length) lineas=[{concepto:docConcepto(d.desc||'Cargo'), monto:parseFloat(d.monto)||0}];
     var hGrupo=30+lineas.length*26+f.hasta.length*26;
     bloques.push({h:30, draw:function(ctx,y,W){
       ctx.fillStyle=DOC_GRUPO; ctx.fillRect(DOC_PAD,y+3,xEst0-8-DOC_PAD,24);
       docTxt(ctx,f.folio,DOC_PAD+8,y+19,docFM(700,12),DOC_TINTA);
+      if(pl) docTxt(ctx,pl.txt,xPlazo,y+19,docFM(700,13),pl.col,'right');
       ctx.fillStyle=liq?DOC_VERDE_BG:DOC_AMBAR_BG;
       ctx.fillRect(xEst0,y+3,ANCHO_EST,hGrupo-6);
       docTxt(ctx,liq?'Liquidado':'Pendiente',xEst0+ANCHO_EST/2,y+3+(hGrupo-6)/2+5,docFS(800,14),liq?DOC_VERDE:DOC_AMBAR,'center');
