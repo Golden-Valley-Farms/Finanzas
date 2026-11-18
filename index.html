@@ -12704,6 +12704,13 @@ function docEnvioDe(d){
   for(var i=0;i<envios.length;i++){ if(String(envios[i].id)===String(d.refId)) return envios[i]; }
   return null;
 }
+// La nota de envío sale de un cargo por cobrar que viene de un envío, o de uno
+// importado del Excel cuyas partidas ya traen kg (docLineasVenta las usa igual).
+function docTieneNota(d){
+  if(!d || d.tipo!=='cobrar') return false;
+  if(docEnvioDe(d)) return true;
+  return (d.items||[]).some(function(it){ return (parseFloat(it.kg)||0)>0; });
+}
 // Detalle que SÍ puede ver un cliente: variedad, kg y precio de venta.
 function docLineasVenta(d){
   var e=docEnvioDe(d), out=[];
@@ -13830,10 +13837,10 @@ function dctaExcelHtml(tipo, nombre, filas, r, sumSaldo, sumVenc){
       // Un grupo por Folio Cliente: nota y plazo de cada operación, rotulados con su folio de negocio.
       acc=s.miembros.map(function(m){
         var etqM=deudaFolioNegocio(m)||'';
-        return (docEnvioDe(m)?'<button onclick="docCompartirNota('+m.id+')">Nota '+etqM+'</button>':'')+
+        return (docTieneNota(m)?'<button onclick="docCompartirNota('+m.id+')">Nota '+etqM+'</button>':'')+
           '<button onclick="abrirEditarPlazoDeuda('+m.id+')">Plazo '+deudaPlazo(m)+' d</button>';
       }).join('');
-    } else acc=((d.tipo==='cobrar'&&docEnvioDe(d))?'<button onclick="docCompartirNota('+d.id+')">Nota de envío</button>':'')+
+    } else acc=(docTieneNota(d)?'<button onclick="docCompartirNota('+d.id+')">Nota de envío</button>':'')+
       '<button onclick="abrirEditarPlazoDeuda('+d.id+')">Plazo '+deudaPlazo(d)+' d</button>'+
       (d.origen==='manual'?'<button class="del" onclick="borrarDeudaDesdeModal('+d.id+')">Eliminar</button>':'');
     h+='<tr class="folio"><td class="l" colspan="9"><span>'+folio+'</span>'+
@@ -13930,8 +13937,8 @@ function dctaDetalleHtml(s, palabraPago){
   h+='</div></div>';
   h+='<div style="display:flex;gap:14px;margin-top:10px;flex-wrap:wrap">'+
     // La nota de envío es un documento para el cliente, así que solo aparece del
-    // lado de cobrar y solo si el cargo viene de un envío real.
-    ((d.tipo==='cobrar'&&docEnvioDe(d))?'<button onclick="event.stopPropagation();docCompartirNota('+d.id+')" style="background:none;border:none;color:var(--green);font-size:12px;cursor:pointer;font-family:var(--font);padding:0">Nota de envío</button>':'')+
+    // lado de cobrar y solo si el cargo viene de un envío o trae kg del Excel.
+    (docTieneNota(d)?'<button onclick="event.stopPropagation();docCompartirNota('+d.id+')" style="background:none;border:none;color:var(--green);font-size:12px;cursor:pointer;font-family:var(--font);padding:0">Nota de envío</button>':'')+
     '<button onclick="event.stopPropagation();abrirEditarPlazoDeuda('+d.id+')" style="background:none;border:none;color:var(--jal);font-size:12px;cursor:pointer;font-family:var(--font);padding:0">Cambiar plazo (hoy '+deudaPlazo(d)+' d'+(d.plazoDias?'':', del cliente')+')</button>'+
     (d.origen==='manual'?'<button onclick="event.stopPropagation();borrarDeudaDesdeModal('+d.id+')" style="background:none;border:none;color:var(--fram);font-size:12px;cursor:pointer;font-family:var(--font);padding:0">Eliminar cargo</button>':'')+
     '</div>';
