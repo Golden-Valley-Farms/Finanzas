@@ -12715,14 +12715,20 @@ function docTieneNota(d){
 function docLineasVenta(d){
   var e=docEnvioDe(d), out=[];
   if(e){
-    (e.partidas||[]).forEach(function(p){
-      var kg=parseFloat(p.pesoNeto)||parseFloat(p.kgRecibidos)||0;
+    // Por envioNetoPartidas(): lo que se mandó a almacén no se vendió en este envío,
+    // así que no va en la tabla ni en la nota (el cargo ya lo descuenta).
+    envioNetoPartidas(e).forEach(function(x){
+      var p=x.p, kgTot=parseFloat(p.pesoNeto)||parseFloat(p.kgRecibidos)||0;
       var pr=parseFloat(p.precio)||parseFloat(p.precioVenta)||0;
-      if(kg<=0 && pr<=0) return;
-      var ida=cajasIdaPartida(p), reg=cajasRegresoPartida(p);
-      out.push({concepto:'Camote '+(p.variedad||''), bruto:parseFloat(p.pesoBruto)||kg,
-        ida:ida, regreso:reg, pesoCaja:pesoCajaPartida(p),
-        tara:parseFloat(pesoCajasPartida(p))||0,
+      if(kgTot<=0 && pr<=0) return;
+      var kg=x.kgAlm>0 ? x.kgNeto : kgTot;
+      if(x.kgAlm>0 && kg<=0) return;
+      // Con una parte en almacén el peso bruto y las cajas son de la partida completa
+      // y ya no cuadrarían con los kg vendidos: el renglón va solo con el neto.
+      var parcial=x.kgAlm>0;
+      out.push({concepto:'Camote '+(p.variedad||''), bruto:parcial?kg:(parseFloat(p.pesoBruto)||kg),
+        ida:parcial?0:cajasIdaPartida(p), regreso:parcial?0:cajasRegresoPartida(p), pesoCaja:pesoCajaPartida(p),
+        tara:parcial?0:(parseFloat(pesoCajasPartida(p))||0),
         kg:kg, precio:pr, monto:Math.round(kg*pr*100)/100});
     });
     var fl=parseFloat(e.flete)||0;

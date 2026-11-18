@@ -881,7 +881,7 @@ Persistencia completa (los cuatro lugares): `framCosechas` `[{ciclo, corte}]` ·
 
   **Los kg mandados no se guardan en el envío: se derivan de los lotes** que lo apuntan (`origenEnvioId` ↔ columna `alm_lotes.origen_envio_id`, sep-2026). Una sola fuente, así que reeditar el envío por el formulario no los pierde y no hay que conservarlos en `partidasTemp`/`comerPartidasTemp`.
 
-  `envioNetoPartidas(e)` es el corazón: devuelve cada partida con `kgAlm`/`kgNeto`/`totalNeto`. **La usan `envioTotal()`, `sincronizarDeudasEnvio()` y `verEnvio()`**, para que los tres no puedan contradecirse. Como `envioTotal()` es el único punto por donde pasan los 8 lugares que suman ventas, no hay que filtrar pantalla por pantalla.
+  `envioNetoPartidas(e)` es el corazón: devuelve cada partida con `kgAlm`/`kgNeto`/`totalNeto`. **La usan `envioTotal()`, `sincronizarDeudasEnvio()`, `verEnvio()` y `docLineasVenta()`** (tabla de la cuenta y nota de envío; desde el 18-nov-2026 — antes pintaban la partida completa y la nota de B&M/2026/024 salía por $190,750 contra un cargo de $45,000), para que no puedan contradecirse. Una partida con parte en almacén se pinta solo con su neto, sin peso bruto ni cajas. Como `envioTotal()` es el único punto por donde pasan los 8 lugares que suman ventas, no hay que filtrar pantalla por pantalla.
 
   La rama `pagar` de `sincronizarDeudasEnvio()` **no se tocó**: sigue usando `kgPagar` completo. Es justo lo que mantiene el cargo único al proveedor.
 
